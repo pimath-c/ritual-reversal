@@ -66,8 +66,8 @@ const SPAWN={H:{x:-132,z:0,yaw:-Math.PI/2},C:{x:132,z:0,yaw:Math.PI/2}};
 const LUGARES=[ // nomes que aparecem na planta
   {name:'Sacristia',x:-66,z:-8},{name:'Nave em ruínas',x:72,z:-16},{name:'Coro',x:-34,z:40},{name:'Poço',x:6,z:-4},{name:'Jardim',x:30,z:16},
   {name:'Cripta',x:-66,z:52},{name:'Ossuário',x:66,z:52},
-  {name:'Acampamento',x:-132,z:18},{name:'Círculo de Pedras',x:132,z:18},{name:'Cabana do Ermitão',x:-118,z:-62},
-  {name:'Cemitério',x:108,z:94},{name:'Encruzilhada',x:52,z:-92}];
+  {name:'Acampamento',x:-132,z:-17},{name:'Círculo de Pedras',x:132,z:-17},{name:'Cabana do Ermitão',x:-118,z:-62},
+  {name:'Cemitério',x:110,z:62},{name:'Encruzilhada',x:30,z:-92}];
 
 const WALLS=[];
 function W(x1,x2,z1,z2,h,kind,extra){ const w={x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h:h||9,tall:(h||9)>2.2,kind:kind||'pedra'}; if(extra) Object.assign(w,extra); WALLS.push(w); return w; }
@@ -100,6 +100,7 @@ const PORTAIS=[ // para o cliente desenhar batentes, lintéis e lanternas
 const vaosDe=(eixo,fixo)=>PORTAIS.filter(p=>p.eixo===eixo&&p.fixo===fixo).map(p=>[p.a,p.b]).sort((u,v)=>u[0]-v[0]);
 muro('x',-58.5,-97,97,vaosDe('x',-58.5),14); muro('x',58.5,-97,97,vaosDe('x',58.5),14);
 muro('z',-96.5,-58,58,vaosDe('z',-96.5),14); muro('z',96.5,-58,58,vaosDe('z',96.5),14);
+W(-14,-8,59,62,14,'torre'); W(8,14,59,62,14,'torre'); // campanários flanqueando a grande porta
 escombros(97.5,-25,1.6,4,1.2); escombros(-25,59.8,1.6,4,1.2); // pedras que caíram para fora das brechas
 
 // ---- Claustro: entradas de larguras e posições diferentes, um canto desabado que deixa ver mas não passar ----

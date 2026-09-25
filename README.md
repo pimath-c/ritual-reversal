@@ -24,10 +24,18 @@ e entram com o código da sala. O link muda cada vez que você roda o comando.
 
 ## O mapa
 
-Assimétrico de propósito: os papéis trocam a cada rodada e cada papel sempre nasce do mesmo lado, então as
-duas equipes vivem o mesmo mapa. Cada altar tem uma personalidade (capela apertada, abside aberta, capela
-desabada, cripta com corredor em L, nártex, ossuário). O Claustro, no centro e a céu aberto, é o único lugar
-com reagentes.
+A catedral fica no centro e uma floresta a envolve por todos os lados (300 × 220 m). Os dois lados nascem na
+mata: o acampamento dos Caçadores a oeste, o Círculo de Pedras dos Cultistas a leste. A catedral tem portas nos
+quatro lados e duas brechas.
+
+- Dentro: o anel de capelas (Capela Oeste, Abside, Capela Leste, Nártex) e o Claustro a céu aberto, único lugar
+  com reagentes livres. A Cripta e o Ossuário perderam o altar e viraram esconderijos.
+- Fora: dois altares em clareiras (Menires ao norte, Carvalho Oco ao sul), santuários com pistas, ervas-noturnas,
+  o cemitério com a Carpideira, a cabana do Ermitão e a Encruzilhada do Mercador sem Rosto.
+- Luz: trilhas e clareiras pegam luar (Caçadores ficam sãos); a mata fechada é breu (bom para Cultistas).
+
+A floresta é gerada com semente fixa, então é igual para todos. Os papéis trocam a cada rodada e cada papel
+sempre nasce do mesmo lado, então as duas equipes vivem o mesmo mapa.
 
 ## Ajustes
 
@@ -41,6 +49,13 @@ movimento bruto do mouse e remapeamento de todas as teclas e botões do mouse. F
     node tools/simular.js 40            # gera 40 partidas só de bots, para testar mudanças sem jogar
     node tools/varredura.js 16          # compara variações de parâmetros lado a lado
 
+## Testes
+
+    node tools/testar.js 6              # grafo de navegação, caminhada real até 77 pontos, partidas com invariantes
+    node tools/protocolo.js             # servidor: sala, partida, lixo, reconexão (precisa de npm install em server/)
+    node tools/build.js                 # gera dist/ritual-reversal.html, a versão de arquivo único publicada
+    node tools/navegador.js             # abre o arquivo único no Chromium (Playwright), fotografa o mapa e roda uma partida
+
 O modo solo publicado no claude.ai também baixa o registro pelo botão na tela final; jogue o arquivo
 na pasta `logs/` e rode o analisador junto com os das partidas online.
 
@@ -49,7 +64,7 @@ na pasta `logs/` e rode o analisador junto com os das partidas online.
 - `shared/sim.js`: regras, mapa, bots, classes, registro de eventos (navegador + Node)
 - `server/server.js`: salas, lobby, simulação a 30 Hz, snapshots a 20 Hz por equipe
 - `client/index.html`: renderização Three.js, HUD, áudio, predição e interpolação
-- `tools/`: analisador de registros, gerador de partidas de bot e varredura de parâmetros
+- `tools/`: analisador de registros, gerador de partidas de bot, varredura de parâmetros, testes e build
 - `logs/`: um JSON por partida, com todos os eventos e as estatísticas por rodada
 
 ## Reconexão
