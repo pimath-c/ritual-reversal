@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ritual Reversal — Protótipo v3</title>
+<title>Ritual Reversal — Protótipo v4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1708,8 +1708,8 @@ function introScreen(){
   const role=myRole(), mine=V.cls[meCid]||CLASS_BY_TEAM[role][0], feit=(V.feit&&V.feit[meCid])||FEIT_BY_TEAM[role][0], rdy=!!V.ready[meCid];
   const key='intro'+V.round+mine+feit+rdy+JSON.stringify(SET.binds);
   const H=role==='H';
-  const brief=H?`<p>No <b>Crepúsculo</b>, recolha pistas e acenda sentinelas: elas avisam quando alguém consagra um altar por perto. Negocie com o Ermitão, na Sacristia. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
-    :`<p>No <b>Crepúsculo</b>, colha ervas no Claustro, profane túmulos e consagre seus altares em silêncio. Negocie com a Carpideira, a leste. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.</p>`;
+  const brief=H?`<p>No <b>Crepúsculo</b>, recolha pistas nos santuários da floresta e acenda sentinelas: elas avisam quando alguém consagra um altar por perto. Negocie com o Ermitão, na cabana perto do acampamento. Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
+    :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio. Negocie com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.</p>`;
   setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2>${brief}
     <h3>Arquétipo</h3><div class="choices">${CLASS_BY_TEAM[role].map(c=>`<button class="choice ${c===mine?'sel':''}" data-c="${c}" ${rdy?'disabled':''}><b>${CLASSES[c].name}</b><span>${CLASSES[c].text}</span><small>${CLASSES[c].hp} de vida</small></button>`).join('')}</div>
     <h3>Feitiço</h3><div class="choices tres">${FEIT_BY_TEAM[role].map(f=>`<button class="choice ${f===feit?'sel':''}" data-f="${f}" ${rdy?'disabled':''}><b>${FEITICOS[f].nome}</b><span>${FEITICOS[f].text}</span><small>recarga de ${FEITICOS[f].cd} s</small></button>`).join('')}</div>
