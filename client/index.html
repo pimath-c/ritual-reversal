@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ritual Reversal — Protótipo v4</title>
+<title>Ritual Reversal — Protótipo v5</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -655,7 +655,7 @@ function buildMarcas(){
   Sim.ALTARS.forEach(A=>{ for(let k=0;k<3;k++) marca(A.x+(R()-.5)*5,A.z+(R()-.5)*5,1.2+R()*.8,0); marca(A.x+(R()-.5)*4,A.z+(R()-.5)*4,1.6,5); marca(A.x+(R()-.5)*7,A.z+(R()-.5)*7,3+R()*2,1); });
   for(let k=0;k<70;k++){ const x=(R()-.5)*(CATEDRAL.x2-CATEDRAL.x1)*.95, z=(R()-.5)*(CATEDRAL.z2-CATEDRAL.z1)*.95; if(dentroCl(x,z)){ marca(x,z,2+R()*2,R()<.6?4:7); } else { const c2=R(); marca(x,z,1.5+R()*3,c2<.35?1:c2<.6?2:c2<.8?3:5); } }
   for(let k=0;k<5;k++) marca(3+R()*6,-8-R()*3,2.2,7);
-  for(const [sx,dir] of [[-126,1],[126,-1],[-90,1],[90,-1]]) for(let k=0;k<4;k++) marca(sx+dir*(3+k*2.6),(R()-.5)*3,1.9,6,dir>0?Math.PI/2:-Math.PI/2);
+  for(const [sx,dir] of [[SPAWN.H.x+32*Sim.HALF.x/Sim.HALF0.x,1],[SPAWN.C.x-32*Sim.HALF.x/Sim.HALF0.x,-1],[-90,1],[90,-1]]) for(let k=0;k<4;k++) marca(sx+dir*(3+k*2.6),(R()-.5)*3,1.9,6,dir>0?Math.PI/2:-Math.PI/2);
   marca(-8,-40,3.2,8); marca(40,40,3,8); marca(-70,6,2.8,8);
   if(!geos.length||!THREE.BufferGeometryUtils) return;
   const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),new THREE.MeshStandardMaterial({map:tex,transparent:true,depthWrite:false,roughness:.95,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
@@ -889,8 +889,9 @@ function buildFloresta(){
       g.position.set(C.x+Math.cos(a)*rr,0,C.z+Math.sin(a)*rr).addScaledVector(dir,L/2); g.userData.dinamico=true; world.add(g); } }); }
 
   // telhado da cabana do Ermitão
-  { const tel=new THREE.Mesh(new THREE.ConeGeometry(8.2,3,4),MAT.tabuas); tel.position.set(-118,3.6+1.5,-50); tel.rotation.y=Math.PI/4; tel.scale.z=.85; tel.castShadow=true; world.add(tel);
-    const cham=new THREE.Mesh(boxGeo(.8,2.2,.8,1),MAT.wall); cham.position.set(-121,5.2,-47.5); world.add(cham); }
+  { const mad=WALLDEF.filter(w=>w.kind==='madeira'), cx=(Math.min(...mad.map(w=>w.x1))+Math.max(...mad.map(w=>w.x2)))/2, cz=(Math.min(...mad.map(w=>w.z1))+Math.max(...mad.map(w=>w.z2)))/2;
+    const tel=new THREE.Mesh(new THREE.ConeGeometry(8.2,3,4),MAT.tabuas); tel.position.set(cx,3.6+1.5,cz); tel.rotation.y=Math.PI/4; tel.scale.z=.85; tel.castShadow=true; world.add(tel);
+    const cham=new THREE.Mesh(boxGeo(.8,2.2,.8,1),MAT.wall); cham.position.set(cx-3,5.2,cz+2.5); world.add(cham); }
   // Círculo de Pedras: runas pintadas no chão
   { const d=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.MeshBasicMaterial({map:RT.rune,transparent:true,opacity:.22,color:0xa3203a,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
     d.rotation.x=-Math.PI/2; d.position.set(Sim.SPAWN.C.x,.03,Sim.SPAWN.C.z); world.add(d); }
@@ -1329,7 +1330,7 @@ function efeitoHabilidade(e,meu){
     particulas(x,.5,z,meu?14:30,0xf3d58e,3.5,.9,-1,1.5); clarao(x,2,z,0xf3d58e,meu?2:6); }
   for(const id of e.alvos||[]){ const mm=actorMeshes.get(id); if(mm) mm.userData.anim.flinch=1; }
 }
-const HAB_TXT={runa:()=>'Runa: canalização +20% por 8 s', veu:()=>'Véu: invisível para os Caçadores por 5 s', sal:()=>'Círculo de Sal deixado no chão por 60 s',
+const HAB_TXT={runa:()=>'Runa: canalização +20% por 8 s', veu:()=>'Véu: você é só uma silhueta por 5 s', sal:()=>'Círculo de Sal deixado no chão por 60 s',
   empurrao:n=>n?`Empurrão: ${n} ${n>1?'atingidos':'atingido'}`:'Empurrão: ninguém no alcance (4 m à frente)',
   flash:n=>n?`Flash: ${n} ${n>1?'cegados':'cegado'} por 1,5 s`:'Flash: ninguém no cone (14 m à frente)',
   purificacao:n=>n?`Purificação: ${n} ${n>1?'atordoados':'atordoado'} por 1 s`:'Purificação: ninguém a 6 m'};
@@ -1407,6 +1408,7 @@ const SFX={
   collect:(x,z)=>sfxNoise(x,z,26,.5,'bandpass',700,2,.5),
   flare:(x,z)=>sfxNoise(x,z,20,.6,'highpass',2000,1,.3),
   rune:(x,z)=>sfxTone(x,z,30,300,900,.6,'triangle',.3),
+  arrasto:(x,z)=>{ sfxTone(x,z,45,70,40,1.8,'sawtooth',.25); setTimeout(()=>sfxTone(x,z,45,520,180,1.2,'triangle',.12),300); },
   push:(x,z)=>{ sfxNoise(x,z,28,.35,'lowpass',300,1,.9); sfxTone(x,z,28,90,40,.3,'sine',.6); },
   flash:(x,z)=>{ sfxNoise(x,z,30,.4,'highpass',3000,1,.7); sfxTone(x,z,30,2400,1800,.25,'sine',.2); },
   purify:(x,z)=>[392,523].forEach(f=>sfxTone(x,z,30,f,f*1.5,.7,'sine',.25)),
@@ -1651,15 +1653,43 @@ function predictFire(dt,m){
 // ================= VIEW SYNC =================
 const actorMeshes=new Map(), projMeshes=new Map(), pickMeshes=new Map();
 const sigilGeo=new THREE.SphereGeometry(.13,20,16); COMPARTILHADAS.add(sigilGeo);
+function veuSilhueta(m,op){
+  if(op>=1&&!m.userData.veuOn) return;
+  if(!m.userData.veu){ const L=[]; m.traverse(o=>{ if(o.isMesh&&o.material&&!Array.isArray(o.material)){ const cl=o.material.clone(); cl.transparent=true; cl.depthWrite=false;
+    if(cl.color) cl.color.setHex(0x23232f); if(cl.emissive) cl.emissive.setHex(0x000000); if(cl.map) cl.map=null; cl.needsUpdate=true; L.push({o,orig:o.material,cl}); } }); m.userData.veu=L; }
+  const on=op<1; for(const v of m.userData.veu){ v.o.material=on?v.cl:v.orig; v.cl.opacity=op; } m.userData.veuOn=on;
+  m.traverse(o=>{ if(o.isSprite) o.visible=!on; });
+}
+// Pegadas (só o Rastreador vê) e marcas de arrasto da Transferência (qualquer Caçador vê), num único InstancedMesh aditivo
+let RASTROS=null;
+function syncRastros(){
+  if(!RASTROS){ const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d'); x.fillStyle='#fff';
+    x.beginPath(); x.ellipse(32,22,11,15,0,0,6.283); x.fill(); x.beginPath(); x.ellipse(32,48,8,10,0,0,6.283); x.fill();
+    const tx=new THREE.CanvasTexture(c), mat=new THREE.MeshBasicMaterial({map:tx,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false,fog:false});
+    const geo=new THREE.PlaneGeometry(.32,.5); geo.rotateX(-Math.PI/2);
+    RASTROS=new THREE.InstancedMesh(geo,mat,240); RASTROS.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(240*3),3); RASTROS.frustumCulled=false; RASTROS.count=0; world.add(RASTROS); }
+  const eu=V.actors.find(b=>b.cid===meCid), H=myRole()==='H', o=new THREE.Object3D(), cor=new THREE.Color(); let n=0;
+  if(H&&eu&&eu.cls==='rastreador') for(const p of V.pegadas||[]){ if(n>=200) break; const k=1-(V.t-p.t)/CFG.pegadaVida; if(k<=0) continue;
+    o.position.set(p.x,.04,p.z); o.rotation.set(0,p.yaw+Math.PI,0); o.scale.set(1,1,1); o.updateMatrix(); RASTROS.setMatrixAt(n,o.matrix); RASTROS.setColorAt(n,cor.setRGB(.25*k,.75*k,.62*k)); n++; }
+  if(H) for(const r of V.rastros||[]){ const k=Math.max(.25,1-(V.rt-r.t)/180);
+    for(let j=0;j<6&&n<240;j++){ const an=j*1.047+.4; o.position.set(r.x+Math.cos(an)*2.2,.05,r.z+Math.sin(an)*2.2); o.rotation.set(0,-an+Math.PI/2,0); o.scale.set(1.6,1,5); o.updateMatrix();
+      RASTROS.setMatrixAt(n,o.matrix); RASTROS.setColorAt(n,cor.setRGB(.55*k,.16*k,.12*k)); n++; } }
+  RASTROS.count=n; RASTROS.instanceMatrix.needsUpdate=true; RASTROS.instanceColor.needsUpdate=true;
+}
 function syncActors(dt){
   const seen=new Set(), now=performance.now();
   for(const a of V.actors){ if(a.cid===meCid) continue; seen.add(a.id);
     let m=actorMeshes.get(a.id); if(!m){ m=makeCharacter(a.team,a.cls); actorMeshes.set(a.id,m); }
     const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z, yaw=a._ryaw!=null?a._ryaw:a.yaw;
     animateActor(m,a,x,z,yaw,dt||.016,now);
-    if(a.veuT>0&&a.team!==myRole()&&!(a.revelT>0)) m.visible=false;
+    // Véu: silhueta escura e translúcida. Some quase por completo de longe; de perto ou sob a lanterna dá para ver o vulto.
+    let op=1; if(a.veuT>0&&a.team!==myRole()&&!(a.revelT>0)&&a.st==='alive'){ const eu=V.actors.find(b=>b.cid===meCid), d=Math.hypot(x-camera.position.x,z-camera.position.z);
+      const luz=eu&&eu.lantern&&d<16&&((x-camera.position.x)*-Math.sin(LOOK.yaw)+(z-camera.position.z)*-Math.cos(LOOK.yaw))/Math.max(d,.1)>.9;
+      op=luz?.6:d<8?.42:.06; }
+    veuSilhueta(m,op);
   }
-  for(const [id,m] of actorMeshes) if(!seen.has(id)){ world.remove(m); descartar(m); actorMeshes.delete(id); }
+  for(const [id,m] of actorMeshes) if(!seen.has(id)){ world.remove(m); if(m.userData.veu) m.userData.veu.forEach(v=>v.cl.dispose()); descartar(m); actorMeshes.delete(id); }
+  syncRastros();
   const sp=new Set(), T=renderT(), last=NET.snaps[NET.snaps.length-1];
   for(const p of V.proj){ sp.add(p.id); let m=projMeshes.get(p.id);
     if(!m){ m=new THREE.Mesh(sigilGeo,new THREE.MeshBasicMaterial({color:0xf0c0ff,toneMapped:false})); m.scale.setScalar(.6);
@@ -1967,10 +1997,10 @@ function introScreen(){
   const role=myRole(), mine=V.cls[meCid]||CLASS_BY_TEAM[role][0], feit=(V.feit&&V.feit[meCid])||FEIT_BY_TEAM[role][0], rdy=!!V.ready[meCid];
   const key='intro'+V.round+mine+feit+rdy+JSON.stringify(SET.binds);
   const H=role==='H';
-  const brief=H?`<p>No <b>Crepúsculo</b>, recolha pistas nos santuários da floresta e acenda sentinelas: elas avisam quando alguém consagra um altar por perto. Negocie com o Ermitão, na cabana perto do acampamento. Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
+  const brief=H?`<p>No <b>Crepúsculo</b> (3 min), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto. Negocie com o Ermitão, na cabana perto do acampamento. Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
     :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio. Negocie com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.</p>`;
   setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2>${brief}
-    <h3>Arquétipo</h3><div class="choices">${CLASS_BY_TEAM[role].map(c=>`<button class="choice ${c===mine?'sel':''}" data-c="${c}" ${rdy?'disabled':''}><b>${CLASSES[c].name}</b><span>${CLASSES[c].text}</span><small>${CLASSES[c].hp} de vida</small></button>`).join('')}</div>
+    <h3>Arquétipo</h3><div class="choices ${CLASS_BY_TEAM[role].length>2?'tres':''}">${CLASS_BY_TEAM[role].map(c=>`<button class="choice ${c===mine?'sel':''}" data-c="${c}" ${rdy?'disabled':''}><b>${CLASSES[c].name}</b><span>${CLASSES[c].text}</span><small>${CLASSES[c].hp} de vida</small></button>`).join('')}</div>
     <h3>Feitiço</h3><div class="choices tres">${FEIT_BY_TEAM[role].map(f=>`<button class="choice ${f===feit?'sel':''}" data-f="${f}" ${rdy?'disabled':''}><b>${FEITICOS[f].nome}</b><span>${FEITICOS[f].text}</span><small>recarga de ${FEITICOS[f].cd} s</small></button>`).join('')}</div>
     <div class="btnrow"><button class="go ${H?'gold':''}" id="bReady" ${rdy?'disabled':''}>${rdy?'Aguardando os outros':'Estou pronto'}</button></div><p class="wait" id="dyn"></p>`,
   ()=>{ scrBody.querySelectorAll('.choice[data-c]').forEach(b=>b.onclick=()=>sendAct({type:'cls',cls:b.dataset.c})); scrBody.querySelectorAll('.choice[data-f]').forEach(b=>b.onclick=()=>sendAct({type:'feit',f:b.dataset.f})); $('#bReady').onclick=()=>{ sendAct({type:'ready'}); lock(); }; });
@@ -2020,13 +2050,13 @@ function comoJogarScreen(){
       <div><h3 style="color:var(--crimson-hi)">Como Cultista</h3>
         ${passo(1,'Crepúsculo: prepare-se',`Colha ervas na floresta e profane túmulos no cemitério, a sudeste. Tarefas rendem óbolos; negocie reagentes com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro.`)}
         ${passo(2,'Consagre em silêncio',`Você escolheu 3 de 6 altares. Consagrar gasta 1 reagente. Cuidado com as sentinelas acesas: elas denunciam você.`)}
-        ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
+        ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
         ${passo(4,'Hora Morta: o Grande Ritual',`O terceiro ritual só começa agora, e a catedral inteira ouve. Complete três rituais antes do amanhecer.`)}
       </div>
       <div><h3 style="color:var(--gold)">Como Caçador</h3>
-        ${passo(1,'Crepúsculo: prepare-se',`Examine os santuários da floresta e acenda sentinelas. Negocie munição, óleo e sinalizadores com o Ermitão, na cabana perto do acampamento.`)}
+        ${passo(1,'Crepúsculo: prepare-se',`Cada sinal lido num santuário descarta um altar que o culto não escolheu. Acenda sentinelas e negocie munição, óleo e sinalizadores com o Ermitão, na cabana perto do acampamento.`)}
         ${passo(2,'Investigue',`${kb('sensor')} lê sinais por perto, o EVP sussurra junto de altares consagrados, e a Lanterna (${kb('lantern')}) mostra resíduo só nos verdadeiros.`)}
-        ${passo(3,'Vigília: purgue e sele',`Segure ${kb('use')} num altar consagrado para purgar. No Presságio, corra ao círculo e sele em dupla.`)}
+        ${passo(3,'Vigília: purgue e sele',`Segure ${kb('use')} num altar consagrado para purgar. No Presságio, corra ao círculo e sele em dupla. Marcas de arrasto num altar denunciam uma Transferência.`)}
         ${passo(4,'Resista até o amanhecer',`Cada ritual selado força os Cultistas a recomeçar em outro altar. Se não houver três Fendas ao amanhecer, vocês vencem.`)}
       </div></div>
     <p class="fine">Caído, um aliado pode te reanimar. O inimigo pode te executar. O som diz muito: use fones.</p>

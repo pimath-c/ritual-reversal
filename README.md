@@ -24,7 +24,8 @@ e entram com o código da sala. O link muda cada vez que você roda o comando.
 
 ## O mapa
 
-A catedral fica no centro e uma floresta a envolve por todos os lados (350 × 260 m). Os dois lados nascem na
+A catedral fica no centro e uma floresta a envolve por todos os lados (310 × 216 m, tamanho para 2v2; a planta
+original de 350 × 260 m continua descrita em `HALF0` e volta com `HALF=HALF0` para um 4v4). Os dois lados nascem na
 mata: o acampamento dos Caçadores a oeste, o Círculo de Pedras dos Cultistas a leste. A catedral tem portas nos
 quatro lados e duas brechas.
 
@@ -40,6 +41,18 @@ quatro lados e duas brechas.
 - A mata é antiga e sombria, no espírito do Shaded Woods: árvores enormes cobertas de musgo, copa fechada, ruínas,
   arcos de pedra sobre as trilhas, estátuas de fiéis petrificados e névoa rasteira. Dentro da mata a névoa corta a
   visão: os bots não enxergam além de 26 m (`CFG.nevoaAlcance`).
+
+## Classes e investigação
+
+- Caçadores: Soldado (mais munição), Exorcista (sela mais rápido) e Rastreador (vê pegadas frescas dos Cultistas por
+  20 s e, ao chegar às marcas de arrasto de uma Transferência, descobre o altar de destino).
+- Cada ferramenta responde uma pergunta: o sinal dos santuários diz onde o ritual NÃO está (descarta um altar não
+  escolhido), o Sensor diz se há algo por perto, o EVP diz se um altar foi consagrado, a Lanterna diz se é verdadeiro
+  ou Chamariz, e as pegadas dizem por onde o culto passou.
+- A Transferência deixa marcas de arrasto no altar de origem por 3 min e um lamento audível nos dois altares.
+- O Véu não deixa invisível: o Cultista vira uma silhueta tênue, que some a mais de 8 m e reaparece sob a lanterna.
+- Momentos da noite: Crepúsculo até 3:00, Vigília até 10:00, Hora Morta até 18:00. Selar sob fogo cai para 70%
+  (um atacante) e 45% (dois). Executar leva 4,5 s e reanimar 5 s.
 
 A floresta é gerada com semente fixa, então é igual para todos. Os papéis trocam a cada rodada e cada papel
 sempre nasce do mesmo lado, então as duas equipes vivem o mesmo mapa.

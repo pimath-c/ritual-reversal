@@ -10,14 +10,14 @@ const ROOT=path.join(__dirname,'..'), OUT=process.argv[2]||path.join(ROOT,'dist'
 const THREE_DIR=process.env.THREE_DIR;
 fs.mkdirSync(OUT,{recursive:true});
 const VISTAS=[
-  {nome:'acampamento',x:-150,z:3,yaw:-Math.PI/2,pitch:.05},
-  {nome:'trilha-estreita',x:-86,z:-76,yaw:.2,pitch:0},
-  {nome:'mata-fechada',x:-128,z:-30,yaw:0,pitch:0},
-  {nome:'menires',x:-50,z:-92,yaw:0,pitch:-.02},
+  {nome:'acampamento',x:-134.3,z:3,yaw:-Math.PI/2,pitch:.05},
+  {nome:'trilha-estreita',x:-86,z:-70.5,yaw:.2,pitch:0},
+  {nome:'mata-fechada',x:-119.9,z:-30,yaw:0,pitch:0},
+  {nome:'menires',x:-50,z:-78,yaw:0,pitch:-.02},
   {nome:'fachada-sul',x:4,z:68,yaw:.35,pitch:.25},
-  {nome:'carvalho-oco',x:40,z:96,yaw:Math.PI,pitch:.12},
-  {nome:'cemiterio',x:120,z:76,yaw:Math.PI*.85,pitch:0},
-  {nome:'ruinas',x:-118,z:-94,yaw:0,pitch:.05},
+  {nome:'carvalho-oco',x:40,z:81.3,yaw:Math.PI,pitch:.12},
+  {nome:'cemiterio',x:110.9,z:66.2,yaw:Math.PI*.85,pitch:0},
+  {nome:'ruinas',x:-113.4,z:-79.6,yaw:0,pitch:.05},
   {nome:'nave-oeste',x:-90,z:-26,yaw:Math.PI,pitch:.12},
   {nome:'corredor-norte',x:-40,z:-31,yaw:-Math.PI/2,pitch:.15},
   {nome:'claustro',x:-30,z:-8,yaw:-.6,pitch:.2},
@@ -46,15 +46,21 @@ const VISTAS=[
   await page.waitForTimeout(800); // o primeiro quadro da partida alinha a câmera ao spawn; só depois as vistas valem
   const medidas=[];
   for(const v of VISTAS){
-    await page.evaluate(v=>{ const m=__T.game.actors.find(a=>a.cid==='local'); m.x=v.x; m.z=v.z; m.invuln=999; m.hp=m.maxHp; __T.LOOK.yaw=v.yaw; __T.LOOK.pitch=v.pitch; m.inp.yaw=v.yaw; m.inp.pitch=v.pitch; for(const a of __T.game.actors) if(a!==m){ a.x=a.team==='H'?-140:140; a.z=a.team==='H'?-8:8; } },v);
+    await page.evaluate(v=>{ const m=__T.game.actors.find(a=>a.cid==='local'); m.x=v.x; m.z=v.z; m.invuln=999; m.hp=m.maxHp; __T.LOOK.yaw=v.yaw; __T.LOOK.pitch=v.pitch; m.inp.yaw=v.yaw; m.inp.pitch=v.pitch; for(const a of __T.game.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=a.team==='H'?-8:8; } },v);
     await page.waitForTimeout(1500);
     const info=await page.evaluate(()=>__T.info());
     medidas.push({vista:v.nome,...info});
     await page.screenshot({path:path.join(OUT,v.nome+'.png')});
   }
+  // Rastreador: pegadas de um Cultista que passou há pouco, marcas de arrasto num altar e um Cultista de Véu a 6 m
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'); if(m.team!=='H') return; m.cls='rastreador'; m.x=-20; m.z=0; __T.LOOK.yaw=-Math.PI/2; __T.LOOK.pitch=-.35; m.inp.yaw=__T.LOOK.yaw; m.inp.pitch=__T.LOOK.pitch;
+    for(let k=0;k<14;k++) g.pegadas.push({x:-17+k*.65,z:(k%2?.18:-.18),yaw:-Math.PI/2,t:g.t-k*.8});
+    g.rastros.push({de:1,para:0,x:-12,z:3,t:g.rt,visto:true,lido:true});
+    const c=g.actors.find(a=>a.team==='C'); c.x=-14; c.z=-2; c.veuT=30; c.invuln=99; });
+  await page.waitForTimeout(1200); await page.screenshot({path:path.join(OUT,'rastreador-veu.png')});
   await page.keyboard.down('Tab'); await page.waitForTimeout(600); await page.screenshot({path:path.join(OUT,'planta.png')}); await page.keyboard.up('Tab');
   // partida acelerada: despausa, avança a simulação em blocos de 30 s e deixa o cliente desenhar e tratar os eventos entre eles
-  await page.evaluate(()=>{ const b=document.querySelector('#bRes'); if(b) b.click(); const m=__T.game.actors.find(a=>a.cid==='local'); m.x=-128; m.z=0; m.invuln=0; });
+  await page.evaluate(()=>{ const b=document.querySelector('#bRes'); if(b) b.click(); const m=__T.game.actors.find(a=>a.cid==='local'); m.x=-120; m.z=0; m.invuln=0; });
   let fases=[];
   for(let k=0;k<40;k++){ const r=await page.evaluate(()=>{ const g=__T.game; if(g.phase==='play') for(let i=0;i<900&&g.phase==='play';i++) __T.Sim.step(g,1/30); return {ph:g.phase,rt:Math.round(g.rt),fendas:g.altars.filter(A=>A.state==='fenda').length,far:g.altars.filter(A=>A.state==='farol').length}; });
     fases.push(r); await page.waitForTimeout(400); if(r.ph!=='play') break; }
