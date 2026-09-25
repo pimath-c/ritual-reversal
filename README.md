@@ -33,6 +33,9 @@ quatro lados e duas brechas.
 - Fora: dois altares em clareiras (Menires ao norte, Carvalho Oco ao sul), santuários com pistas, ervas-noturnas,
   o cemitério com a Carpideira, a cabana do Ermitão e a Encruzilhada do Mercador sem Rosto.
 - Luz: trilhas e clareiras pegam luar (Caçadores ficam sãos); a mata fechada é breu (bom para Cultistas).
+- A mata é antiga e sombria, no espírito do Shaded Woods: árvores enormes cobertas de musgo, copa fechada, ruínas,
+  arcos de pedra sobre as trilhas, estátuas de fiéis petrificados e névoa rasteira. Dentro da mata a névoa corta a
+  visão: os bots não enxergam além de 26 m (`CFG.nevoaAlcance`).
 
 A floresta é gerada com semente fixa, então é igual para todos. Os papéis trocam a cada rodada e cada papel
 sempre nasce do mesmo lado, então as duas equipes vivem o mesmo mapa.

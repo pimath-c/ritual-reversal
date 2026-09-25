@@ -17,7 +17,7 @@ const CFG={
   carry:2, collect:3.5, consecrate:3, start:1.2, purge:6, burn:6, decoy:2, transfer:12, revive:6, execute:3, downTime:20,
   sigilDano:20, sigilVel:48, sigilCusto:14, fervorRegen:8, fervorEspera:1.8, quedaDano:16, quedaPerto:26, quedaLonge:55, quedaMin:.75,
   compensacaoMax:.5, // quanto o servidor volta no tempo para julgar um tiro: ida e volta + 100 ms de interpolação, com folga
-  regrow:40, sensorRaio:58, respawn:[10,3,18], speed:4.6, sprint:6, botSpeed:3.9, spawnSafe:7,
+  regrow:40, sensorRaio:58, nevoaAlcance:26, respawn:[10,3,18], speed:4.6, sprint:6, botSpeed:3.9, spawnSafe:7,
   timers:{pick:35,intro:25,summary:15},
 };
 const CLASSES={
@@ -67,7 +67,7 @@ const LUGARES=[ // nomes que aparecem na planta
   {name:'Sacristia',x:-66,z:-8},{name:'Nave em ruínas',x:72,z:-16},{name:'Coro',x:-34,z:40},{name:'Poço',x:6,z:-4},{name:'Jardim',x:30,z:16},
   {name:'Cripta',x:-66,z:52},{name:'Ossuário',x:66,z:52},
   {name:'Acampamento',x:-132,z:-17},{name:'Círculo de Pedras',x:132,z:-17},{name:'Cabana do Ermitão',x:-118,z:-62},
-  {name:'Cemitério',x:110,z:62},{name:'Encruzilhada',x:30,z:-92}];
+  {name:'Cemitério',x:110,z:62},{name:'Encruzilhada',x:30,z:-92},{name:'Ruínas Sombrias',x:-88,z:-102}];
 
 const WALLS=[];
 function W(x1,x2,z1,z2,h,kind,extra){ const w={x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h:h||9,tall:(h||9)>2.2,kind:kind||'pedra'}; if(extra) Object.assign(w,extra); WALLS.push(w); return w; }
@@ -193,7 +193,20 @@ const ERVA_PTS=[[-88,-96],[-20,-70],[74,-66],[122,-96],[126,32],[64,70],[-8,98],
 const SENTINELA_PTS=[[-58,-30],[16,-34],[50,-30],[0,31],[-40,-74],[24,76]];
 PISTA_PTS.forEach(([x,z])=>W(x-.8,x+.8,z+1.2,z+2.2,1.3,'santuario')); // santuário em ruínas; o sinal fica na frente dele
 
+// ---- Ruínas Sombrias (noroeste): capela sem teto engolida pela mata, paredes desabadas e fiéis petrificados ----
+muro('x',-94,-100,-76,[[-93,-89],[-82,-79]],6.5,'ruina'); muro('x',-80,-100,-76,[[-90,-85]],5,'ruina');
+muro('z',-100,-94,-80,[[-89,-86]],4.5,'ruina'); muro('z',-76,-94,-80,[[-90,-84]],3,'ruina'); escombros(-73.5,-87,2.5,5,1.2);
+coluna(-94,-87,3.2); coluna(-82,-86,5.5); colunaCaida(-92,-84,-86,-82.8);
+// Arcos de pedra sobre as trilhas: portais do que já foi uma estrada de peregrinos
+const ARCOS=[[-50,-79.3,-50,-72.7],[60,72.7,60,79.3],[110.7,-40,117.3,-40],[-117.3,50,-110.7,50],[-110,-3.8,-110,3.8],[112.1,54.7,105.9,51.3]];
+ARCOS.forEach(([x1,z1,x2,z2])=>{ W(x1-.65,x1+.65,z1-.65,z1+.65,7.5,'pilar_ruina'); W(x2-.65,x2+.65,z2-.65,z2+.65,7.5,'pilar_ruina'); });
+// estátuas: fiéis petrificados. Nunca falsificam sinais do objetivo; só confundem a vista na névoa.
+const ESTATUA=(x,z,pose,rot)=>W(x-.45,x+.45,z-.45,z+.45,2.4,'estatua',{pose,rot:r2(rot)});
+[[-91,-90,1,.3],[-85,-83,0,2.5],[-80,-91,2,4],[-52,-98,3,1],[-27,-99,0,5.2],[-55,-80,2,2.2],[-26,-78,1,3.6]].forEach(([x,z,p,r])=>ESTATUA(x,z,p,r));
+
 // Árvores, pedras e troncos caídos: gerados com a mesma semente, então todos veem a mesma floresta.
+// Mata antiga, no espírito do Shaded Woods: menos árvores, mas enormes (troncos de 2 a 3 m), árvores altas
+// de copa fechada e árvores mortas retorcidas; ruínas e estátuas espalhadas no meio delas.
 const ARVORES=[], ARBUSTOS=[];
 {
   const livreDeTudo=(x,z,folga)=>{
@@ -204,33 +217,42 @@ const ARVORES=[], ARBUSTOS=[];
     for(const [px,pz] of PISTA_PTS.concat(ERVA_PTS)) if(Math.hypot(x-px,z-pz)<3.5+folga) return false;
     for(const w of WALLS) if(x>w.x1-1.5-folga&&x<w.x2+1.5+folga&&z>w.z1-1.5-folga&&z<w.z2+1.5+folga) return false;
     return true; };
-  // grade de ocupação para manter espaçamento mínimo entre troncos sem O(n²)
-  const cel=4, ocup=new Map(), chave=(x,z)=>Math.floor(x/cel)*10000+Math.floor(z/cel);
-  const perto=(x,z,d)=>{ const cx=Math.floor(x/cel),cz=Math.floor(z/cel); for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++){ const L=ocup.get((cx+i)*10000+cz+j); if(L) for(const q of L) if(Math.hypot(q.x-x,q.z-z)<d) return true; } return false; };
+  // grade de ocupação para manter espaçamento entre peças sem O(n²)
+  const cel=6, ocup=new Map(), chave=(x,z)=>Math.floor(x/cel)*10000+Math.floor(z/cel);
+  const perto=(x,z,r,folga)=>{ const cx=Math.floor(x/cel),cz=Math.floor(z/cel); for(let i=-2;i<=2;i++) for(let j=-2;j<=2;j++){ const L=ocup.get((cx+i)*10000+cz+j); if(L) for(const q of L) if(Math.hypot(q.x-x,q.z-z)<q.r+r+folga) return true; } return false; };
   const guarda=q=>{ const k=chave(q.x,q.z); let L=ocup.get(k); if(!L) ocup.set(k,L=[]); L.push(q); };
-  for(let t=0;t<9000&&ARVORES.length<1150;t++){
+  // muros quebrados soltos: uns baixos (cobertura), outros altos (cortam a visão)
+  for(let t=0,n=0;t<3000&&n<18;t++){ const x=(sorte()*2-1)*(HALF.x-6), z=(sorte()*2-1)*(HALF.z-6), len=3+sorte()*5, aoX=sorte()<.5, alto=sorte()<.6;
+    const x1=aoX?x-len/2:x-.5, x2=aoX?x+len/2:x+.5, z1=aoX?z-.5:z-len/2, z2=aoX?z+.5:z+len/2;
+    let ok=true; for(let k=0;k<=4&&ok;k++){ const px=lerp(x1,x2,k/4), pz=lerp(z1,z2,k/4); if(!livreDeTudo(px,pz,1.5)||perto(px,pz,.6,3)) ok=false; }
+    if(!ok) continue; for(let k=0;k<=4;k++) guarda({x:lerp(x1,x2,k/4),z:lerp(z1,z2,k/4),r:.6}); W(x1,x2,z1,z2,alto?3+sorte()*3:1.2+sorte()*.6,'ruina'); n++; }
+  // mais estátuas espalhadas pela mata, algumas à beira das trilhas
+  for(let t=0,n=0;t<4000&&n<30;t++){ const x=(sorte()*2-1)*(HALF.x-4), z=(sorte()*2-1)*(HALF.z-4);
+    if(!livreDeTudo(x,z,.6)||perto(x,z,.5,2.5)) continue; guarda({x,z,r:.5}); ESTATUA(x,z,Math.floor(sorte()*4),sorte()*6.283); n++; }
+  // árvores caídas primeiro: precisam de um corredor livre comprido
+  for(let t=0,n=0;t<3000&&n<26;t++){ const x=(sorte()*2-1)*(HALF.x-5), z=(sorte()*2-1)*(HALF.z-5), len=6+sorte()*5, aoX=sorte()<.5;
+    const x1=aoX?x-len/2:x-.6, x2=aoX?x+len/2:x+.6, z1=aoX?z-.6:z-len/2, z2=aoX?z+.6:z+len/2;
+    let ok=true; for(let k=0;k<=5&&ok;k++){ const px=lerp(x1,x2,k/5), pz=lerp(z1,z2,k/5); if(!livreDeTudo(px,pz,.8)||perto(px,pz,.6,1.6)) ok=false; }
+    if(!ok) continue; for(let k=0;k<=5;k++) guarda({x:lerp(x1,x2,k/5),z:lerp(z1,z2,k/5),r:.6}); W(x1,x2,z1,z2,1.2,'tronco'); n++; }
+  for(let t=0;t<14000&&ARVORES.length<660;t++){
     const x=(sorte()*2-1)*(HALF.x-2), z=(sorte()*2-1)*(HALF.z-2);
     // densidade: mais fechada perto das bordas do mapa, mais rala junto da catedral
-    const borda=Math.min(HALF.x-Math.abs(x),HALF.z-Math.abs(z)), dens=borda<14?1:borda<30?.85:.6;
+    const borda=Math.min(HALF.x-Math.abs(x),HALF.z-Math.abs(z)), dens=borda<14?1:borda<30?.85:.65;
     if(sorte()>dens) continue;
-    const tipo=sorte()<.62?0:sorte()<.6?1:2; // 0 pinheiro escuro, 1 árvore larga, 2 árvore morta
-    const r=tipo===1?.5+sorte()*.25:tipo===0?.32+sorte()*.18:.26+sorte()*.14;
-    if(!livreDeTudo(x,z,r)||perto(x,z,4.2)) continue;
-    const q={x:r2(x),z:r2(z),r:r2(r),tipo,s:r2(.8+sorte()*.55),rot:r2(sorte()*6.283),inc:r2((sorte()-.5)*.12)};
+    const u=sorte(), tipo=u<.32?0:u<.77?1:2; // 0 anciã (tronco enorme), 1 alta de copa fechada, 2 morta retorcida
+    const r=tipo===0?.95+sorte()*.5:tipo===1?.55+sorte()*.3:.45+sorte()*.25;
+    if(!livreDeTudo(x,z,r)||perto(x,z,r,tipo===0?4.2:3.2)) continue;
+    const q={x:r2(x),z:r2(z),r:r2(r),tipo,s:r2(.85+sorte()*.32),rot:r2(sorte()*6.283),inc:r2((sorte()-.5)*.08)};
     guarda(q); ARVORES.push(q);
   }
-  ARVORES.forEach(q=>W(q.x-q.r,q.x+q.r,q.z-q.r,q.z+q.r,10,'arvore_f'));
-  // pedras cobertas de musgo e troncos caídos: cobertura baixa no meio da mata
-  for(let t=0,n=0;t<3000&&n<70;t++){ const x=(sorte()*2-1)*(HALF.x-3), z=(sorte()*2-1)*(HALF.z-3), w=1+sorte()*1.4, d=.9+sorte()*1.2;
-    if(!livreDeTudo(x,z,Math.max(w,d)*.6)||perto(x,z,3.4)) continue; const q={x,z,r:Math.max(w,d)/2}; guarda(q); W(x-w/2,x+w/2,z-d/2,z+d/2,.8+sorte()*.7,'rocha'); n++; }
-  for(let t=0,n=0;t<3000&&n<34;t++){ const x=(sorte()*2-1)*(HALF.x-4), z=(sorte()*2-1)*(HALF.z-4), len=4+sorte()*4, aoX=sorte()<.5;
-    const x1=aoX?x-len/2:x-.45, x2=aoX?x+len/2:x+.45, z1=aoX?z-.45:z-len/2, z2=aoX?z+.45:z+len/2;
-    let ok=true; for(let k=0;k<=4&&ok;k++){ const px=lerp(x1,x2,k/4), pz=lerp(z1,z2,k/4); if(!livreDeTudo(px,pz,.6)||perto(px,pz,2.4)) ok=false; }
-    if(!ok) continue; for(let k=0;k<=4;k++) guarda({x:lerp(x1,x2,k/4),z:lerp(z1,z2,k/4)}); W(x1,x2,z1,z2,.95,'tronco'); n++; }
-  // arbustos: só visual (não bloqueiam), mais densos na mata e rareando nas trilhas
-  for(let t=0;t<6000&&ARBUSTOS.length<1500;t++){ const x=(sorte()*2-1)*(HALF.x-1), z=(sorte()*2-1)*(HALF.z-1);
-    if(naCatedral(x,z,1.5)||naTrilha(x,z,-.5)) continue; let dentro=false; for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r*.7) dentro=true; if(dentro) continue;
-    ARBUSTOS.push({x:r2(x),z:r2(z),s:r2(.5+sorte()*.9),rot:r2(sorte()*6.283),tipo:sorte()<.55?0:1}); }
+  ARVORES.forEach(q=>{ const h=q.r*.85; W(q.x-h,q.x+h,q.z-h,q.z+h,12,'arvore_f'); });
+  // pedras cobertas de musgo e árvores caídas: cobertura baixa no meio da mata
+  for(let t=0,n=0;t<3000&&n<60;t++){ const x=(sorte()*2-1)*(HALF.x-3), z=(sorte()*2-1)*(HALF.z-3), w=1.2+sorte()*1.8, d=1+sorte()*1.6;
+    if(!livreDeTudo(x,z,Math.max(w,d)*.6)||perto(x,z,Math.max(w,d)/2,2)) continue; guarda({x,z,r:Math.max(w,d)/2}); W(x-w/2,x+w/2,z-d/2,z+d/2,.9+sorte()*.9,'rocha'); n++; }
+  // vegetação rasteira: samambaias e montes de musgo, só visual (não bloqueia)
+  for(let t=0;t<7000&&ARBUSTOS.length<1700;t++){ const x=(sorte()*2-1)*(HALF.x-1), z=(sorte()*2-1)*(HALF.z-1);
+    if(naCatedral(x,z,1.5)||naTrilha(x,z,-.5)) continue; let dentro=false; for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r*.6) dentro=true; if(dentro) continue;
+    ARBUSTOS.push({x:r2(x),z:r2(z),s:r2(.6+sorte()*.8),rot:r2(sorte()*6.283),tipo:sorte()<.62?0:1}); }
 }
 
 // Luzes: velas dentro da catedral; lanternas, fogueiras e braseiros lá fora. [x, z, tipo]
@@ -870,6 +892,7 @@ function updatePickups(g,dt){
 // ============ BOTS ============
 function canSee(g,b,t,range){
   if(t.st==='dead'||b.blindT>0) return false; const d=dist(b,t); if(d>range) return false; if(t.veuT>0&&d>3) return false;
+  if(d>CFG.nevoaAlcance&&(zoneAt(b.x,b.z)==='Floresta'||zoneAt(t.x,t.z)==='Floresta')) return false; // névoa da mata
   if(d>7){ const fx=-Math.sin(b.yaw),fz=-Math.cos(b.yaw); if(((t.x-b.x)*fx+(t.z-b.z)*fz)/d<.35&&g.t-b.hitT>2) return false; }
   if(!losClear(b,t)) return false;
   const lit=lightAt(g,t.x,t.z)+(t.lantern?.8:0)+(g.t-t.lastShotT<1.5?.8:0);
@@ -1123,6 +1146,6 @@ function snapshot(g,role){
     scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT};
 }
 
-return {PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
+return {ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
   createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });
