@@ -46,7 +46,7 @@ const CLASS_BY_TEAM={H:['soldado','exorcista'],C:['ritualista','guardiao']};
 // (acampamento dos Caçadores a oeste, círculo de pedras dos Cultistas a leste) e entram pelas portas.
 // Dentro: o anel de capelas e o Claustro a céu aberto, onde ficam TODOS os reagentes.
 // Fora: trilhas iluminadas pelo luar, mata fechada e escura, dois altares em clareiras, tarefas e mercadores.
-const HALF={x:150,z:110};
+const HALF={x:175,z:130};
 const CATEDRAL={x1:-96,x2:96,z1:-58,z2:58};
 const CLAUSTRO={x1:-56,x2:56,z1:-28,z2:28};
 const ZONES=[{name:'Claustro',...CLAUSTRO},{name:'Catedral',...CATEDRAL},{name:'Floresta'}];
@@ -59,15 +59,15 @@ const ALTARS=[
   {name:'Capela Oeste',x:-66,z:-45},   // apertada, duas portas estreitas, bancos caídos por dentro
   {name:'Abside',x:0,z:-47},           // colunata em meia-lua, frente aberta: arena exposta
   {name:'Capela Leste',x:64,z:-46},    // desabou: parede sul virou brecha com escombros
-  {name:'Menires',x:-40,z:-88},        // clareira ao norte, anel de pedras com três vãos: aberta ao luar, cercada de mata
+  {name:'Menires',x:-50,z:-104},        // clareira ao norte, anel de pedras com três vãos: aberta ao luar, cercada de mata
   {name:'Nártex',x:0,z:48},            // salão de entrada, logo atrás da grande porta sul
-  {name:'Carvalho Oco',x:36,z:90}];    // ao sul, sob um carvalho gigante: raízes como cobertura, mata escura em volta
-const SPAWN={H:{x:-132,z:0,yaw:-Math.PI/2},C:{x:132,z:0,yaw:Math.PI/2}};
+  {name:'Carvalho Oco',x:40,z:106}];    // ao sul, sob um carvalho gigante: raízes como cobertura, mata escura em volta
+const SPAWN={H:{x:-158,z:0,yaw:-Math.PI/2},C:{x:158,z:0,yaw:Math.PI/2}};
 const LUGARES=[ // nomes que aparecem na planta
   {name:'Sacristia',x:-66,z:-8},{name:'Nave em ruínas',x:72,z:-16},{name:'Coro',x:-34,z:40},{name:'Poço',x:6,z:-4},{name:'Jardim',x:30,z:16},
   {name:'Cripta',x:-66,z:52},{name:'Ossuário',x:66,z:52},
-  {name:'Acampamento',x:-132,z:-17},{name:'Círculo de Pedras',x:132,z:-17},{name:'Cabana do Ermitão',x:-118,z:-62},
-  {name:'Cemitério',x:110,z:62},{name:'Encruzilhada',x:30,z:-92},{name:'Ruínas Sombrias',x:-88,z:-102}];
+  {name:'Acampamento',x:-158,z:-17},{name:'Círculo de Pedras',x:158,z:-17},{name:'Cabana do Ermitão',x:-142,z:-74},
+  {name:'Cemitério',x:132,z:72},{name:'Encruzilhada',x:30,z:-106},{name:'Ruínas Sombrias',x:-118,z:-120}];
 
 const WALLS=[];
 function W(x1,x2,z1,z2,h,kind,extra){ const w={x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h:h||9,tall:(h||9)>2.2,kind:kind||'pedra'}; if(extra) Object.assign(w,extra); WALLS.push(w); return w; }
@@ -145,121 +145,135 @@ escombros(72,-17,4.2,10,1.7); colunaCaida(66,13,80,14.4); coluna(76,-6,3.5);
 // biombos soltos quebrando as linhas longas de visão
 [[-30,-29,-58,-48],[28,29,-58,-50],[-89,-80,-24,-23],[82,90,24,25],[34,35,40,50],[-89,-80,22,23]].forEach(([a,b,c,d])=>W(a,b,c,d,9,'biombo'));
 
-const PILLARS=[[-40,-50],[-22,-40],[20,-40],[38,-52],[-44,38],[24,40],[42,52],[-78,-26],[-76,26],[88,-30],[88,34]];
+const PILLARS=[[-40,-50],[-22,-40],[20,-40],[38,-52],[-44,38],[24,40],[42,52],[-78,-26],[-76,26],[88,-30],[88,34],[-80,-9],[-80,9],[80,-11],[80,11]];
 const PEWS=[[-44,-26,42,45],[-44,-28,47,50],[-40,-26,52,55],[-77,-69,-55,-52],[-63,-55,-40,-37]];
 // reagentes: todos no Claustro, espalhados de forma irregular (dois no poço, os mais disputados)
 const REAG=[[1,-4],[11,-5],[18,-12],[29,21],[48,0],[-40,-4],[-48,24],[-36,-24],[-20,24],[-6,9]];
 
 // ============ A FLORESTA ============
-// Trilhas: faixas de chão batido onde o luar atravessa as copas. Fora delas, a mata é fechada e escura.
+// Trilhas principais: faixas de chão batido onde o luar atravessa as copas. Fora delas a mata é fechada:
+// árvores e espinheiros formam paredes, e só trilhas estreitas e escuras levam às tarefas e às ruínas.
 const TRILHAS=[
-  {w:5,pts:[[-132,0],[-97,0]]},                                   // acampamento → porta oeste
-  {w:5,pts:[[132,0],[97,0]]},                                     // círculo de pedras → porta leste
-  {w:4,pts:[[-114,-76],[114,-76],[114,76],[-114,76],[-114,-76]]}, // trilha do perímetro, em volta da catedral
-  {w:4,pts:[[-118,-45],[-114,-30],[-114,-8],[-104,-2]]},          // cabana do Ermitão
-  {w:4,pts:[[35.5,-59],[36,-70],[44,-82]]},                        // porta norte → encruzilhada
-  {w:4,pts:[[44,-82],[4,-92],[-40,-88]]},                         // encruzilhada → Menires
-  {w:4,pts:[[44,-82],[84,-94],[114,-76]]},
-  {w:5,pts:[[0,59],[12,74],[34,84]]},                             // grande porta → Carvalho Oco
-  {w:3.5,pts:[[-22,59],[-38,76]]},{w:3.5,pts:[[-96,29],[-114,34]]},{w:3.5,pts:[[97,-22],[114,-30]]},
-  {w:4,pts:[[114,44],[104,62]]}];                                 // perímetro → cemitério
-const SEG_TRILHA=[]; TRILHAS.forEach(T=>{ for(let i=1;i<T.pts.length;i++) SEG_TRILHA.push({ax:T.pts[i-1][0],az:T.pts[i-1][1],bx:T.pts[i][0],bz:T.pts[i][1],w:T.w}); });
+  {w:5,pts:[[-158,0],[-97,0]]},                                   // acampamento → porta oeste
+  {w:5,pts:[[158,0],[97,0]]},                                     // círculo de pedras → porta leste
+  {w:3.5,pts:[[-122,-84],[-64,-90],[0,-82],[64,-90],[122,-84],[128,-30],[120,30],[124,84],[64,90],[0,84],[-64,92],[-124,84],[-118,30],[-128,-30],[-122,-84]]}, // perímetro sinuoso
+  {w:3.5,pts:[[-135,-62],[-130,-40],[-128,-12],[-118,-2]]},       // cabana do Ermitão
+  {w:4,pts:[[35.5,-59],[38,-76],[50,-100]]},                      // porta norte → encruzilhada
+  {w:3.5,pts:[[50,-100],[10,-112],[-37,-106]]},                   // encruzilhada → Menires
+  {w:3.5,pts:[[50,-100],[96,-112],[124,-88]]},
+  {w:4.5,pts:[[0,59],[14,80],[33,99]]},                           // grande porta → Carvalho Oco
+  {w:3,pts:[[-22,59],[-36,90]]},{w:3,pts:[[-96,29],[-120,32]]},{w:3,pts:[[97,-22],[126,-28]]},
+  {w:3.5,pts:[[123,62],[124,74]]}];                               // perímetro → cemitério
+// Clareiras: abertas ao céu. O luar ilumina (bom para os Caçadores) e a mata em volta esconde quem chega.
+const CLAREIRAS=[{x:-158,z:0,r:15},{x:158,z:0,r:15},{x:-50,z:-104,r:14},{x:40,z:105,r:13},{x:132,z:90,r:20},{x:50,z:-100,r:9},{x:-142,z:-62,r:10}];
+// pontos de tarefa da floresta (fixos; a mata é gerada em volta deles)
+const PISTA_PTS=[[-150,-104],[-86,-72],[0,-120],[100,-122],[152,-54],[-156,70],[-80,118],[88,120]];
+const ERVA_PTS=[[-104,-120],[-24,-70],[86,-72],[150,-116],[152,44],[76,108],[-10,118],[-130,108]];
+const SENTINELA_PTS=[[-58,-30],[16,-34],[50,-30],[0,31],[-50,-88],[30,92]];
+// trilhas estreitas (2,4 m, sem luar): de cada ponto de tarefa até a trilha principal mais próxima, com curvas,
+// e mais algumas vielas que entram na mata e voltam. Todas geradas com a mesma semente.
+{ const segs=[]; TRILHAS.forEach(T=>{ for(let i=1;i<T.pts.length;i++) segs.push([T.pts[i-1],T.pts[i]]); });
+  const maisPerto=(x,z)=>{ let best=null,bd=1e9; for(const [A,B] of segs){ const dx=B[0]-A[0],dz=B[1]-A[1],L=dx*dx+dz*dz, t=clamp(L?((x-A[0])*dx+(z-A[1])*dz)/L:0,0,1), px=A[0]+dx*t, pz=A[1]+dz*t, d=Math.hypot(px-x,pz-z); if(d<bd){ bd=d; best=[px,pz]; } } return best; };
+  const dentro=(x,z)=>Math.abs(x)<HALF.x-4&&Math.abs(z)<HALF.z-4&&!naCatedral(x,z,5);
+  const curva=(A,B,n)=>{ const pts=[A]; const dx=B[0]-A[0],dz=B[1]-A[1],L=Math.hypot(dx,dz)||1, nx=-dz/L, nz=dx/L;
+    for(let k=1;k<n;k++){ const t=k/n, j=(sorte()-.5)*Math.min(10,L*.35); let p=[A[0]+dx*t+nx*j,A[1]+dz*t+nz*j]; if(!dentro(p[0],p[1])) p=[A[0]+dx*t,A[1]+dz*t]; pts.push(p); } pts.push(B); return pts.map(([x,z])=>[r2(x),r2(z)]); };
+  for(const [x,z] of PISTA_PTS.concat(ERVA_PTS)){ const q=maisPerto(x,z); TRILHAS.push({w:2.4,estreita:true,pts:curva([x,z],q,Math.max(2,Math.round(Math.hypot(q[0]-x,q[1]-z)/9)))}); }
+  for(let n=0,t=0;n<16&&t<400;t++){ const x=(sorte()*2-1)*(HALF.x-8), z=(sorte()*2-1)*(HALF.z-8); if(!dentro(x,z)) continue; const q=maisPerto(x,z), d=Math.hypot(q[0]-x,q[1]-z); if(d<18||d>55) continue;
+    TRILHAS.push({w:2.4,estreita:true,pts:curva(q,[x,z],Math.round(d/9))}); n++; } }
+const SEG_TRILHA=[]; TRILHAS.forEach(T=>{ for(let i=1;i<T.pts.length;i++) SEG_TRILHA.push({ax:T.pts[i-1][0],az:T.pts[i-1][1],bx:T.pts[i][0],bz:T.pts[i][1],w:T.w,estreita:!!T.estreita}); });
 function distSeg(x,z,s){ const dx=s.bx-s.ax,dz=s.bz-s.az,L=dx*dx+dz*dz; let t=L?((x-s.ax)*dx+(z-s.az)*dz)/L:0; t=clamp(t,0,1); return Math.hypot(x-(s.ax+dx*t),z-(s.az+dz*t)); }
 const naTrilha=(x,z,folga)=>SEG_TRILHA.some(s=>distSeg(x,z,s)<s.w/2+(folga||0));
-// Clareiras: abertas ao céu. O luar ilumina (bom para os Caçadores) e a mata em volta esconde quem chega.
-const CLAREIRAS=[{x:-132,z:0,r:15},{x:132,z:0,r:15},{x:-40,z:-88,r:16},{x:36,z:89,r:13},{x:108,z:78,r:19},{x:44,z:-83,r:9},{x:-118,z:-50,r:10}];
 
+const FIXAS_ANTES=WALLS.length; // tudo que vier daqui até a mata gerada é estrutura fixa da floresta
 // Acampamento dos Caçadores: barracas, caixotes e fogueira
-[[-140,-10,3.4,3],[-142,7,3.4,3],[-126,-12,3,3.2],[-138,12,3,2.6]].forEach(([x,z,w,d])=>W(x-w/2,x+w/2,z-d/2,z+d/2,2.6,'tenda'));
-[[-124,9,1.2,1.2],[-122.6,10.4,1,1],[-128,-15,1.4,1]].forEach(([x,z,w,d])=>W(x-w/2,x+w/2,z-d/2,z+d/2,1,'caixote'));
+[[-166,-10,3.4,3],[-168,7,3.4,3],[-152,-12,3,3.2],[-164,12,3,2.6]].forEach(([x,z,w,d])=>W(x-w/2,x+w/2,z-d/2,z+d/2,2.6,'tenda'));
+[[-150,9,1.2,1.2],[-148.6,10.4,1,1],[-154,-15,1.4,1]].forEach(([x,z,w,d])=>W(x-w/2,x+w/2,z-d/2,z+d/2,1,'caixote'));
 // Círculo de Pedras dos Cultistas: menires em anel, aberto para o oeste (a porta leste da catedral)
-for(let k=0;k<10;k++){ const a=k/10*Math.PI*2; if(Math.cos(a)<-.55||k===3||k===7) continue; const x=132+Math.cos(a)*10, z=Math.sin(a)*10; W(x-.7,x+.7,z-.7,z+.7,3.6+((k*7)%3)*.5,'menir'); }
+for(let k=0;k<10;k++){ const a=k/10*Math.PI*2; if(Math.cos(a)<-.55||k===3||k===7) continue; const x=158+Math.cos(a)*10, z=Math.sin(a)*10; W(x-.7,x+.7,z-.7,z+.7,3.6+((k*7)%3)*.5,'menir'); }
 // Menires (altar): anel de nove pedras altas com três vãos
-for(let k=0;k<12;k++){ if(k===1||k===5||k===8) continue; const a=k/12*Math.PI*2+.2, x=-40+Math.cos(a)*8.5, z=-88+Math.sin(a)*8.5; W(x-.8,x+.8,z-.8,z+.8,4.2+((k*5)%4)*.4,'menir'); }
+for(let k=0;k<12;k++){ if(k===1||k===5||k===8) continue; const a=k/12*Math.PI*2+.2, x=-50+Math.cos(a)*8.5, z=-104+Math.sin(a)*8.5; W(x-.8,x+.8,z-.8,z+.8,4.2+((k*5)%4)*.4,'menir'); }
 // Carvalho Oco (altar): tronco gigante atrás do altar e raízes que servem de cobertura baixa
-W(33,39,93.5,98,14,'carvalho');
-[[27,31,91,92.2],[41,45.5,90.5,91.7],[29.5,31,95,99],[41,42.3,94.5,99]].forEach(([a,b,c,d])=>W(a,b,c,d,1.1,'raiz'));
+W(37,43,109.5,114,14,'carvalho');
+[[31,35,107,108.2],[45,49.5,106.5,107.7],[33.5,35,111,115],[45,46.3,110.5,115]].forEach(([a,b,c,d])=>W(a,b,c,d,1.1,'raiz'));
 // Cabana do Ermitão
-muro('x',-55,-123,-113,null,3.6,'madeira'); muro('x',-45,-123,-113,null,3.6,'madeira'); muro('z',-123,-55,-45,null,3.6,'madeira'); muro('z',-113,-55,-45,[[-52,-48]],3.6,'madeira');
+muro('x',-67,-147,-137,null,3.6,'madeira'); muro('x',-57,-147,-137,null,3.6,'madeira'); muro('z',-147,-67,-57,null,3.6,'madeira'); muro('z',-137,-67,-57,[[-64,-60]],3.6,'madeira');
 // Cemitério: lápides em fileiras tortas, um mausoléu e uma árvore morta
-const LAPIDES=[]; for(const z of [66,72,78,84]) for(let x=96;x<=120;x+=5){ if(sorte()<.25) continue; const ox=(sorte()-.5)*1.4, oz=(sorte()-.5)*.8; LAPIDES.push(W(x+ox-.6,x+ox+.6,z+oz-.2,z+oz+.2,1.1,'lapide')); }
-W(114,120,86,92,5,'mausoleu'); W(97,98,90,91,7,'arvore');
+const LAPIDES=[]; for(const z of [80,86,92,98]) for(let x=120;x<=144;x+=5){ if(sorte()<.25) continue; const ox=(sorte()-.5)*1.4, oz=(sorte()-.5)*.8; LAPIDES.push(W(x+ox-.6,x+ox+.6,z+oz-.2,z+oz+.2,1.1,'lapide')); }
+W(140,146,102,108,5,'mausoleu'); W(119,120,103,104,7,'arvore');
 // Encruzilhada: marco de pedra no cruzamento das trilhas
-W(41.5,42.5,-79.5,-78.5,2.4,'marco');
-
-// pontos de tarefa da floresta (fixos; a mata é gerada em volta deles)
-const PISTA_PTS=[[-128,-88],[-70,-68],[0,-100],[86,-100],[128,-44],[-134,62],[-66,98],[74,100]];
-const ERVA_PTS=[[-88,-96],[-20,-70],[74,-66],[122,-96],[126,32],[64,70],[-8,98],[-104,88]];
-const SENTINELA_PTS=[[-58,-30],[16,-34],[50,-30],[0,31],[-40,-74],[24,76]];
+W(47.5,48.5,-97.5,-96.5,2.4,'marco');
 PISTA_PTS.forEach(([x,z])=>W(x-.8,x+.8,z+1.2,z+2.2,1.3,'santuario')); // santuário em ruínas; o sinal fica na frente dele
-
 // ---- Ruínas Sombrias (noroeste): capela sem teto engolida pela mata, paredes desabadas e fiéis petrificados ----
-muro('x',-94,-100,-76,[[-93,-89],[-82,-79]],6.5,'ruina'); muro('x',-80,-100,-76,[[-90,-85]],5,'ruina');
-muro('z',-100,-94,-80,[[-89,-86]],4.5,'ruina'); muro('z',-76,-94,-80,[[-90,-84]],3,'ruina'); escombros(-73.5,-87,2.5,5,1.2);
-coluna(-94,-87,3.2); coluna(-82,-86,5.5); colunaCaida(-92,-84,-86,-82.8);
-// Arcos de pedra sobre as trilhas: portais do que já foi uma estrada de peregrinos
-const ARCOS=[[-50,-79.3,-50,-72.7],[60,72.7,60,79.3],[110.7,-40,117.3,-40],[-117.3,50,-110.7,50],[-110,-3.8,-110,3.8],[112.1,54.7,105.9,51.3]];
+muro('x',-112,-130,-106,[[-123,-119],[-112,-109]],6.5,'ruina'); muro('x',-98,-130,-106,[[-120,-115]],5,'ruina');
+muro('z',-130,-112,-98,[[-107,-104]],4.5,'ruina'); muro('z',-106,-112,-98,[[-108,-102]],3,'ruina'); escombros(-103.5,-105,2.5,5,1.2);
+coluna(-124,-105,3.2); coluna(-112,-104,5.5); colunaCaida(-122,-102,-116,-100.8);
+// Arcos de pedra sobre as trilhas: portais do que já foi uma estrada de peregrinos (pilares fora da faixa da trilha)
+const ARCOS=[];
+[[2,0,.5],[2,1,.5],[2,5,.5],[2,9,.5],[2,12,.5],[0,0,.25],[11,0,.5],[7,0,.4]].forEach(([ti,si,t])=>{ const P=TRILHAS[ti].pts, A=P[si], B=P[si+1], dx=B[0]-A[0], dz=B[1]-A[1], L=Math.hypot(dx,dz), nx=-dz/L, nz=dx/L, cx=A[0]+dx*t, cz=A[1]+dz*t, o=TRILHAS[ti].w/2+1.3;
+  ARCOS.push([r2(cx+nx*o),r2(cz+nz*o),r2(cx-nx*o),r2(cz-nz*o)]); });
 ARCOS.forEach(([x1,z1,x2,z2])=>{ W(x1-.65,x1+.65,z1-.65,z1+.65,7.5,'pilar_ruina'); W(x2-.65,x2+.65,z2-.65,z2+.65,7.5,'pilar_ruina'); });
 // estátuas: fiéis petrificados. Nunca falsificam sinais do objetivo; só confundem a vista na névoa.
 const ESTATUA=(x,z,pose,rot)=>W(x-.45,x+.45,z-.45,z+.45,2.4,'estatua',{pose,rot:r2(rot)});
-[[-91,-90,1,.3],[-85,-83,0,2.5],[-80,-91,2,4],[-52,-98,3,1],[-27,-99,0,5.2],[-55,-80,2,2.2],[-26,-78,1,3.6]].forEach(([x,z,p,r])=>ESTATUA(x,z,p,r));
+[[-121,-108,1,.3],[-115,-101,0,2.5],[-110,-109,2,4],[-62,-114,3,1],[-37,-116,0,5.2],[-65,-96,2,2.2],[-36,-94,1,3.6]].forEach(([x,z,p,r])=>ESTATUA(x,z,p,r));
+const FIXAS=WALLS.slice(FIXAS_ANTES).concat(WALLS.filter(w=>w.kind==='limite'||w.kind==='torre'));
 
-// Árvores, pedras e troncos caídos: gerados com a mesma semente, então todos veem a mesma floresta.
-// Mata antiga, no espírito do Shaded Woods: menos árvores, mas enormes (troncos de 2 a 3 m), árvores altas
-// de copa fechada e árvores mortas retorcidas; ruínas e estátuas espalhadas no meio delas.
+// Mata: árvores enormes, espinheiros no meio delas e pouco espaço entre uma coisa e outra.
+// Gerada com a mesma semente, então todos veem a mesma floresta.
 const ARVORES=[], ARBUSTOS=[];
 {
   const livreDeTudo=(x,z,folga)=>{
     if(naCatedral(x,z,4+folga)) return false;
     if(Math.abs(x)>HALF.x-1.5||Math.abs(z)>HALF.z-1.5) return false;
-    if(naTrilha(x,z,1+folga)) return false;
+    if(naTrilha(x,z,.9+folga)) return false;
     for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r+folga) return false;
-    for(const [px,pz] of PISTA_PTS.concat(ERVA_PTS)) if(Math.hypot(x-px,z-pz)<3.5+folga) return false;
-    for(const w of WALLS) if(x>w.x1-1.5-folga&&x<w.x2+1.5+folga&&z>w.z1-1.5-folga&&z<w.z2+1.5+folga) return false;
+    for(const [px,pz] of PISTA_PTS.concat(ERVA_PTS,SENTINELA_PTS)) if(Math.hypot(x-px,z-pz)<3.5+folga) return false;
+    for(const w of FIXAS) if(x>w.x1-1.5-folga&&x<w.x2+1.5+folga&&z>w.z1-1.5-folga&&z<w.z2+1.5+folga) return false;
     return true; };
   // grade de ocupação para manter espaçamento entre peças sem O(n²)
   const cel=6, ocup=new Map(), chave=(x,z)=>Math.floor(x/cel)*10000+Math.floor(z/cel);
   const perto=(x,z,r,folga)=>{ const cx=Math.floor(x/cel),cz=Math.floor(z/cel); for(let i=-2;i<=2;i++) for(let j=-2;j<=2;j++){ const L=ocup.get((cx+i)*10000+cz+j); if(L) for(const q of L) if(Math.hypot(q.x-x,q.z-z)<q.r+r+folga) return true; } return false; };
   const guarda=q=>{ const k=chave(q.x,q.z); let L=ocup.get(k); if(!L) ocup.set(k,L=[]); L.push(q); };
+  const aleat=m=>[(sorte()*2-1)*(HALF.x-m),(sorte()*2-1)*(HALF.z-m)];
   // muros quebrados soltos: uns baixos (cobertura), outros altos (cortam a visão)
-  for(let t=0,n=0;t<3000&&n<18;t++){ const x=(sorte()*2-1)*(HALF.x-6), z=(sorte()*2-1)*(HALF.z-6), len=3+sorte()*5, aoX=sorte()<.5, alto=sorte()<.6;
+  for(let t=0,n=0;t<3000&&n<26;t++){ const [x,z]=aleat(6), len=3+sorte()*5, aoX=sorte()<.5, alto=sorte()<.6;
     const x1=aoX?x-len/2:x-.5, x2=aoX?x+len/2:x+.5, z1=aoX?z-.5:z-len/2, z2=aoX?z+.5:z+len/2;
-    let ok=true; for(let k=0;k<=4&&ok;k++){ const px=lerp(x1,x2,k/4), pz=lerp(z1,z2,k/4); if(!livreDeTudo(px,pz,1.5)||perto(px,pz,.6,3)) ok=false; }
+    let ok=true; for(let k=0;k<=4&&ok;k++){ const px=lerp(x1,x2,k/4), pz=lerp(z1,z2,k/4); if(!livreDeTudo(px,pz,1)||perto(px,pz,.6,3)) ok=false; }
     if(!ok) continue; for(let k=0;k<=4;k++) guarda({x:lerp(x1,x2,k/4),z:lerp(z1,z2,k/4),r:.6}); W(x1,x2,z1,z2,alto?3+sorte()*3:1.2+sorte()*.6,'ruina'); n++; }
-  // mais estátuas espalhadas pela mata, algumas à beira das trilhas
-  for(let t=0,n=0;t<4000&&n<30;t++){ const x=(sorte()*2-1)*(HALF.x-4), z=(sorte()*2-1)*(HALF.z-4);
-    if(!livreDeTudo(x,z,.6)||perto(x,z,.5,2.5)) continue; guarda({x,z,r:.5}); ESTATUA(x,z,Math.floor(sorte()*4),sorte()*6.283); n++; }
+  // estátuas à beira das trilhas estreitas e no meio da mata
+  for(let t=0,n=0;t<5000&&n<40;t++){ const [x,z]=aleat(4);
+    if(!livreDeTudo(x,z,.3)||perto(x,z,.5,2.5)) continue; guarda({x,z,r:.5}); ESTATUA(x,z,Math.floor(sorte()*4),sorte()*6.283); n++; }
   // árvores caídas primeiro: precisam de um corredor livre comprido
-  for(let t=0,n=0;t<3000&&n<26;t++){ const x=(sorte()*2-1)*(HALF.x-5), z=(sorte()*2-1)*(HALF.z-5), len=6+sorte()*5, aoX=sorte()<.5;
+  for(let t=0,n=0;t<4000&&n<36;t++){ const [x,z]=aleat(5), len=6+sorte()*5, aoX=sorte()<.5;
     const x1=aoX?x-len/2:x-.6, x2=aoX?x+len/2:x+.6, z1=aoX?z-.6:z-len/2, z2=aoX?z+.6:z+len/2;
-    let ok=true; for(let k=0;k<=5&&ok;k++){ const px=lerp(x1,x2,k/5), pz=lerp(z1,z2,k/5); if(!livreDeTudo(px,pz,.8)||perto(px,pz,.6,1.6)) ok=false; }
+    let ok=true; for(let k=0;k<=5&&ok;k++){ const px=lerp(x1,x2,k/5), pz=lerp(z1,z2,k/5); if(!livreDeTudo(px,pz,.6)||perto(px,pz,.6,1.6)) ok=false; }
     if(!ok) continue; for(let k=0;k<=5;k++) guarda({x:lerp(x1,x2,k/5),z:lerp(z1,z2,k/5),r:.6}); W(x1,x2,z1,z2,1.2,'tronco'); n++; }
-  for(let t=0;t<14000&&ARVORES.length<660;t++){
-    const x=(sorte()*2-1)*(HALF.x-2), z=(sorte()*2-1)*(HALF.z-2);
-    // densidade: mais fechada perto das bordas do mapa, mais rala junto da catedral
-    const borda=Math.min(HALF.x-Math.abs(x),HALF.z-Math.abs(z)), dens=borda<14?1:borda<30?.85:.65;
-    if(sorte()>dens) continue;
-    const u=sorte(), tipo=u<.32?0:u<.77?1:2; // 0 anciã (tronco enorme), 1 alta de copa fechada, 2 morta retorcida
+  // árvores: vão de 1,4 a 3 m entre troncos, então a mata vira um labirinto de passagens estreitas
+  for(let t=0;t<30000&&ARVORES.length<1350;t++){
+    const [x,z]=aleat(2);
+    const u=sorte(), tipo=u<.3?0:u<.76?1:2; // 0 anciã (tronco enorme), 1 alta de copa fechada, 2 morta retorcida
     const r=tipo===0?.95+sorte()*.5:tipo===1?.55+sorte()*.3:.45+sorte()*.25;
-    if(!livreDeTudo(x,z,r)||perto(x,z,r,tipo===0?4.2:3.2)) continue;
+    if(!livreDeTudo(x,z,r)||perto(x,z,r,1.4+sorte()*1.6)) continue;
     const q={x:r2(x),z:r2(z),r:r2(r),tipo,s:r2(.85+sorte()*.32),rot:r2(sorte()*6.283),inc:r2((sorte()-.5)*.08)};
     guarda(q); ARVORES.push(q);
   }
   ARVORES.forEach(q=>{ const h=q.r*.85; W(q.x-h,q.x+h,q.z-h,q.z+h,12,'arvore_f'); });
-  // pedras cobertas de musgo e árvores caídas: cobertura baixa no meio da mata
-  for(let t=0,n=0;t<3000&&n<60;t++){ const x=(sorte()*2-1)*(HALF.x-3), z=(sorte()*2-1)*(HALF.z-3), w=1.2+sorte()*1.8, d=1+sorte()*1.6;
-    if(!livreDeTudo(x,z,Math.max(w,d)*.6)||perto(x,z,Math.max(w,d)/2,2)) continue; guarda({x,z,r:Math.max(w,d)/2}); W(x-w/2,x+w/2,z-d/2,z+d/2,.9+sorte()*.9,'rocha'); n++; }
+  // pedras cobertas de musgo
+  for(let t=0,n=0;t<3000&&n<70;t++){ const [x,z]=aleat(3), w=1.2+sorte()*1.8, d=1+sorte()*1.6;
+    if(!livreDeTudo(x,z,Math.max(w,d)*.6)||perto(x,z,Math.max(w,d)/2,1.2)) continue; guarda({x,z,r:Math.max(w,d)/2}); W(x-w/2,x+w/2,z-d/2,z+d/2,.9+sorte()*.9,'rocha'); n++; }
+  // espinheiros: fecham boa parte dos vãos entre as árvores. Não dá para passar por eles nem ver através.
+  for(let t=0,n=0;t<30000&&n<1500;t++){ const [x,z]=aleat(2), r=.8+sorte()*.8;
+    if(!livreDeTudo(x,z,r*.9)||perto(x,z,r,.45+sorte()*.5)) continue; guarda({x,z,r}); const h=r*.9; W(x-h,x+h,z-h,z+h,2.6,'espinheiro',{rot:r2(sorte()*6.283)}); n++; }
   // vegetação rasteira: samambaias e montes de musgo, só visual (não bloqueia)
-  for(let t=0;t<7000&&ARBUSTOS.length<1700;t++){ const x=(sorte()*2-1)*(HALF.x-1), z=(sorte()*2-1)*(HALF.z-1);
-    if(naCatedral(x,z,1.5)||naTrilha(x,z,-.5)) continue; let dentro=false; for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r*.6) dentro=true; if(dentro) continue;
+  for(let t=0;t<9000&&ARBUSTOS.length<2000;t++){ const [x,z]=aleat(1);
+    if(naCatedral(x,z,1.5)||naTrilha(x,z,-.3)) continue; let dentro=false; for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r*.6) dentro=true; if(dentro) continue;
     ARBUSTOS.push({x:r2(x),z:r2(z),s:r2(.6+sorte()*.8),rot:r2(sorte()*6.283),tipo:sorte()<.62?0:1}); }
 }
 
 // Luzes: velas dentro da catedral; lanternas, fogueiras e braseiros lá fora. [x, z, tipo]
 const CANDLES=[[-58,-40],[-73,-50],[5,-40],[-6,-54],[58,-40],[73,-51],[-60,52],[-73,44],[-10,40],[10,55],[62,38],[75,53],
   [-84,-4],[-84,4],[84,-4],[84,4],[-65,-6],[-30,-44],[34,46],[76,-30],
-  [-136,0,'fogueira'],[128,-6,'braseiro'],[128,6,'braseiro'],[-116,-47,'lanterna'],[-110,-50,'lanterna'],[103,97,'lanterna'],[113,78,'lanterna'],
-  [42,-78,'lanterna'],[-100,-6,'lanterna'],[-100,6,'lanterna'],[100,-6,'lanterna'],[100,6,'lanterna'],[-6,62,'lanterna'],[6,62,'lanterna'],[31,-62,'lanterna']];
+  [-162,0,'fogueira'],[154,-6,'braseiro'],[154,6,'braseiro'],[-139,-59,'lanterna'],[-133,-62,'lanterna'],[118,72,'lanterna'],[135,86,'lanterna'],
+  [48,-94,'lanterna'],[-100,-6,'lanterna'],[-100,6,'lanterna'],[100,-6,'lanterna'],[100,6,'lanterna'],[-6,62,'lanterna'],[6,62,'lanterna'],[31,-62,'lanterna']];
 const BOX=[];
 function addCol(x1,x2,z1,z2,h,tall){ BOX.push({x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h,tall}); }
 WALLS.forEach(w=>addCol(w.x1,w.x2,w.z1,w.z2,w.h,w.tall));
@@ -491,9 +505,9 @@ const PONTOS_DEF={
   tumulo:TUMBAS,
 };
 const NPCS=[
-  {id:'ermitao',nome:'o Ermitão',...pontoNav(-119,-50),time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
-  {id:'carpideira',nome:'a Carpideira',...pontoNav(105,95),time:'C',vende:['reagente','cinza','pocao','amuleto']},
-  {id:'mercador',nome:'o Mercador sem Rosto',...pontoNav(46,-84),time:null,vende:['reagente','municao','pocao']}];
+  {id:'ermitao',nome:'o Ermitão',...pontoNav(-143,-62),time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
+  {id:'carpideira',nome:'a Carpideira',...pontoNav(114,74),time:'C',vende:['reagente','cinza','pocao','amuleto']},
+  {id:'mercador',nome:'o Mercador sem Rosto',...pontoNav(52,-102),time:null,vende:['reagente','municao','pocao']}];
 const ITENS={
   reagente:{nome:'Reagente',preco:3,time:'C',desc:'Um frasco para consagrar ou iniciar um ritual.'},
   cinza:{nome:'Cinza de Chamariz',preco:3,time:'C',desc:'Mais um Chamariz para a equipe.'},
@@ -567,7 +581,7 @@ function lightAt(g,x,z){
   if(x>CLAUSTRO.x1&&x<CLAUSTRO.x2&&z>CLAUSTRO.z1&&z<CLAUSTRO.z2) L+=0.55; // luar: o Claustro não tem teto
   else if(!naCatedral(x,z)){ // na floresta, o luar só chega nas clareiras e ao longo das trilhas; a mata fechada é breu
     let lua=0; for(const c of CLAREIRAS){ const d=Math.hypot(x-c.x,z-c.z); if(d<c.r+2) lua=Math.max(lua,.55*clamp((c.r+2-d)/4,0,1)); }
-    if(lua<.42) for(const sg of SEG_TRILHA){ const d=distSeg(x,z,sg); if(d<sg.w/2+1){ lua=Math.max(lua,.42*clamp((sg.w/2+1-d)/1.5,0,1)); if(lua>=.42) break; } }
+    if(lua<.42) for(const sg of SEG_TRILHA){ if(sg.estreita) continue; const d=distSeg(x,z,sg); if(d<sg.w/2+1){ lua=Math.max(lua,.42*clamp((sg.w/2+1-d)/1.5,0,1)); if(lua>=.42) break; } }
     L+=lua; }
   for(const f of g.flares) if(f.t>0){ const d=Math.hypot(x-f.x,z-f.z); if(d<12) L+=1.4*(1-d/12); }
   for(const A of g.altars){ if(A.state==='farol'){ const d=Math.hypot(x-A.x,z-A.z); if(d<12) L+=1.3*(1-d/12); } if(A.state==='fenda'){ const d=Math.hypot(x-A.x,z-A.z); if(d<9) L-=0.8*(1-d/9); } }

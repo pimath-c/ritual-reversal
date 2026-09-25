@@ -24,7 +24,7 @@ e entram com o código da sala. O link muda cada vez que você roda o comando.
 
 ## O mapa
 
-A catedral fica no centro e uma floresta a envolve por todos os lados (300 × 220 m). Os dois lados nascem na
+A catedral fica no centro e uma floresta a envolve por todos os lados (350 × 260 m). Os dois lados nascem na
 mata: o acampamento dos Caçadores a oeste, o Círculo de Pedras dos Cultistas a leste. A catedral tem portas nos
 quatro lados e duas brechas.
 
@@ -33,6 +33,10 @@ quatro lados e duas brechas.
 - Fora: dois altares em clareiras (Menires ao norte, Carvalho Oco ao sul), santuários com pistas, ervas-noturnas,
   o cemitério com a Carpideira, a cabana do Ermitão e a Encruzilhada do Mercador sem Rosto.
 - Luz: trilhas e clareiras pegam luar (Caçadores ficam sãos); a mata fechada é breu (bom para Cultistas).
+- Fora das trilhas principais a mata é fechada: árvores e espinheiros formam paredes, e trilhas estreitas e escuras
+  levam às tarefas, às ruínas e de volta. Espinheiros bloqueiam passagem e visão.
+- A catedral por dentro: abóbadas com nervuras, pilastras, arcada no Claustro, estandartes, lustres, velas, a cor dos
+  vitrais no chão, tapetes, hera e corvos que levantam voo quando alguém se aproxima (tudo visual; a colisão é a mesma).
 - A mata é antiga e sombria, no espírito do Shaded Woods: árvores enormes cobertas de musgo, copa fechada, ruínas,
   arcos de pedra sobre as trilhas, estátuas de fiéis petrificados e névoa rasteira. Dentro da mata a névoa corta a
   visão: os bots não enxergam além de 26 m (`CFG.nevoaAlcance`).

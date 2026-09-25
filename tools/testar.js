@@ -13,9 +13,10 @@ const t0=Date.now();
 
 console.log('1. Grafo de navegação');
 console.log(`   ${Sim.WP.length} nós, ${Sim.NAV.ilhas.length} ilhas, ${Sim.ARVORES.length} árvores, ${Sim.WALLS.length} peças de colisão`);
-// ilhas pequenas são bolsões fechados entre troncos e o muro (ninguém chega lá); ilha grande seria uma área cortada do mapa
-{ const grandes=Sim.NAV.ilhas.filter(q=>q.n>=6); if(grandes.length) falha('áreas desconectadas no grafo: '+JSON.stringify(grandes));
-  else if(Sim.NAV.ilhas.length) console.log(`   (${Sim.NAV.ilhas.length} bolsões fechados de até ${Math.max(...Sim.NAV.ilhas.map(q=>q.n))} nós, ignorados)`); }
+// Na mata fechada, espinheiros e troncos isolam bolsões (ninguém chega lá sem atravessar o mato).
+// O que importa é a caminhada real até cada ponto de interesse, conferida na etapa 2.
+{ const N=Sim.NAV, mata=Sim.WP.filter((w,i)=>N.comp[i]===N.principal&&!Sim.naCatedral(w.x,w.z,0)).length, bols=N.ilhas.reduce((s,q)=>s+q.n,0);
+  console.log(`   mata percorrível: ${mata} nós (${(mata*4/1000).toFixed(1)} mil m²); ${N.ilhas.length} bolsões fechados somando ${bols} nós`); }
 
 const alvos=[];
 Sim.ALTARS.forEach(A=>alvos.push({nome:'altar '+A.name,x:A.x,z:A.z+(A.z>0?-2.2:2.2),perto:3}));

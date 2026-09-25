@@ -10,17 +10,19 @@ const ROOT=path.join(__dirname,'..'), OUT=process.argv[2]||path.join(ROOT,'dist'
 const THREE_DIR=process.env.THREE_DIR;
 fs.mkdirSync(OUT,{recursive:true});
 const VISTAS=[
-  {nome:'acampamento',x:-126,z:3,yaw:-Math.PI/2,pitch:.05},
-  {nome:'trilha-oeste',x:-104,z:1,yaw:-Math.PI/2,pitch:.08},
-  {nome:'mata-noroeste',x:-100,z:-60,yaw:-.6,pitch:0},
-  {nome:'menires',x:-40,z:-76,yaw:0,pitch:-.02},
+  {nome:'acampamento',x:-150,z:3,yaw:-Math.PI/2,pitch:.05},
+  {nome:'trilha-estreita',x:-86,z:-76,yaw:.2,pitch:0},
+  {nome:'mata-fechada',x:-128,z:-30,yaw:0,pitch:0},
+  {nome:'menires',x:-50,z:-92,yaw:0,pitch:-.02},
   {nome:'fachada-sul',x:4,z:68,yaw:.35,pitch:.25},
-  {nome:'carvalho-oco',x:36,z:80,yaw:Math.PI,pitch:.12},
-  {nome:'cemiterio',x:104,z:66,yaw:Math.PI*.85,pitch:0},
-  {nome:'circulo-de-pedras',x:124,z:0,yaw:Math.PI/2,pitch:.02},
-  {nome:'encruzilhada',x:40,z:-70,yaw:0,pitch:.04},
-  {nome:'claustro-ceu',x:6,z:6,yaw:0,pitch:.9},
-  {nome:'nave',x:-80,z:-10,yaw:-Math.PI/2,pitch:.05}];
+  {nome:'carvalho-oco',x:40,z:96,yaw:Math.PI,pitch:.12},
+  {nome:'cemiterio',x:120,z:76,yaw:Math.PI*.85,pitch:0},
+  {nome:'ruinas',x:-118,z:-94,yaw:0,pitch:.05},
+  {nome:'nave-oeste',x:-90,z:-26,yaw:Math.PI,pitch:.12},
+  {nome:'corredor-norte',x:-40,z:-31,yaw:-Math.PI/2,pitch:.15},
+  {nome:'claustro',x:-30,z:-8,yaw:-.6,pitch:.2},
+  {nome:'nartex',x:0,z:56,yaw:0,pitch:.1},
+  {nome:'capela-oeste',x:-66,z:-38,yaw:0,pitch:.1}];
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const page=await browser.newPage({viewport:{width:1280,height:720}});
