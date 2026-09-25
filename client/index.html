@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Ritual Reversal — Protótipo v5</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -210,6 +211,45 @@ input[type=range]{ width:100%; accent-color:#d2ad62; height:22px; }
 .loja .item b{ font-family:var(--serif); font-weight:400; font-size:20px; display:block; } .loja .item span{ font-size:15px; color:#c9c1b2; }
 .loja .item .go{ font-size:17px; padding:8px 18px; min-width:120px; }
 @media (max-width:760px){ .choices.tres{ grid-template-columns:1fr; } #tarefas{ display:none; } }
+
+/* ---- controles de toque ---- */
+#toque{ display:none; position:absolute; inset:0; pointer-events:none; touch-action:none; }
+body.toque #toque{ display:block; }
+body.toque, body.toque *{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+#tqEsq,#tqDir{ position:absolute; top:84px; bottom:0; pointer-events:auto; touch-action:none; }
+#tqEsq{ left:0; width:42%; } #tqDir{ right:0; width:58%; }
+#tqStick{ position:absolute; width:120px; height:120px; margin:-60px 0 0 -60px; border-radius:50%; border:2px solid rgba(232,224,208,.28); background:rgba(10,10,14,.25); display:none; pointer-events:none; }
+#tqStick i{ position:absolute; left:50%; top:50%; width:52px; height:52px; margin:-26px 0 0 -26px; border-radius:50%; background:rgba(232,224,208,.35); }
+.tq{ position:absolute; pointer-events:auto; touch-action:none; width:62px; height:62px; border-radius:50%; border:2px solid rgba(232,224,208,.35); background:rgba(12,12,16,.45);
+  color:var(--bone); font-family:var(--cond); font-size:12px; padding:0; }
+.tq.on{ background:rgba(243,213,142,.35); border-color:var(--gold-hi); }
+.tq.mini{ width:50px; height:50px; font-size:10px; }
+#tqFire{ right:22px; bottom:22px; width:92px; height:92px; font-size:15px; border-color:rgba(255,90,110,.55); }
+#tqUse{ right:124px; bottom:24px; } #tqAbil{ right:28px; bottom:126px; }
+#tqReload,#tqT{ right:116px; bottom:106px; width:56px; height:56px; font-size:10px; }
+#tqLant{ right:22px; bottom:200px; } #tqSens{ right:78px; bottom:178px; } #tqFlare{ right:134px; bottom:170px; }
+#tqCorre{ left:14px; bottom:26px; }
+#tqTopo{ position:absolute; right:12px; top:74px; display:flex; gap:8px; pointer-events:none; }
+#tqTopo .tq{ position:static; border-radius:10px; width:58px; height:34px; }
+#toque.H .c, #toque.C .h{ display:none; } #toque.solto{ display:none!important; }
+/* no celular deitado sobra pouca altura: placar compacto no alto, informações à esquerda, munição ao lado dos botões */
+body.toque #kit .tools{ display:none; }
+body.toque #kit{ top:auto; bottom:96px; right:190px; transform:scale(.72); transform-origin:bottom right; }
+body.toque #sensor{ right:190px; bottom:150px; width:170px; }
+body.toque #vitals{ top:8px; bottom:auto; left:12px; width:170px; transform:scale(.78); transform-origin:top left; }
+body.toque #top{ top:4px; transform:translateX(-50%) scale(.72); transform-origin:top center; } body.toque #top .side span{ display:none; } body.toque #top .side{ min-width:40px; }
+body.toque #strip{ top:50px; transform:translateX(-50%) scale(.78); transform-origin:top center; }
+body.toque #buffs{ top:108px; font-size:12px; }
+body.toque #tarefas{ display:block; left:12px; right:auto; top:128px; width:220px; font-size:11px; line-height:1.25; } body.toque #tarefas b{ font-size:13px; margin-bottom:2px; }
+body.toque #feed{ top:214px; left:12px; width:240px; } body.toque #feed div{ font-size:11.5px; padding:2px 7px; } body.toque #feed div.big{ font-size:13px; }
+body.toque #feed div:nth-child(n+4){ display:none; }
+body.toque #net{ top:auto; bottom:4px; right:auto; left:12px; font-size:10px; }
+body.toque #race{ bottom:6px; width:min(360px,40vw); padding:5px 10px; } body.toque #race .t{ font-size:14px; } body.toque #race .row{ font-size:12px; margin-top:2px; }
+body.toque #anuncio b{ font-size:34px; } body.toque #anuncio span{ font-size:14px; }
+body.toque #interact{ transform:translate(-50%,-50%) scale(.85); }
+#girar{ display:none; position:fixed; inset:0; z-index:99; background:#050507; color:var(--bone); place-items:center; font-family:var(--serif); font-size:22px; text-align:center; padding:30px; }
+@media (orientation:portrait){ body.toque #girar{ display:grid; } }
+@media (max-height:430px){ #top{ transform:translateX(-50%) scale(.8); transform-origin:top center; } .screen .panel{ transform:scale(.86); transform-origin:top center; } }
 </style>
 </head>
 <body>
@@ -241,7 +281,21 @@ input[type=range]{ width:100%; accent-color:#d2ad62; height:22px; }
   <div id="sensor" class="plate"><div class="v" id="sensorV">Sem leitura</div><div class="trk"><span id="sensorFill"></span></div></div>
   <div id="kit" class="plate"><div id="ammo">8 <small>/ 48</small></div><div class="tools" id="tools"></div></div>
   <div id="death"><div><h2 id="deathT">Você caiu</h2><p id="deathP"></p></div></div>
+  <div id="toque">
+    <div id="tqEsq"></div><div id="tqDir"></div><div id="tqStick"><i></i></div>
+    <button class="tq" data-a="fire" id="tqFire">Atacar</button>
+    <button class="tq" data-a="use" id="tqUse">Usar</button>
+    <button class="tq" data-a="abil" id="tqAbil">Hab.</button>
+    <button class="tq h" data-a="reload" id="tqReload">Recarregar</button>
+    <button class="tq c" data-a="use2" id="tqT">Transferir</button>
+    <button class="tq h mini" data-a="lantern" id="tqLant">Lanterna</button>
+    <button class="tq h mini" data-a="sensor" id="tqSens">Sensor</button>
+    <button class="tq h mini" data-a="flare" id="tqFlare">Flare</button>
+    <button class="tq mini" data-a="sprint" id="tqCorre">Correr</button>
+    <div id="tqTopo"><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" id="tqPausa">Pausa</button></div>
+  </div>
 </div>
+<div id="girar"><div>Gire o aparelho para jogar deitado</div></div>
 <div id="tabMap"><div class="panel plate"><svg id="tabSvg" viewBox="0 0 540 380"></svg></div></div>
 <div class="screen" id="scr"><div class="panel plate" id="scrBody"></div></div>
 
@@ -288,17 +342,31 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 	#endif`;
   for(const k of ['standard','physical']){ const sh=THREE.ShaderLib[k]; if(sh&&sh.fragmentShader.includes(alvo)) sh.fragmentShader=sh.fragmentShader.replace(alvo,novo); }
 })();
+// ================= PERFIL DO APARELHO =================
+// A qualidade inicial vem do aparelho (celular, núcleos, memória); o jogador pode trocar nos Ajustes.
+// Níveis: alto 3, medio 2, baixo 1, minimo 0. O que depende do nível na montagem da cena (texturas, partículas,
+// árvores de fundo) vale ao recarregar; luzes, sombras, pós-processamento e resolução mudam na hora.
+const TOQUE_DISP=(navigator.maxTouchPoints||0)>0&&(matchMedia('(pointer:coarse)').matches||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
+const MOBILE=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||TOQUE_DISP;
+function qualAuto(){ const nc=navigator.hardwareConcurrency||4, mem=navigator.deviceMemory||4;
+  if(MOBILE) return nc>=8&&mem>=8?'baixo':'minimo'; if(nc<=2||mem<=2) return 'baixo'; if(nc<=4||mem<=4) return 'medio'; return 'alto'; }
+const QUAL0=(()=>{ try{ const q=JSON.parse(localStorage.getItem('rr-cfg')||'{}').qual; if(q) return q; }catch(e){} return qualAuto(); })();
+const NIVEL={alto:3,medio:2,baixo:1,minimo:0}, nivelQ=q=>NIVEL[q]!=null?NIVEL[q]:3;
+const PERF={nivel:nivelQ(QUAL0)}; PERF.leve=PERF.nivel<=1; PERF.minimo=PERF.nivel===0;
+// luzes pontuais opcionais: cada uma diz a partir de que nível existe (cada luz acesa pesa em todos os pixels)
+const LUZES_NIVEL=[]; let USAR_POS=true;
+function nivelLuz(L,n){ L.userData.nivel=n; L.visible=n<=(PERF.nivelAtual!=null?PERF.nivelAtual:PERF.nivel); LUZES_NIVEL.push(L); return L; }
 // ================= RENDERER =================
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+const renderer=new THREE.WebGLRenderer({antialias:PERF.nivel>=3&&!MOBILE,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5)); renderer.setSize(innerWidth,innerHeight); renderer.info.autoReset=false; let INFO_QUADRO={chamadas:0,triangulos:0};
-renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=PERF.nivel>=2; renderer.shadowMap.type=PERF.nivel>=3?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.25; renderer.outputEncoding=THREE.sRGBEncoding;
 $('#view').appendChild(renderer.domElement);
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x05070c); scene.fog=new THREE.FogExp2(0x0b0d14,0.026);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.05,220); camera.rotation.order='YXZ'; scene.add(camera);
-let composer=null, GRADE=null;
+let composer=null, GRADE=null, BLOOM=null;
 try{ composer=new THREE.EffectComposer(renderer); composer.addPass(new THREE.RenderPass(scene,camera));
-  composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.85,0.55,0.72)); composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
+  BLOOM=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.85,0.55,0.72); composer.addPass(BLOOM); composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
   // Etapa final: sombras puxadas para o azul-frio, luzes para o âmbar das velas, vinheta oval,
   // granulado de filme e aberração cromática nas bordas, que cresce quando a sanidade cai.
   for(const rt of [composer.renderTarget1,composer.renderTarget2]){ rt.depthTexture=new THREE.DepthTexture(); rt.depthTexture.type=THREE.UnsignedIntType; rt.depthBuffer=true; }
@@ -345,7 +413,7 @@ function makeNoise(seed){ let s=seed; const r=()=>(s=(s*16807)%2147483647)/21474
   function vn(x,y,P){ const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),w=yf*yf*(3-2*yf); return lerp(lerp(h(xi,yi,P),h(xi+1,yi,P),u),lerp(h(xi,yi+1,P),h(xi+1,yi+1,P),u),w); }
   function fbm(x,y,P,oct){ let a=0,amp=.5,f=1,n=0; for(let o=0;o<oct;o++){ a+=amp*vn(x*f,y*f,Math.min(256,P*f)); n+=amp; amp*=.5; f*=2; } return a/n; }
   return {vn,fbm,r}; }
-function pbr(size,fn,normalK){
+function pbr(size,fn,normalK){ if(PERF.leve) size=Math.max(128,size>>1);
   const H=new Float32Array(size*size), C=new Uint8ClampedArray(size*size*4), R=new Uint8ClampedArray(size*size*4), o={h:0,r:0,g:0,b:0,ro:0};
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){ fn(x/size,y/size,o); const i=y*size+x; H[i]=o.h; C[i*4]=o.r; C[i*4+1]=o.g; C[i*4+2]=o.b; C[i*4+3]=255; R[i*4]=R[i*4+1]=R[i*4+2]=o.ro*255; R[i*4+3]=255; }
   const N=new Uint8ClampedArray(size*size*4);
@@ -741,7 +809,7 @@ function buildWorld(){
     const arco=new THREE.Mesh(new THREE.TorusGeometry((P.b-P.a)/2,.28,8,20,Math.PI),MAT.wallDark); const c=(P.a+P.b)/2;
     if(ax) arco.position.set(c,5.6,f); else { arco.position.set(f,5.6,c); arco.rotation.y=Math.PI/2; } world.add(arco); }
   scene.add(new THREE.HemisphereLight(0x33476e,0x100a08,.5));
-  const moon=new THREE.DirectionalLight(0x8aa2d6,.42); moon.position.set(18,40,26); moon.castShadow=true; moon.shadow.mapSize.set(2048,2048);
+  const moon=new THREE.DirectionalLight(0x8aa2d6,.42); moon.position.set(18,40,26); moon.castShadow=true; moon.shadow.mapSize.set(PERF.nivel>=3?2048:1024,PERF.nivel>=3?2048:1024);
   // O mapa ficou grande demais para uma sombra só: a câmera de sombra acompanha o jogador (ver seguirLua).
   Object.assign(moon.shadow.camera,{left:-60,right:60,top:60,bottom:-60,near:1,far:170}); moon.shadow.bias=-.0006; moon.shadow.normalBias=.03; scene.add(moon,moon.target); CEU.sol=moon;
   const flameMat=new THREE.SpriteMaterial({map:RT.flame,color:0xffc070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true});
@@ -766,16 +834,16 @@ function buildWorld(){
     FONTES.push(fonte); });
   // Um conjunto fixo de luzes pontuais vai para as fontes mais próximas da câmera: com mais de 30 fontes
   // espalhadas pelo mapa, acender todas deixaria cada pixel pagando por luzes que ele nem alcança.
-  for(let i=0;i<12;i++){ const L=new THREE.PointLight(0xff8a36,0,14,2); scene.add(L); candleLights.push(L); }
+  for(let i=0;i<12;i++){ const L=new THREE.PointLight(0xff8a36,0,14,2); nivelLuz(L,i<3?0:i<5?1:i<8?2:3); scene.add(L); candleLights.push(L); }
   reagentMeshes=Sim.REAG.map(([x,z])=>{ const g=new THREE.Group(); g.position.set(x,0,z); g.userData.dinamico=true;
     const pl=new THREE.Mesh(boxGeo(.7,.9,.7,1.5),MAT.wall); pl.position.y=.45; pl.castShadow=true; g.add(pl);
     const jar=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,.34,10),new THREE.MeshStandardMaterial({color:0x2a1016,roughness:.3,metalness:.2,emissive:0xb0142e,emissiveIntensity:1.4})); jar.position.y=1.08; g.add(jar);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xff3355,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.55})); halo.scale.set(1.1,1.1,1); halo.position.y=1.1; g.add(halo);
     world.add(g); return {jar,halo,x}; });
-  const N=2400,pos=new Float32Array(N*3); for(let i=0;i<N;i++){ pos[i*3]=rand(-HALF.x,HALF.x); pos[i*3+1]=rand(.3,12); pos[i*3+2]=rand(-HALF.z,HALF.z); }
+  const N=PERF.minimo?500:PERF.leve?1200:2400,pos=new Float32Array(N*3); for(let i=0;i<N;i++){ pos[i*3]=rand(-HALF.x,HALF.x); pos[i*3+1]=rand(.3,12); pos[i*3+2]=rand(-HALF.z,HALF.z); }
   const dg=new THREE.BufferGeometry(); dg.setAttribute('position',new THREE.BufferAttribute(pos,3));
   RT.dust=new THREE.Points(dg,new THREE.PointsMaterial({size:.05,map:RT.glow,color:0xcdbb96,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false})); world.add(RT.dust);
-  flareObjs=[0,1,2,3,4,5].map(()=>{ const L=new THREE.PointLight(0xffd9a0,0,16,2); scene.add(L); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xffe0a8,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); s.scale.set(1.3,1.3,1); s.visible=false; world.add(s); return {L,s}; });
+  flareObjs=[0,1,2,3,4,5].map(i=>{ const L=new THREE.PointLight(0xffd9a0,0,16,2); nivelLuz(L,i<2?0:i<3?1:i<4?2:3); scene.add(L); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xffe0a8,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); s.scale.set(1.3,1.3,1); s.visible=false; world.add(s); return {L,s}; });
   lantern=new THREE.SpotLight(0xfff0d0,0,26,.42,.55,1.6); lantern.position.set(.25,-.2,0); camera.add(lantern); lantern.target.position.set(0,0,-5); camera.add(lantern.target);
   muzzle=new THREE.PointLight(0xffc27a,0,9,2); camera.add(muzzle); muzzle.position.set(.3,-.2,-.8);
 }
@@ -812,7 +880,7 @@ function buildFloresta(){
   let sd=5150; const R=()=>((sd=(sd*16807)%2147483647)/2147483647);
   const RREF=[1.2,.7,.58], RFAIXA=[[.95,1.45],[.55,.85],[.45,.7]];
   const lista=Sim.ARVORES.map(q=>({...q}));
-  for(let t=0;t<9000&&lista.length<Sim.ARVORES.length+420;t++){ const x=(R()*2-1)*(HALF.x+32), z=(R()*2-1)*(HALF.z+32);
+  for(let t=0;t<9000&&lista.length<Sim.ARVORES.length+(PERF.minimo?140:PERF.leve?260:420);t++){ const x=(R()*2-1)*(HALF.x+32), z=(R()*2-1)*(HALF.z+32);
     if(Math.abs(x)<HALF.x+2&&Math.abs(z)<HALF.z+2) continue; const u=R(), tipo=u<.3?0:u<.8?1:2, f=RFAIXA[tipo];
     lista.push({x,z,r:f[0]+R()*(f[1]-f[0]),tipo,s:.85+R()*.3,rot:R()*6.28,inc:(R()-.5)*.08}); }
   const naoIdx=g=>g.index?g.toNonIndexed():g;
@@ -904,7 +972,7 @@ function cortavel(im,qs,raio){ const n=qs.length, mat=im.instanceMatrix.array.sl
 function cortarVegetacao(agora,forcar){ const P=camera.position, yaw=camera.rotation.y, girou=Math.abs(Math.atan2(Math.sin(yaw-_vegYaw),Math.cos(yaw-_vegYaw)))>.35;
   if(!forcar&&(agora<_vegT||(Math.hypot(P.x-_vegX,P.z-_vegZ)<3&&!girou))) return; _vegT=agora+300; _vegX=P.x; _vegZ=P.z; _vegYaw=yaw;
   const fx=-Math.sin(yaw), fz=-Math.cos(yaw); // o que fica mais de 20 m atrás da câmera não aparece (nem a sombra chega na frente)
-  const alcance=clamp(2.2/scene.fog.density+4,45,105);
+  const alcance=clamp(2.2/scene.fog.density+4,45,105)*[.6,.75,.9,1][PERF.nivel];
   for(const V of VEG){ const im=V.im, M=im.instanceMatrix.array, C=im.instanceColor?im.instanceColor.array:null, raio=Math.min(V.raio,alcance), r2=raio*raio; let k=0;
     for(let i=0;i<V.n;i++){ const dx=V.x[i]-P.x, dz=V.z[i]-P.z; if(dx*dx+dz*dz>r2||dx*fx+dz*fz<-20) continue;
       if(k!==i){ for(let j=0;j<16;j++) M[k*16+j]=V.mat[i*16+j]; if(C) for(let j=0;j<3;j++) C[k*3+j]=V.cor[i*3+j]; } else if(M[k*16]!==V.mat[i*16]||M[k*16+12]!==V.mat[i*16+12]){ for(let j=0;j<16;j++) M[k*16+j]=V.mat[i*16+j]; if(C) for(let j=0;j<3;j++) C[k*3+j]=V.cor[i*3+j]; }
@@ -913,7 +981,7 @@ function cortarVegetacao(agora,forcar){ const P=camera.position, yaw=camera.rota
 function seguirLua(){ const L=CEU.sol; if(!L) return; const P=camera.position, px=Math.round(P.x/2)*2, pz=Math.round(P.z/2)*2;
   L.target.position.set(px,0,pz); L.position.set(px+18,40,pz+26); L.target.updateMatrixWorld();
   if(CEU.cupula) CEU.cupula.position.copy(P);
-  const dir=new THREE.Vector3(18,40,26).normalize(); if(CEU.lua){ CEU.lua.position.copy(P).addScaledVector(dir,150); CEU.lua2.position.copy(CEU.lua.position); } }
+  const dir=new THREE.Vector3(18,40,26).normalize(); if(CEU.lua){ const dl=Math.min(150,camera.far*.7), k=dl/150; CEU.lua.position.copy(P).addScaledVector(dir,dl); CEU.lua.scale.set(22*k,22*k,1); CEU.lua2.scale.set(64*k,64*k,1); CEU.lua2.position.copy(CEU.lua.position); } }
 // luzes emprestadas: as 12 fontes mais próximas da câmera recebem as luzes do conjunto
 let _luzT=0;
 function distribuirLuzes(dt,now){ _luzT-=dt; const P=camera.position;
@@ -1090,7 +1158,7 @@ function buildAltars(){
     sealRing.rotation.x=-Math.PI/2; sealRing.position.y=.06; g.add(sealRing);
     const beam=new THREE.Mesh(new THREE.CylinderGeometry(.55,.9,40,16,1,true),new THREE.MeshBasicMaterial({map:RT.beam,transparent:true,opacity:0,color:0xe0435e,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false,toneMapped:false}));
     beam.position.y=20; g.add(beam);
-    const L=new THREE.PointLight(0x6b3a8a,0,20,2); L.position.set(0,2.4,0); g.add(L);
+    const L=new THREE.PointLight(0x6b3a8a,0,20,2); nivelLuz(L,3); L.position.set(0,2.4,0); g.add(L);
     const EN=70,ep=new Float32Array(EN*3),es=[]; for(let k=0;k<EN;k++){ const a=rand(0,Math.PI*2),r=rand(.5,3); ep[k*3]=Math.cos(a)*r; ep[k*3+1]=rand(0,4); ep[k*3+2]=Math.sin(a)*r; es.push(rand(.6,1.8)); }
     const eg=new THREE.BufferGeometry(); eg.setAttribute('position',new THREE.BufferAttribute(ep,3));
     const em=new THREE.Points(eg,new THREE.PointsMaterial({size:.11,color:0xff4a66,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,map:RT.glow,toneMapped:false})); g.add(em);
@@ -1284,7 +1352,7 @@ function buildParticles(){
   const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(PART.pos,3)); g.setAttribute('color',new THREE.BufferAttribute(PART.col,3));
   PART.pts=new THREE.Points(g,new THREE.PointsMaterial({size:.1,map:RT.glow,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
   PART.pts.frustumCulled=false; world.add(PART.pts);
-  luzImpacto=new THREE.PointLight(0xffb070,0,7,2); scene.add(luzImpacto);
+  luzImpacto=nivelLuz(new THREE.PointLight(0xffb070,0,7,2),1); scene.add(luzImpacto);
 }
 function particulas(x,y,z,n,hex,vel,vida,grav,sobe){
   const c=new THREE.Color(hex);
@@ -1435,18 +1503,31 @@ let V=null;             // what we render (game or snapshot)
 let meCid='local';
 let ws=null, NET={erro:{x:0,z:0},snaps:[],offset:null,pending:[],seq:0,pred:null,predId:null,lobby:null,code:'',host:null,ping:0,logUrl:null,sent:new Map(),rate:0,rateN:0,rateT:0};
 const C={q:0,f:0,g:0,r:0,ab:0};
-const SET={sens:1,vol:.8,fov:72,qual:'alto'};
+const SET={sens:1,vol:.8,fov:72,qual:QUAL0,autoRes:true,toque:TOQUE_DISP};
 try{ Object.assign(SET,JSON.parse(localStorage.getItem('rr-cfg')||'{}')); }catch(e){}
 function saveSet(){ try{ localStorage.setItem('rr-cfg',JSON.stringify(SET)); }catch(e){} }
 function applySet(){
   if(AU.master) AU.master.gain.value=SET.vol;
   camera.fov=SET.fov; camera.updateProjectionMatrix();
-  const alto=SET.qual==='alto', baixo=SET.qual==='baixo';
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,alto?1.5:SET.qual==='medio'?1.25:1));
-  if(renderer.shadowMap.enabled!==!baixo){ renderer.shadowMap.enabled=!baixo; renderer.shadowMap.needsUpdate=true;
+  const n=nivelQ(SET.qual); PERF.nivelAtual=n;
+  RES.base=Math.min(window.devicePixelRatio||1,[.75,1,1.25,1.5][n]); if(SET.autoRes===false) RES.k=1;
+  const sombra=n>=2; if(renderer.shadowMap.enabled!==sombra){ renderer.shadowMap.enabled=sombra; renderer.shadowMap.needsUpdate=true;
     scene.traverse(o=>{ if(o.material) (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true); }); }
-  renderer.setSize(innerWidth,innerHeight); if(composer) composer.setSize(innerWidth,innerHeight);
+  if(BLOOM) BLOOM.enabled=n>=3; // o brilho difuso é o passe mais caro depois da cena
+  USAR_POS=!!composer&&n>=1;   // no mínimo, nada de pós-processamento: a cena vai direto para a tela
+  // a névoa apaga tudo além de ~90 m: cortar o plano distante antes disso tira peças inteiras do desenho
+  camera.far=[110,130,160,220][n]; camera.updateProjectionMatrix(); if(CEU.cupula) CEU.cupula.scale.setScalar(Math.min(1,camera.far*.85/190));
+  LUZES_NIVEL.forEach(L=>L.visible=L.userData.nivel<=n); // luz invisível sai do cálculo de todos os materiais
+  aplicarRes();
 }
+// Resolução adaptativa: mede os quadros por segundo durante a partida e baixa a resolução interna quando o
+// aparelho não aguenta (até metade), subindo de novo devagar quando sobra folga.
+const RES={base:1,k:1,acc:0,n:0,aplicada:0};
+function aplicarRes(){ const pr=Math.max(.35,RES.base*RES.k); RES.aplicada=pr;
+  renderer.setPixelRatio(pr); renderer.setSize(innerWidth,innerHeight); if(composer){ composer.setPixelRatio(pr); composer.setSize(innerWidth,innerHeight); } }
+function medirRes(raw){ if(SET.autoRes===false||!V||V.phase!=='play'||raw>.25) { RES.acc=0; RES.n=0; return; }
+  RES.acc+=raw; RES.n++; if(RES.acc<2) return; const fps=RES.n/RES.acc; RES.acc=0; RES.n=0;
+  if(fps<28&&RES.k>.5){ RES.k=Math.max(.5,RES.k-.1); aplicarRes(); } else if(fps>52&&RES.k<1){ RES.k=Math.min(1,RES.k+.05); aplicarRes(); } }
 let settingsOpen=false, backTo='';
 let paused=false, locked=false;
 let mouseL=false;
@@ -1479,16 +1560,17 @@ let ignoreMoveUntil=0, lastMoveT=0;
 
 function lock(){
   if(AUTOTEST){ locked=true; return; }
+  if(TQ.ativo){ locked=true; telaCheia(); return; }
   const c=renderer.domElement; if(!c.requestPointerLock) return;
   ignoreMoveUntil=performance.now()+120;
   try{ const p=c.requestPointerLock({unadjustedMovement:SET.rawMouse!==false}); if(p&&p.catch) p.catch(()=>{ try{ c.requestPointerLock(); }catch(e){} }); }
   catch(e){ try{ c.requestPointerLock(); }catch(e2){} }
 }
-function unlock(){ if(document.pointerLockElement) document.exitPointerLock(); }
+function unlock(){ if(TQ.ativo){ locked=false; TQ.soltar(); } if(document.pointerLockElement) document.exitPointerLock(); }
 document.addEventListener('pointerlockchange',()=>{ locked=document.pointerLockElement===renderer.domElement; if(locked) ignoreMoveUntil=performance.now()+120; else { down.clear(); mouseL=false; } });
 renderer.domElement.addEventListener('click',()=>{ if(V&&V.phase==='play'&&!locked) lock(); });
 document.addEventListener('mousemove',e=>{
-  if(!locked||!V||V.phase!=='play') return;
+  if(!locked||!V||V.phase!=='play'||(TQ.ativo&&!document.pointerLockElement)) return;
   const now=performance.now(); if(now<ignoreMoveUntil){ lastMoveT=now; return; }
   const gap=Math.min(250,now-lastMoveT); lastMoveT=now;
   // Um salto grande demais para o tempo decorrido é lixo do sistema, não movimento do jogador.
@@ -1512,7 +1594,7 @@ function pressed(code,e){
   if(SET.binds.use===code){ const m=me(); if(m){ const mv=MODE==='online'&&NET.pred?Object.assign({},m,{x:NET.pred.x,z:NET.pred.z}):m; const c=Sim.contexts(V,mv).e; if(c&&c.type==='loja') abrirLoja(c.npc); } }
 }
 function released(code){ down.delete(code); if(SET.binds.map===code) $('#tabMap').style.display='none'; if(SET.binds.fire===code) mouseL=false; }
-document.addEventListener('mousedown',e=>{ const code='Mouse'+e.button; if(capturing){ e.preventDefault(); return; } if(!locked) return; pressed(code,e); });
+document.addEventListener('mousedown',e=>{ const code='Mouse'+e.button; if(capturing){ e.preventDefault(); return; } if(!locked||(TQ.ativo&&!document.pointerLockElement)) return; pressed(code,e); });
 document.addEventListener('mouseup',e=>released('Mouse'+e.button));
 document.addEventListener('contextmenu',e=>{ if(locked||capturing) e.preventDefault(); });
 document.addEventListener('keydown',e=>{
@@ -1523,13 +1605,50 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('keyup',e=>released(e.code));
 addEventListener('blur',()=>{ down.clear(); mouseL=false; });
+// ================= TOQUE =================
+// Analógico à esquerda (onde o dedo encosta), olhar arrastando à direita, botões que imitam as teclas configuradas.
+// O botão de atacar também mira: arrastar o dedo sem soltar continua girando a câmera.
+const TQ={ativo:false,stick:null,olhar:{},mx:0,mz:0,btn:{}};
+function telaCheia(){ const d=document.documentElement; try{ if(!document.fullscreenElement&&d.requestFullscreen){ const p=d.requestFullscreen({navigationUI:'hide'});
+  if(p&&p.then) p.then(()=>{ try{ screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{}); }catch(e){} }).catch(()=>{}); } }catch(e){} }
+function ligarToque(){ TQ.ativo=!!SET.toque; document.body.classList.toggle('toque',TQ.ativo); if(!TQ.ativo) TQ.soltar(); }
+TQ.soltar=()=>{ TQ.stick=null; TQ.mx=TQ.mz=0; TQ.olhar={}; $('#tqStick').style.display='none'; for(const k in TQ.btn){ released(TQ.btn[k]); } TQ.btn={}; document.querySelectorAll('.tq.on').forEach(b=>b.classList.remove('on')); };
+function olharToque(id,x,y){ const o=TQ.olhar[id]; if(!o) return; const dx=x-o.x, dy=y-o.y; o.x=x; o.y=y;
+  LOOK.yaw-=dx*.0052*SET.sens; LOOK.pitch=clamp(LOOK.pitch-dy*.0052*SET.sens,-1.45,1.45); VM.mdx+=dx*.5; VM.mdy+=dy*.5; }
+(()=>{
+  const esq=$('#tqEsq'), dir=$('#tqDir'), stk=$('#tqStick'), knob=stk.firstElementChild, R=56;
+  esq.addEventListener('pointerdown',e=>{ e.preventDefault(); esq.setPointerCapture(e.pointerId); TQ.stick={id:e.pointerId,x:e.clientX,y:e.clientY};
+    stk.style.display='block'; stk.style.left=e.clientX+'px'; stk.style.top=e.clientY+'px'; knob.style.transform=''; });
+  esq.addEventListener('pointermove',e=>{ const S=TQ.stick; if(!S||S.id!==e.pointerId) return; let dx=e.clientX-S.x, dy=e.clientY-S.y; const d=Math.hypot(dx,dy);
+    if(d>R){ dx*=R/d; dy*=R/d; } knob.style.transform=`translate(${dx}px,${dy}px)`; const k=Math.hypot(dx,dy)/R;
+    TQ.mx=k<.22?0:dx/R; TQ.mz=k<.22?0:dy/R;
+    const corre=TQ.mz<-.92; if(corre!==!!TQ.btn.stickCorre){ if(corre){ TQ.btn.stickCorre=SET.binds.sprint; pressed(SET.binds.sprint); } else { released(SET.binds.sprint); delete TQ.btn.stickCorre; } } });
+  const fimStick=e=>{ if(!TQ.stick||TQ.stick.id!==e.pointerId) return; TQ.stick=null; TQ.mx=TQ.mz=0; stk.style.display='none'; if(TQ.btn.stickCorre){ released(SET.binds.sprint); delete TQ.btn.stickCorre; } };
+  esq.addEventListener('pointerup',fimStick); esq.addEventListener('pointercancel',fimStick);
+  const inicioOlhar=e=>{ TQ.olhar[e.pointerId]={x:e.clientX,y:e.clientY}; };
+  const movOlhar=e=>{ if(TQ.olhar[e.pointerId]&&locked&&V&&V.phase==='play') olharToque(e.pointerId,e.clientX,e.clientY); };
+  const fimOlhar=e=>{ delete TQ.olhar[e.pointerId]; };
+  dir.addEventListener('pointerdown',e=>{ e.preventDefault(); dir.setPointerCapture(e.pointerId); inicioOlhar(e); });
+  dir.addEventListener('pointermove',movOlhar); dir.addEventListener('pointerup',fimOlhar); dir.addEventListener('pointercancel',fimOlhar);
+  document.querySelectorAll('#toque .tq[data-a]').forEach(b=>{ const a=b.dataset.a;
+    b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); b.setPointerCapture(e.pointerId); const code=SET.binds[a];
+      if(a==='map'){ const aberto=$('#tabMap').style.display==='grid'; if(aberto) released(code); else pressed(code); b.classList.toggle('on',!aberto); return; }
+      if(a==='sprint'){ if(TQ.btn.corre){ released(code); delete TQ.btn.corre; b.classList.remove('on'); } else { TQ.btn.corre=code; pressed(code); b.classList.add('on'); } return; }
+      TQ.btn['p'+e.pointerId]=code; pressed(code); b.classList.add('on'); if(a==='fire') inicioOlhar(e); });
+    const fim=e=>{ const code=TQ.btn['p'+e.pointerId]; if(code){ released(code); delete TQ.btn['p'+e.pointerId]; b.classList.remove('on'); } fimOlhar(e); };
+    b.addEventListener('pointermove',e=>{ if(a==='fire') movOlhar(e); });
+    b.addEventListener('pointerup',fim); b.addEventListener('pointercancel',fim); b.addEventListener('contextmenu',e=>e.preventDefault()); });
+  $('#tqPausa').addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); unlock(); });
+  ligarToque();
+})();
 function setBind(acao,code){
   for(const k in SET.binds) if(k!==acao&&SET.binds[k]===code) SET.binds[k]=SET.binds[acao]; // troca, nunca deixa duas ações na mesma tecla
   SET.binds[acao]=code; saveSet(); toolsKey='';
 }
 function readInput(dt){
   const act=V&&V.phase==='play'&&locked;
-  let mx=0,mz=0; if(act){ if(held('fwd')) mz-=1; if(held('back')) mz+=1; if(held('left')) mx-=1; if(held('right')) mx+=1; }
+  let mx=0,mz=0; if(act){ if(held('fwd')) mz-=1; if(held('back')) mz+=1; if(held('left')) mx-=1; if(held('right')) mx+=1;
+    if(TQ.ativo){ mx=clamp(mx+TQ.mx,-1,1); mz=clamp(mz+TQ.mz,-1,1); } }
   return {mx,mz,sp:act&&held('sprint'),yaw:LOOK.yaw,pitch:LOOK.pitch,fire:act&&held('fire'),use:act&&held('use'),use2:act&&held('use2'),c:{...C},dt,viewT:renderT()};
 }
 
@@ -1792,7 +1911,7 @@ function fazerPonto(p){ const g=new THREE.Group(); g.position.set(p.x,0,p.z);
     const r=new THREE.Mesh(new THREE.PlaneGeometry(.4,.4),new THREE.MeshBasicMaterial({map:RT.rune,color:0xf3d58e,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})); r.position.set(0,.55,.12); est.add(r); g.userData.luz=brilho(0xf3d58e,.9,.6); }
   else if(p.tipo==='sentinela'){ const poste=new THREE.Mesh(new THREE.CylinderGeometry(.06,.09,2.3,10),matMetal(0x22242a,.5)); poste.position.y=1.15; poste.castShadow=true; g.add(poste);
     const gaiola=new THREE.Mesh(new THREE.CylinderGeometry(.16,.13,.34,10,1,true),matMetal(0x22242a,.5)); gaiola.position.y=2.4; g.add(gaiola);
-    g.userData.luz=brilho(0xffc070,1.6,2.4); g.userData.pl=new THREE.PointLight(0xffb060,0,11,2); g.userData.pl.position.y=2.4; g.add(g.userData.pl); }
+    g.userData.luz=brilho(0xffc070,1.6,2.4); g.userData.pl=nivelLuz(new THREE.PointLight(0xffb060,0,11,2),3); g.userData.pl.position.y=2.4; g.add(g.userData.pl); }
   else if(p.tipo==='erva'){ const folha=new THREE.MeshStandardMaterial({color:0x1d3a34,emissive:0x0e4a40,emissiveIntensity:.6,roughness:.8});
     for(let k=0;k<9;k++){ const c=new THREE.Mesh(new THREE.ConeGeometry(.035,.45+Math.random()*.25,6),folha); const a=k/9*6.28; c.position.set(Math.cos(a)*.14,.22,Math.sin(a)*.14); c.rotation.set(Math.sin(a)*.4,0,-Math.cos(a)*.4); g.add(c); }
     g.userData.luz=brilho(0x60ffd0,.8,.5); }
@@ -2069,9 +2188,11 @@ function settingsScreen(){
     <div class="set"><label for="sSens">Sensibilidade do mouse</label><input id="sSens" type="range" min="20" max="300" step="5" value="${Math.round(SET.sens*100)}"><b id="vSens">${SET.sens.toFixed(2)}</b></div>
     <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" step="2" value="${Math.round(SET.vol*100)}"><b id="vVol">${Math.round(SET.vol*100)}</b></div>
     <div class="set"><label for="sFov">Campo de visão</label><input id="sFov" type="range" min="60" max="105" step="1" value="${SET.fov}"><b id="vFov">${SET.fov}</b></div>
-    <div class="set"><label>Qualidade</label><div class="opts">${q('Alto','alto')}${q('Médio','medio')}${q('Baixo','baixo')}</div><b></b></div>
+    <div class="set"><label>Qualidade</label><div class="opts">${q('Alto','alto')}${q('Médio','medio')}${q('Baixo','baixo')}${q('Mínimo','minimo')}</div><b></b></div>
+    <div class="set"><label>Resolução adaptativa</label><div class="opts"><button data-ar="1" class="${SET.autoRes!==false?'sel':''}">Ligada</button><button data-ar="0" class="${SET.autoRes===false?'sel':''}">Desligada</button></div><b></b></div>
+    <div class="set"><label>Controles de toque</label><div class="opts"><button data-t="1" class="${SET.toque?'sel':''}">Ligados</button><button data-t="0" class="${!SET.toque?'sel':''}">Desligados</button></div><b></b></div>
     <div class="set"><label>Movimento bruto do mouse</label><div class="opts"><button data-r="1" class="${SET.rawMouse!==false?'sel':''}">Ligado</button><button data-r="0" class="${SET.rawMouse===false?'sel':''}">Desligado</button></div><b></b></div>
-    <p class="fine">Médio desliga o brilho difuso; Baixo desliga também as sombras. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
+    <p class="fine">Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. Texturas, partículas e árvores de fundo mudam ao recarregar a página. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
     <h3>Controles</h3><div class="binds">${Object.keys(BIND_LABEL).map(a=>`<button class="bindrow ${capturing===a?'cap':''}" data-a="${a}"><span>${BIND_LABEL[a]}</span><kbd>${capturing===a?'aperte…':kb(a)}</kbd></button>`).join('')}</div>
     <p class="fine">Clique numa linha e aperte a tecla ou o botão do mouse. Esc cancela. Se a tecla já estiver em uso, as duas ações trocam de lugar.</p>
     <div class="btnrow"><button class="go ghost" id="sDef">Restaurar padrão</button><button class="go" id="sBack">Voltar</button></div>`,
@@ -2081,7 +2202,7 @@ function settingsScreen(){
     bind('#sVol','#vVol',v=>SET.vol=v/100,v=>Math.round(v));
     $('#sVol').onchange=()=>SFX.click();
     bind('#sFov','#vFov',v=>SET.fov=v,v=>v);
-    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
+    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.bindrow').forEach(b=>b.onclick=()=>{ capturing=b.dataset.a; screenKey=''; });
     $('#sDef').onclick=()=>{ SET.binds=Object.assign({},DEF_BIND); saveSet(); toolsKey=''; screenKey=''; };
     $('#sBack').onclick=()=>{ settingsOpen=false; screenKey=''; };
@@ -2096,7 +2217,7 @@ function syncScreens(){
   if(!V) return;
   const ph=V.phase;
   if(ph==='play'&&lojaAberta){ lojaScreen(); return; }
-  if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause','<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">Clique para voltar ao jogo.</p><div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; }); }
+  if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause'+TQ.ativo,'<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">'+(TQ.ativo?'Toque':'Clique')+' para voltar ao jogo.</p><div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; }); }
     else if(MODE==='online'&&!locked){ setScreen('olock','<h2 style="text-align:center">Clique para jogar</h2><p style="text-align:center;margin:0 auto">No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado.</p><div class="btnrow"><button class="go" id="bRes">Jogar</button><button class="go ghost" id="bSet2">Ajustes</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; }); }
     else hideScreen(); return; }
   if(ph==='pick') pickScreen(); else if(ph==='intro') introScreen(); else if(ph==='summary') summaryScreen(); else if(ph==='final') finalScreen();
@@ -2110,7 +2231,7 @@ let fpsEMA=60;
 let last=performance.now(), lastPhase='', bellT=45, hallT=8, heartT=0, stepT=0, wasLocked=false;
 function tick(now){
   requestAnimationFrame(tick);
-  const raw=Math.max(.001,(now-last)/1000), dt=Math.min(.05,raw); last=now; fpsEMA=fpsEMA*.92+(1/raw)*.08;
+  const raw=Math.max(.001,(now-last)/1000), dt=Math.min(.05,raw); last=now; fpsEMA=fpsEMA*.92+(1/raw)*.08; medirRes(raw);
   if(MODE==='local'&&game){
     paused=game.phase==='play'&&!locked&&!lojaAberta;
     const m=me(); const inp=readInput(dt); ULT_INP=inp;
@@ -2126,6 +2247,7 @@ function tick(now){
   }
   if(V&&V.phase!==lastPhase){ if(V.phase==='play'){ show('hud',true); if(!AUTOTEST) lock(); toolsKey=''; if(lastPhase!=='play'){ const m=me(); if(m){ LOOK.yaw=m.yaw; LOOK.pitch=0; } } } else { show('hud',false); atualizarMarcas(null); unlock(); AV.forEach((O,i)=>ritualLoopStop(i)); } lastPhase=V.phase; }
   wasLocked=locked;
+  if(TQ.ativo){ const tq=$('#toque'), r=(myRole()||'')+(locked&&!lojaAberta?'':' solto'); if(tq.className!==r){ tq.className=r; if(r.includes('solto')) TQ.soltar(); } } // com menu aberto, os controles saem da frente dos botões
   syncScreens();
   // cosmetics
   distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now);
@@ -2166,7 +2288,8 @@ function tick(now){
     if(pos.moving&&m.st==='alive'){ stepT-=dt; if(stepT<=0){ stepT=.45; SFX.mystep(); } }
     // sanity fx (client side)
     const k=clamp((70-s)/70,0,1); $('#vignette').style.opacity=k.toFixed(2);
-    const blur=s<40?(40-s)/40*1.1:0; renderer.domElement.style.filter=`saturate(${(1-k*.55).toFixed(2)}) contrast(${(1+k*.25).toFixed(2)})${blur>.05?` blur(${blur.toFixed(2)}px)`:''}`;
+    const blur=s<40?(40-s)/40*1.1:0; // filtro CSS sobre o canvas custa caro em GPU fraca: só nos níveis médio e alto
+    renderer.domElement.style.filter=PERF.nivelAtual>=2&&k>.01?`saturate(${(1-k*.55).toFixed(2)}) contrast(${(1+k*.25).toFixed(2)})${blur>.05?` blur(${blur.toFixed(2)}px)`:''}`:'';
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
@@ -2181,19 +2304,21 @@ function tick(now){
   if(GRADE&&composer){ GRADE.uniforms.tDepth.value=composer.readBuffer.depthTexture; GRADE.uniforms.uTexel.value.set(1/innerWidth,1/innerHeight);
     camera.updateMatrixWorld(); GRADE.uniforms.uCamMundo.value.copy(camera.matrixWorld); const tv=Math.tan(camera.fov*Math.PI/360); GRADE.uniforms.uTan.value.set(tv*camera.aspect,tv); GRADE.uniforms.uT.value=now*.001; }
   seguirLua(); // depois de a câmera andar neste quadro: céu, lua e sombra ficam centrados nela
-  renderer.info.reset(); if(composer) composer.render(); else renderer.render(scene,camera); INFO_QUADRO={chamadas:renderer.info.render.calls,triangulos:renderer.info.render.triangles};
+  renderer.info.reset(); if(composer&&USAR_POS) composer.render(); else renderer.render(scene,camera); INFO_QUADRO={chamadas:renderer.info.render.calls,triangulos:renderer.info.render.triangles};
 }
 function show(id,on){ document.getElementById(id).classList.toggle('on',on); }
 
 // ================= BOOT =================
 function boot(){
   buildTextures(); buildTexturasExtras(); buildWorld(); buildFloresta(); buildCatedralViva(); const fusao=fundirEstaticos(); buildMarcas(); if(AUTOTEST){ window.__fusao=fusao; window.__VEG=VEG; } buildAltars(); buildViewmodels(); buildParticles(); buildStrip();
+  if(PERF.leve){ const vistos=new Set(); scene.traverse(o=>{ const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[]; for(const m of ms){ if(vistos.has(m)) continue; vistos.add(m);
+      if(m.normalMap){ m.normalMap=null; m.needsUpdate=true; } } }); } // relevo por normal map pesa em GPU fraca e quase não aparece na névoa
   applySet(); $('#loading').style.display='none';
   requestAnimationFrame(tick);
   const probe=n=>{ const ctl=new AbortController(); setTimeout(()=>ctl.abort(),8000);
     fetch('/api/info',{cache:'no-store',signal:ctl.signal}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.server==='ritual-reversal'){ ONLINE_OK=true; if(!MODE) screenKey=''; } }).catch(()=>{ if(n>0) setTimeout(()=>probe(n-1),1500); }); };
   probe(2);
-  if(AUTOTEST){ window.__T={grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();

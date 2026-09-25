@@ -57,6 +57,30 @@ quatro lados e duas brechas.
 A floresta é gerada com semente fixa, então é igual para todos. Os papéis trocam a cada rodada e cada papel
 sempre nasce do mesmo lado, então as duas equipes vivem o mesmo mapa.
 
+## Celular e aparelhos fracos
+
+O jogo escolhe a qualidade pelo aparelho na primeira vez (celular: Mínimo; poucos núcleos ou pouca memória: Médio
+ou Baixo) e dá para trocar nos Ajustes.
+
+| Nível  | Luzes pontuais | Sombras | Brilho difuso | Pós-processamento | Resolução máx. | Distância de visão |
+|--------|---------------:|---------|---------------|-------------------|---------------:|-------------------:|
+| Alto   | 34 | sim (2048) | sim | sim | 1,5× | 220 m |
+| Médio  | 16 | sim (1024) | não | sim | 1,25× | 160 m |
+| Baixo  | 12 | não | não | sim | 1× | 130 m |
+| Mínimo | 8  | não | não | não | 0,75× | 110 m |
+
+Baixo e Mínimo também usam texturas com metade do tamanho, tiram os mapas de relevo, desenham menos poeira e
+árvores de fundo e encurtam o alcance da vegetação. A névoa já apaga tudo além de ~90 m, então cortar a distância
+de visão não muda o que se vê. A resolução adaptativa (ligada por padrão) baixa a resolução interna até a metade
+quando o jogo cai abaixo de 28 quadros por segundo e sobe de novo quando sobra folga.
+
+Em telas de toque aparecem os controles: analógico onde o polegar esquerdo encostar (empurrar até o fim corre),
+arrastar à direita para olhar, e botões para atacar (arrastar sem soltar também mira), usar, habilidade, recarregar,
+lanterna, sensor, flare, transferir, correr, mapa e pausa. O jogo pede tela cheia e orientação deitada. Os
+controles podem ser ligados ou desligados nos Ajustes.
+
+    node tools/celular.js   # celular emulado (844 × 390, toque): qualidade, analógico, olhar, atacar, pausa
+
 ## Ajustes
 
 Botão "Ajustes" no menu inicial e na tela de pausa: sensibilidade, volume, campo de visão, qualidade,
