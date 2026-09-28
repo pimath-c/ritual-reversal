@@ -14,7 +14,7 @@ const RESERVA_MS=120000; // quanto tempo a vaga de quem caiu fica guardada
 const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8']};
 const server=http.createServer((req,res)=>{
   const url=req.url.split('?')[0];
-  if(url==='/api/info'){ res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}); return res.end(JSON.stringify({server:'ritual-reversal',rooms:rooms.size})); }
+  if(url==='/api/info'){ res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}); /* o app Android pergunta de outra origem */ return res.end(JSON.stringify({server:'ritual-reversal',rooms:rooms.size})); }
   if(url.startsWith('/logs/')){ const f=path.basename(url); const p=path.join(LOGDIR,f); if(/^[\w-]+\.json$/.test(f)&&fs.existsSync(p)){ res.writeHead(200,{'Content-Type':'application/json','Content-Disposition':`attachment; filename="${f}"`}); return fs.createReadStream(p).pipe(res); } }
   const f=FILES[url]; if(!f){ res.writeHead(404); return res.end('não encontrado'); }
   res.writeHead(200,{'Content-Type':f[1],'Cache-Control':'no-cache'}); fs.createReadStream(path.join(ROOT,f[0])).pipe(res);

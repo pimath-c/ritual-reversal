@@ -81,6 +81,32 @@ controles podem ser ligados ou desligados nos Ajustes.
 
     node tools/celular.js   # celular emulado (844 × 390, toque): qualidade, analógico, olhar, atacar, pausa
 
+## App Android
+
+A pasta `mobile/` é o app Android (Capacitor): o mesmo cliente do navegador, com o three.js dentro do app. Joga
+contra bots sem internet; para jogar online, digita-se na tela inicial o endereço do servidor (o link que o
+cloudflared mostra, como `abcd.trycloudflare.com`, ou `192.168.0.10:8080` na mesma rede Wi-Fi). O app abre deitado,
+em tela cheia, mantém a tela acesa, e o botão voltar do Android pausa a partida.
+
+**Pegar o APK:** a cada envio que mexe no jogo, o GitHub compila o app (`.github/workflows/android.yml`). Na aba
+Actions do repositório, abra a execução "APK Android" mais recente e baixe `ritual-reversal-apk` em Artifacts. É um
+.zip com o `app-debug.apk`. No celular, permita instalar apps de fontes desconhecidas e abra o APK.
+
+**Compilar no seu computador** (precisa do Android Studio ou do Android SDK e do JDK 21):
+
+    cd mobile
+    npm install
+    npm run apk          # monta mobile/www, sincroniza e gera android/app/build/outputs/apk/debug/app-debug.apk
+
+Outros comandos:
+
+    node tools/build-mobile.js                          # só monta mobile/www
+    NODE_PATH=$(npm root -g) node tools/app.js          # testa mobile/www sem internet e conectando num servidor
+    NODE_PATH=$(npm root -g) node tools/icones-android.js  # redesenha ícones e abertura a partir do sigilo
+
+Para publicar na Play Store falta gerar um APK/AAB assinado (`./gradlew bundleRelease` com uma chave própria) e
+criar a conta de desenvolvedor.
+
 ## Ajustes
 
 Botão "Ajustes" no menu inicial e na tela de pausa: sensibilidade, volume, campo de visão, qualidade,

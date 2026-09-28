@@ -24,6 +24,7 @@ html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
 body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:hidden; font-family:var(--cond); -webkit-font-smoothing:antialiased; }
 #view{ position:fixed; inset:0; } #view canvas{ display:block; width:100%; height:100%; transition:filter .4s linear; }
 #hud{ position:fixed; inset:0; pointer-events:none; display:none; } #hud.on{ display:block; }
+#hud{ left:env(safe-area-inset-left,0px); right:env(safe-area-inset-right,0px); } /* celular com entalhe: nada do HUD fica embaixo dele */
 .plate{ background:linear-gradient(180deg, rgba(38,43,50,.84), rgba(18,21,25,.88)); border:1px solid rgba(140,98,57,.45);
   clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px); }
 #top{ position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:18px; padding:8px 22px; }
@@ -352,6 +353,8 @@ function qualAuto(){ const nc=navigator.hardwareConcurrency||4, mem=navigator.de
   if(MOBILE) return nc>=8&&mem>=8?'baixo':'minimo'; if(nc<=2||mem<=2) return 'baixo'; if(nc<=4||mem<=4) return 'medio'; return 'alto'; }
 const QUAL0=(()=>{ try{ const q=JSON.parse(localStorage.getItem('rr-cfg')||'{}').qual; if(q) return q; }catch(e){} return qualAuto(); })();
 const NIVEL={alto:3,medio:2,baixo:1,minimo:0}, nivelQ=q=>NIVEL[q]!=null?NIVEL[q]:3;
+// No app Android (Capacitor) a página vem de dentro do aparelho: o servidor online é um endereço que o jogador digita.
+const APP=!!window.RR_APP;
 const PERF={nivel:nivelQ(QUAL0)}; PERF.leve=PERF.nivel<=1; PERF.minimo=PERF.nivel===0;
 // luzes pontuais opcionais: cada uma diz a partir de que nível existe (cada luz acesa pesa em todos os pixels)
 const LUZES_NIVEL=[]; let USAR_POS=true;
@@ -1660,7 +1663,7 @@ let TOKEN=null; try{ TOKEN=sessionStorage.getItem('rr-token'); }catch(e){}
 if(!TOKEN){ TOKEN=Math.random().toString(36).slice(2)+Date.now().toString(36); try{ sessionStorage.setItem('rr-token',TOKEN); }catch(e){} }
 const RECON={ativo:false,ate:0,tentativas:0,nome:'',timer:null};
 function connect(create,code,name){
-  const proto=location.protocol==='https:'?'wss:':'ws:'; const sock=new WebSocket(proto+'//'+location.host); ws=sock;
+  const proto=location.protocol==='https:'?'wss:':'ws:'; const sock=new WebSocket(APP?baseServidor().replace(/^http/,'ws'):proto+'//'+location.host); ws=sock;
   RECON.nome=name||RECON.nome;
   sock.onopen=()=>sock.send(JSON.stringify({t:'hello',create,code,name:RECON.nome,token:TOKEN}));
   sock.onmessage=e=>{ const m=JSON.parse(e.data);
@@ -1692,7 +1695,7 @@ function onSnap(m){
   const target=s.t-nowS+.02; NET.offset=NET.offset==null?target:NET.offset+(target-NET.offset)*.05;
   if(Math.abs(target-NET.offset)>.5) NET.offset=target;
   NET.snaps.push(s); while(NET.snaps.length>12) NET.snaps.shift();
-  NET.logUrl=m.log; meCid=m.cid;
+  NET.logUrl=m.log&&APP?baseServidor()+m.log:m.log; meCid=m.cid;
   const ts=NET.sent.get(m.ack); if(ts){ const r=performance.now()-ts; NET.ping=NET.ping?NET.ping*.8+r*.2:r; }
   for(const k of NET.sent.keys()) if(k<=m.ack) NET.sent.delete(k);
   NET.rateN++; const nn=performance.now(); if(nn-NET.rateT>1000){ NET.rate=NET.rateN*1000/(nn-NET.rateT); NET.rateN=0; NET.rateT=nn; }
@@ -2069,22 +2072,31 @@ let screenKey='';
 function setScreen(key,html,bind){ if(screenKey===key) return false; screenKey=key; scrBody.innerHTML=html; scr.classList.add('on'); scr.classList.toggle('inicial',key.startsWith('title')); if(bind) bind(); const b=scrBody.querySelector('button:not([disabled]),input'); if(b) setTimeout(()=>b.focus(),30); return true; }
 function hideScreen(){ if(screenKey!==''){ screenKey=''; scr.classList.remove('on'); } }
 const SIGIL=`<svg class="sigil" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 8 A52 52 0 0 0 60 112" fill="none" stroke="#d2ad62" stroke-width="3"/><path d="M60 8 A52 52 0 0 1 60 112" fill="none" stroke="#a3203a" stroke-width="3"/><line x1="60" y1="4" x2="60" y2="116" stroke="#e8e0d0" stroke-width="1.2" opacity=".5"/><path d="M22 60 Q60 102 98 60 Q60 18 22 60Z" fill="none" stroke="#e8e0d0" stroke-width="2.4" transform="rotate(180 60 60)"/><circle cx="60" cy="70" r="12" fill="#a3203a"/><circle cx="60" cy="70" r="5" fill="#050506"/></svg>`;
-let ONLINE_OK=false, titleMsg='';
+let ONLINE_OK=false, titleMsg='', SONDANDO=false;
+// Endereço digitado no app: "abcd.trycloudflare.com" vira https://; IP de rede local ou "host:porta" vira http://.
+function baseServidor(){ if(!APP) return ''; let s=(SET.servidor||'').trim().replace(/\/+$/,''); if(!s) return null;
+  if(!/^https?:\/\//i.test(s)) s=(/^(localhost|\d+\.\d+\.\d+\.\d+)(:\d+)?$/.test(s)||/:\d+$/.test(s)?'http://':'https://')+s; return s; }
+function sondarServidor(n){ const base=baseServidor(); if(base===null){ ONLINE_OK=false; if(!MODE) screenKey=''; return; }
+  const ctl=new AbortController(); setTimeout(()=>ctl.abort(),8000); SONDANDO=true;
+  fetch(base+'/api/info',{cache:'no-store',signal:ctl.signal}).then(r=>r.ok?r.json():null).then(j=>{ SONDANDO=false; if(j&&j.server==='ritual-reversal'){ ONLINE_OK=true; if(APP) titleMsg=''; if(!MODE) screenKey=''; } else throw 0; })
+    .catch(()=>{ if(n>0) setTimeout(()=>sondarServidor(n-1),1500); else { SONDANDO=false; if(APP){ titleMsg='Não achei o servidor nesse endereço. Confira o link e se o servidor está ligado.'; if(!MODE) screenKey=''; } } }); }
 function showTitle(msg){ titleMsg=msg||''; screenKey=''; }
 function salaSalva(){ try{ return sessionStorage.getItem('rr-sala')||''; }catch(e){ return ''; } }
 function titleScreen(){
   let savedName=''; try{ savedName=localStorage.getItem('rr-name')||''; }catch(e){}
-  setScreen('title'+titleMsg+ONLINE_OK+JSON.stringify(SET.binds)+salaSalva(),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
+  setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva(),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
     <p class="lede">Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.</p>
     <div class="acoes"><button class="go" id="bSolo">Jogar sozinho, com bots</button>
       <div class="links"><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bSet">Ajustes</button></div></div>
+    ${APP?`<div class="online on"><h3>Servidor${ONLINE_OK?' <small style="color:var(--gold)">conectado</small>':''}</h3><div class="linha"><input class="txt" id="iServ" style="width:260px" placeholder="ex.: abcd.trycloudflare.com" value="${esc(SET.servidor||'')}" aria-label="Endereço do servidor" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="go ghost" id="bServ">${SONDANDO?'Procurando…':'Conectar'}</button></div></div>`:''}
     <div class="online ${ONLINE_OK?'on':''}"><h3>Jogar online</h3>
       <div class="linha"><input class="txt" id="iName" maxlength="16" placeholder="Seu nome" value="${esc(savedName)}" aria-label="Seu nome"><button class="go gold" id="bCreate">Criar sala</button></div>
       ${salaSalva()?`<div class="linha"><button class="go" id="bVolta">Voltar à sala ${esc(salaSalva())}</button></div>`:''}
       <div class="linha"><input class="txt" id="iCode" maxlength="4" placeholder="Código" aria-label="Código da sala" style="text-transform:uppercase"><button class="go ghost" id="bJoin">Entrar na sala</button></div></div>
     <p class="err" id="err">${esc(titleMsg)}</p>
-    <p class="fine">${ONLINE_OK?'Use fones: o som diz onde e em que fase está cada ritual.':'Para jogar online com amigos, rode o servidor do projeto e abra o link dele.'}</p>`,
-  ()=>{ $('#bSolo').onclick=()=>{ audioInit(); startLocal(); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; };
+    <p class="fine">${ONLINE_OK?'Use fones: o som diz onde e em que fase está cada ritual.':APP?'Para jogar online, alguém roda o servidor do projeto; digite aqui o endereço que ele mostra.':'Para jogar online com amigos, rode o servidor do projeto e abra o link dele.'}</p>`,
+  ()=>{ $('#bSolo').onclick=()=>{ audioInit(); startLocal(); };
+    const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; };
     if(ONLINE_OK){ const go=create=>{ audioInit(); const name=($('#iName').value||'Jogador').trim(); try{ localStorage.setItem('rr-name',name); }catch(e){} const code=($('#iCode').value||'').trim().toUpperCase(); if(!create&&code.length!==4){ $('#err').textContent='Digite o código de 4 letras.'; return; } connect(create,code,name); };
       $('#bCreate').onclick=()=>go(true); $('#bJoin').onclick=()=>go(false);
       const bv=$('#bVolta'); if(bv) bv.onclick=()=>{ $('#iCode').value=salaSalva(); go(false); }; } });
@@ -2315,9 +2327,9 @@ function boot(){
       if(m.normalMap){ m.normalMap=null; m.needsUpdate=true; } } }); } // relevo por normal map pesa em GPU fraca e quase não aparece na névoa
   applySet(); $('#loading').style.display='none';
   requestAnimationFrame(tick);
-  const probe=n=>{ const ctl=new AbortController(); setTimeout(()=>ctl.abort(),8000);
-    fetch('/api/info',{cache:'no-store',signal:ctl.signal}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.server==='ritual-reversal'){ ONLINE_OK=true; if(!MODE) screenKey=''; } }).catch(()=>{ if(n>0) setTimeout(()=>probe(n-1),1500); }); };
-  probe(2);
+  if(!APP||SET.servidor) sondarServidor(APP?0:2);
+  // botão voltar do Android: pausa a partida em vez de fechar o app
+  if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
   if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
