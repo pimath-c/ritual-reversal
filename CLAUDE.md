@@ -43,11 +43,15 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 
 - v5.2: Grande Ritual cinematográfico (céu e vitrais de sangue, sino, coro e tambor, corvos, névoa carmim;
   `atualizarGrande` no cliente, `grande` no snapshot do altar); um bot Cultista planta até dois Chamarizes.
-- Outra engine: `docs/PORTE.md` (regras, números, equivalências Unreal/Godot, ordem do porte) e
-  `docs/mapa.json` (`node tools/exportar-mapa.js`).
+- Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
+  `docs/mapa.json` (`node tools/exportar-mapa.js`, que também copia para `unity/Assets/RitualReversal/Dados/`).
+- Porte para o Unity (escolhido pelo dono): `unity/` tem o blockout do mapa (menu "Ritual Reversal > Importar mapa")
+  e um jogador em primeira pessoa; passo a passo em `unity/LEIAME.md`. Eixos: Unity (x, y, −z). O C# só teve
+  checagem de sintaxe aqui (sem Unity/dotnet no ambiente); erros de compilação vêm do Console do dono.
 
 ## Pendências
 - Postar `notas/v5.md` no Discord: precisa de `discord.com` liberado na rede do ambiente e da credencial
   `DISCORD_WEBHOOK`; então `node tools/postar-discord.js notas/v5.md`.
 - Playtests com 4 pessoas antes de mais conteúdo.
+- Unity: confirmar que o importador compila e o jogador anda; depois portar as regras (`shared/sim.js` → C#).
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

@@ -10,18 +10,18 @@ esforço da engine nova no que o navegador não faz bem: modelos, animação, lu
 
 ## 1. Como o protótipo está organizado
 
-| Protótipo | Papel | Unreal 5 | Godot 4 |
-|---|---|---|---|
-| `shared/sim.js` `createGame`, `step`, `playStep` | estado e regra da partida, 30 passos por segundo | `AGameMode` (só no servidor) + `AGameState` replicado | nó autoritativo no servidor + `MultiplayerSynchronizer` |
-| `g.actors` / `makeActor` | jogador ou bot, com vida, sanidade, reagentes, recargas | `ACharacter` + `APlayerState` | `CharacterBody3D` + recurso de estado |
-| `useAbility`, `FEITICOS` | feitiços com recarga | Gameplay Ability System (uma `GameplayAbility` por feitiço, recarga como `GameplayEffect`) | nós de habilidade com `Timer` |
-| `traceShot` + `posAt` (volta no tempo até 0,5 s) | tiro instantâneo com compensação de atraso | line trace no servidor com rewind do histórico de posições | `PhysicsRayQueryParameters3D` + histórico próprio |
-| `castSigil`, `updateProjectiles` | sigilo dos Cultistas (projétil) | `AActor` com `UProjectileMovementComponent` | `Area3D`/`RigidBody3D` movido pelo servidor |
-| `contexts`, `holdStep`, `doAction` | "segure E para…": consagrar, iniciar, selar, purgar, reanimar, executar | componente de interação + barra de progresso replicada | `Area3D` + estado de interação |
-| `snapshot(g, role)` | o que cada equipe recebe | replicação por equipe: `IsNetRelevantFor` e condições de replicação por dono/equipe | filtros de visibilidade do `MultiplayerSynchronizer` por par |
-| `NAV`, `findPath`, `aEstrela` | navegação dos bots em grade de 2 m | NavMesh + `AAIController` com Behavior Tree ou StateTree | `NavigationRegion3D` + `NavigationAgent3D` |
-| `aiHunter`, `aiCult`, `botNoite` | cérebro dos bots | Behavior Tree/StateTree por papel | máquina de estados em script |
-| `client/index.html` | tudo que é visual e sonoro | Lumen, Niagara, MetaSounds, UMG | ambiente, partículas GPU, `AudioStreamPlayer3D`, UI em `Control` |
+| Protótipo | Papel | Unreal 5 | Godot 4 | Unity |
+|---|---|---|--- | --- |
+| `shared/sim.js` `createGame`, `step`, `playStep` | estado e regra da partida, 30 passos por segundo | `AGameMode` (só no servidor) + `AGameState` replicado | nó autoritativo no servidor + `MultiplayerSynchronizer` | `GameManager` só no servidor + estado replicado (Netcode for GameObjects: `NetworkBehaviour` e `NetworkVariable`) |
+| `g.actors` / `makeActor` | jogador ou bot, com vida, sanidade, reagentes, recargas | `ACharacter` + `APlayerState` | `CharacterBody3D` + recurso de estado | `CharacterController` + `NetworkObject` por jogador |
+| `useAbility`, `FEITICOS` | feitiços com recarga | Gameplay Ability System (uma `GameplayAbility` por feitiço, recarga como `GameplayEffect`) | nós de habilidade com `Timer` | `ScriptableObject` por feitiço (dados) + componente de habilidade com recarga |
+| `traceShot` + `posAt` (volta no tempo até 0,5 s) | tiro instantâneo com compensação de atraso | line trace no servidor com rewind do histórico de posições | `PhysicsRayQueryParameters3D` + histórico próprio | `Physics.Raycast` no servidor com histórico de posições para voltar no tempo |
+| `castSigil`, `updateProjectiles` | sigilo dos Cultistas (projétil) | `AActor` com `UProjectileMovementComponent` | `Area3D`/`RigidBody3D` movido pelo servidor | `Rigidbody` ou projétil movido pelo servidor (`NetworkTransform`) |
+| `contexts`, `holdStep`, `doAction` | "segure E para…": consagrar, iniciar, selar, purgar, reanimar, executar | componente de interação + barra de progresso replicada | `Area3D` + estado de interação | componente de interação com `Physics.OverlapSphere` + barra de progresso |
+| `snapshot(g, role)` | o que cada equipe recebe | replicação por equipe: `IsNetRelevantFor` e condições de replicação por dono/equipe | filtros de visibilidade do `MultiplayerSynchronizer` por par | `NetworkObject.CheckObjectVisibility` / `NetworkShow`-`NetworkHide` por cliente |
+| `NAV`, `findPath`, `aEstrela` | navegação dos bots em grade de 2 m | NavMesh + `AAIController` com Behavior Tree ou StateTree | `NavigationRegion3D` + `NavigationAgent3D` | NavMesh (pacote AI Navigation) + `NavMeshAgent` |
+| `aiHunter`, `aiCult`, `botNoite` | cérebro dos bots | Behavior Tree/StateTree por papel | máquina de estados em script | máquina de estados em C# (ou Behavior do Unity) |
+| `client/index.html` | tudo que é visual e sonoro | Lumen, Niagara, MetaSounds, UMG | ambiente, partículas GPU, `AudioStreamPlayer3D`, UI em `Control` | URP (celular) ou HDRP (PC), VFX Graph/partículas, `AudioSource` 3D, UI Toolkit ou uGUI |
 
 ## 2. A partida
 
@@ -121,8 +121,11 @@ meça com os bots e só então leve para a engine.
   O `tipo` diz qual peça de arte colocar ali (muro, coluna, espinheiro, lápide, menir, estátua...).
 - `arvores` (880, com raio de tronco igual ao da colisão), `vegetacaoRasteira` (só visual), `trilhas`,
   `clareiras`, `arcos`, `luzes`, `altares`, `spawns`, `reagentes`, `mercadores`, `pontosDeTarefa`, `portais`, `lugares`.
-- Metros; chão no plano x-z. **Unreal**: X = x·100, Y = z·100, Z = y·100 (a troca de eixos já converte a mão).
-  **Godot**: x, y, z direto.
+- Metros; chão no plano x-z. **Unity**: X = x, Y = y, **Z = −z** (o Unity usa mão esquerda; sem inverter o z o mapa
+  sai espelhado) e giros em y com sinal trocado. **Unreal**: X = x·100, Y = z·100, Z = y·100 (a troca de eixos já
+  converte a mão). **Godot**: x, y, z direto.
+- **Unity pronto**: `unity/Assets/RitualReversal` tem o importador (menu Ritual Reversal > Importar mapa) e um
+  jogador em primeira pessoa. Veja `unity/LEIAME.md`.
 - O mapa atual é o compacto de 2v2 (310 × 216 m). A planta original de 350 × 260 m, pensada para mais
   jogadores, volta com `HALF = HALF0` em `shared/sim.js` (e a exportação acompanha).
 
