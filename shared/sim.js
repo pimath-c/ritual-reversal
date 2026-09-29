@@ -1250,6 +1250,6 @@ function snapshot(g,role){
     scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT};
 }
 
-return {mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
+return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
   createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

@@ -124,8 +124,8 @@ meça com os bots e só então leve para a engine.
 - Metros; chão no plano x-z. **Unity**: X = x, Y = y, **Z = −z** (o Unity usa mão esquerda; sem inverter o z o mapa
   sai espelhado) e giros em y com sinal trocado. **Unreal**: X = x·100, Y = z·100, Z = y·100 (a troca de eixos já
   converte a mão). **Godot**: x, y, z direto.
-- **Unity pronto**: `unity/Assets/RitualReversal` tem o importador (menu Ritual Reversal > Importar mapa) e um
-  jogador em primeira pessoa. Veja `unity/LEIAME.md`.
+- **Unity pronto**: `unity/Assets/RitualReversal` tem o importador (menu Ritual Reversal > Importar mapa), o jogo
+  inteiro portado (`Scripts/Simulacao`) e uma partida local contra bots. Veja `unity/LEIAME.md`.
 - O mapa atual é o compacto de 2v2 (310 × 216 m). A planta original de 350 × 260 m, pensada para mais
   jogadores, volta com `HALF = HALF0` em `shared/sim.js` (e a exportação acompanha).
 
@@ -176,9 +176,21 @@ O protótipo é 2v2. Para 4v4 na engine nova:
 6. **Atmosfera**: catedral, floresta, névoa, luz, Grande Ritual (céu de sangue, vitrais, sino, coro e tambor que acelera).
 7. **Arte final** por cima do blockout, sem mudar a colisão.
 
+**Onde o porte para o Unity está** (passos 1, 2 e 4 feitos): a simulação inteira foi portada linha a linha para C#
+(`unity/Assets/RitualReversal/Scripts/Simulacao`), com os bots, a navegação e as fases, e o Unity já joga uma
+partida local contra bots (`PartidaLocal`, HUD em IMGUI). Faltam o `snapshot` e a rede (passo 3), som, sensação e arte.
+
 ## 10. Como saber que o porte está certo
 
-Os testes do protótipo viram critérios de aceite:
+O teste mais forte é o lado a lado: `node tools/comparar-cs.js [partidas] [semente] [passos] [bots|H|C]` roda as
+mesmas partidas no `sim.js` e no C#, com o mesmo sorteio (Mulberry32 nos dois), e compara o estado a cada passo,
+bit a bit: posições, vida, progresso, decisões dos bots, eventos e registro. Com `H` ou `C`, um jogador roteirizado
+cobre o código do humano (andar, atirar, segurar E/T, Q/F/G/R, feitiço, compras, escolhas de altar e classe).
+Para bater bit a bit, o C# usa o `Math.hypot` do V8 e o seno/cosseno/arco-tangente do fdlibm (`Trig.cs`): as
+funções do .NET arredondam diferente em 3% a 18% dos casos. Precisa do Mono (`apt-get install mono-mcs`).
+Qualquer mudança nas regras do `sim.js` precisa ir para o C#, e este teste mostra onde os dois se separam.
+
+Os testes do protótipo também viram critérios de aceite:
 
 - `tools/testar.js`: todo ponto importante do mapa é alcançável dos dois spawns (154 caminhadas); partidas
   inteiras de bots sem ninguém dentro de parede, fora do mapa ou com valores inválidos; o snapshot não vaza

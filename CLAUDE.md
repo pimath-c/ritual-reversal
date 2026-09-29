@@ -27,6 +27,7 @@ commits em português.
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador.js   # Chromium, 13 vistas, sem erros
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/celular.js     # celular emulado com toque
     node tools/build-mobile.js && NODE_PATH=$(npm root -g) node tools/app.js     # app sem internet + servidor
+    node tools/comparar-cs.js 2 1 40000 H   # porte C# (Unity) igual ao sim.js, bit a bit (precisa do Mono)
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v5.1a)
@@ -45,13 +46,17 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `atualizarGrande` no cliente, `grande` no snapshot do altar); um bot Cultista planta até dois Chamarizes.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também copia para `unity/Assets/RitualReversal/Dados/`).
-- Porte para o Unity (escolhido pelo dono): `unity/` tem o blockout do mapa (menu "Ritual Reversal > Importar mapa")
-  e um jogador em primeira pessoa; passo a passo em `unity/LEIAME.md`. Eixos: Unity (x, y, −z). O C# só teve
-  checagem de sintaxe aqui (sem Unity/dotnet no ambiente); erros de compilação vêm do Console do dono.
+- Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
+  `unity/Assets/RitualReversal`. `Scripts/Simulacao/` é o `sim.js` inteiro em C# puro (regras, bots, navegação),
+  conferido bit a bit contra o JS por `node tools/comparar-cs.js` (precisa de `apt-get install mono-mcs`).
+  `PartidaLocal/Visual/Hud.cs` jogam contra bots no Unity (IMGUI); o importador cria o objeto "Partida".
+  `Resources/simulacao.json` sai de `node tools/exportar-mapa.js`. Eixos: Unity (x, y, −z), giro −yaw.
+  Mudou regra no `sim.js`? Porte para o C# e rode o comparar-cs. Os scripts do Unity compilam aqui contra os
+  assemblies do NuGet `UnityEngine.Modules` 2021.3 (mcs com -r:), mas só o dono roda o Unity de verdade.
 
 ## Pendências
 - Postar `notas/v5.md` no Discord: precisa de `discord.com` liberado na rede do ambiente e da credencial
   `DISCORD_WEBHOOK`; então `node tools/postar-discord.js notas/v5.md`.
 - Playtests com 4 pessoas antes de mais conteúdo.
-- Unity: confirmar que o importador compila e o jogador anda; depois portar as regras (`shared/sim.js` → C#).
+- Unity: o dono testar a partida contra bots; depois som, snapshot/rede e arte (ordem em `docs/PORTE.md`).
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

@@ -1,5 +1,6 @@
 // Menu "Ritual Reversal > Importar mapa (blockout)": monta a planta do protótipo em caixas cinzas,
-// com a MESMA colisão de shared/sim.js, e põe um jogador em primeira pessoa no acampamento dos Caçadores.
+// com a MESMA colisão de shared/sim.js, põe um jogador em primeira pessoa no acampamento dos Caçadores
+// e um objeto "Partida" que joga a partida contra bots (PartidaLocal).
 // A arte entra depois, por cima das caixas; a colisão deve continuar igual.
 // Rodar de novo apaga o "Mapa Ritual Reversal" anterior e monta outro (Ctrl+Z desfaz).
 using System.Collections.Generic;
@@ -58,6 +59,8 @@ namespace RitualReversal.Ferramentas
                 Objetivos(M, Grupo(raiz, "Objetivos"));
                 Luzes(M, Grupo(raiz, "Luzes"));
                 Jogador(M, raiz);
+                // partida contra bots: roda a simulação portada (Scripts/Simulacao). Desative este objeto para só passear pelo mapa.
+                var partida = new GameObject("Partida"); partida.transform.SetParent(raiz.transform); partida.AddComponent<PartidaLocal>();
                 foreach (Transform t in estatico.GetComponentsInChildren<Transform>())
                     GameObjectUtility.SetStaticEditorFlags(t.gameObject, StaticEditorFlags.BatchingStatic);
             }
@@ -66,7 +69,7 @@ namespace RitualReversal.Ferramentas
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Selection.activeGameObject = raiz;
-            Debug.Log($"Ritual Reversal: {M.pecas.Length} peças, {M.arvores.Length} árvores, {M.altares.Length} altares. Aperte Play para andar.");
+            Debug.Log($"Ritual Reversal: {M.pecas.Length} peças, {M.arvores.Length} árvores, {M.altares.Length} altares. Aperte Play para jogar contra os bots (ou desative o objeto Partida para só andar pelo mapa).");
         }
 
         // ---------- partes do mapa ----------

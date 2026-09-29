@@ -31,7 +31,23 @@ const mapa={
   arvores:Sim.ARVORES.map(q=>({x:q.x,z:q.z,raio:q.r,tipo:['anciã','alta','morta'][q.tipo],escala:q.s,rot:q.rot})),
   vegetacaoRasteira:Sim.ARBUSTOS.map(q=>({x:q.x,z:q.z,escala:q.s,rot:q.rot,tipo:q.tipo?'moita':'samambaia'})),
 };
+// Dados da simulação para o porte em C# (Scripts/Simulacao): precisão total, na ordem exata de shared/sim.js,
+// porque a ordem das caixas decide como a colisão empurra os personagens. O C# refaz a navegação a partir daqui.
+const simulacao={
+  sobre:'Gerado por tools/exportar-mapa.js a partir de shared/sim.js. Lido por Scripts/Simulacao/Mapa.cs. Não edite à mão.',
+  half:Sim.HALF, catedral:Sim.CATEDRAL, claustro:Sim.CLAUSTRO,
+  caixas:Sim.BOX.map(b=>[b.x1,b.x2,b.z1,b.z2,b.h,b.tall?1:0]),
+  altares:Sim.ALTARS.map(A=>({nome:A.name,x:A.x,z:A.z})),
+  spawns:Sim.SPAWN, reagentes:Sim.REAG, portas:Sim.PORTAS.map(p=>[p.x,p.z]), portais:Sim.PORTAIS,
+  pista:Sim.PISTA_PTS, erva:Sim.ERVA_PTS, sentinela:Sim.SENTINELA_PTS, pontos:Sim.PONTOS_DEF,
+  mercadores:Sim.NPCS.map(n=>({id:n.id,nome:n.nome,x:n.x,z:n.z,time:n.time,vende:n.vende})),
+  luzes:Sim.CANDLES.map(c=>[c[0],c[1]]), clareiras:Sim.CLAREIRAS.map(c=>[c.x,c.z,c.r]),
+  trilhas:Sim.SEG_TRILHA.map(s=>[s.ax,s.az,s.bx,s.bz,s.w,s.estreita?1:0]),
+  conferencia:{nos:Sim.WP.length,arestas:Sim.WP.reduce((s,w)=>s+w.n.length,0),principal:Sim.NAV.principal},
+};
+const SIM_UNITY=path.join(__dirname,'..','unity','Assets','RitualReversal','Resources','simulacao.json');
 fs.mkdirSync(path.dirname(out),{recursive:true}); fs.writeFileSync(out,JSON.stringify(mapa));
-if(!process.argv[2]){ fs.mkdirSync(path.dirname(UNITY),{recursive:true}); fs.writeFileSync(UNITY,JSON.stringify(mapa)); }
+if(!process.argv[2]){ fs.mkdirSync(path.dirname(UNITY),{recursive:true}); fs.writeFileSync(UNITY,JSON.stringify(mapa));
+  fs.mkdirSync(path.dirname(SIM_UNITY),{recursive:true}); fs.writeFileSync(SIM_UNITY,JSON.stringify(simulacao)); }
 const cont=Object.fromEntries(Object.entries(mapa).filter(([k,v])=>Array.isArray(v)).map(([k,v])=>[k,v.length]));
 console.log('exportado',out,(fs.statSync(out).size/1024).toFixed(0)+' KB',JSON.stringify(cont));
