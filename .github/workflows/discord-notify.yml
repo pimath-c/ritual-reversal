@@ -1,0 +1,31 @@
+name: Discord notifications
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened, closed, ready_for_review]
+  issues:
+    types: [opened, reopened, closed]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      message:
+        description: Message to send to Discord
+        required: false
+        default: Discord notifications are working.
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: .github/scripts/discord-notify.sh
