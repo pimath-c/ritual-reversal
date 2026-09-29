@@ -5,6 +5,12 @@
         "source": "github",
         "repo": "sponticelli/gamedev-claude-plugins"
       }
+    },
+    "unity-agent-plugin": {
+      "source": {
+        "source": "github",
+        "repo": "Unity-Technologies/unity-agent-plugin"
+      }
     }
   },
   "enabledPlugins": {
@@ -31,6 +37,7 @@
     "certification@gamedev-claude-plugins": true,
     "user-research@gamedev-claude-plugins": true,
     "social-systems@gamedev-claude-plugins": true,
-    "web-games@gamedev-claude-plugins": true
+    "web-games@gamedev-claude-plugins": true,
+    "unity@unity-agent-plugin": true
   }
 }
