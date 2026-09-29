@@ -1716,6 +1716,7 @@ function interpActors(){
   let a=S[0],b=S[S.length-1]; for(let i=S.length-1;i>0;i--){ if(S[i-1].t<=T){ a=S[i-1]; b=S[i]; break; } }
   const k=clamp((T-a.t)/Math.max(1e-3,b.t-a.t),0,1.2);
   for(const act of V.actors){ if(act.cid===meCid) continue; const pa=a.actors.find(x=>x.id===act.id), pb=b.actors.find(x=>x.id===act.id); if(!pa||!pb) continue;
+    if(pb.hidden) continue; if(pa.hidden){ act._rx=pb.x; act._rz=pb.z; act._ryaw=pb.yaw; continue; } // reapareceu: surge no lugar, sem deslizar desde a origem
     act._rx=lerp(pa.x,pb.x,k); act._rz=lerp(pa.z,pb.z,k); let dy=pb.yaw-pa.yaw; dy=((dy+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; act._ryaw=pa.yaw+dy*Math.min(1,k); }
 }
 
@@ -1801,7 +1802,8 @@ function syncRastros(){
 function syncActors(dt){
   const seen=new Set(), now=performance.now();
   for(const a of V.actors){ if(a.cid===meCid) continue; seen.add(a.id);
-    let m=actorMeshes.get(a.id); if(!m){ m=makeCharacter(a.team,a.cls); actorMeshes.set(a.id,m); }
+    let m=actorMeshes.get(a.id); if(a.hidden){ if(m) m.visible=false; continue; } // fora de vista: guarda o boneco escondido em vez de recriar
+    if(!m){ m=makeCharacter(a.team,a.cls); actorMeshes.set(a.id,m); }
     const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z, yaw=a._ryaw!=null?a._ryaw:a.yaw;
     animateActor(m,a,x,z,yaw,dt||.016,now);
     // Véu: silhueta escura e translúcida. Some quase por completo de longe; de perto ou sob a lanterna dá para ver o vulto.
@@ -1960,7 +1962,7 @@ function atualizarMarcas(m){
   for(const el of marcas.values()) el._vivo=false;
   if(m&&V.phase==='play'){
     const role=myRole(), cx=camera.position.x, cz=camera.position.z, dm=(x,z)=>Math.round(Math.hypot(x-cx,z-cz));
-    for(const a of V.actors){ if(a.cid===meCid||a.team!==m.team||a.st==='dead') continue;
+    for(const a of V.actors){ if(a.cid===meCid||a.hidden||a.team!==m.team||a.st==='dead') continue;
       const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z;
       if(a.st==='down') marcador('a'+a.id,x,1.1,z,`${esc(a.name)}<small>caído, ${dm(x,z)} m</small><b></b>`,'caido',true);
       else marcador('a'+a.id,x,2.35,z,`${esc(a.name)}<b></b>`,m.team==='C'?'cult':'',false); }
@@ -2182,13 +2184,13 @@ function comoJogarScreen(){
         ${passo(1,'Crepúsculo: prepare-se',`Colha ervas na floresta e profane túmulos no cemitério, a sudeste. Tarefas rendem óbolos; negocie reagentes com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro.`)}
         ${passo(2,'Consagre em silêncio',`Você escolheu 3 de 6 altares. Consagrar gasta 1 reagente. Cuidado com as sentinelas acesas: elas denunciam você.`)}
         ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
-        ${passo(4,'Hora Morta: o Grande Ritual',`O terceiro ritual só começa agora, e a catedral inteira ouve. Complete três rituais antes do amanhecer.`)}
+        ${passo(4,'Hora Morta: o Grande Ritual',`Se estiver 1 a 1, o ritual decisivo só começa agora, e a catedral inteira ouve. Vença dois dos três antes do amanhecer.`)}
       </div>
       <div><h3 style="color:var(--gold)">Como Caçador</h3>
         ${passo(1,'Crepúsculo: prepare-se',`Cada sinal lido num santuário descarta um altar que o culto não escolheu. Acenda sentinelas e negocie munição, óleo e sinalizadores com o Ermitão, na cabana perto do acampamento.`)}
         ${passo(2,'Investigue',`${kb('sensor')} lê sinais por perto, o EVP sussurra junto de altares consagrados, e a Lanterna (${kb('lantern')}) mostra resíduo só nos verdadeiros.`)}
         ${passo(3,'Vigília: purgue e sele',`Segure ${kb('use')} num altar consagrado para purgar. No Presságio, corra ao círculo e sele em dupla. Marcas de arrasto num altar denunciam uma Transferência.`)}
-        ${passo(4,'Resista até o amanhecer',`Cada ritual selado força os Cultistas a recomeçar em outro altar. Se não houver três Fendas ao amanhecer, vocês vencem.`)}
+        ${passo(4,'Resista até o amanhecer',`Cada ritual selado força os Cultistas a recomeçar em outro altar. Selem dois dos três rituais, ou resistam até o amanhecer.`)}
       </div></div>
     <p class="fine">Caído, um aliado pode te reanimar. O inimigo pode te executar. O som diz muito: use fones.</p>
     <div class="btnrow"><button class="go" id="bComoOk">Entendi</button></div>`,()=>{ $('#bComoOk').onclick=()=>{ comoJogarAberto=false; screenKey=''; }; });

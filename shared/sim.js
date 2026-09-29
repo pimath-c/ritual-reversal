@@ -11,13 +11,14 @@ const r2=v=>Math.round(v*100)/100;
 // ============ CONFIG (v2 escalada para 104 × 72 m e 2v2) ============
 const CFG={
   roundTime:1080, noites:1, obolosInicio:3, respawnMomento:[8,14,22],
+  formatoNoite:'placar', // 'placar': a noite sempre passa pelos três momentos; 'melhorDeTres': um 2 a 0 encerra a noite
   momentos:[{id:'crepusculo',nome:'Crepúsculo',ate:180},{id:'vigilia',nome:'Vigília',ate:600},{id:'horamorta',nome:'Hora Morta',ate:1080}],
-  rit:{1:{dur:45,rad:14,loc:0.5},2:{dur:34,rad:24,loc:0.3}},
+  rit:{1:{dur:45,rad:14,loc:0.55},2:{dur:34,rad:24,loc:0.5}},
   circleR:3, seal:8, sealExo:6.5, coSeal:1.35, fire1:0.7, fire2:0.45, sealMin:5, cps:[0.25,0.75],
   carry:2, collect:3.5, consecrate:3, start:1.2, purge:6, burn:6, decoy:2, transfer:12, revive:5, execute:4.5, downTime:20,
-  sigilDano:20, sigilVel:48, sigilCusto:14, fervorRegen:8, fervorEspera:1.8, quedaDano:16, quedaPerto:26, quedaLonge:55, quedaMin:.75,
+  sigilDano:17, sigilVel:48, sigilCusto:14, fervorRegen:8, fervorEspera:1.8, quedaDano:14, quedaPerto:26, quedaLonge:55, quedaMin:.75,
   compensacaoMax:.5, // quanto o servidor volta no tempo para julgar um tiro: ida e volta + 100 ms de interpolação, com folga
-  regrow:40, sensorRaio:58, pegadaVida:20, nevoaAlcance:26, respawn:[10,3,18], speed:4.6, sprint:6, botSpeed:3.9, spawnSafe:7,
+  regrow:40, sensorRaio:58, pegadaVida:20, visaoRede:75, /* além de ~75 m a névoa apaga qualquer vulto */ nevoaAlcance:26, respawn:[10,3,18], speed:4.6, sprint:6, botSpeed:3.9, spawnSafe:7,
   timers:{pick:35,intro:25,summary:15},
 };
 const CLASSES={
@@ -541,10 +542,19 @@ const TAREFAS=[
    C:[{id:'ervas',nome:'Colha ervas-noturnas na floresta',meta:4,rec:3},{id:'tumulos',nome:'Profane túmulos no cemitério: cada um rende um reagente',meta:2,rec:3}]},
   {H:[{id:'purgar',nome:'Purgue um altar consagrado',meta:1,rec:4},{id:'selar',nome:'Entre num círculo e comece a selar',meta:1,rec:5}],
    C:[{id:'consagrar',nome:'Consagre altares',meta:2,rec:4},{id:'ritual',nome:'Complete um ritual',meta:1,rec:5}]},
-  {H:[{id:'final',nome:'Impeça o terceiro ritual até o amanhecer',meta:0,rec:0}],
-   C:[{id:'final',nome:'Complete três rituais antes do amanhecer',meta:0,rec:0}]}];
+  {H:[{id:'final',nome:'Sele dois dos três rituais ou resista até o amanhecer',meta:0,rec:0}],
+   C:[{id:'final',nome:'Vença dois dos três rituais antes do amanhecer',meta:0,rec:0}]}];
 const momentoDe=rt=>{ const M=CFG.momentos; for(let i=0;i<M.length;i++) if(rt<M[i].ate) return i; return M.length-1; };
 const fendas=g=>g.altars.filter(A=>A.state==='fenda').length;
+const farois=g=>g.altars.filter(A=>A.state==='farol').length;
+// Três rituais por noite, no máximo, e um de cada vez. Devolve o motivo do bloqueio, ou null se pode começar.
+function bloqueioRitual(g){
+  if(g.altars.some(A=>A.state==='active')) return 'Já há um ritual em andamento';
+  const r=fendas(g)+farois(g);
+  if(r>=3) return 'Os três rituais desta noite já aconteceram';
+  if(g.momento<1) return 'Este altar só desperta na Vigília';
+  if(r>=2&&g.momento<2) return 'O último ritual só pode começar na Hora Morta';
+  return null; }
 function prepararNoite(g){
   const pistas=PONTOS_DEF.pista.slice().sort(()=>Math.random()-.5).slice(0,3);
   g.pontos=[...pistas.map(p=>({tipo:'pista',x:p.x,z:p.z,ativo:true})),
@@ -740,7 +750,7 @@ const inCircle=(a,A)=>Math.hypot(a.x-A.x,a.z-A.z)<=CFG.circleR;
 function contexts(g,a){
   const out={e:null,t:null,info:null};
   if(!a||a.st!=='alive') return out;
-  for(const b of g.actors){ if(b===a||b.st!=='down'||dist(a,b)>1.8) continue;
+  for(const b of g.actors){ if(b===a||b.hidden||b.st!=='down'||dist(a,b)>1.8) continue;
     out.e=b.team===a.team?{key:'rev'+b.id,type:'revive',b:b.id,label:`Segure E para reanimar ${b.name}`,time:CFG.revive}:{key:'exe'+b.id,type:'execute',b:b.id,label:`Segure E para executar ${b.name}`,time:CFG.execute};
     return out; }
   for(const n of NPCS){ if(dist(a,n)>2.6) continue; if(n.time&&n.time!==a.team){ out.info=`${n.nome[0].toUpperCase()+n.nome.slice(1)} não negocia com você`; return out; }
@@ -760,8 +770,7 @@ function contexts(g,a){
       if(A.state==='active'&&inCircle(a,A)){ out.info=A.chosen?'Canalizando o ritual':''; return out; }
       if(d>=3.4) continue;
       if(A.chosen&&A.state==='dormant'){ if(a.reag>0) out.e={key:'cons'+A.i,type:'consecrate',A:A.i,label:'Segure E para consagrar',time:CFG.consecrate}; else out.info='Você precisa de 1 reagente'; return out; }
-      if(A.chosen&&A.state==='awake'&&!A.decoy&&g.momento<1){ out.info='Este altar só desperta na Vigília'; return out; }
-      if(A.chosen&&A.state==='awake'&&!A.decoy&&g.momento<2&&fendas(g)>=2){ out.info='O último ritual só pode começar na Hora Morta'; return out; }
+      if(A.chosen&&A.state==='awake'&&!A.decoy){ const bl=bloqueioRitual(g); if(bl){ out.info=bl; return out; } }
       if(A.chosen&&A.state==='awake'&&!A.decoy){ if(a.reag>0||CFG.iniciarDeGraca) out.e={key:'start'+A.i,type:'start',A:A.i,label:'Segure E para iniciar o ritual',time:CFG.start}; else out.info='Você precisa de 1 reagente'; return out; }
       if(!A.chosen&&A.state==='dormant'){
         if(g.decoys>0) out.e={key:'dec'+A.i,type:'decoy',A:A.i,label:`Segure E para plantar um Chamariz (${g.decoys})`,time:CFG.decoy};
@@ -851,7 +860,7 @@ function humanActions(g,a,dt){
 // ============ ALTARES ============
 function mareFactor(g){ return 1+Math.min(.2,Math.floor((g.rt-g.lastResolveT)/60)*.05); }
 function startRitual(g,A,by){
-  A.state='active'; A.startT=g.rt; A.localized=false; A.selo=1; A.arrived=false; A.maxN=0; A.tardio=g.momento>=2; A.grande=fendas(g)>=2;
+  A.state='active'; A.startT=g.rt; A.localized=false; A.selo=1; A.arrived=false; A.maxN=0; A.tardio=g.momento>=2; A.grande=fendas(g)+farois(g)>=2;
   if(g.buff.selo>g.t){ A.selo=1.1; g.buff.selo=0; feed(g,'Selo de Luz corrompido: este ritual corre 10% mais rápido.','c','C'); }
   const n=g.actors.filter(c=>c.team==='C'&&c.st==='alive'&&inCircle(c,A)).length;
   sentinelaAvisa(g,A,'um ritual começou');
@@ -870,8 +879,8 @@ function resolveAltar(g,A,kind){
   if(kind==='fenda'){ A.doneT=r2(g.rt); ev(g,{type:'doom'}); feed(g,`Ritual completo em ${A.name}. Uma Fenda se abriu.`,'big c'); logE(g,'ritual_complete',{altar:A.name,canalizadores:A.maxN||1}); }
   else { ev(g,{type:'sealed'}); g.buff.ess=0; feed(g,`${A.name} foi selado. Um Farol se acendeu.`,'big h'); logE(g,'sealed',{altar:A.name,prog:r2(A.prog),canalizadores:A.maxN||1}); }
   if(kind==='fenda') tarefaProg(g,'C','ritual');
-  if(g.altars.filter(B=>B.state==='fenda').length>=3) g.endAt=g.rt+3;
-  else if(kind==='farol'){ A.chosen=false; g.realocar.push(g.rt+40); }
+  const F=fendas(g), P=farois(g);
+  if(F+P>=3||(CFG.formatoNoite!=='placar'&&(F>=2||P>=2))) g.endAt=g.rt+3;
 }
 function updateAltars(g,dt){
   for(const A of g.altars){
@@ -1088,9 +1097,22 @@ function aiCult(g,b,dt){
   const T=rem[0]; if(ai.esperaAltar!==T.i){ ai.esperaAltar=T.i; ai.wait=0; }
   if(!ai.decoyUsed&&g.decoys>0&&g.rt>25){ const D=g.altars.filter(A=>!A.chosen&&A.state==='dormant').sort((x,y)=>dist(b,x)-dist(b,y))[0];
     if(D){ if(dist(b,D)<3.3){ b.moving=false; botHold(g,b,'dec'+D.i,CFG.decoy,dt,{type:'decoy',A:D.i}); if(D.state==='awake') ai.decoyUsed=true; return; }
-      if(dist(b,D)<70){ const sd=circleSpot(D,b); setGoal(g,b,sd.x,sd.z,'dg'+D.i); botMove(g,b,dt,1);
-        ai.decoyT=(ai.decoyT||0)+dt; if(ai.decoyT>15) ai.decoyUsed=true; // não conseguiu encostar: desiste e volta ao ritual
+      if(dist(b,D)<130){ const sd=circleSpot(D,b); setGoal(g,b,sd.x,sd.z,'dg'+D.i); botMove(g,b,dt,1);
+        ai.decoyT=(ai.decoyT||0)+dt; if(ai.decoyT>35) ai.decoyUsed=true; // se a rota for ruim, abandona sem ficar preso
         return; } } }
+  // A Transferência não é gratuita nem automática: o bot só a usa quando o altar escolhido já foi
+  // descoberto pelos Caçadores (ou quando a noite já está avançada). Isso testa a mecânica de dedução
+  // sem dar ao bot uma decisão onisciente em toda partida.
+  if(!g.transferUsed&&b.reag>0&&g.rt>120){
+    const F=g.altars.find(A=>A.chosen&&A.state==='dormant');
+    const D=g.altars.filter(A=>!A.chosen&&A.state==='dormant').sort((x,y)=>dist(b,x)-dist(b,y))[0];
+    const descoberta=F&&(g.know[F.i]==='desperto'||g.know[F.i]==='confirmado'||g.know[F.i]==='chamariz');
+    const emergencia=F&&g.rt>420;
+    if(F&&D&&(descoberta||emergencia)){
+      if(dist(b,D)<3.4){ b.moving=false; botHold(g,b,'tr'+D.i,CFG.transfer,dt,{type:'transfer',A:D.i,from:F.i}); return; }
+      const sd=circleSpot(D,b); setGoal(g,b,sd.x,sd.z,'trg'+D.i); botMove(g,b,dt,1.02); return;
+    }
+  }
   const partner=g.actors.some(c=>c!==b&&c.team==='C'&&c.st==='alive'&&c.reag>0&&!c.human);
   const want=b.reag===0||(b.reag<CFG.carry&&(!partner||T.state==='dormant'));
   if(want){
@@ -1106,7 +1128,7 @@ function aiCult(g,b,dt){
   if(b.reag>0){ const s=circleSpot(T,b);
     if(dist(b,T)<3.3){ b.moving=false; ai.emperrado=0;
       if(T.state==='dormant') botHold(g,b,'cons'+T.i,CFG.consecrate,dt,{type:'consecrate',A:T.i});
-      else if(T.state==='awake'&&!T.decoy&&(g.momento<1||(g.momento<2&&fendas(g)>=2))){ b.moving=false; ai.esperando=g.t; }
+      else if(T.state==='awake'&&!T.decoy&&bloqueioRitual(g)){ b.moving=false; ai.esperando=g.t; }
       else if(T.state==='awake'&&!T.decoy){ const mate=g.actors.find(c=>c!==b&&c.team==='C'&&c.st==='alive'); const near=mate&&dist(mate,T)<8;
         ai.wait+=dt; if(near||ai.wait>6||!mate||b.hold.key==='start'+T.i) botHold(g,b,'start'+T.i,CFG.start,dt,{type:'start',A:T.i}); } // uma vez decidido, segura até o fim
       return; }
@@ -1178,7 +1200,7 @@ function roundStats(g,round){
     quedas:c('down').length,mortes:c('death').length,reanimacoes:c('revive').length,purgas:c('purge').length,chamarizes:c('decoy').length,transferencias:c('transfer').length};
 }
 function winner(g){
-  if(!((g.opts&&g.opts.noites||CFG.noites)>1)){ const S=g.scores.B; if(!S) return null; return S.done>=3?{win:'B',why:'os Cultistas completaram três rituais antes do amanhecer'}:{win:'A',why:'os Caçadores resistiram até o amanhecer'}; }
+  if(!((g.opts&&g.opts.noites||CFG.noites)>1)){ const S=g.scores.B; if(!S) return null; return S.done>=2?{win:'B',why:'os Cultistas venceram dois dos três rituais'}:{win:'A',why:(S.sealed||0)>=2?'os Caçadores selaram dois dos três rituais':'os Caçadores resistiram até o amanhecer'}; }
   const A=g.scores.A,B=g.scores.B; if(!A||!B) return null;
   if(A.done!==B.done) return {win:A.done>B.done?'A':'B',why:'mais rituais completados'};
   if(A.done>0&&A.lastT!==B.lastT) return {win:A.lastT<B.lastT?'A':'B',why:'desempate: completou o último ritual mais cedo'};
@@ -1196,7 +1218,20 @@ function snapshot(g,role){
     altars:g.altars.map(A=>{ const masked=hide&&A.state==='awake'&&(g.know[A.i]==='?'||g.know[A.i]==='limpo');
       return {i:A.i,name:A.name,x:A.x,z:A.z,state:masked?'dormant':A.state,chosen:hide?false:A.chosen,decoy:hide?false:A.decoy,prog:r2(A.prog),cp:A.cp,seal:r2(A.seal),localized:A.localized,lastN:A.lastN,maxProg:r2(A.maxProg),doneT:A.doneT}; }),
     reagents:g.reagents.map(R=>({i:R.i,x:R.x,z:R.z,has:R.has})),
-    actors:g.actors.map(a=>{ const o={}; ACT_FIELDS.forEach(k=>o[k]=a[k]); ACT_NUM.forEach(k=>o[k]=r2(a[k])); o.hold={key:a.hold.key,t:r2(a.hold.t),max:a.hold.max}; return o; }),
+    actors:g.actors.map(a=>{
+      const o={}; ACT_FIELDS.forEach(k=>o[k]=a[k]); ACT_NUM.forEach(k=>o[k]=r2(a[k])); o.hold={key:a.hold.key,t:r2(a.hold.t),max:a.hold.max};
+      // Não vazar posições de inimigos pelo snapshot. O cliente só recebe a posição quando alguém da equipe
+      // observadora tem linha de visão até ele (paredes, árvores e espinheiros cortam) dentro do alcance em que a
+      // névoa ainda deixa ver, ou quando o Sal o revelou. Depois de visto, continua sendo enviado por 0,6 s:
+      // evita que ele pisque ao cruzar a quina de uma coluna.
+      if(a.team!==role&&a.st!=='dead'){
+        const obs=g.actors.filter(h=>h.team===role&&h.human&&h.st!=='dead');
+        const agora=a.revelT>0||obs.some(h=>dist(h,a)<=CFG.visaoRede&&losClear(h,a));
+        const V=a._visto||(a._visto={}); if(agora) V[role]=g.t+.6;
+        if(!(V[role]>g.t)){ o.hidden=true; o.x=0; o.z=0; o.yaw=0; o.pitch=0; }
+      }
+      return o;
+    }),
     proj:g.proj.map(p=>({id:p.id,x:r2(p.x),y:r2(p.y),z:r2(p.z),vx:r2(p.vx),vy:r2(p.vy),vz:r2(p.vz)})),
     pickups:g.pickups.map(p=>({id:p.id,kind:p.kind,x:p.x,z:p.z})),
     flares:g.flares.map(f=>({x:f.x,z:f.z,t:r2(f.t)})),

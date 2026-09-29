@@ -1,4 +1,4 @@
-# Ritual Reversal — protótipo v3 (multiplayer)
+# Ritual Reversal — protótipo v5.1a (multiplayer)
 
 Terror competitivo 2v2 com troca de lados. O servidor é autoritativo: as regras rodam nele (`shared/sim.js`),
 e o navegador só desenha e envia comandos. O mesmo `sim.js` roda no modo solo, então as regras são idênticas.

@@ -29,12 +29,17 @@ commits em português.
     node tools/build-mobile.js && NODE_PATH=$(npm root -g) node tools/app.js     # app sem internet + servidor
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5)
+## Estado atual (v5.1a)
 - Números: selar sob fogo 70%/45%, executar 4,5 s, reanimar 5 s, momentos 3:00 / 10:00 / 18:00.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
 - Qualidade Alto/Médio/Baixo/Mínimo, resolução adaptativa, controles de toque, app Android.
-- Equilíbrio entre bots: Cultistas vencem cerca de 83% (limitação da IA dos bots; falta playtest com pessoas).
+- Rituais (v5.1): no máximo 3 por noite, um de cada vez, sem altar substituto; Cultistas vencem com 2 Fendas. `CFG.formatoNoite`: 'placar' (padrão, a noite sempre chega à Hora Morta) ou 'melhorDeTres' (2 a 0 encerra). A regra de início fica em `bloqueioRitual(g)`, usada pelo jogador e pelos bots.
+- v5.1a: localização mais tardia (0,55/0,5), dano base menor, bots usam Transferência; snapshots escondem inimigos
+  sem linha de visão (`CFG.visaoRede` 75 m, 0,6 s de tolerância; o cliente guarda o boneco invisível e não interpola
+  desde a origem). O teste 3 de `tools/testar.js` confere isso.
+- Equilíbrio entre bots (v5.1a, 30 partidas): Cultistas vencem 77%; Chamariz quase nunca é usado pelos bots.
+  Falta playtest com pessoas.
 
 ## Pendências
 - Postar `notas/v5.md` no Discord: precisa de `discord.com` liberado na rede do ambiente e da credencial

@@ -46,7 +46,22 @@ let maxT=0, somaT=0, nCam=0; const tc=Date.now();
 for(const lado of ['H','C']) for(const a of alvos){ const t=caminhar(Sim.SPAWN[lado],a); if(t<0) falha(`${lado} não chega em ${a.nome} (${a.x},${a.z})`); else { maxT=Math.max(maxT,t); somaT+=t; nCam++; } }
 console.log(`   ${nCam} caminhadas ok; média ${(somaT/Math.max(1,nCam)).toFixed(1)} s, mais longa ${maxT.toFixed(1)} s; planejamento ${(Date.now()-tc)} ms no total`);
 
-console.log(`3. ${N} partidas só de bots com invariantes`);
+// 3. O snapshot não entrega a posição de inimigos que ninguém da equipe está vendo
+console.log('3. Visibilidade no snapshot');
+{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'vis'});
+  for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+  const h=g.actors.find(a=>a.team==='H'), outroH=g.actors.find(a=>a.team==='H'&&a!==h), c=g.actors.find(a=>a.team==='C'), c2=g.actors.find(a=>a.team==='C'&&a!==c);
+  h.human=true; outroH.st='dead'; c2.x=140; c2.z=90; // o segundo Cultista fica longe, fora de qualquer vista
+  const ver=(x,z,cx,cz)=>{ h.x=x; h.z=z; c.x=cx; c.z=cz; c.revelT=0; g.t+=1; const s=Sim.snapshot(g,'H').actors.find(a=>a.id===c.id); return !s.hidden&&Math.abs(s.x-cx)<.01; };
+  if(!ver(-20,0,-10,0)) falha('inimigo a 10 m em campo aberto no Claustro deveria aparecer');
+  if(!ver(-40,0,20,0)) falha('inimigo a 60 m em campo aberto no Claustro deveria aparecer');
+  if(ver(-40,0,-40,-45)) falha('inimigo atrás da parede da Capela Oeste não deveria aparecer');
+  if(ver(0,0,0,100)) falha('inimigo a 100 m não deveria aparecer');
+  const s2=Sim.snapshot(g,'H').actors.find(a=>a.id===c2.id); if(!s2.hidden||s2.x!==0) falha('inimigo longe vazou a posição');
+  if(Sim.snapshot(g,'C').actors.find(a=>a.id===c.id).hidden) falha('aliado nunca deveria ser escondido');
+  c.revelT=3; h.x=0; h.z=0; c.x=0; c.z=100; if(Sim.snapshot(g,'H').actors.find(a=>a.id===c.id).hidden) falha('Sal deveria revelar a posição');
+  console.log('   inimigos só aparecem com linha de visão até 75 m (ou revelados pelo Sal)'); }
+console.log(`4. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};
 for(let m=0;m<N;m++){
