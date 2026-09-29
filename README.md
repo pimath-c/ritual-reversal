@@ -107,6 +107,12 @@ Outros comandos:
 Para publicar na Play Store falta gerar um APK/AAB assinado (`./gradlew bundleRelease` com uma chave própria) e
 criar a conta de desenvolvedor.
 
+## Levar para outra engine
+
+`docs/PORTE.md` descreve regras, números, o modelo de conhecimento de cada equipe, rede, bots e a ordem sugerida
+para refazer o jogo em Unreal ou Godot, usando `shared/sim.js` como especificação. `docs/mapa.json` tem a planta
+inteira em metros (gere de novo com `node tools/exportar-mapa.js` depois de mexer no mapa).
+
 ## Ajustes
 
 Botão "Ajustes" no menu inicial e na tela de pausa: sensibilidade, volume, campo de visão, qualidade,

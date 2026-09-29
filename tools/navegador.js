@@ -58,6 +58,15 @@ const VISTAS=[
     g.rastros.push({de:1,para:0,x:-12,z:3,t:g.rt,visto:true,lido:true});
     const c=g.actors.find(a=>a.team==='C'); c.x=-14; c.z=-2; c.veuT=30; c.invuln=99; });
   await page.waitForTimeout(1200); await page.screenshot({path:path.join(OUT,'rastreador-veu.png')});
+  // Grande Ritual na Abside, visto do Claustro: céu e lua de sangue, vitrais acesos, feixe largo sobre o altar
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), A=g.altars[1]; window.__antes={...A};
+    Object.assign(A,{state:'active',grande:true,localized:true,prog:.4}); g.events.push({type:'grande',altar:1});
+    m.x=-6; m.z=-12; m.cls='soldado'; __T.LOOK.yaw=0; __T.LOOK.pitch=.3; m.inp.yaw=0; m.inp.pitch=.3; for(const a of g.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=0; } });
+  await page.waitForTimeout(6000); await page.screenshot({path:path.join(OUT,'grande-ritual.png')});
+  const gr=await page.evaluate(()=>({corpo:document.body.classList.contains('grande'),relogio:document.querySelector('#roundName').textContent}));
+  console.log('grande ritual:',JSON.stringify(gr)); if(!gr.corpo) erros.push('Grande Ritual não mudou a interface');
+  await page.evaluate(()=>{ Object.assign(__T.game.altars[1],window.__antes); });
+  await page.waitForTimeout(600);
   await page.keyboard.down('Tab'); await page.waitForTimeout(600); await page.screenshot({path:path.join(OUT,'planta.png')}); await page.keyboard.up('Tab');
   // partida acelerada: despausa, avança a simulação em blocos de 30 s e deixa o cliente desenhar e tratar os eventos entre eles
   await page.evaluate(()=>{ const b=document.querySelector('#bRes'); if(b) b.click(); const m=__T.game.actors.find(a=>a.cid==='local'); m.x=-120; m.z=0; m.invuln=0; });

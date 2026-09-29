@@ -1095,11 +1095,20 @@ function aiCult(g,b,dt){
     b.moving=false; ai.esperando=g.t; return; }
   rem.sort((x,y)=>((y.state==='awake'&&!y.decoy)?1:0)-((x.state==='awake'&&!x.decoy)?1:0)||dist(b,x)-dist(b,y));
   const T=rem[0]; if(ai.esperaAltar!==T.i){ ai.esperaAltar=T.i; ai.wait=0; }
-  if(!ai.decoyUsed&&g.decoys>0&&g.rt>25){ const D=g.altars.filter(A=>!A.chosen&&A.state==='dormant').sort((x,y)=>dist(b,x)-dist(b,y))[0];
-    if(D){ if(dist(b,D)<3.3){ b.moving=false; botHold(g,b,'dec'+D.i,CFG.decoy,dt,{type:'decoy',A:D.i}); if(D.state==='awake') ai.decoyUsed=true; return; }
-      if(dist(b,D)<130){ const sd=circleSpot(D,b); setGoal(g,b,sd.x,sd.z,'dg'+D.i); botMove(g,b,dt,1);
-        ai.decoyT=(ai.decoyT||0)+dt; if(ai.decoyT>35) ai.decoyUsed=true; // se a rota for ruim, abandona sem ficar preso
-        return; } } }
+  // Chamariz: só um bot da equipe cuida disso (o outro segue o ritual). O primeiro sai no Crepúsculo;
+  // o segundo, se sobrar cinza, depois que um ritual se resolver. O prazo para chegar cresce com a distância.
+  const dono=g.actors.filter(c=>c.team==='C'&&!c.human&&c.st!=='dead').sort((x,y)=>x.id-y.id)[0];
+  const querChamariz=dono===b&&!ai.decoyUsed&&g.decoys>0&&g.rt>25&&(!ai.chamarizes||(g.lastResolveT>(ai.chamarizT||0)&&g.rt-(ai.chamarizT||0)>90));
+  if(querChamariz){
+    if(ai.decoyAlvo==null||g.altars[ai.decoyAlvo].chosen||g.altars[ai.decoyAlvo].state!=='dormant'){
+      const D=g.altars.filter(A=>!A.chosen&&A.state==='dormant').sort((x,y)=>dist(b,x)-dist(b,y))[0];
+      ai.decoyAlvo=D?D.i:null; ai.decoyT=0; ai.decoyPrazo=D?20+dist(b,D)/2.2:0; }
+    const D=ai.decoyAlvo!=null?g.altars[ai.decoyAlvo]:null;
+    if(D){ if(dist(b,D)<3.3){ b.moving=false; botHold(g,b,'dec'+D.i,CFG.decoy,dt,{type:'decoy',A:D.i});
+        if(D.state==='awake'){ ai.chamarizes=(ai.chamarizes||0)+1; ai.chamarizT=g.rt; ai.decoyAlvo=null; if(ai.chamarizes>=2) ai.decoyUsed=true; } return; }
+      const sd=circleSpot(D,b); setGoal(g,b,sd.x,sd.z,'dg'+D.i); botMove(g,b,dt,1);
+      ai.decoyT=(ai.decoyT||0)+dt; if(ai.decoyT>ai.decoyPrazo){ ai.decoyUsed=true; ai.decoyAlvo=null; logE(g,'chamariz_desistiu',{who:b.name,altar:D.name}); } // rota ruim: desiste sem ficar preso
+      return; } }
   // A Transferência não é gratuita nem automática: o bot só a usa quando o altar escolhido já foi
   // descoberto pelos Caçadores (ou quando a noite já está avançada). Isso testa a mecânica de dedução
   // sem dar ao bot uma decisão onisciente em toda partida.
@@ -1216,7 +1225,7 @@ function snapshot(g,role){
   return {t:r2(g.t),rt:r2(g.rt),phase:g.phase,phaseT:r2(g.phaseT),round:g.round,timers:g.timers,matchId:g.matchId,
     slots:g.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),
     altars:g.altars.map(A=>{ const masked=hide&&A.state==='awake'&&(g.know[A.i]==='?'||g.know[A.i]==='limpo');
-      return {i:A.i,name:A.name,x:A.x,z:A.z,state:masked?'dormant':A.state,chosen:hide?false:A.chosen,decoy:hide?false:A.decoy,prog:r2(A.prog),cp:A.cp,seal:r2(A.seal),localized:A.localized,lastN:A.lastN,maxProg:r2(A.maxProg),doneT:A.doneT}; }),
+      return {i:A.i,name:A.name,x:A.x,z:A.z,state:masked?'dormant':A.state,chosen:hide?false:A.chosen,decoy:hide?false:A.decoy,prog:r2(A.prog),cp:A.cp,seal:r2(A.seal),localized:A.localized,grande:!!A.grande,lastN:A.lastN,maxProg:r2(A.maxProg),doneT:A.doneT}; }),
     reagents:g.reagents.map(R=>({i:R.i,x:R.x,z:R.z,has:R.has})),
     actors:g.actors.map(a=>{
       const o={}; ACT_FIELDS.forEach(k=>o[k]=a[k]); ACT_NUM.forEach(k=>o[k]=r2(a[k])); o.hold={key:a.hold.key,t:r2(a.hold.t),max:a.hold.max};

@@ -41,6 +41,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - Equilíbrio entre bots (v5.1a, 30 partidas): Cultistas vencem 77%; Chamariz quase nunca é usado pelos bots.
   Falta playtest com pessoas.
 
+- v5.2: Grande Ritual cinematográfico (céu e vitrais de sangue, sino, coro e tambor, corvos, névoa carmim;
+  `atualizarGrande` no cliente, `grande` no snapshot do altar); um bot Cultista planta até dois Chamarizes.
+- Outra engine: `docs/PORTE.md` (regras, números, equivalências Unreal/Godot, ordem do porte) e
+  `docs/mapa.json` (`node tools/exportar-mapa.js`).
+
 ## Pendências
 - Postar `notas/v5.md` no Discord: precisa de `discord.com` liberado na rede do ambiente e da credencial
   `DISCORD_WEBHOOK`; então `node tools/postar-discord.js notas/v5.md`.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ritual Reversal — Protótipo v5</title>
+<title>Ritual Reversal — Protótipo v5.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -107,6 +107,11 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #vignette{ background:radial-gradient(ellipse at center, transparent 35%, rgba(12,0,20,.55) 70%, rgba(0,0,0,.95) 100%); transition:opacity .5s; }
 #hurt{ background:radial-gradient(ellipse at center, transparent 45%, rgba(170,10,30,.55) 100%); }
 #blind{ background:#fff8ec; }
+/* Grande Ritual: vinheta carmim que pulsa, relógio em sangue, clarão ao começar */
+#grandeVinheta{ position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, transparent 42%, rgba(120,0,16,.55) 78%, rgba(40,0,6,.9) 100%); }
+#grandeClarao{ position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at 50% 45%, rgba(255,200,190,.95), rgba(190,20,40,.8) 55%, rgba(60,0,8,.9)); }
+body.grande #clock{ color:#ff5a6e; text-shadow:0 0 18px rgba(224,67,94,.85),0 2px 10px #000; }
+body.grande #roundName{ color:#ff8a98; letter-spacing:.02em; }
 .screen{ position:fixed; inset:0; display:none; place-items:center; background:radial-gradient(ellipse at 50% 38%, rgba(40,14,24,.55), rgba(3,3,4,.94) 70%); overflow:auto; }
 .screen.on{ display:grid; }
 .panel{ width:min(800px, calc(100% - 32px)); padding:26px 40px 24px; margin:16px 0; }
@@ -255,7 +260,7 @@ body.toque #interact{ transform:translate(-50%,-50%) scale(.85); }
 </head>
 <body>
 <div id="view"></div>
-<div id="vignette"></div><div id="hurt"></div><div id="blind"></div>
+<div id="vignette"></div><div id="grandeVinheta"></div><div id="hurt"></div><div id="blind"></div><div id="grandeClarao"></div>
 <div id="loading">Esculpindo a catedral…</div>
 <div id="hud">
   <div id="top" class="plate">
@@ -768,12 +773,16 @@ function buildWorld(){
   const cupula=new THREE.Group(); cupula.userData.dinamico=true; world.add(cupula); CEU.cupula=cupula;
   const ceu=new THREE.Mesh(new THREE.SphereGeometry(190,24,14),new THREE.MeshBasicMaterial({map:ceuTex,fog:false,toneMapped:false,side:THREE.BackSide,depthWrite:false}));
   ceu.renderOrder=-2; cupula.add(ceu);
+  // céu de sangue do Grande Ritual: uma segunda cúpula aditiva, mais forte no horizonte, apagada até ele começar
+  { const t=canvasTex(8,256,(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H); gr.addColorStop(0,'rgba(90,0,10,0)'); gr.addColorStop(.35,'rgba(150,10,24,.55)'); gr.addColorStop(.52,'rgba(230,40,50,1)'); gr.addColorStop(.62,'rgba(120,6,16,.6)'); gr.addColorStop(1,'rgba(40,0,4,0)'); c.fillStyle=gr; c.fillRect(0,0,W,H); });
+    const sg=new THREE.Mesh(new THREE.SphereGeometry(186,24,14),new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:0,blending:THREE.AdditiveBlending,fog:false,toneMapped:false,side:THREE.BackSide,depthWrite:false}));
+    sg.renderOrder=-1; sg.visible=false; cupula.add(sg); CEU.sangue=sg; }
   { const N=1800,pos=new Float32Array(N*3); for(let i=0;i<N;i++){ const a=Math.random()*6.283, el=Math.asin(.12+Math.random()*.88), r=180; pos[i*3]=Math.cos(a)*Math.cos(el)*r; pos[i*3+1]=Math.sin(el)*r; pos[i*3+2]=Math.sin(a)*Math.cos(el)*r; }
     const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3));
     const est=new THREE.Points(g,new THREE.PointsMaterial({size:.9,color:0xdfe6ff,map:RT.glow,transparent:true,opacity:.8,depthWrite:false,fog:false,toneMapped:false})); est.renderOrder=-1; cupula.add(est); }
   const lua=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xdfe8ff,fog:false,toneMapped:false,depthWrite:false})); lua.scale.set(22,22,1); lua.userData.dinamico=true; world.add(lua);
   const lua2=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0x6f88c8,fog:false,transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending})); lua2.scale.set(64,64,1); world.add(lua2);
-  CEU.lua=lua; CEU.lua2=lua2;
+  CEU.lua=lua; CEU.lua2=lua2; CEU.ceu=ceu; CEU.estrelas=cupula.children.find(o=>o.isPoints)||null;
   const luar=new THREE.PointLight(0x8fa8e0,.9,70,1.5); luar.position.set(0,26,0); scene.add(luar);
   // piso do Claustro, mais escuro, para a zona se ler de longe
   const cl=Sim.CLAUSTRO;
@@ -798,6 +807,7 @@ function buildWorld(){
   const janelas=[]; for(let x=CATEDRAL.x1+14;x<=CATEDRAL.x2-14;x+=16) janelas.push(x);
   const noVao=(x,sz)=>Sim.PORTAIS.some(p=>p.eixo==='x'&&Math.sign(p.fixo)===sz&&x>p.a-3.5&&x<p.b+3.5)||(sz>0&&Math.abs(x)<17);
   const winFora=winMat.clone(); winFora.color=new THREE.Color(.55,.5,.7);
+  CEU.vitrais=[winMat,roseMat,winFora].map(m=>({m,c:m.color.clone()})); // o Grande Ritual tinge os vitrais de sangue
   for(const x of janelas) for(const sz of [-1,1]){ if(noVao(x,sz)) continue;
     const w=new THREE.Mesh(new THREE.PlaneGeometry(3,7),winMat); w.position.set(x,8,sz*(CATEDRAL.z2-.06)); if(sz>0) w.rotation.y=Math.PI; world.add(w);
     const f=new THREE.Mesh(new THREE.PlaneGeometry(3,7),winFora); f.position.set(x,8,sz*(CATEDRAL.z2+1.06)); if(sz<0) f.rotation.y=Math.PI; world.add(f);
@@ -990,7 +1000,7 @@ let _luzT=0;
 function distribuirLuzes(dt,now){ _luzT-=dt; const P=camera.position;
   if(_luzT<=0){ _luzT=.25; const ord=FONTES.map((f,i)=>({i,d:Math.hypot(f.x-P.x,f.z-P.z)})).sort((a,b)=>a.d-b.d);
     candleLights.forEach((L,k)=>{ const o=ord[k]; L.userData.f=o&&o.d<60?FONTES[o.i]:null; const f=L.userData.f; if(f){ L.position.set(f.x,f.y,f.z); L.color.set(f.cor); L.distance=f.alc; } }); }
-  candleLights.forEach((L,i)=>{ const f=L.userData.f; L.intensity=f?(f.int+Math.sin(now*.011+i*3)*.12+Math.random()*.12)*(AMB.vela||1):0; }); }
+  candleLights.forEach((L,i)=>{ const f=L.userData.f; L.intensity=f?(f.int+Math.sin(now*.011+i*3)*.12+Math.random()*(.12+GR.k*.5))*(AMB.vela||1)*(1+GR.k*.35):0; }); }
 // ================= CATEDRAL VIVA =================
 // Tudo aqui é visual: nervuras nas abóbadas, pilastras e cornijas, arcada no Claustro, estandartes que balançam,
 // lustres e velas acesas, a cor dos vitrais no chão, tapetes, hera e corvos que levantam voo quando alguém chega.
@@ -1091,9 +1101,9 @@ function buildCatedralViva(){
   { const geos=[], rosa=[];
     for(let x=CT.x1+14;x<=CT.x2-14;x+=16) for(const sz of [-1,1]){ if(Sim.PORTAIS.some(p=>p.eixo==='x'&&Math.sign(p.fixo)===sz&&x>p.a-3.5&&x<p.b+3.5)||(sz>0&&Math.abs(x)<17)) continue;
       const g=new THREE.PlaneGeometry(3.4,7.5); g.rotateX(-Math.PI/2); g.translate(x,.035,sz*(CT.z2-9)); geos.push(g); }
-    const mt=new THREE.MeshBasicMaterial({map:RT.win,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false});
+    const mt=new THREE.MeshBasicMaterial({map:RT.win,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}); CEU.pocas=[mt];
     const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),mt); m.userData.dinamico=true; m.renderOrder=2; world.add(m);
-    for(const sx of [-1,1]){ const r=new THREE.Mesh(new THREE.CircleGeometry(3.4,32),new THREE.MeshBasicMaterial({map:RT.rose,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})); r.rotation.x=-Math.PI/2; r.position.set(sx*(CT.x2-10),.035,0); r.userData.dinamico=true; r.renderOrder=2; world.add(r); } }
+    for(const sx of [-1,1]){ const r=new THREE.Mesh(new THREE.CircleGeometry(3.4,32),new THREE.MeshBasicMaterial({map:RT.rose,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})); r.rotation.x=-Math.PI/2; r.position.set(sx*(CT.x2-10),.035,0); r.userData.dinamico=true; r.renderOrder=2; world.add(r); CEU.pocas.push(r.material); } }
 
   // ---------- tapetes gastos nos eixos de passagem ----------
   { const tex=texTapete(), geos=[], tapete=(x1,z1,x2,z2,larg)=>{ const L=Math.hypot(x2-x1,z2-z1), g=new THREE.PlaneGeometry(larg,L), uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setY(i,uv.getY(i)*L/4);
@@ -1127,6 +1137,46 @@ function buildCatedralViva(){
 const VENTO={value:0};
 // cada corvo: pousado (bica e vira a cabeça), assustado (sobe batendo asas, afastando-se da ameaça), sumido (volta depois)
 const _mc=new THREE.Matrix4(), _ma=new THREE.Matrix4(), _q=new THREE.Quaternion(), _e=new THREE.Euler(), _p=new THREE.Vector3(), _s=new THREE.Vector3();
+// ================= GRANDE RITUAL =================
+// O terceiro ritual da noite muda o mundo inteiro enquanto dura: céu e lua cor de sangue, vitrais acesos em
+// vermelho, névoa carmim, corvos em fuga, a floresta em silêncio, sino grave e um coro com tambor que acelera
+// junto com o progresso. Tudo visual e sonoro; a regra continua em shared/sim.js (A.grande).
+const GR={k:0,ativo:false,sinoT:4,batT:0,au:null,claraoT:-1e9};
+function espantarCorvos(){ for(const C of CORVOS) if(C.estado==='pousado'){ const a=Math.random()*6.283; C.vx=Math.cos(a)*6; C.vz=Math.sin(a)*6; C.vy=4+Math.random()*2; C.estado='voando'; C.t=Math.random()*.4; } }
+function iniciarGrande(e){ const A=V&&V.altars?V.altars[e.altar]:null;
+  anunciar('O Grande Ritual',A?`${A.name}: a catedral inteira ouve`:'A catedral inteira ouve');
+  SFX.doom(); SFX.sinoGrande(); setTimeout(()=>SFX.sinoGrande(),2300); setTimeout(()=>SFX.sinoGrande(),4600);
+  espantarCorvos(); GR.claraoT=performance.now(); FX.kickP+=.05; }
+function grandeLoopStart(){ if(!AU.ok||GR.au) return; const c=AU.ctx, out=c.createGain(); out.gain.value=0; out.connect(AU.master); const nodes=[];
+  // coro: vozes em serra passando por um formante de "ah", com o volume inchando devagar
+  const form=c.createBiquadFilter(); form.type='bandpass'; form.frequency.value=720; form.Q.value=2.2; const gC=c.createGain(); gC.gain.value=.05; form.connect(gC); gC.connect(out);
+  [110,130.81,164.81,196,220.5].forEach((f,k)=>{ const o=c.createOscillator(); o.type='sawtooth'; o.frequency.value=f*(1+(k-2)*.004); o.connect(form); nodes.push(o); });
+  const lfo=c.createOscillator(); lfo.frequency.value=.09; const lg=c.createGain(); lg.gain.value=.035; lfo.connect(lg); lg.connect(gC.gain); nodes.push(lfo);
+  // bordão grave com tremor lento
+  const gD=c.createGain(); gD.gain.value=.16; gD.connect(out); [55,41.2].forEach(f=>{ const o=c.createOscillator(); o.frequency.value=f; o.connect(gD); nodes.push(o); });
+  const tr=c.createOscillator(); tr.frequency.value=.25; const tg=c.createGain(); tg.gain.value=.07; tr.connect(tg); tg.connect(gD.gain); nodes.push(tr);
+  nodes.forEach(n=>n.start()); out.gain.setTargetAtTime(1,c.currentTime,1.5); GR.au={out,nodes}; }
+function grandeLoopStop(){ const au=GR.au; if(!au) return; GR.au=null; au.out.gain.setTargetAtTime(0,AU.ctx.currentTime,.8); setTimeout(()=>au.nodes.forEach(n=>{ try{ n.stop(); }catch(e){} }),4000); }
+const _corLua=new THREE.Color(0xdfe8ff), _corLuaG=new THREE.Color(0xff3a2a), _corVit=new THREE.Color(2.6,.32,.3);
+function atualizarGrande(dt,agora){
+  const A=V&&V.phase==='play'&&V.altars?V.altars.find(A=>A.state==='active'&&A.grande):null;
+  GR.ativo=!!A; GR.k=clamp(GR.k+(GR.ativo?dt/1.5:-dt/4),0,1); const k=GR.k, t=agora/1000;
+  document.body.classList.toggle('grande',k>.05);
+  if(CEU.ceu) CEU.ceu.material.color.setRGB(1+1.6*k,1-.45*k,1-.4*k);
+  if(CEU.sangue){ CEU.sangue.visible=k>.01; CEU.sangue.material.opacity=k*(.8+.2*Math.sin(t*.9)); }
+  if(CEU.estrelas&&CEU.estrelas.material) CEU.estrelas.material.opacity=.8*(1-.75*k);
+  if(CEU.lua){ CEU.lua.material.color.copy(_corLua).lerp(_corLuaG,k); CEU.lua2.material.color.setRGB(.44+.5*k,.53-.35*k,.78-.6*k); }
+  const pul=.75+.25*Math.sin(t*2.1);
+  if(CEU.vitrais) for(const v of CEU.vitrais) v.m.color.copy(v.c).lerp(_corVit,k*pul);
+  if(CEU.pocas) for(const m of CEU.pocas) m.opacity=.2+.4*k*pul;
+  if(AU.amb) AU.amb.gain.value=.09*(1-.85*k); // a floresta se cala
+  $('#grandeVinheta').style.opacity=(k*(.55+.25*Math.sin(t*2.6))).toFixed(2);
+  $('#grandeClarao').style.opacity=(clamp(1-(agora-GR.claraoT)/1200,0,1)*.85).toFixed(2); // clarão de 1,2 s em tempo real
+  if(GR.ativo){ if(!GR.au) grandeLoopStart();
+    GR.sinoT-=dt; if(GR.sinoT<=0){ GR.sinoT=11; SFX.sinoGrande(); }
+    GR.batT-=dt; if(GR.batT<=0){ GR.batT=1.5-A.prog*.8; SFX.batida(A.prog); } }   // o tambor acelera com o progresso
+  else { if(GR.au) grandeLoopStop(); GR.sinoT=4; GR.batT=0; }
+}
 function atualizarCorvos(dt,agora){ if(!corvoCorpo) return;
   const ameacas=[]; if(V&&V.phase==='play'){ ameacas.push(camera.position); for(const a of V.actors||[]) if(a.st==='alive') ameacas.push({x:a._rx!=null?a._rx:a.x,z:a._rz!=null?a._rz:a.z}); }
   let grito=false;
@@ -1136,7 +1186,7 @@ function atualizarCorvos(dt,agora){ if(!corvoCorpo) return;
         if(Math.hypot(camera.position.x-C.x,camera.position.z-C.z)<25) grito=[C.x,C.z]; }
       else if(C.t>1.5+((i*7)%5)){ C.t=0; C.yaw+=(Math.random()-.5)*1.6; C.bico=.35; } }
     else if(C.estado==='voando'){ C.x+=C.vx*dt; C.y+=C.vy*dt; C.z+=C.vz*dt; C.vy+=.4*dt; C.yaw=Math.atan2(-C.vx,-C.vz); if(C.t>4){ C.estado='sumido'; C.volta=agora+30000+Math.random()*30000; } }
-    else if(C.estado==='sumido'&&agora>C.volta&&!ameacas.some(q=>Math.hypot(q.x-C.px,q.z-C.pz)<16)){ C.estado='pousado'; C.x=C.px; C.y=C.py; C.z=C.pz; C.t=0; }
+    else if(C.estado==='sumido'&&agora>C.volta&&!GR.ativo&&!ameacas.some(q=>Math.hypot(q.x-C.px,q.z-C.pz)<16)){ C.estado='pousado'; C.x=C.px; C.y=C.py; C.z=C.pz; C.t=0; }
     C.bico=Math.max(0,C.bico-dt*1.5);
     const vis=C.estado!=='sumido'?1:0, voa=C.estado==='voando', bate=voa?Math.sin(C.t*26)*.9:(-.05);
     _e.set(voa?-.25:Math.sin(C.bico*9)*.3*(C.bico>0?1:0),C.yaw,0); _q.setFromEuler(_e); _p.set(C.x,C.y,C.z); _s.setScalar(vis*1.3); _mc.compose(_p,_q,_s); corvoCorpo.setMatrixAt(i,_mc);
@@ -1447,7 +1497,7 @@ const AU={ctx:null,ok:false};
 function audioInit(){ if(AU.ctx){ if(AU.ctx.state==='suspended') AU.ctx.resume(); return; }
   try{ const C=window.AudioContext||window.webkitAudioContext; AU.ctx=new C(); AU.master=AU.ctx.createGain(); AU.master.gain.value=.8; AU.master.connect(AU.ctx.destination);
     const b=AU.ctx.createBuffer(1,AU.ctx.sampleRate*2,AU.ctx.sampleRate),d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; AU.noise=b; AU.ok=true;
-    const src=AU.ctx.createBufferSource(); src.buffer=AU.noise; src.loop=true; const lp=AU.ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=260; const g=AU.ctx.createGain(); g.gain.value=.09;
+    const src=AU.ctx.createBufferSource(); src.buffer=AU.noise; src.loop=true; const lp=AU.ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=260; const g=AU.ctx.createGain(); g.gain.value=.09; AU.amb=g;
     const lfo=AU.ctx.createOscillator(); lfo.frequency.value=.07; const lg=AU.ctx.createGain(); lg.gain.value=120; lfo.connect(lg); lg.connect(lp.frequency); lfo.start(); src.connect(lp); lp.connect(g); g.connect(AU.master); src.start();
   }catch(e){ AU.ok=false; } }
 function spatial(x,z,radius){ const dx=x-camera.position.x,dz=z-camera.position.z,d=Math.hypot(dx,dz),yaw=camera.rotation.y,rx=Math.cos(yaw),rz=-Math.sin(yaw);
@@ -1475,6 +1525,8 @@ const SFX={
   heart:()=>{ sfxTone(null,null,1,70,40,.14,'sine',.8); setTimeout(()=>sfxTone(null,null,1,62,38,.14,'sine',.6),190); },
   corvo:(x,z)=>{ for(let k=0;k<2;k++) setTimeout(()=>{ sfxTone(x,z,40,560,380,.22,'sawtooth',.16); sfxNoise(x,z,40,.2,'bandpass',1400,3,.25); },k*260); for(let k=0;k<6;k++) setTimeout(()=>sfxNoise(x,z,26,.06,'lowpass',500,1,.3),k*90); },
   bell:()=>[180,362,544].forEach((f,i)=>sfxTone(null,null,1,f,f,5,'sine',.08/(i+1))),
+  sinoGrande:()=>{ [.5,1,1.19,1.56,2,2.51].forEach((r,i)=>sfxTone(null,null,1,98*r,98*r*.995,7-i*.8,'sine',[.22,.18,.1,.08,.06,.04][i])); sfxNoise(null,null,1,.15,'bandpass',900,2,.15); }, // sino grave com parciais de bronze
+  batida:p=>{ sfxTone(null,null,1,70,32,.35,'sine',.35+p*.3); sfxNoise(null,null,1,.12,'lowpass',180,1,.25); },
   click:()=>sfxTone(null,null,1,900,700,.05,'square',.08),
   collect:(x,z)=>sfxNoise(x,z,26,.5,'bandpass',700,2,.5),
   flare:(x,z)=>sfxNoise(x,z,20,.6,'highpass',2000,1,.3),
@@ -1751,7 +1803,7 @@ function handleEvents(list,online){
       case 'blind': blindT=1.5; notaHab('Você foi cegado','#fff4d0'); break;
       case 'stun': atordT=1; notaHab('Você foi atordoado','var(--gold-hi)'); FX.kickP+=.03; break;
       case 'momento': anunciar(e.nome,e.i===1?'Os altares despertam':'Os rituais aceleram e a névoa se fecha'); SFX.bell(); break;
-      case 'grande': anunciar('O Grande Ritual','A catedral inteira ouve'); SFX.doom(); break;
+      case 'grande': iniciarGrande(e); break;
       case 'hab': efeitoHabilidade(e,e.a===id); SFX.hab&&SFX.hab(e.cls,e.x,e.z);
         if(e.a===id){ const n=(e.alvos||[]).length; notaHab(HAB_TXT[e.f](n),n||['runa','veu','sal'].includes(e.f)?'var(--gold-hi)':'var(--muted)'); const t=$('#tAb'); if(t){ t.classList.remove('pulso'); void t.offsetWidth; t.classList.add('pulso'); } if(e.f==='empurrao') FX.kickP+=.02; }
         break;
@@ -1838,11 +1890,11 @@ function syncAltars(dt){
   V.altars.forEach((A,i)=>{ const O=AV[i]; let st=A.state; if(role==='H'&&st==='awake'&&!hunterSees(A)) st='dormant';
     let op=.05,col=0x6b3a8a,li=0,lc=0x6b3a8a,beam=0,bcol=0xe0435e,emb=0,spin=.05; const t=performance.now()/1000;
     if(st==='awake'){ op=.18+.06*Math.sin(t*2+i); li=.9+.2*Math.sin(t*3); col=0x8a4ad0; lc=0x7a3ab0; if(role==='C'&&!A.chosen) col=0x555566; }
-    if(st==='active'){ const pulse=A.prog>=.25?(.5+.5*Math.sin(t*1.3*Math.PI*2)):.5; op=.9+.1*pulse; col=0xff5577; lc=0xff2040; li=1.4+1.6*A.prog+pulse*.8; spin=.4+A.prog*1.6; emb=.9; if(A.localized) beam=.22+.1*pulse; }
+    if(st==='active'){ const pulse=A.prog>=.25?(.5+.5*Math.sin(t*1.3*Math.PI*2)):.5; op=.9+.1*pulse; col=0xff5577; lc=0xff2040; li=1.4+1.6*A.prog+pulse*.8; spin=.4+A.prog*1.6; emb=.9; if(A.localized) beam=.22+.1*pulse; if(A.grande){ beam=.55+.3*pulse; bcol=0xff2a3a; li*=1.6; spin*=1.8; } }
     if(st==='fenda'){ op=.35; col=0x6a1a8a; li=.8+.4*Math.sin(t*7)*Math.random(); lc=0x5a1080; beam=.1; bcol=0x7a2aa0; emb=.4; spin=-.2; }
     if(st==='farol'){ op=.7; col=0xf3d58e; li=3.2; lc=0xffd08a; beam=.28; bcol=0xf3d58e; spin=.08; }
     O.circle.material.opacity=lerp(O.circle.material.opacity,op,.1); O.circle.material.color.setHex(col); O.L.intensity=lerp(O.L.intensity,li,.12); O.L.color.setHex(lc);
-    O.circle.rotation.z+=spin*dt; O.beam.material.opacity=lerp(O.beam.material.opacity,beam,.08); O.beam.material.color.setHex(bcol);
+    O.circle.rotation.z+=spin*dt; O.beam.material.opacity=lerp(O.beam.material.opacity,beam,.08); O.beam.material.color.setHex(bcol); { const lg=A.grande&&st==='active'?2.4:1; O.beam.scale.x=O.beam.scale.z=lerp(O.beam.scale.x,lg,.05); }
     O.bm.color.setHex(st==='active'?0xff3050:st==='farol'?0xf3d58e:st==='awake'?0x8a4ad0:0x2a2030);
     const sv=st==='active'?A.seal:0; O.sealRing.material.opacity=sv>0?.9:0; const sc=Math.max(.05,1-sv*.95); O.sealRing.scale.set(sc,sc,1); O.sealRing.rotation.z-=dt*1.5;
     O.em.material.opacity=lerp(O.em.material.opacity,emb,.08);
@@ -1885,9 +1937,9 @@ function lojaScreen(){ const n=NPCS.find(x=>x.id===lojaAberta), m=me(); if(!n||!
 const AMB=[{nevoa:.019,cor:new THREE.Color(0x16110f),vela:1.1},{nevoa:.026,cor:new THREE.Color(0x0b0d14),vela:1},{nevoa:.036,cor:new THREE.Color(0x15070a),vela:.8}];
 const COR_MATA=new THREE.Color(0x10140f), _corAlvo=new THREE.Color();
 function ambienteMomento(mi,dt){ const A=AMB[Math.min(2,mi)], k=Math.min(1,dt*.6), mata=Sim.zoneAt(camera.position.x,camera.position.z)==='Floresta';
-  scene.fog.density=lerp(scene.fog.density,A.nevoa*(mata?1.45:1),k); _corAlvo.copy(A.cor).lerp(COR_MATA,mata?.6:0); scene.fog.color.lerp(_corAlvo,k); scene.background.lerp(_corAlvo,k); AMB.vela=lerp(AMB.vela||1,A.vela,k);
-  if(GRADE){ const U=GRADE.uniforms; U.uNevoaDens.value=lerp(U.uNevoaDens.value,[.024,.03,.04][Math.min(2,mi)],k); U.uNevoaCor.value.lerp(mi>=2?COR_NEVOA_HM:COR_NEVOA,k); } }
-const COR_NEVOA=new THREE.Color(.075,.086,.09), COR_NEVOA_HM=new THREE.Color(.085,.062,.068);
+  scene.fog.density=lerp(scene.fog.density,A.nevoa*(mata?1.45:1),k); _corAlvo.copy(A.cor).lerp(COR_MATA,mata?.6:0).lerp(COR_GRANDE,GR.k*.75); scene.fog.color.lerp(_corAlvo,k); scene.background.lerp(_corAlvo,k); AMB.vela=lerp(AMB.vela||1,A.vela,k);
+  if(GRADE){ const U=GRADE.uniforms; U.uNevoaDens.value=lerp(U.uNevoaDens.value,[.024,.03,.04][Math.min(2,mi)],k); U.uNevoaCor.value.lerp(GR.k>.05?COR_NEVOA_GR:mi>=2?COR_NEVOA_HM:COR_NEVOA,k); } }
+const COR_NEVOA=new THREE.Color(.075,.086,.09), COR_NEVOA_HM=new THREE.Color(.085,.062,.068), COR_NEVOA_GR=new THREE.Color(.13,.035,.045), COR_GRANDE=new THREE.Color(0x2a0508);
 // ---------- a noite no mundo: mercadores, pontos de tarefa, sal ----------
 const NOITE={npcs:new Map(),pontos:new Map(),sal:new Map()};
 function fazerNPC(n){ const g=new THREE.Group(), corpo=new THREE.Group(); g.add(corpo); g.position.set(n.x,0,n.z);
@@ -1969,7 +2021,7 @@ function atualizarMarcas(m){
     for(const n of NPCS){ const d=dm(n.x,n.z); if(d<14&&(!n.time||n.time===m.team)) marcador('n'+n.id,n.x,2.3,n.z,`${esc(n.nome[0].toUpperCase()+n.nome.slice(1))}<small>mercador</small><b></b>`,'npc',false); }
     if(role==='H') for(const a of V.actors){ if(a.team==='C'&&a.revelT>0&&a.st==='alive'){ const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z; marcador('r'+a.id,x,2.4,z,`${esc(a.name)}<small>denunciado pelo sal</small><b></b>`,'caido',true); } }
     for(const A of V.altars){ if(A.state!=='active') continue; if(role==='H'&&!A.localized) continue;
-      marcador('o'+A.i,A.x,3.2,A.z,`Ritual em ${esc(A.name)}<small>${dm(A.x,A.z)} m</small><b></b>`,'obj',true); }
+      marcador('o'+A.i,A.x,3.2,A.z,`${A.grande?'Grande Ritual':'Ritual'} em ${esc(A.name)}<small>${dm(A.x,A.z)} m</small><b></b>`,'obj',true); }
   }
   for(const [k,el] of marcas) if(!el._vivo){ el.remove(); marcas.delete(k); }
 }
@@ -1977,7 +2029,8 @@ function fmt(s){ s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+':'+String(
 function updateHUD(dt,m){
   const role=myRole(), slot=mySlot();
   const Mo=CFG.momentos, mi=Math.max(0,V.momento||0), prox=Mo[mi+1]; $('#clock').textContent=fmt(Mo[mi].ate-V.rt);
-  $('#roundName').textContent=prox?`${Mo[mi].nome}, ${prox.nome} em seguida`:`${Mo[mi].nome}, depois o amanhecer`;
+  const GA=V.altars.find(A=>A.state==='active'&&A.grande);
+  $('#roundName').textContent=GA?`Grande Ritual em ${GA.name}${role==='C'||GA.localized?`: ${Math.floor(GA.prog*100)}%`:''}`:prox?`${Mo[mi].nome}, ${prox.nome} em seguida`:`${Mo[mi].nome}, depois o amanhecer`;
   atualizarTarefas(role); ambienteMomento(mi,dt);
   const myTeam=slot?slot.team:'A', other=myTeam==='A'?'B':'A';
   const done=V.altars.filter(A=>A.state==='fenda').length, sealed=V.altars.filter(A=>A.state==='farol').length;
@@ -2264,7 +2317,7 @@ function tick(now){
   if(TQ.ativo){ const tq=$('#toque'), r=(myRole()||'')+(locked&&!lojaAberta?'':' solto'); if(tq.className!==r){ tq.className=r; if(r.includes('solto')) TQ.soltar(); } } // com menu aberto, os controles saem da frente dos botões
   syncScreens();
   // cosmetics
-  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now);
+  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); // transições em tempo real, mesmo com poucos quadros
   flames.forEach((f,i)=>{ f.scale.y=.26+Math.sin(now*.02+i)*.03; });
   if(RT.dust){ RT.dust.rotation.y+=dt*.004; RT.dust.position.y=Math.sin(now*.0002)*.3; }
   updateParticles(dt); atualizarEfeitos(dt);
