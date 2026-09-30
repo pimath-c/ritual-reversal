@@ -16,6 +16,7 @@ namespace RitualReversal.Ferramentas
     {
         const string DADOS = "Assets/RitualReversal/Dados/mapa.json";
         const string MATERIAIS = "Assets/RitualReversal/Materiais";
+        const string TEXTURAS = "Assets/RitualReversal/Texturas";
         const string RAIZ = "Mapa Ritual Reversal";
 
         static readonly Dictionary<string, Color> CORES = new Dictionary<string, Color>
@@ -40,7 +41,7 @@ namespace RitualReversal.Ferramentas
             if (string.IsNullOrEmpty(caminho)) return;
             var M = JsonUtility.FromJson<MapaDados>(File.ReadAllText(caminho));
             if (M == null || M.pecas == null) { EditorUtility.DisplayDialog("Ritual Reversal", "Não consegui ler o mapa.json.", "OK"); return; }
-            cache.Clear();
+            cache.Clear(); malhas.Clear();
 
             var antigo = GameObject.Find(RAIZ); if (antigo != null) Undo.DestroyObjectImmediate(antigo);
             var raiz = new GameObject(RAIZ); Undo.RegisterCreatedObjectUndo(raiz, "Importar mapa Ritual Reversal");
@@ -87,12 +88,12 @@ namespace RitualReversal.Ferramentas
                     var g = Prim(PrimitiveType.Cube, tr, "Trilha", Mat(T.estreita ? "trilha_estreita" : "trilha", T.estreita ? new Color(.2f, .17f, .12f) : new Color(.33f, .27f, .18f)), false);
                     g.transform.position = (a + b) / 2 + Vector3.up * (T.estreita ? .012f : .016f);
                     g.transform.rotation = Quaternion.LookRotation(b - a);
-                    g.transform.localScale = new Vector3(T.largura, .02f, L + T.largura * .5f);
+                    g.transform.localScale = new Vector3(T.largura, .02f, L + T.largura * .5f); Texturizar(g);
                 }
             var cl = Grupo(pai, "Clareiras");
             foreach (var c in M.clareiras)
             {
-                var g = Prim(PrimitiveType.Cylinder, cl, "Clareira", Mat("clareira", new Color(.2f, .25f, .16f)), false);
+                var g = Prim(PrimitiveType.Cylinder, cl, "Clareira", Mat("clareira", new Color(.2f, .25f, .16f), new Vector2(12, 12)), false);
                 g.transform.position = MapaDados.Pos(c.x, c.z, .008f); g.transform.localScale = new Vector3(c.raio * 2, .004f, c.raio * 2);
             }
         }
@@ -111,7 +112,7 @@ namespace RitualReversal.Ferramentas
 
         static void Arvores(MapaDados M, GameObject pai)
         {
-            var casca = Mat("casca", new Color(.24f, .19f, .14f)); var copa = Mat("copa", new Color(.08f, .12f, .07f));
+            var casca = Mat("casca", new Color(.24f, .19f, .14f), new Vector2(3, 6)); var copa = Mat("copa", new Color(.08f, .12f, .07f), new Vector2(5, 2));
             foreach (var q in M.arvores)
             {
                 float H = (q.tipo == "alta" ? 18f : 12f) * q.escala;
@@ -130,7 +131,7 @@ namespace RitualReversal.Ferramentas
         {
             foreach (var p in M.pilares)
             {
-                var g = Prim(PrimitiveType.Cylinder, pai, "Pilar", Mat("coluna", CORES["coluna"]), true);
+                var g = Prim(PrimitiveType.Cylinder, pai, "Pilar", Mat("pilar", CORES["coluna"], new Vector2(3, 5)), true);
                 g.transform.position = MapaDados.Pos(p.x, p.z, p.h / 2); g.transform.localScale = new Vector3(p.raio * 2, p.h / 2, p.raio * 2);
             }
             foreach (var b in M.bancos)
@@ -156,7 +157,7 @@ namespace RitualReversal.Ferramentas
                 c.transform.position = MapaDados.Pos(n.x, n.z, 1f); Rotulo(mg, n.nome, MapaDados.Pos(n.x, n.z, 2.6f), new Color(.95f, .85f, .5f), .25f);
             }
             var pt = Grupo(pai, "Pontos de tarefa");
-            void Pontos(PontoXZ[] lista, string nome, Color cor) { if (lista == null) return; foreach (var p in lista) { var s = Prim(PrimitiveType.Cube, pt, nome, Mat("ponto_" + nome, cor), false); s.transform.position = MapaDados.Pos(p.x, p.z, .5f); s.transform.localScale = new Vector3(.4f, 1f, .4f); } }
+            System.Action<PontoXZ[], string, Color> Pontos = (lista, nome, cor) => { if (lista == null) return; foreach (var p in lista) { var s = Prim(PrimitiveType.Cube, pt, nome, Mat("ponto_" + nome, cor), false); s.transform.position = MapaDados.Pos(p.x, p.z, .5f); s.transform.localScale = new Vector3(.4f, 1f, .4f); } };
             Pontos(M.pontosDeTarefa.pista, "pista", new Color(.95f, .8f, .4f)); Pontos(M.pontosDeTarefa.sentinela, "sentinela", new Color(1f, .6f, .2f));
             Pontos(M.pontosDeTarefa.erva, "erva", new Color(.3f, .9f, .75f)); Pontos(M.pontosDeTarefa.tumulo, "tumulo", new Color(.5f, .5f, .5f));
             var lg = Grupo(pai, "Nomes dos lugares");
@@ -217,7 +218,44 @@ namespace RitualReversal.Ferramentas
         static GameObject Caixa(GameObject pai, string nome, float x, float z, float y, float lx, float ly, float lz, Material mat, bool colide)
         {
             var g = Prim(PrimitiveType.Cube, pai, nome, mat, colide);
-            g.transform.position = MapaDados.Pos(x, z, y); g.transform.localScale = new Vector3(lx, ly, lz); return g;
+            g.transform.position = MapaDados.Pos(x, z, y); g.transform.localScale = new Vector3(lx, ly, lz); Texturizar(g); return g;
+        }
+
+        // Cubo com coordenadas de textura em metros (uma repetição a cada 2 m, em qualquer tamanho de caixa), para a
+        // textura não esticar numa parede comprida. Paredes: u na horizontal, v na vertical; tampo e base: x e z.
+        static readonly Dictionary<string, Mesh> malhas = new Dictionary<string, Mesh>();
+        static void Texturizar(GameObject g)
+        {
+            var s = g.transform.localScale; string k = $"{s.x:0.0}x{s.y:0.0}x{s.z:0.0}";
+            if (!malhas.TryGetValue(k, out var m))
+            {
+                m = new Mesh { name = "Caixa " + k }; var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>(); var tri = new List<int>();
+                System.Action<Vector3, Vector3, Vector3> Face = (normal, a, b) => // b × a = normal: ordem horária vista de fora (frente no Unity)
+                {
+                    int i0 = v.Count; Vector3 c = normal * .5f;
+                    foreach (var q in new[] { c - a * .5f - b * .5f, c - a * .5f + b * .5f, c + a * .5f + b * .5f, c + a * .5f - b * .5f })
+                    {
+                        v.Add(q); n.Add(normal);
+                        Vector2 t = normal.y != 0 ? new Vector2(q.x * s.x, q.z * s.z) : normal.x != 0 ? new Vector2(q.z * s.z, q.y * s.y) : new Vector2(q.x * s.x, q.y * s.y);
+                        uv.Add(t / 2f);
+                    }
+                    tri.AddRange(new[] { i0, i0 + 1, i0 + 2, i0, i0 + 2, i0 + 3 });
+                };
+                Face(Vector3.up, Vector3.right, Vector3.forward); Face(Vector3.down, Vector3.left, Vector3.forward);
+                Face(Vector3.right, Vector3.forward, Vector3.up); Face(Vector3.left, Vector3.back, Vector3.up);
+                Face(Vector3.forward, Vector3.up, Vector3.right); Face(Vector3.back, Vector3.down, Vector3.right);
+                m.SetVertices(v); m.SetNormals(n); m.SetUVs(0, uv); m.SetTriangles(tri, 0); m.RecalculateBounds(); m.RecalculateTangents();
+                malhas[k] = m;
+            }
+            g.GetComponent<MeshFilter>().sharedMesh = m;
+        }
+
+        static Texture2D Textura(string padrao)
+        {
+            string arq = $"{TEXTURAS}/{padrao}.asset";
+            var t = AssetDatabase.LoadAssetAtPath<Texture2D>(arq); if (t != null) return t;
+            if (!AssetDatabase.IsValidFolder(TEXTURAS)) AssetDatabase.CreateFolder("Assets/RitualReversal", "Texturas");
+            t = GerarTextura.Criar(padrao, 256); AssetDatabase.CreateAsset(t, arq); return t;
         }
 
         static void Rotulo(GameObject pai, string texto, Vector3 pos, Color cor, float tamanho)
@@ -234,7 +272,7 @@ namespace RitualReversal.Ferramentas
             g.AddComponent<OlharParaCamera>();
         }
 
-        static Material Mat(string nome, Color cor)
+        static Material Mat(string nome, Color cor, Vector2? repeticao = null)
         {
             if (cache.TryGetValue(nome, out var m)) return m;
             if (!AssetDatabase.IsValidFolder(MATERIAIS)) AssetDatabase.CreateFolder("Assets/RitualReversal", "Materiais");
@@ -247,7 +285,14 @@ namespace RitualReversal.Ferramentas
                 if (sh == null) sh = Shader.Find("Standard");
                 m = new Material(sh); m.enableInstancing = true; AssetDatabase.CreateAsset(m, arq);
             }
+            // marcadores (altar, reagentes, mercadores, pontos) ficam lisos; o resto ganha textura e um tom mais claro,
+            // porque a textura escurece a cor em média
+            bool lisa = nome.StartsWith("ponto_") || nome == "circulo" || nome == "reagente" || nome == "mercador";
+            Texture2D tex = lisa ? null : Textura(GerarTextura.PadraoDe(nome)); if (tex != null) cor = new Color(Mathf.Min(1, cor.r * 1.35f), Mathf.Min(1, cor.g * 1.35f), Mathf.Min(1, cor.b * 1.35f));
             if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", cor); else m.color = cor;
+            var rep = repeticao ?? Vector2.one;
+            foreach (var p in new[] { "_BaseMap", "_MainTex" }) if (m.HasProperty(p)) { m.SetTexture(p, tex); m.SetTextureScale(p, rep); }
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", .12f); // pedra e madeira foscas
             EditorUtility.SetDirty(m); cache[nome] = m; return m;
         }
     }

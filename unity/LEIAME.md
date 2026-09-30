@@ -1,7 +1,8 @@
 # Ritual Reversal no Unity
 
 O jogo inteiro do protótipo já roda no Unity, jogável contra bots: regras, bots, navegação, rituais, selamento,
-tarefas, loja, habilidades e fim de noite. A arte ainda é de caixas (blockout), e ainda não há som nem rede
+tarefas, loja, habilidades e fim de noite. O mapa ainda é de caixas (blockout), agora com texturas geradas por código;
+ainda não há modelos, som nem rede
 (veja `docs/PORTE.md`).
 
 A simulação (`Scripts/Simulacao`) é um porte linha a linha de `shared/sim.js`. Ela foi conferida contra o protótipo
@@ -48,6 +49,9 @@ Para só passear pelo mapa, sem partida, desative o objeto **Partida** (dentro d
   bonecos, altares, efeitos e o HUD com as telas (IMGUI, sem assets).
 - `Scripts/EntradaUnity.cs` — teclado e mouse (Input System novo ou antigo).
 - `Editor/ImportarMapa.cs` — o importador do mapa (blockout); `Dados/mapa.json` é a planta visual.
+- `Scripts/GerarTextura.cs` — texturas geradas por código (pedra, lajota, madeira, casca, terra, grama, folhagem, osso).
+  O importador salva em `Texturas/` e aplica com 1 repetição a cada 2 m, sem esticar. Para trocar por texturas de
+  verdade, basta arrastar outra imagem para o campo Base Map do material em `Materiais/`.
 - `Scripts/JogadorFPS.cs`, `MapaDados.cs`, `OlharParaCamera.cs` — o passeio livre pelo mapa e utilidades.
 
 ## Se algo der errado
