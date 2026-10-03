@@ -6,7 +6,7 @@
 const fs=require('fs'), path=require('path');
 const Sim=require('../shared/sim.js');
 const out=process.argv[2]||path.join(__dirname,'..','docs','mapa.json');
-const UNITY=path.join(__dirname,'..','unity','Assets','RitualReversal','Dados','mapa.json'); // o importador do Unity lê esta cópia
+const UNITY=path.join(__dirname,'..','unity','Assets','RitualReversal','Resources','mapa.json'); // o importador e o mundo do Unity leem esta cópia
 const r=v=>Math.round(v*100)/100;
 const mapa={
   sobre:'Ritual Reversal: planta gerada por shared/sim.js. Metros; chão no plano x-z, y para cima. '+
@@ -28,7 +28,7 @@ const mapa={
   bancos:Sim.PEWS.map(([x1,x2,z1,z2])=>({x1,x2,z1,z2,h:.95})),
   // caixas de colisão: tudo que bloqueia passagem. tall=true também bloqueia visão e tiros.
   pecas:Sim.WALLS.map(w=>{ const o={tipo:w.kind,x1:r(w.x1),x2:r(w.x2),z1:r(w.z1),z2:r(w.z2),h:r(w.h),tall:!!w.tall}; if(w.rot!=null) o.rot=w.rot; if(w.pose!=null) o.pose=w.pose; return o; }),
-  arvores:Sim.ARVORES.map(q=>({x:q.x,z:q.z,raio:q.r,tipo:['anciã','alta','morta'][q.tipo],escala:q.s,rot:q.rot})),
+  arvores:Sim.ARVORES.map(q=>({x:q.x,z:q.z,raio:q.r,tipo:['anciã','alta','morta'][q.tipo],escala:q.s,rot:q.rot,inc:q.inc})),
   vegetacaoRasteira:Sim.ARBUSTOS.map(q=>({x:q.x,z:q.z,escala:q.s,rot:q.rot,tipo:q.tipo?'moita':'samambaia'})),
 };
 // Dados da simulação para o porte em C# (Scripts/Simulacao): precisão total, na ordem exata de shared/sim.js,

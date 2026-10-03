@@ -65,7 +65,8 @@ namespace RitualReversal
             if (jogando) LerAtalhos(m, ativo);
             var inp = LerEntrada(ativo);
             bool pausado = jogando && !Travado() && lojaAberta == null;
-            if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); Sim.Step(g, dt); }
+            ultimaEntrada = inp;
+            if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); PreverTiro(m, (float)dt, inp.fire); Sim.Step(g, dt); }
             else if (!jogando) Sim.Step(g, dt);
             var evs = new List<Evento>(g.events); g.events.Clear(); TratarEventos(evs, Eu());
 
@@ -76,8 +77,7 @@ namespace RitualReversal
                 faseAnterior = g.phase;
             }
             if (lojaAberta != null && (m == null || m.st != "alive" || Distancia(m, Mapa.NPCS.Find(n => n.id == lojaAberta)) > 3.4)) lojaAberta = null;
-            AtualizarVisual((float)raw);
-            AtualizarCamera(Eu());
+            AtualizarVisual((float)System.Math.Min(.25, raw));
         }
 
         static double Distancia(Ponto a, Ponto b) { return b == null ? 1e9 : JS.Hypot(a.x - b.x, a.z - b.z); }
@@ -105,7 +105,7 @@ namespace RitualReversal
             double mx = 0, mz = 0;
             if (ativo)
             {
-                var d = EntradaUnity.Mouse();
+                var d = EntradaUnity.Mouse(); if (fp != null) fp.Mouse(d.x, -d.y);
                 lookYaw -= d.x * .0022 * sensibilidade; lookPitch = JS.Clamp(lookPitch + d.y * .0022 * sensibilidade, -1.45, 1.45);
                 if (EntradaUnity.Segurando(Tecla.W)) mz -= 1; if (EntradaUnity.Segurando(Tecla.S)) mz += 1;
                 if (EntradaUnity.Segurando(Tecla.A)) mx -= 1; if (EntradaUnity.Segurando(Tecla.D)) mx += 1;
@@ -116,14 +116,6 @@ namespace RitualReversal
                 fire = ativo && EntradaUnity.Atirando(), use = ativo && EntradaUnity.Segurando(Tecla.E), use2 = ativo && EntradaUnity.Segurando(Tecla.T),
                 c = botoes.Copia(), viewT = g.t
             };
-        }
-
-        void AtualizarCamera(Ator m)
-        {
-            if (cam == null || m == null) return;
-            float olho = m.st == "down" ? .55f : 1.62f;
-            cam.transform.position = new Vector3((float)m.x, olho, (float)-m.z);
-            cam.transform.rotation = Quaternion.Euler((float)(-lookPitch * Mathf.Rad2Deg), (float)(-lookYaw * Mathf.Rad2Deg), 0f);
         }
 
         // ---------- eventos da simulação ----------
@@ -148,15 +140,12 @@ namespace RitualReversal
                             string cls = e.Str("cls") ?? ""; Feed(e.Str("msg"), cls); if (cls.Contains("big")) Anunciar(e.Str("msg"));
                             break;
                         }
-                    case "tracer": Tracer(e); break;
-                    case "hit": if (e.Int("a") == eu) hitT = .15f; break;
                     case "hurt": if (e.Int("a") == eu) hurtT = .35f; break;
-                    case "blind": if (e.Int("a") == eu) blindT = 1.2f; break;
-                    case "stun": if (e.Int("a") == eu) Anunciar("Atordoado!", 1f); break;
+                    case "blind": if (e.Int("a") == eu) blindT = 1.5f; break;
                     case "sensor": if (e.Int("a") == eu) { sensorV = e.Num("v"); sensorT = 4f; } break;
-                    case "burst": Estouro(e); break;
-                    case "momento": Anunciar(e.Str("nome"), 4f); break;
+                    case "momento": Anunciar(e.Str("nome") + (e.Int("i") == 1 ? ": os altares despertam" : ": os rituais aceleram e a névoa se fecha"), 4.5f); break;
                 }
+                EventoAudiovisual(e, papel, eu);
             }
         }
     }

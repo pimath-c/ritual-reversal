@@ -14,7 +14,7 @@ namespace RitualReversal.Ferramentas
 {
     public static class ImportarMapa
     {
-        const string DADOS = "Assets/RitualReversal/Dados/mapa.json";
+        const string DADOS = "Assets/RitualReversal/Resources/mapa.json";
         const string MATERIAIS = "Assets/RitualReversal/Materiais";
         const string TEXTURAS = "Assets/RitualReversal/Texturas";
         const string RAIZ = "Mapa Ritual Reversal";
@@ -33,6 +33,19 @@ namespace RitualReversal.Ferramentas
             {"marco", new Color(.4f,.3f,.2f)}, {"santuario", new Color(.42f,.42f,.4f)},
         };
         static readonly Dictionary<string, Material> cache = new Dictionary<string, Material>();
+
+        // cena só com a câmera e a Partida: o mundo inteiro do protótipo é montado por código no Play
+        [MenuItem("Ritual Reversal/Criar cena do jogo")]
+        public static void CriarCena()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            var cena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var c = new GameObject("Câmera"); c.tag = "MainCamera"; var camera = c.AddComponent<Camera>(); camera.nearClipPlane = .05f; camera.farClipPlane = 220; c.AddComponent<AudioListener>();
+            c.transform.position = new Vector3(6, 3.4f, 9);
+            var raiz = new GameObject(RAIZ); var partida = new GameObject("Partida"); partida.transform.SetParent(raiz.transform); partida.AddComponent<PartidaLocal>();
+            EditorSceneManager.MarkSceneDirty(cena); Selection.activeGameObject = partida;
+            EditorUtility.DisplayDialog("Ritual Reversal", "Cena criada. Salve (Ctrl+S) e aperte Play.", "OK");
+        }
 
         [MenuItem("Ritual Reversal/Importar mapa (blockout)")]
         public static void Importar()

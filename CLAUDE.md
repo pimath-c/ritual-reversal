@@ -45,7 +45,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - v5.2: Grande Ritual cinematográfico (céu e vitrais de sangue, sino, coro e tambor, corvos, névoa carmim;
   `atualizarGrande` no cliente, `grande` no snapshot do altar); um bot Cultista planta até dois Chamarizes.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
-  `docs/mapa.json` (`node tools/exportar-mapa.js`, que também copia para `unity/Assets/RitualReversal/Dados/`).
+  `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
   `unity/Assets/RitualReversal`. `Scripts/Simulacao/` é o `sim.js` inteiro em C# puro (regras, bots, navegação),
   conferido bit a bit contra o JS por `node tools/comparar-cs.js` (precisa de `apt-get install mono-mcs`).
@@ -53,10 +53,18 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `Resources/simulacao.json` sai de `node tools/exportar-mapa.js`. Eixos: Unity (x, y, −z), giro −yaw.
   Mudou regra no `sim.js`? Porte para o C# e rode o comparar-cs. Os scripts do Unity compilam aqui contra os
   assemblies do NuGet `UnityEngine.Modules` 2021.3 (mcs com -r:), mas só o dono roda o Unity de verdade.
+- Visual do protótipo no Unity (`Scripts/Visual/`): o cliente three.js portado para URP, montado por código no Play.
+  Tudo nas coordenadas do protótipo sob uma raiz espelhada (1, 1, −1); `Mundo.Q` = Euler XYZ do three.
+  `Geo.cs` (primitivas iguais às do three), `Texturas.cs` (makeNoise/pbr/canvas), `Materiais.cs` (URP Lit e o
+  shader `Resources/RitualReversalBrilho.shader` para brilhos e sprites), `Mundo*.cs` (buildWorld, floresta,
+  catedral viva, altares, céu/luzes/névoa/Grande Ritual, atores/efeitos/partículas), `Personagens.cs`
+  (makeCharacter/animateActor, armas, cetro), `PrimeiraPessoa.cs` (viewmodels, lanterna, câmera), `Pos.cs`
+  (Volume do URP), `Som.cs` (todos os SFX e laços sintetizados em OnAudioFilterRead). Menu "Criar cena do jogo".
+  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE, luz de recorte (RIMLUZ), rede e tela de ajustes.
 
 ## Pendências
 - Postar `notas/v5.md` no Discord: precisa de `discord.com` liberado na rede do ambiente e da credencial
   `DISCORD_WEBHOOK`; então `node tools/postar-discord.js notas/v5.md`.
 - Playtests com 4 pessoas antes de mais conteúdo.
-- Unity: o dono testar a partida contra bots; depois som, snapshot/rede e arte (ordem em `docs/PORTE.md`).
+- Unity: o dono testar o visual portado (personagens e efeitos nunca rodaram num Unity de verdade); depois rede.
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

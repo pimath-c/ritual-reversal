@@ -30,6 +30,8 @@ namespace RitualReversal
         void Barra(Rect r, float v, Color c) { Caixa(r, new Color(0, 0, 0, .55f)); Caixa(new Rect(r.x, r.y, r.width * Mathf.Clamp01(v), r.height), c); }
         static string Cor(string txt, Color c) { return "<color=#" + ColorUtility.ToHtmlStringRGB(c) + ">" + txt + "</color>"; }
         static string Relogio(double s) { s = System.Math.Max(0, s); int m = (int)(s / 60), ss = (int)(s % 60); return m + ":" + ss.ToString("00"); }
+        // OnGUI roda mais de uma vez por quadro: os cronômetros do HUD só andam no desenho
+        static float dtG { get { return Event.current != null && Event.current.type == EventType.Repaint ? Time.unscaledDeltaTime : 0; } }
         Rect Janela(float w, float h) { var r = new Rect((W - w) / 2, (H - h) / 2, w, h); Caixa(r, new Color(.03f, .03f, .05f, .92f)); return new Rect(r.x + 30, r.y + 24, w - 60, h - 48); }
 
         void OnGUI()
@@ -59,7 +61,7 @@ namespace RitualReversal
             if (GUILayout.Button(Cor("Celebrar", CARMIM_VIVO) + "\nvocê e um bot contra dois Caçadores", sBotao, GUILayout.Height(90))) NovaPartida(false);
             GUILayout.EndHorizontal(); GUILayout.Space(16);
             GUILayout.Label("<b>Controles</b>: WASD anda, Shift corre, mouse mira, clique esquerdo ataca, clique direito usa o feitiço. E (segurar) interage, T (segurar) transfere o ritual. Q sensor, F lanterna, G sinalizador, R recarrega (Caçador). Tab mostra a planta. Esc pausa.", sPequeno);
-            GUILayout.Label("Porte para o Unity da simulação do protótipo (a mesma regra, os mesmos bots). A arte ainda é de caixas.", sPequeno);
+            GUILayout.Label("Porte para o Unity do protótipo: a mesma regra, os mesmos bots, o mesmo mundo, a mesma luz e o mesmo som.", sPequeno);
             GUILayout.EndArea();
         }
 
@@ -109,7 +111,7 @@ namespace RitualReversal
             var r = Janela(560, 260); GUILayout.BeginArea(r);
             GUILayout.Label("Pausado", sTitulo); GUILayout.Space(10);
             if (GUILayout.Button("Continuar", sBotao, GUILayout.Height(52))) Travar(true);
-            if (GUILayout.Button("Abandonar a partida", sBotao)) { g = null; LimparVisual(); raizFx.gameObject.SetActive(false); }
+            if (GUILayout.Button("Abandonar a partida", sBotao)) { g = null; LimparVisual(); }
             GUILayout.EndArea();
         }
 
@@ -213,7 +215,7 @@ namespace RitualReversal
                 float idade = agora - a.t; if (idade > 9f) continue; var c = a.cls.Contains("h") ? OURO : a.cls.Contains("c") ? CARMIM_VIVO : OSSO; c.a = Mathf.Clamp01((9f - idade) / 2f);
                 var st = new GUIStyle(sPequeno); st.normal.textColor = c; GUI.Label(new Rect(20, fy, 520, 44), a.msg, st); fy += 40;
             }
-            if (anuncioT > 0) { anuncioT -= Time.unscaledDeltaTime; var st = new GUIStyle(sGrande); var c = OSSO; c.a = Mathf.Clamp01(anuncioT); st.normal.textColor = c; GUI.Label(new Rect(W / 2 - 500, 250, 1000, 50), anuncio, st); }
+            if (anuncioT > 0) { anuncioT -= dtG; var st = new GUIStyle(sGrande); var c = OSSO; c.a = Mathf.Clamp01(anuncioT); st.normal.textColor = c; GUI.Label(new Rect(W / 2 - 500, 250, 1000, 50), anuncio, st); }
 
             // vida, sanidade e classe
             var cl = Regras.CLASSES[m.cls];
@@ -237,11 +239,25 @@ namespace RitualReversal
             if (bf.Count > 0) GUI.Label(new Rect(W / 2 - 400, H - 40, 800, 30), string.Join("   ", bf.ToArray()), new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleCenter });
 
             // sensor
-            if (sensorT > 0) { sensorT -= Time.unscaledDeltaTime; string s = sensorV > .6 ? "Sinal forte" : sensorV > .3 ? "Sinal médio" : sensorV > .02 ? "Sinal fraco" : "Nenhum sinal"; GUI.Label(new Rect(W / 2 - 150, H - 190, 300, 26), "Sensor Áurico: " + s, sCentro); Barra(new Rect(W / 2 - 120, H - 162, 240, 8), (float)sensorV, ROXO_VIVO); }
+            if (sensorT > 0) { sensorT -= dtG; string s = sensorV > .6 ? "Sinal forte" : sensorV > .3 ? "Sinal médio" : sensorV > .02 ? "Sinal fraco" : "Nenhum sinal"; GUI.Label(new Rect(W / 2 - 150, H - 190, 300, 26), "Sensor Áurico: " + s, sCentro); Barra(new Rect(W / 2 - 120, H - 162, 240, 8), (float)sensorV, ROXO_VIVO); }
 
             // mira e interação
             Caixa(new Rect(W / 2 - 2, H / 2 - 2, 4, 4), new Color(1, 1, 1, .8f));
-            if (hitT > 0) { hitT -= Time.unscaledDeltaTime; GUI.Label(new Rect(W / 2 - 20, H / 2 - 20, 40, 40), "✕", sCentro); }
+            if (hitT > 0)
+            {
+                hitT -= dtG; float hs = marcaAcerto == "kill" ? 1.15f : marcaAcerto == "head" ? .9f : .6f;
+                var hc = marcaAcerto == "kill" ? CARMIM_VIVO : marcaAcerto == "head" ? OURO : OSSO; hc.a = Mathf.Clamp01(hitT / .15f);
+                GUI.Label(new Rect(W / 2 - 40, H / 2 - 40, 80, 80), "<size=" + Mathf.RoundToInt(44 * hs) + ">" + Cor("✕", hc) + "</size>", sCentro);
+            }
+            Marcadores(m, papel);
+            // direção do dano: arcos vermelhos ao redor da mira
+            for (int i = danos.Count - 1; i >= 0; i--)
+            {
+                var d = danos[i]; d.t -= dtG; if (d.t <= 0) { danos.RemoveAt(i); continue; }
+                var mt = GUI.matrix; var pv = new Vector3(W / 2, H / 2, 0); GUI.matrix = mt * Matrix4x4.Translate(pv) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, d.ang * Mathf.Rad2Deg)) * Matrix4x4.Translate(-pv);
+                var dc = new Color(.9f, .1f, .15f, Mathf.Clamp01(d.t / 1.2f) * .85f); Caixa(new Rect(W / 2 - 60, H / 2 - 170, 120, 10), dc); GUI.matrix = mt;
+            }
+            if (notaT > 0) { notaT -= dtG; var nc = notaCor; nc.a = Mathf.Clamp01(notaT / .4f); GUI.Label(new Rect(W / 2 - 400, H / 2 + 130, 800, 30), Cor(nota, nc), sCentro); }
             var ctx = Sim.Contexts(g, m);
             float iy = H / 2 + 60;
             if (ctx.e != null) { GUI.Label(new Rect(W / 2 - 400, iy, 800, 30), "[E] " + ctx.e.label.Replace("Segure E para ", "Segure para ").Replace("Aperte E para ", ""), sCentro); iy += 30; }
@@ -266,12 +282,39 @@ namespace RitualReversal
             }
 
             // tela: dano, cegueira, caído ou morto
-            if (hurtT > 0) { hurtT -= Time.unscaledDeltaTime; Caixa(new Rect(0, 0, W, H), new Color(.6f, 0, 0, hurtT / .35f * .35f)); }
-            if (blindT > 0) { blindT -= Time.unscaledDeltaTime; Caixa(new Rect(0, 0, W, H), new Color(1, 1, 1, Mathf.Clamp01(blindT / 1.2f))); }
+            if (hurtT > 0) { hurtT -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.6f, 0, 0, hurtT / .35f * .35f)); }
+            if (blindT > 0) { blindT -= dtG; Caixa(new Rect(0, 0, W, H), new Color(1, 1, 1, Mathf.Clamp01(blindT / 1.2f))); }
+            if (atordT > 0) { atordT -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.95f, .84f, .55f, atordT * .35f)); }
+            if (claraoGrande > 0) { claraoGrande -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.8f, .05f, .1f, Mathf.Clamp01(claraoGrande / 1.2f) * .85f)); }
             if (m.st == "dead") { Caixa(new Rect(0, 0, W, H), new Color(0, 0, 0, .6f)); GUI.Label(new Rect(0, H / 2 - 60, W, 50), "Você morreu", sTitulo); GUI.Label(new Rect(0, H / 2, W, 30), "Retorno em " + Mathf.CeilToInt((float)m.respawnT) + " s", sCentro); }
             else if (m.st == "down") { Caixa(new Rect(0, 0, W, H), new Color(.2f, 0, 0, .45f)); GUI.Label(new Rect(0, H / 2 - 60, W, 50), "Você está caído", sTitulo); GUI.Label(new Rect(0, H / 2, W, 30), "Um aliado pode te reanimar. Sangrando: " + Mathf.CeilToInt((float)m.downT) + " s" + (m.revUsed ? " (sem reanimação neste ciclo)" : ""), sCentro); }
 
             if (EntradaUnity.Segurando(Tecla.Tab)) Planta(m, papel);
+        }
+
+        // Marcadores na tela: aliados (inclusive caídos), mercadores perto, Cultistas denunciados pelo sal e o ritual revelado
+        void Marcador(Vector3 p, string txt, string sub, Color c, bool prender)
+        {
+            var sp = cam.WorldToScreenPoint(new Vector3(p.x, p.y, -p.z)); bool atras = sp.z < 0; float esc = Screen.height / 1080f;
+            float sx = sp.x / esc, sy = H - sp.y / esc;
+            if (atras) { if (!prender) return; sx = W - sx; sy = H - 8; }
+            if (prender) { sx = Mathf.Clamp(sx, 50, W - 50); sy = Mathf.Clamp(sy, 110, H - 60); }
+            GUI.Label(new Rect(sx - 150, sy - 44, 300, 26), Cor(txt, c), sCentro);
+            if (sub != null) GUI.Label(new Rect(sx - 150, sy - 22, 300, 22), "<size=14>" + sub + "</size>", sCentro);
+            Caixa(new Rect(sx - 3, sy - 3, 6, 6), c);
+        }
+        void Marcadores(Ator m, string papel)
+        {
+            var c = CamP(); System.Func<double, double, int> dm = (x, z) => Mathf.RoundToInt(Mathf.Sqrt((float)((x - c.x) * (x - c.x) + (z - c.z) * (z - c.z))));
+            foreach (var a in g.actors)
+            {
+                if (a == m || a.team != m.team || a.st == "dead") continue;
+                if (a.st == "down") Marcador(new Vector3((float)a.x, 1.1f, (float)a.z), a.name, "caído, " + dm(a.x, a.z) + " m", CARMIM_VIVO, true);
+                else Marcador(new Vector3((float)a.x, 2.35f, (float)a.z), a.name, null, m.team == "C" ? CARMIM_VIVO : OURO, false);
+            }
+            foreach (var n in Mapa.NPCS) if (dm(n.x, n.z) < 14 && (n.time == null || n.time == m.team)) Marcador(new Vector3((float)n.x, 2.3f, (float)n.z), char.ToUpper(n.nome[0]) + n.nome.Substring(1), "mercador", ROXO_VIVO, false);
+            if (papel == "H") foreach (var a in g.actors) if (a.team == "C" && a.revelT > 0 && a.st == "alive") Marcador(new Vector3((float)a.x, 2.4f, (float)a.z), a.name, "denunciado pelo sal", CARMIM_VIVO, true);
+            foreach (var A in g.altars) { if (A.state != "active" || (papel == "H" && !A.localized)) continue; Marcador(new Vector3((float)A.x, 3.2f, (float)A.z), (A.grande ? "Grande Ritual" : "Ritual") + " em " + A.name, dm(A.x, A.z) + " m", CARMIM_VIVO, true); }
         }
 
         // planta (Tab): catedral, Claustro, altares como o seu lado os conhece, você e seus aliados
