@@ -1,0 +1,25 @@
+# Posta um arquivo de patch notes no Discord. Rode em Actions → "Patch notes no Discord" → Run workflow.
+# Precisa do segredo DISCORD_WEBHOOK (Settings → Secrets and variables → Actions).
+name: Patch notes no Discord
+
+on:
+  workflow_dispatch:
+    inputs:
+      notas:
+        description: Arquivo de notas
+        default: notas/v5.md
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Posta
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then echo "Falta o segredo DISCORD_WEBHOOK"; exit 1; fi
+          node tools/postar-discord.js "${{ inputs.notas }}"
