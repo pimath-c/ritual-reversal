@@ -186,6 +186,7 @@ namespace RitualReversal.Visual
             foreach (var a in g.actors)
             {
                 if (a == eu) continue; vistos.Add(a.id); Boneco b;
+                if (a.hidden) { if (bonecos.TryGetValue(a.id, out b)) { b.g.gameObject.SetActive(false); b.px = null; } continue; } // fora de vista (online): guarda o boneco escondido
                 if (!bonecos.TryGetValue(a.id, out b)) { b = new Boneco(atoresRaiz, a.team, a.cls); bonecos[a.id] = b; }
                 float x = (float)a.x, z = (float)a.z;
                 b.Animar(this, a, x, z, (float)a.yaw, Mathf.Max(dt, .001f), t, g.altars);

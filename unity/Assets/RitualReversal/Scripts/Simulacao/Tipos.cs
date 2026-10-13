@@ -116,6 +116,7 @@ namespace RitualReversal.Simulacao
         public Entrada inp = new Entrada(); public Controles lc = new Controles(); public bool lcIni;
         public IA ai = new IA();
         public double _vx, _vz; public double? _px, _pz; public Pegada _pegada; public double stepT;
+        public bool hidden; // só no cliente online: o snapshot escondeu este inimigo (fora da visão)
     }
 
     public class Altar : Ponto

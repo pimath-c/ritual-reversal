@@ -28,6 +28,7 @@ commits em português.
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/celular.js     # celular emulado com toque
     node tools/build-mobile.js && NODE_PATH=$(npm root -g) node tools/app.js     # app sem internet + servidor
     node tools/comparar-cs.js 2 1 40000 H   # porte C# (Unity) igual ao sim.js, bit a bit (precisa do Mono)
+    node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v5.1a)
@@ -60,11 +61,13 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   catedral viva, altares, céu/luzes/névoa/Grande Ritual, atores/efeitos/partículas), `Personagens.cs`
   (makeCharacter/animateActor, armas, cetro), `PrimeiraPessoa.cs` (viewmodels, lanterna, câmera), `Pos.cs`
   (Volume do URP), `Som.cs` (todos os SFX e laços sintetizados em OnAudioFilterRead). Menu "Criar cena do jogo".
-  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE, luz de recorte (RIMLUZ), rede e tela de ajustes.
+  Online: `Rede.cs` (WebSocket, snapshot -> Jogo) e `PartidaOnline.cs` (lobby, previsão, interpolação, reconexão),
+  mesmo protocolo do navegador; `Ator.hidden` só existe no cliente. Ajustes na pausa e no título (PlayerPrefs).
+  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE e a luz de recorte (RIMLUZ).
 
 ## Pendências
 - Postar `notas/v5.md` no Discord: precisa de `discord.com` liberado na rede do ambiente e da credencial
   `DISCORD_WEBHOOK`; então `node tools/postar-discord.js notas/v5.md`.
 - Playtests com 4 pessoas antes de mais conteúdo.
-- Unity: o dono testar o visual portado (personagens e efeitos nunca rodaram num Unity de verdade); depois rede.
+- Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

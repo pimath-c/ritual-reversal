@@ -12,7 +12,7 @@ namespace RitualReversal
         [Tooltip("Sensibilidade do mouse (1 = a do protótipo)")]
         public float sensibilidade = 1f;
 
-        public const string EU = "local";
+        string EU = "local"; // cid do jogador: "local" contra bots, o que o servidor mandar no online
         Jogo g;
         Camera cam;
         double lookYaw, lookPitch;
@@ -22,6 +22,7 @@ namespace RitualReversal
 
         void Awake()
         {
+            RitualReversal.Visual.Qualidade.Escolher(PlayerPrefs.GetInt("rr-qualidade", 3));
             if (!Mapa.Carregado)
             {
                 var dados = Resources.Load<TextAsset>("simulacao");
@@ -37,13 +38,14 @@ namespace RitualReversal
             var cc = cam.GetComponentInParent<CharacterController>(); if (cc != null) cc.enabled = false;
         }
 
-        void Start() { CriarVisual(); Travar(false); }
+        void Start() { CarregarPreferencias(); CriarVisual(); Travar(false); }
 
         public void NovaPartida(bool cacador)
         {
             var slots = cacador
                 ? new List<Slot> { new Slot("A", EU, "Você"), new Slot("A", null, "Irmã Beatriz"), new Slot("B", null, "Irmão Cinza"), new Slot("B", null, "Madre Vesper") }
                 : new List<Slot> { new Slot("A", null, "Irmã Beatriz"), new Slot("A", null, "Irmão Tomé"), new Slot("B", EU, "Você"), new Slot("B", null, "Madre Vesper") };
+            if (online) SairOnline(""); EU = "local";
             g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss") });
             faseAnterior = ""; lojaAberta = null; feed.Clear(); LimparVisual();
         }
@@ -53,12 +55,13 @@ namespace RitualReversal
         string MeuPapel() { var s = MeuSlot(); return s != null ? Sim.RoleOf(g, s.team) : "H"; }
         static bool Travado() { return Cursor.lockState == CursorLockMode.Locked; }
         static void Travar(bool sim) { Cursor.lockState = sim ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !sim; }
-        public void Acao(Acao a) { if (g != null) Sim.Act(g, EU, a); }
+        public void Acao(Acao a) { if (online) EnviarAcao(a); else if (g != null) Sim.Act(g, EU, a); }
 
         void Update()
         {
-            if (g == null) return;
             double raw = Mathf.Max(.001f, Time.unscaledDeltaTime), dt = System.Math.Min(.05, raw);
+            if (online) ProcessarRede();
+            if (g == null) { AtualizarVisual((float)System.Math.Min(.25, raw)); return; }
             var m = Eu();
             bool jogando = g.phase == "play";
             bool ativo = jogando && Travado() && lojaAberta == null;
@@ -66,7 +69,8 @@ namespace RitualReversal
             var inp = LerEntrada(ativo);
             bool pausado = jogando && !Travado() && lojaAberta == null;
             ultimaEntrada = inp;
-            if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); PreverTiro(m, (float)dt, inp.fire); Sim.Step(g, dt); }
+            if (online) { inp.viewT = ServerNow() - .1; PassoOnline(inp, dt); m = Eu(); if (m != null && jogando) PreverTiro(m, (float)dt, inp.fire); }
+            else if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); PreverTiro(m, (float)dt, inp.fire); Sim.Step(g, dt); }
             else if (!jogando) Sim.Step(g, dt);
             var evs = new List<Evento>(g.events); g.events.Clear(); TratarEventos(evs, Eu());
 

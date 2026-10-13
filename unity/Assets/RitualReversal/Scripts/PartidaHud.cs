@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using RitualReversal.Simulacao;
+using RitualReversal.Visual;
 
 namespace RitualReversal
 {
@@ -38,7 +39,8 @@ namespace RitualReversal
         {
             Estilos();
             float esc = Screen.height / 1080f; GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = 1080f;
-            if (g == null) { TelaTitulo(); return; }
+            if (reconectando) { TelaReconexao(); return; }
+            if (g == null) { if (online && noLobby) TelaLobby(); else TelaTitulo(); return; }
             switch (g.phase)
             {
                 case "pick": TelaEscolha(); break;
@@ -52,7 +54,7 @@ namespace RitualReversal
         // ---------- telas ----------
         void TelaTitulo()
         {
-            var r = Janela(900, 620); GUILayout.BeginArea(r);
+            var r = Janela(1000, 980); GUILayout.BeginArea(r);
             GUILayout.Label(Cor("Ritual Reversal", CARMIM_VIVO), sTitulo);
             GUILayout.Label("Dois Cultistas celebram rituais em segredo. Dois Caçadores investigam e selam. Uma noite de 18 minutos: Crepúsculo, Vigília e Hora Morta. Quem vencer dois dos três rituais vence a noite.", sCentro);
             GUILayout.Space(20);
@@ -61,6 +63,7 @@ namespace RitualReversal
             if (GUILayout.Button(Cor("Celebrar", CARMIM_VIVO) + "\nvocê e um bot contra dois Caçadores", sBotao, GUILayout.Height(90))) NovaPartida(false);
             GUILayout.EndHorizontal(); GUILayout.Space(16);
             GUILayout.Label("<b>Controles</b>: WASD anda, Shift corre, mouse mira, clique esquerdo ataca, clique direito usa o feitiço. E (segurar) interage, T (segurar) transfere o ritual. Q sensor, F lanterna, G sinalizador, R recarrega (Caçador). Tab mostra a planta. Esc pausa.", sPequeno);
+            GUILayout.Space(10); TelaOnline(r); GUILayout.Space(10); Ajustes();
             GUILayout.Label("Porte para o Unity do protótipo: a mesma regra, os mesmos bots, o mesmo mundo, a mesma luz e o mesmo som.", sPequeno);
             GUILayout.EndArea();
         }
@@ -106,12 +109,32 @@ namespace RitualReversal
             GUILayout.EndArea();
         }
 
+        // ajustes (settingsScreen do protótipo): ficam salvos entre as sessões
+        static readonly string[] NIVEIS = { "Mínimo", "Baixo", "Médio", "Alto" };
+        void Ajustes()
+        {
+            GUILayout.BeginHorizontal(); GUILayout.Label("Sensibilidade " + sensibilidade.ToString("0.00"), sPequeno, GUILayout.Width(230)); sensibilidade = GUILayout.HorizontalSlider(sensibilidade, .2f, 3f, GUILayout.Width(380)); GUILayout.EndHorizontal();
+            float vol = som != null ? som.volume : .8f;
+            GUILayout.BeginHorizontal(); GUILayout.Label("Volume " + Mathf.RoundToInt(vol * 100) + "%", sPequeno, GUILayout.Width(230)); vol = GUILayout.HorizontalSlider(vol, 0, 1, GUILayout.Width(380)); GUILayout.EndHorizontal();
+            if (som != null) som.volume = vol;
+            float fov = fp != null ? fp.fovBase : 72;
+            GUILayout.BeginHorizontal(); GUILayout.Label("Campo de visão " + Mathf.RoundToInt(fov) + "°", sPequeno, GUILayout.Width(230)); fov = Mathf.Round(GUILayout.HorizontalSlider(fov, 60, 100, GUILayout.Width(380))); GUILayout.EndHorizontal();
+            if (fp != null) fp.fovBase = fov;
+            GUILayout.BeginHorizontal(); GUILayout.Label("Qualidade (vale no próximo Play)", sPequeno, GUILayout.Width(230));
+            int q = PlayerPrefs.GetInt("rr-qualidade", Qualidade.nivel);
+            for (int i = 3; i >= 0; i--) if (GUILayout.Button((q == i ? "● " : "") + NIVEIS[i], sBotao, GUILayout.Width(110))) PlayerPrefs.SetInt("rr-qualidade", i);
+            GUILayout.EndHorizontal();
+            if (GUI.changed) SalvarAjustes();
+        }
+        void SalvarAjustes() { PlayerPrefs.SetFloat("rr-sens", sensibilidade); if (som != null) PlayerPrefs.SetFloat("rr-vol", som.volume); if (fp != null) PlayerPrefs.SetFloat("rr-fov", fp.fovBase); }
+
         void TelaPausa()
         {
-            var r = Janela(560, 260); GUILayout.BeginArea(r);
+            var r = Janela(760, 560); GUILayout.BeginArea(r);
             GUILayout.Label("Pausado", sTitulo); GUILayout.Space(10);
             if (GUILayout.Button("Continuar", sBotao, GUILayout.Height(52))) Travar(true);
-            if (GUILayout.Button("Abandonar a partida", sBotao)) { g = null; LimparVisual(); }
+            GUILayout.Space(8); Ajustes(); GUILayout.Space(8);
+            if (GUILayout.Button(online ? "Sair da sala" : "Abandonar a partida", sBotao)) { if (online) SairOnline(""); else { g = null; LimparVisual(); } }
             GUILayout.EndArea();
         }
 
@@ -170,8 +193,10 @@ namespace RitualReversal
             if (w.why.Length > 0) GUILayout.Label(char.ToUpper(w.why[0]) + w.why.Substring(1) + ".", sCentro);
             GUILayout.Space(10); Estatisticas(); GUILayout.Space(10);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Jogar de novo", sBotao, GUILayout.Height(52))) { LimparVisual(); Acao(new Acao { type = "restart" }); }
-            if (GUILayout.Button("Trocar de lado", sBotao, GUILayout.Height(52))) { g = null; LimparVisual(); }
+            bool anfitriao = !online || hostCid == EU;
+            if (anfitriao && GUILayout.Button("Jogar de novo", sBotao, GUILayout.Height(52))) { LimparVisual(); Acao(new Acao { type = "restart" }); }
+            if (online) { if (anfitriao && GUILayout.Button("Voltar ao lobby", sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "lobby")); if (!anfitriao) GUILayout.Label("O anfitrião decide o próximo passo.", sCentro); if (GUILayout.Button("Sair da sala", sBotao, GUILayout.Height(52))) SairOnline(""); }
+            else if (GUILayout.Button("Trocar de lado", sBotao, GUILayout.Height(52))) { g = null; LimparVisual(); }
             GUILayout.EndHorizontal(); GUILayout.EndArea();
         }
 
@@ -308,12 +333,12 @@ namespace RitualReversal
             var c = CamP(); System.Func<double, double, int> dm = (x, z) => Mathf.RoundToInt(Mathf.Sqrt((float)((x - c.x) * (x - c.x) + (z - c.z) * (z - c.z))));
             foreach (var a in g.actors)
             {
-                if (a == m || a.team != m.team || a.st == "dead") continue;
+                if (a == m || a.hidden || a.team != m.team || a.st == "dead") continue;
                 if (a.st == "down") Marcador(new Vector3((float)a.x, 1.1f, (float)a.z), a.name, "caído, " + dm(a.x, a.z) + " m", CARMIM_VIVO, true);
                 else Marcador(new Vector3((float)a.x, 2.35f, (float)a.z), a.name, null, m.team == "C" ? CARMIM_VIVO : OURO, false);
             }
             foreach (var n in Mapa.NPCS) if (dm(n.x, n.z) < 14 && (n.time == null || n.time == m.team)) Marcador(new Vector3((float)n.x, 2.3f, (float)n.z), char.ToUpper(n.nome[0]) + n.nome.Substring(1), "mercador", ROXO_VIVO, false);
-            if (papel == "H") foreach (var a in g.actors) if (a.team == "C" && a.revelT > 0 && a.st == "alive") Marcador(new Vector3((float)a.x, 2.4f, (float)a.z), a.name, "denunciado pelo sal", CARMIM_VIVO, true);
+            if (papel == "H") foreach (var a in g.actors) if (a.team == "C" && !a.hidden && a.revelT > 0 && a.st == "alive") Marcador(new Vector3((float)a.x, 2.4f, (float)a.z), a.name, "denunciado pelo sal", CARMIM_VIVO, true);
             foreach (var A in g.altars) { if (A.state != "active" || (papel == "H" && !A.localized)) continue; Marcador(new Vector3((float)A.x, 3.2f, (float)A.z), (A.grande ? "Grande Ritual" : "Ritual") + " em " + A.name, dm(A.x, A.z) + " m", CARMIM_VIVO, true); }
         }
 

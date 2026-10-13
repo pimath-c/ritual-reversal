@@ -28,6 +28,20 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
 2. Salve a cena (Ctrl+S) e aperte **Play**. Os primeiros segundos são o mundo sendo montado (texturas e malhas).
 3. Escolha **Caçar** ou **Celebrar**. Como Cultista, você escolhe os 3 altares. Depois escolha classe e feitiço e clique em **Estou pronto**.
 
+Para jogar **online** com amigos (o mesmo servidor do protótipo, dá até para misturar quem joga no navegador com
+quem joga no Unity):
+
+1. Quem hospeda roda o servidor: na pasta `server` do repositório, `npm install` e `npm start` (porta 8080).
+   Para amigos de fora, `cloudflared tunnel --url http://localhost:8080` dá um endereço `https://...`.
+2. Na tela inicial, em **Jogar online**, escreva o endereço do servidor (`localhost:8080`, um IP da rede de casa
+   como `192.168.0.10:8080`, ou o `https://...` do túnel) e seu nome.
+3. **Criar sala** mostra um código de 4 letras; os outros usam **Entrar na sala** com esse código. Vagas vazias
+   ficam com bots. O anfitrião clica em **Começar a partida**.
+4. Se a conexão cair no meio da noite, o jogo tenta voltar sozinho por 2 minutos; enquanto isso um bot joga por você.
+
+Na pausa (Esc) e na tela inicial ficam os **ajustes**: sensibilidade do mouse, volume, campo de visão e qualidade
+(Alto, Médio, Baixo, Mínimo; a qualidade vale a partir do próximo Play). Ficam salvos.
+
 Controles (os mesmos do protótipo):
 
 | Tecla | Ação |
@@ -57,6 +71,7 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
   `Mundo.cs` + `MundoFloresta/MundoCatedral/MundoAltares/MundoVida/MundoAtores.cs` (cenário, luzes, névoa, altares,
   bonecos, partículas e efeitos), `Personagens.cs` (Cultistas, Caçadores, armas, cetro), `PrimeiraPessoa.cs`
   (armas na mão, lanterna, câmera), `Pos.cs` (pós-processamento) e `Som.cs` (som sintetizado).
+- `Scripts/Rede.cs`, `PartidaOnline.cs` — o online: conexão, leitura do snapshot, lobby, previsão e interpolação.
 - `Scripts/EntradaUnity.cs` — teclado e mouse (Input System novo ou antigo).
 - `Editor/ImportarMapa.cs` — os menus (cena do jogo e importador do blockout); `Resources/mapa.json` é a planta visual.
 - `Scripts/GerarTextura.cs` — texturas geradas por código (pedra, lajota, madeira, casca, terra, grama, folhagem, osso).
@@ -73,9 +88,10 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
   mande o erro dele (clique no arquivo, aparece no Inspector).
 - **Sem bloom nem vinheta**: na câmera, marque **Post Processing** (o jogo tenta ligar sozinho).
 - **O mouse não gira**: clique em Continuar na tela de pausa (ou clique dentro da janela Game).
-- **Lento**: mude `Qualidade.nivel` (3 alto, 2 médio, 1 baixo, 0 mínimo) em `Scripts/Visual/Qualidade.cs`.
+- **Lento**: baixe a qualidade nos ajustes (Esc) e aperte Play de novo.
+- **Online não conecta**: confira se o servidor está rodando (abra o endereço no navegador: o protótipo deve abrir) e
+  se o firewall do Windows deixou o Node aceitar conexões.
 
 ## Ainda falta
 
 - Contorno a nanquim e névoa rasteira da etapa final de imagem do protótipo, e a luz de recorte nas silhuetas.
-- Jogar online (cliente WebSocket para o servidor Node) e a tela de ajustes (sensibilidade, volume, qualidade).

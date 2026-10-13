@@ -25,7 +25,7 @@ namespace RitualReversal
             if (raizBlockout != null) foreach (Transform c in raizBlockout) if (c != transform) c.gameObject.SetActive(false);
             mundo = Mundo.Construir(); fp = new PrimeiraPessoa(cam);
             try { pos = new Pos(cam); } catch (System.Exception e) { Debug.LogWarning("Ritual Reversal: sem pós-processamento (" + e.Message + ")"); }
-            som = Som.Criar(cam.gameObject); mundo.AoGritarCorvo = (x, z) => som.Tocar("corvo", x, z);
+            som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => som.Tocar("corvo", x, z);
         }
 
         void LimparVisual() { if (mundo != null) mundo.Limpar(); if (som != null) som.Silenciar(); }
