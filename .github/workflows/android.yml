@@ -1,0 +1,41 @@
+# Compila o APK de teste do app Android a cada envio que mexe no jogo.
+# O APK fica em Actions → a execução → Artifacts → ritual-reversal-apk (um .zip com o app-debug.apk dentro).
+name: APK Android
+
+on:
+  push:
+    paths: ['client/**', 'shared/**', 'mobile/**', 'tools/build-mobile.js', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      # a máquina do GitHub já traz o Android SDK em $ANDROID_HOME; o Gradle baixa a plataforma que faltar
+      - name: Android SDK
+        run: echo "sdk.dir=$ANDROID_HOME" > mobile/android/local.properties && ls "$ANDROID_HOME/platforms"
+      - name: Dependências
+        working-directory: mobile
+        run: npm ci
+      - name: Monta a pasta do app e sincroniza com o Android
+        working-directory: mobile
+        run: npm run sync
+      - name: Compila o APK
+        working-directory: mobile/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ritual-reversal-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
