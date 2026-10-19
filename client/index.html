@@ -79,6 +79,8 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #falas button{ text-align:left; font-family:var(--cond); font-size:16px; color:var(--bone); background:none; border:0; padding:3px 4px; cursor:pointer; } #falas button:hover,#falas button.sel{ color:var(--gold-hi); } #falas button.sel{ background:rgba(243,213,142,.1); }
 #falas kbd{ font-family:var(--cond); font-weight:700; color:var(--gold-hi); border:1px solid #4a525c; padding:0 5px; margin-right:8px; }
 /* caderno dos altares */
+#chatJogo{ position:absolute; left:18px; top:76px; width:350px; display:none; z-index:6; } #chatJogo.on{ display:block; }
+#chatJogo input{ width:100%; box-sizing:border-box; font:15px var(--sans,sans-serif); color:var(--bone); background:rgba(8,9,11,.92); border:1px solid var(--gold); padding:7px 10px; outline:none; }
 #caderno{ position:absolute; right:26px; top:120px; width:360px; max-height:calc(100% - 300px); overflow:hidden; padding:10px 14px; background:rgba(8,9,11,.97); border:1px solid rgba(232,224,208,.16); display:none; pointer-events:none; z-index:6; }
 #caderno.on{ display:block; } #caderno small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
 #caderno .cd{ padding:5px 0 6px; border-top:1px solid #262b31; } #caderno .cd b{ font-family:var(--serif); font-weight:400; font-size:17px; } #caderno .cd i{ font-style:normal; font-size:13px; font-weight:600; margin-left:8px; padding:0 6px; border:1px solid currentColor; }
@@ -205,6 +207,7 @@ table.res td.n{ text-align:right; } table.res th.n{ text-align:right; }
 .cq b{ display:block; font-family:var(--serif); font-weight:400; font-size:16px; } .cq span{ font-size:12.5px; color:var(--muted); line-height:1.25; display:block; } .cq.ok{ opacity:1; border-color:var(--gold); } .cq.ok b{ color:var(--gold-hi); }
 @media (max-width:760px){ .conqs{ grid-template-columns:1fr 1fr; } }
 #repSvg{ width:100%; height:auto; display:block; margin:6px 0; background:rgba(6,7,9,.6); }
+.difOnline{ flex-wrap:wrap; justify-content:center; margin:6px 0 2px; } .difOnline b{ color:var(--bone); font-weight:600; } .difOnline small{ flex-basis:100%; text-align:center; color:var(--muted); font-size:12.5px; }
 .repCtl{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; } .repCtl input[type=range]{ flex:1; min-width:160px; accent-color:var(--gold); } .repCtl b{ font-family:var(--cond); font-size:18px; min-width:52px; }
 .repCtl .opts{ display:flex; gap:4px; } .repCtl .opts button{ font-family:var(--cond); font-size:15px; color:var(--bone); background:rgba(14,16,19,.8); border:1px solid #3a4149; padding:4px 9px; cursor:pointer; } .repCtl .opts button.on{ border-color:var(--gold-hi); color:var(--gold-hi); }
 .repLeg span.eu{ color:var(--bone); font-weight:600; } .repLeg i.qd{ background:none; font-style:normal; color:#fff; width:auto; height:auto; }
@@ -347,7 +350,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
     <div class="side b"><b id="scoreB">0</b><span id="nameB">Adversários</span></div>
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
-  <div id="feed"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div>
+  <div id="feed"></div><div id="chatJogo"><input id="iChatJogo" maxlength="140" autocomplete="off" placeholder="Mensagem para a sala · Enter envia, Esc cancela" aria-label="Mensagem para a sala"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div>
   <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="caderno"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div>
   <div id="interact"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/><circle id="ring" cx="23" cy="23" r="19" fill="none" stroke="#f3d58e" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" transform="rotate(-90 23 23)"/></svg><div class="lbl" id="interactLbl"></div><div class="lbl" id="interactLbl2"></div></div>
   <div id="race" class="plate">
@@ -1814,6 +1817,7 @@ document.addEventListener('mousemove',e=>{
 });
 function pressed(code,e){
   if(capturing){ if(e) e.preventDefault(); return; }
+  if((code==='Enter'||code==='NumpadEnter')&&MODE==='online'&&V&&V.phase==='play'&&ws&&locked){ if(e) e.preventDefault(); abrirChatJogo(); return; }
   if(down.has(code)) return; down.add(code);
   if(SET.binds.map===code&&V&&V.phase==='play') $('#tabMap').style.display='grid';
   if(!V||V.phase!=='play'||!locked) return;
@@ -1831,6 +1835,13 @@ function pressed(code,e){
   if(SET.binds.fire===code) mouseL=true;
   if(SET.binds.use===code){ const m=me(); if(m){ const mv=MODE==='online'&&NET.pred?Object.assign({},m,{x:NET.pred.x,z:NET.pred.z}):m; const c=Sim.contexts(V,mv).e; if(c&&c.type==='loja') abrirLoja(c.npc); } }
 }
+// chat na partida online (Enter): a mensagem vai para a sala toda e aparece no registro à esquerda
+function abrirChatJogo(){ const box=$('#chatJogo'), ic=$('#iChatJogo'); [...down].forEach(released); box.classList.add('on'); ic.value=''; setTimeout(()=>ic.focus(),0); }
+function fecharChatJogo(){ $('#chatJogo').classList.remove('on'); const ic=$('#iChatJogo'); ic.blur(); }
+$('#iChatJogo').addEventListener('keydown',e=>{ e.stopPropagation(); const ic=e.target;
+  if(e.key==='Enter'){ e.preventDefault(); const t=ic.value.trim(); if(t&&ws&&ws.readyState===1) ws.send(JSON.stringify({t:'chat',msg:t})); fecharChatJogo(); }
+  else if(e.key==='Escape'){ e.preventDefault(); fecharChatJogo(); } });
+$('#iChatJogo').addEventListener('blur',()=>$('#chatJogo').classList.remove('on'));
 function released(code){ down.delete(code); if(SET.binds.map===code) $('#tabMap').style.display='none'; if(SET.binds.fire===code) mouseL=false; }
 document.addEventListener('mousedown',e=>{ const code='Mouse'+e.button; if(capturing){ e.preventDefault(); return; } if(!locked||(TQ.ativo&&!document.pointerLockElement)) return; pressed(code,e); });
 document.addEventListener('mouseup',e=>released('Mouse'+e.button));
@@ -2616,13 +2627,15 @@ function titleScreen(){
 function lobbyScreen(){
   const L=NET.lobby, isHost=L.host===meCid;
   const slotBtn=(s,i)=>`<button class="slot ${s.cid?'':'bot'} ${s.cid===meCid?'me':''}" data-i="${i}" ${s.cid?'disabled':''}>${esc(s.name)}${s.cid?(s.cid===L.host?' (anfitrião)':''):' (bot)'}${s.cid===meCid?' (você)':''}</button>`;
-  const key='lobby'+JSON.stringify(L.slots)+L.host;
+  const key='lobby'+JSON.stringify(L.slots)+L.host+L.dif; const DN={facil:'Fáceis',normal:'Normais',dificil:'Difíceis'};
   setScreen(key,`<h2 style="text-align:center">Sala</h2><p class="bigcode">${L.code}</p><p class="lede">Mande este código para seus amigos. Vagas sem jogador ficam com bots.</p>
     <div class="slots"><div class="slotcol a"><h3>Equipe A</h3>${L.slots.slice(0,2).map((s,i)=>slotBtn(s,i)).join('')}</div><div class="slotcol b"><h3>Equipe B</h3>${L.slots.slice(2).map((s,i)=>slotBtn(s,i+2)).join('')}</div></div>
     <p class="fine">${UMA_NOITE()?'A Equipe A caça e a Equipe B celebra.':'A Equipe A caça na rodada 1 e celebra na rodada 2.'} Clique numa vaga de bot para trocar de lugar.${L.publica?' Esta sala aparece na lista de salas abertas.':''}</p>
+    ${L.slots.some(s=>!s.cid)?`<div class="dif difOnline" role="group" aria-label="Dificuldade dos bots"><span>Bots</span>${isHost?['facil','normal','dificil'].map(k=>`<button class="${(L.dif||'normal')===k?'sel':''}" data-dif="${k}">${DN[k]}</button>`).join(''):`<b>${DN[L.dif||'normal']}</b>`}<small>valem para os bots do lado sem jogadores</small></div>`:''}
     <div class="chat"><div id="chatLista"></div><div class="linha"><input class="txt" id="iChat" maxlength="140" placeholder="Mensagem para a sala" aria-label="Mensagem para a sala" style="flex:1"><button class="go ghost" id="bChat">Enviar</button></div></div>
     <div class="btnrow">${isHost?'<button class="go" id="bStart">Começar a partida</button>':'<span class="wait">Aguardando o anfitrião começar…</span>'}<button class="go ghost" id="bSairSala">Sair da sala</button></div>`,
   ()=>{ $('#bSairSala').onclick=()=>sairParaMenu(); const ic=$('#iChat'); ic.value=NET.rascunho; ic.oninput=()=>NET.rascunho=ic.value;
+    scrBody.querySelectorAll('.difOnline button').forEach(b=>b.onclick=()=>{ if(ws) ws.send(JSON.stringify({t:'opcoes',dif:b.dataset.dif})); });
     const envia=()=>{ const t=ic.value.trim(); if(!t||!ws) return; ws.send(JSON.stringify({t:'chat',msg:t})); ic.value=''; NET.rascunho=''; }; $('#bChat').onclick=envia; ic.onkeydown=e=>{ if(e.key==='Enter') envia(); e.stopPropagation(); }; renderChat(); scrBody.querySelectorAll('.slot').forEach(b=>b.onclick=()=>ws.send(JSON.stringify({t:'slot',i:+b.dataset.i}))); const s=$('#bStart'); if(s) s.onclick=()=>ws.send(JSON.stringify({t:'start'})); });
 }
 function timerText(){ return V.timers?` (${Math.ceil(Math.max(0,V.phaseT))} s)`:''; }

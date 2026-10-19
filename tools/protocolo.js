@@ -24,6 +24,9 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
   // sala pública aparece na lista; chat chega a todos da sala, sem tags e com limite de tamanho
   { const l=await (await fetch(`http://localhost:${PORT}/api/salas`)).json(); if(!l.some(r=>r.code===w.code&&r.jogadores===2&&r.anfitriao==='Ana')) falha('sala pública fora da lista: '+JSON.stringify(l)); else console.log('  lista de salas: '+l.map(r=>r.code+' ('+r.jogadores+')').join(', ')); }
   A.envia({t:'chat',msg:'<b>oi</b> '+'x'.repeat(300)}); const ch=await B.ate(m=>m.t==='chat'); if(!ch) falha('chat não chegou'); else if(ch.msg.includes('<')||ch.msg.length>140||ch.de!=='Ana') falha('chat sem limpeza: '+JSON.stringify(ch).slice(0,80)); else console.log('  chat: chegou limpo ('+ch.msg.length+' caracteres)');
+  // só o anfitrião muda a dificuldade dos bots
+  B.envia({t:'opcoes',dif:'facil'}); A.envia({t:'opcoes',dif:'nada'}); A.envia({t:'opcoes',dif:'dificil'});
+  { const lb=await B.ate(m=>m.t==='lobby'&&m.dif!=='normal'); if(!lb||lb.dif!=='dificil') falha('opção de dificuldade: '+(lb&&lb.dif)); else console.log('  dificuldade dos bots: '+lb.dif+' (só o anfitrião muda)'); }
   // lixo antes de começar
   for(const lixo of ['null','42','[]','{"t":5}','{','{"t":"in","mx":"x","yaw":null}',JSON.stringify({t:'act',a:null}),JSON.stringify({t:'hello',create:true})]) A.envia(lixo);
   A.envia({t:'start'});

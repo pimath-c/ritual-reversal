@@ -28,7 +28,7 @@ let CID=1;
 function code(){ const L='ABCDEFGHJKLMNPQRSTUVWXYZ'; let c; do{ c=''; for(let i=0;i<4;i++) c+=L[Math.floor(Math.random()*L.length)]; }while(rooms.has(c)); return c; }
 function newRoom(){ const r={code:code(),clients:new Map(),host:null,slots:[0,1,2,3].map(i=>({team:i<2?'A':'B',cid:null,name:Sim.BOT_NAMES[i<2?'A':'B'][i%2]})),game:null,acc:0,snapAcc:0,logFile:null,logN:0,emptyT:0,reservas:new Map(),listada:false}; rooms.set(r.code,r); return r; }
 const send=(ws,o)=>{ if(ws.readyState===1) ws.send(JSON.stringify(o)); };
-function lobbyState(r){ return {t:'lobby',code:r.code,host:r.host,inGame:!!r.game,publica:r.listada,slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name}))}; }
+function lobbyState(r){ return {t:'lobby',code:r.code,host:r.host,inGame:!!r.game,publica:r.listada,dif:r.dif||'normal',slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name}))}; }
 function broadcastLobby(r){ const m=lobbyState(r); r.clients.forEach(c=>send(c.ws,m)); }
 function seat(r,c){
   const hA=r.slots.filter(s=>s.cid&&s.team==='A').length, hB=r.slots.filter(s=>s.cid&&s.team==='B').length;
@@ -68,8 +68,10 @@ wss.on('connection',ws=>{
       const msg=String(m.msg||'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().slice(0,140); if(!msg) return;
       const o={t:'chat',de:c.name,cid:c.cid,msg}; r.clients.forEach(k=>send(k.ws,o)); return; }
     if(m.t==='slot'&&!r.game){ const i=m.i|0; if(r.slots[i]&&!r.slots[i].cid){ unseat(r,c.cid); r.slots[i].cid=c.cid; r.slots[i].name=c.name; broadcastLobby(r); } }
+    // o anfitrião escolhe a dificuldade dos bots (vale para os bots do lado sem jogadores)
+    if(m.t==='opcoes'&&!r.game&&c.cid===r.host){ if(['facil','normal','dificil'].includes(m.dif)){ r.dif=m.dif; broadcastLobby(r); } }
     if(m.t==='start'&&!r.game&&c.cid===r.host){
-      r.game=Sim.createGame({timers:true,slots:r.slots,matchId:r.code+'-'+Date.now()});
+      r.game=Sim.createGame({timers:true,slots:r.slots,matchId:r.code+'-'+Date.now(),dificuldade:r.dif||'normal'});
       r.logFile=path.join(LOGDIR,r.game.matchId+'.json'); r.logN=0; broadcastLobby(r);
     }
     if(m.t==='lobby'&&r.game&&c.cid===r.host&&r.game.phase==='final'){ flushLog(r,true); r.game=null; r.reservas.clear(); broadcastLobby(r); }
