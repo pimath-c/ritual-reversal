@@ -96,6 +96,7 @@ function routeEvents(r){
       if(e.to!=null&&(!me||e.to!==me.id)) continue;
       if((e.type==='sensor'||e.type==='evp'||e.type==='blind'||e.type==='stun')&&(!me||e.a!==me.id)) continue;
       if(e.type==='presage'&&role!=='H') continue;
+      if(e.type==='ping'&&e.team!==role) continue; // ping só para a própria equipe
       c.ev.push(e);
     }
   }

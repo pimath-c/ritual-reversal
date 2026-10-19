@@ -62,6 +62,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 .mk.cult b{ background:var(--crimson-hi); }
 .mk.caido{ color:var(--crimson-hi); font-weight:600; } .mk.caido b{ background:var(--crimson-hi); animation:throb 1s ease-in-out infinite; }
 .mk.npc{ color:#e8d6a8; } .mk.npc b{ background:none; border:2px solid var(--gold); border-radius:50%; }
+.mk.ping{ color:#8ee8ff; font-weight:600; } .mk.ping b{ width:11px; height:11px; background:none; border:2px solid #8ee8ff; animation:throb 1.2s ease-in-out infinite; }
 .mk.obj{ color:#ff8fa3; } .mk.obj b{ width:12px; height:12px; background:none; border:2px solid var(--crimson-hi); }
 .mk small{ display:block; color:var(--muted); font-size:12px; }
 #dmgDir{ position:absolute; left:50%; top:50%; width:0; height:0; }
@@ -336,7 +337,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
     <button class="tq h mini" data-a="sensor" id="tqSens">Sensor</button>
     <button class="tq h mini" data-a="flare" id="tqFlare">Flare</button>
     <button class="tq mini" data-a="sprint" id="tqCorre">Correr</button>
-    <div id="tqTopo"><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" id="tqPausa">Pausa</button></div>
+    <div id="tqTopo"><button class="tq mini" data-a="ping" id="tqPing">Marcar</button><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" id="tqPausa">Pausa</button></div>
   </div>
 </div>
 <div id="girar"><div>Gire o aparelho para jogar deitado</div></div>
@@ -1723,8 +1724,8 @@ function evVisible(e,role,meId){
 }
 
 // ================= INPUT =================
-const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',map:'Tab'};
-const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',map:'Planta da catedral'};
+const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',map:'Tab',ping:'KeyZ'};
+const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',map:'Planta da catedral',ping:'Marcar para a equipe'};
 const KEYNAMES={Space:'Espaço',ShiftLeft:'Shift esq.',ShiftRight:'Shift dir.',ControlLeft:'Ctrl esq.',ControlRight:'Ctrl dir.',AltLeft:'Alt esq.',AltRight:'Alt dir.',Tab:'Tab',Enter:'Enter',Backquote:'`',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',CapsLock:'CapsLock',
   Mouse0:'Botão esq.',Mouse1:'Botão meio',Mouse2:'Botão dir.',Mouse3:'Mouse 4',Mouse4:'Mouse 5'};
 const keyLabel=c=>KEYNAMES[c]||(c||'').replace(/^Key/,'').replace(/^Digit/,'').replace(/^Numpad/,'Num ')||'—';
@@ -1767,6 +1768,7 @@ function pressed(code,e){
   if(SET.binds.lantern===code) C.f++;
   if(SET.binds.flare===code) C.g++;
   if(SET.binds.reload===code) C.r++;
+  if(SET.binds.ping===code) fazerPing();
   if(SET.binds.abil===code){ const m=me(); if(m&&m.st==='alive'){ if(m.stunT>0) notaHab('Atordoado: não dá para usar agora','var(--muted)');
       else if(m.abilCd>0){ notaHab(`${FEITICOS[m.feitico].nome} recarregando: ${Math.ceil(m.abilCd)} s`,'var(--muted)'); SFX.vazio(); } } C.ab++; }
   if(SET.binds.fire===code) mouseL=true;
@@ -1921,6 +1923,7 @@ function handleEvents(list,online){
         else { const mm=actorMeshes.get(e.a); if(mm){ mm.userData.anim.flinch=1; if(e.sx!=null) mm.userData.anim.golpe={x:e.sx,z:e.sz}; } } break;
       case 'burst': particulas(e.x,e.y,e.z,18,0xb050ff,3,.5,3,.8); particulas(e.x,e.y,e.z,8,0xff4a70,1.5,.7,1,.3); clarao(e.x,e.y,e.z,0xb050ff,2.2); SFX.estouro(e.x,e.z); legenda('estouro',e.x,e.z); break;
       case 'reload': if(e.a===id) SFX.reload(null,null); else { SFX.reload(e.x,e.z); legenda('reload',e.x,e.z); } break;
+      case 'ping': receberPing(e); break;
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
       case 'sensor': sensorV=e.v; sensorShowT=5; SFX.ping(e.v); break;
       case 'evp': SFX.whisper(e.x,e.z); legenda('evp',e.x,e.z); break;
@@ -2032,6 +2035,28 @@ function syncAltars(dt){
     else if(O.au) ritualLoopStop(i);
   });
 }
+
+// ================= PING DE EQUIPE =================
+// Marca o que está na mira para a própria equipe: um inimigo à vista, um altar ou um ponto no chão (até a parede).
+const PINGS=[]; let pingN=0;
+function fazerPing(){ const m=me(); if(!m||!V||V.phase!=='play'||m.st==='dead') return;
+  const P=camera.position, cy=Math.cos(LOOK.pitch), D={x:-Math.sin(LOOK.yaw)*cy,y:Math.sin(LOOK.pitch),z:-Math.cos(LOOK.yaw)*cy};
+  const mira=(x,y,z,max,cos)=>{ const dx=x-P.x,dy=y-P.y,dz=z-P.z,d=Math.hypot(dx,dy,dz); return d<max&&d>.5&&(dx*D.x+dy*D.y+dz*D.z)/d>cos?d:null; };
+  let alvo=null, bd=1e9;
+  for(const a of V.actors){ if(a.team===m.team||a.hidden||a.st==='dead') continue; const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z, d=mira(x,a.st==='down'?.4:1.2,z,75,.994);
+    if(d!=null&&d<bd&&Sim.segClear(P.x,P.z,x,z,0,Sim.TALL)){ bd=d; alvo={k:'inimigo',x,z,i:-1}; } }
+  if(!alvo) for(const A of V.altars){ const d=mira(A.x,1,A.z,95,.985); if(d!=null&&d<bd){ bd=d; alvo={k:'altar',x:A.x,z:A.z,i:A.i}; } }
+  if(!alvo){ let h=D.y<-.01?Math.min(60,P.y/-D.y*cy):60; const ux=D.x/Math.max(cy,1e-3), uz=D.z/Math.max(cy,1e-3);
+    if(!Sim.segClear(P.x,P.z,P.x+ux*h,P.z+uz*h,0,Sim.TALL)){ let a=0,b=h; for(let k=0;k<12;k++){ const c=(a+b)/2; if(Sim.segClear(P.x,P.z,P.x+ux*c,P.z+uz*c,0,Sim.TALL)) a=c; else b=c; } h=Math.max(0,a-.4); }
+    alvo={k:'ponto',x:P.x+ux*h,z:P.z+uz*h,i:-1}; }
+  sendAct({type:'ping',x:+alvo.x.toFixed(2),z:+alvo.z.toFixed(2),k:alvo.k,i:alvo.i}); }
+function receberPing(e){ const quem=V.actors.find(a=>a.id===e.a), nome=quem?quem.name:'Aliado', A=e.k==='altar'?V.altars[e.i]:null;
+  const txt=e.k==='altar'&&A?`Altar ${A.name}`:e.k==='inimigo'?'Inimigo visto':'Aqui';
+  for(let i=PINGS.length-1;i>=0;i--) if(PINGS[i].a===e.a) PINGS.splice(i,1); // um ping por jogador
+  PINGS.push({id:++pingN,a:e.a,x:e.x,z:e.z,k:e.k,txt,nome,t:e.k==='inimigo'?6:10});
+  BUS.pings=PINGS; sfxTone(null,null,1,880,990,.1,'sine',.18); setTimeout(()=>sfxTone(null,null,1,1320,1320,.12,'sine',.12),90);
+  feed(`${nome} marcou: ${txt}`,myRole()==='H'?'h':'c'); anelChao(e.x,e.z,1.6,0x8ee8ff,.9); }
+function atualizarPings(dt){ for(let i=PINGS.length-1;i>=0;i--){ PINGS[i].t-=dt; if(PINGS[i].t<=0) PINGS.splice(i,1); } }
 
 // ================= ESPECTADOR =================
 // Caído: a câmera vira para quem te derrubou. Morto: a câmera acompanha um aliado de pé (o botão de atacar troca),
@@ -2169,6 +2194,7 @@ function atualizarMarcas(m){
       else marcador('a'+a.id,x,2.35,z,`${esc(a.name)}<b></b>`,m.team==='C'?'cult':'',false); }
     for(const n of NPCS){ const d=dm(n.x,n.z); if(d<14&&(!n.time||n.time===m.team)) marcador('n'+n.id,n.x,2.3,n.z,`${esc(n.nome[0].toUpperCase()+n.nome.slice(1))}<small>mercador</small><b></b>`,'npc',false); }
     if(role==='H') for(const a of V.actors){ if(a.team==='C'&&a.revelT>0&&a.st==='alive'){ const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z; marcador('r'+a.id,x,2.4,z,`${esc(a.name)}<small>denunciado pelo sal</small><b></b>`,'caido',true); } }
+    for(const p of PINGS){ const d=dm(p.x,p.z); marcador('pg'+p.id,p.x,p.k==='altar'?3.6:p.k==='inimigo'?2.2:.6,p.z,`${esc(p.txt)}<small>${esc(p.nome)} · ${d} m</small><b></b>`,'ping',true); }
     for(const A of V.altars){ if(A.state!=='active') continue; if(role==='H'&&!A.localized) continue;
       marcador('o'+A.i,A.x,3.2,A.z,`${A.grande?'Grande Ritual':'Ritual'} em ${esc(A.name)}<small>${dm(A.x,A.z)} m</small><b></b>`,'obj',true); }
   }
@@ -2629,7 +2655,7 @@ function tick(now){
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
-    updateHUD(dt,m); atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
+    updateHUD(dt,m); atualizarPings(dt); atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
     if(vmH){ vmH.visible=false; vmC.visible=false; } // fora da partida, nada de arma na mão
@@ -2654,7 +2680,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,fazerPing,PINGS,travar:()=>lock(),connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();

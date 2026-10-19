@@ -96,6 +96,7 @@ namespace RitualReversal
             if (EntradaUnity.Apertou(Tecla.F)) botoes.f++;
             if (EntradaUnity.Apertou(Tecla.G)) botoes.g++;
             if (EntradaUnity.Apertou(Tecla.R)) botoes.r++;
+            if (EntradaUnity.Apertou(Tecla.Z)) Pingar(m);
             if (EntradaUnity.CliqueDir()) { botoes.ab++; if (m.st == "alive" && m.abilCd > 0) Anunciar("Habilidade recarregando: " + Mathf.CeilToInt((float)m.abilCd) + " s", .9f); }
             if (EntradaUnity.Apertou(Tecla.E) && m.st == "alive")
             {

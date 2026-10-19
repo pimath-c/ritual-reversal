@@ -135,6 +135,14 @@ namespace RitualReversal.Simulacao
             if (a.type == "feit" && g.phase == "intro" && a.f != null && Regras.FEITICOS.ContainsKey(a.f) && Regras.FEITICOS[a.f].team == role) g.feit[cid] = a.f;
             if (a.type == "comprar" && g.phase == "play") Comprar(g, cid, a.npc, a.item);
             if (a.type == "ready" && (g.phase == "intro" || g.phase == "summary")) { g.ready[cid] = true; if (AllReady(g)) { if (g.phase == "intro") StartPlay(g); else AfterSummary(g); } }
+            // ping: marca um ponto, um altar ou um inimigo para a própria equipe (no máximo um por segundo)
+            if (a.type == "ping" && g.phase == "play")
+            {
+                var me = g.actors.FirstOrDefault(b => b.cid == cid); if (me == null || me.st == "dead" || g.t - me.pingT < 1) return;
+                double x = a.x, z = a.z; if (double.IsNaN(x) || double.IsInfinity(x) || double.IsNaN(z) || double.IsInfinity(z)) return; me.pingT = g.t;
+                string k = a.k == "altar" || a.k == "inimigo" || a.k == "perigo" ? a.k : "ponto";
+                Ev(g, "ping", "a", me.id, "team", me.team, "x", R2(JS.Clamp(x, -Mapa.HX, Mapa.HX)), "z", R2(JS.Clamp(z, -Mapa.HZ, Mapa.HZ)), "k", k, "i", k == "altar" ? JS.Clamp(a.i, 0, 5) : -1);
+            }
             if (a.type == "restart" && g.phase == "final") { g.scores = new Dictionary<string, Placar> { { "A", null }, { "B", null } }; g.stats = new Dictionary<int, Estatisticas>(); EnterPick(g, 1); }
         }
         public static void DropHuman(Jogo g, string cid)

@@ -125,6 +125,7 @@ namespace RitualReversal
                         if (e.Int("a") == eu) { var al = e["alvos"] as System.Collections.ICollection; int n = al != null ? al.Count : 0; string f = e.Str("f"); NotaHab(TextoHab(f, n), n > 0 || f == "runa" || f == "veu" || f == "sal" ? OURO : CINZA * 2); if (f == "empurrao") fp.kickP += .02f; }
                         break;
                     }
+                case "ping": if (e.Str("team") == papel) ReceberPing(e); break;
                 case "doom": som.Tocar("doom"); break;
                 case "sealed": som.Tocar("sealed"); break;
             }
@@ -141,6 +142,35 @@ namespace RitualReversal
                 case "flash": return n > 0 ? "Flash: " + n + (n > 1 ? " cegados" : " cegado") + " por 1,5 s" : "Flash: ninguém no cone (14 m à frente)";
                 default: return n > 0 ? "Purificação: " + n + (n > 1 ? " atordoados" : " atordoado") + " por 1 s" : "Purificação: ninguém a 6 m";
             }
+        }
+
+        // ---------- ping de equipe ----------
+        class PingV { public int a; public float x, z, t; public string txt, nome; }
+        readonly List<PingV> pings = new List<PingV>();
+        // mira: inimigo à vista, altar ou ponto no chão (até a parede), como no protótipo
+        void Pingar(Ator m)
+        {
+            if (m == null || m.st == "dead" || g == null || g.phase != "play") return;
+            var c = CamP(); float yaw = (float)lookYaw, pitch = (float)lookPitch, cy = Mathf.Cos(pitch);
+            var D = new Vector3(-Mathf.Sin(yaw) * cy, Mathf.Sin(pitch), -Mathf.Cos(yaw) * cy);
+            System.Func<float, float, float, float, float, float> mira = (x, y, z, max, cos) => { var d = new Vector3(x - c.x, y - c.y, z - c.z); float L = d.magnitude; return L < max && L > .5f && Vector3.Dot(d, D) / L > cos ? L : -1; };
+            Acao a = null; float bd = 1e9f;
+            foreach (var e in g.actors) { if (e.team == m.team || e.hidden || e.st == "dead") continue; float d = mira((float)e.x, e.st == "down" ? .4f : 1.2f, (float)e.z, 75, .994f); if (d > 0 && d < bd && Mapa.SegClear(c.x, c.z, e.x, e.z, 0, Mapa.GT)) { bd = d; a = new Acao { type = "ping", k = "inimigo", x = e.x, z = e.z, i = -1 }; } }
+            if (a == null) foreach (var A in g.altars) { float d = mira((float)A.x, 1, (float)A.z, 95, .985f); if (d > 0 && d < bd) { bd = d; a = new Acao { type = "ping", k = "altar", x = A.x, z = A.z, i = A.i }; } }
+            if (a == null)
+            {
+                float h = D.y < -.01f ? Mathf.Min(60, c.y / -D.y * cy) : 60, ux = D.x / Mathf.Max(cy, 1e-3f), uz = D.z / Mathf.Max(cy, 1e-3f);
+                if (!Mapa.SegClear(c.x, c.z, c.x + ux * h, c.z + uz * h, 0, Mapa.GT)) { float lo = 0, hi = h; for (int k = 0; k < 12; k++) { float mid = (lo + hi) / 2; if (Mapa.SegClear(c.x, c.z, c.x + ux * mid, c.z + uz * mid, 0, Mapa.GT)) lo = mid; else hi = mid; } h = Mathf.Max(0, lo - .4f); }
+                a = new Acao { type = "ping", k = "ponto", x = System.Math.Round(c.x + ux * h, 2), z = System.Math.Round(c.z + uz * h, 2), i = -1 };
+            }
+            Acao(a);
+        }
+        void ReceberPing(Evento e)
+        {
+            int quem = e.Int("a"); var ator = g.actors.Find(x => x.id == quem); string k = e.Str("k"); int i = e.Int("i");
+            string txt = k == "altar" && i >= 0 && i < g.altars.Count ? "Altar " + g.altars[i].name : k == "inimigo" ? "Inimigo visto" : "Aqui";
+            pings.RemoveAll(p => p.a == quem); pings.Add(new PingV { a = quem, x = (float)e.Num("x"), z = (float)e.Num("z"), t = k == "inimigo" ? 6 : 10, txt = txt, nome = ator != null ? ator.name : "Aliado" });
+            Feed((ator != null ? ator.name : "Aliado") + " marcou: " + txt, MeuPapel() == "H" ? "h" : "c"); som.Tom(float.NaN, float.NaN, 1, 880, 990, .1f, Som.Onda.Seno, .18f); som.Tom(float.NaN, float.NaN, 1, 1320, 1320, .12f, Som.Onda.Seno, .12f, .09f);
         }
 
         // ---------- avisos visuais do HUD ----------

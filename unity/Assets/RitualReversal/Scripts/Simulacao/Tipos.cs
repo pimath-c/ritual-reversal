@@ -112,7 +112,7 @@ namespace RitualReversal.Simulacao
         public double hitT = -9; public Dictionary<int, double> att = new Dictionary<int, double>(); public double fireCd; public int ammo = 8, reserve = 48; public double reloadT;
         public double fervor = 100, sanity = 100, invuln; public int sealing = -1; public Hold hold = new Hold(); public bool lantern; public double carga = 100; public int flares = 2;
         public double sensorCd, abilCd, lastShotT = -9; public bool moving; public double panicT = -9, blindT, stunT, runeT, shield, shieldT, pushedT = -9;
-        public List<double[]> hist = new List<double[]>(); public string feitico; public int obolos; public double veuT, slowT, revelT, curaT; public bool amuleto;
+        public List<double[]> hist = new List<double[]>(); public string feitico; public int obolos; public double veuT, slowT, revelT, curaT; public bool amuleto; public double pingT = -9;
         public Entrada inp = new Entrada(); public Controles lc = new Controles(); public bool lcIni;
         public IA ai = new IA();
         public double _vx, _vz; public double? _px, _pz; public Pegada _pegada; public double stepT;
@@ -137,7 +137,7 @@ namespace RitualReversal.Simulacao
     public class Buff { public double ess, selo; }
 
     // ações que o jogador pede fora do movimento (menus, compras, pronto)
-    public class Acao { public string type, cls, f, npc, item; public int i; }
+    public class Acao { public string type, cls, f, npc, item, k; public int i; public double x, z; }
 
     // contexto da tecla E/T: o que dá para fazer onde o jogador está
     public class Ctx { public string key = "", type, label, npc; public double time; public int? b, P, A, R, from; }

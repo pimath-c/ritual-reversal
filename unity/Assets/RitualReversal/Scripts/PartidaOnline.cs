@@ -42,6 +42,7 @@ namespace RitualReversal
         {
             var o = new JsonEscrita().Txt("type", a.type);
             if (a.type == "pick" || a.type == "slot") o.Num("i", a.i);
+            if (a.type == "ping") { o.Num("x", a.x).Num("z", a.z).Txt("k", a.k).Num("i", a.i); }
             if (a.cls != null) o.Txt("cls", a.cls); if (a.f != null) o.Txt("f", a.f); if (a.npc != null) o.Txt("npc", a.npc); if (a.item != null) o.Txt("item", a.item);
             Enviar(new JsonEscrita().Txt("t", "act").Obj("a", o));
         }

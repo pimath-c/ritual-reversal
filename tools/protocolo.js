@@ -35,6 +35,11 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
   const taxa=(A.snaps-s0)/6; console.log(`  snapshots: ${taxa.toFixed(1)}/s (meta 20)`); if(taxa<15) falha('poucos snapshots');
   const eu=A.ultimo.s.actors.find(a=>a.id===A.ultimo.you); if(!eu) falha('snapshot sem o próprio personagem');
   else { console.log(`  Ana andou até (${eu.x.toFixed(1)}, ${eu.z.toFixed(1)}) no papel ${eu.team}`); if(Math.hypot(eu.x-(eu.team==='H'?-132:132),eu.z)<3) falha('personagem não se moveu'); }
+  // ping: volta para a própria equipe e não vaza para a outra; lixo no ping é ignorado
+  if(eu){ A.envia({t:'act',a:{type:'ping',x:eu.x+5,z:eu.z,k:'ponto'}}); A.envia({t:'act',a:{type:'ping',x:'lixo',z:null,k:'<b>'}}); await espera(900);
+    const tem=C=>C.msgs.some(m=>m.t==='snap'&&(m.ev||[]).some(e=>e.type==='ping'));
+    const mesmoTime=B.ultimo&&B.ultimo.s.actors.find(a=>a.id===B.ultimo.you).team===eu.team;
+    if(!tem(A)) falha('o ping não voltou para quem marcou'); if(!mesmoTime&&tem(B)) falha('o ping vazou para a outra equipe'); else console.log('  ping: só a própria equipe recebe'); }
   // lixo no meio da partida e reconexão
   A.envia('{"t":"in","mx":1e308,"mz":-1e308,"yaw":"NaN","dt":99}'); A.envia('x'.repeat(70000));
   B.ws.close(); await espera(400);

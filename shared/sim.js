@@ -466,7 +466,7 @@ function makeActor(g,slot,si,role,cls,feit){
   return {id:g.nid++,slot:si,cid:slot.cid||null,human:!!slot.cid,name:slot.name,team:role,cls,maxHp:C.hp,hp:C.hp,speed:C.speed,
     x:0,z:0,yaw:0,pitch:0,st:'alive',downT:0,respawnT:0,deaths:0,dc:0,revUsed:false,reag:0,hitT:-9,att:{},fireCd:0,ammo:8,reserve:48,reloadT:0,
     fervor:100,sanity:100,invuln:0,sealing:-1,hold:{key:'',t:0,max:0},lantern:false,carga:100,flares:2,sensorCd:0,abilCd:0,lastShotT:-9,moving:false,
-    panicT:-9,blindT:0,stunT:0,runeT:0,shield:0,shieldT:0,pushedT:-9,hist:[],feitico:feit,obolos:CFG.obolosInicio,veuT:0,slowT:0,revelT:0,curaT:0,amuleto:false,
+    panicT:-9,blindT:0,stunT:0,runeT:0,shield:0,shieldT:0,pushedT:-9,pingT:-9,hist:[],feitico:feit,obolos:CFG.obolosInicio,veuT:0,slowT:0,revelT:0,curaT:0,amuleto:false,
     inp:{mx:0,mz:0,sp:false,yaw:0,pitch:0,fire:false,use:false,use2:false,viewT:0,c:{q:0,f:0,g:0,r:0,ab:0}},lc:{q:0,f:0,g:0,r:0,ab:0},
     ai:{path:[],goal:null,goalKey:'',repath:0,stuckT:0,lx:0,lz:0,alert:null,target:null,wait:0,decoyUsed:false,strafe:1,strafeT:0,patrol:null,patrolT:0}};
 }
@@ -494,6 +494,11 @@ function act(g,cid,a){
   if(a.type==='comprar'&&g.phase==='play') comprar(g,cid,a.npc,a.item);
   if(a.type==='ready'&&(g.phase==='intro'||g.phase==='summary')){ g.ready[cid]=true; if(allReady(g)){ if(g.phase==='intro') startPlay(g); else afterSummary(g); } }
   if(a.type==='restart'&&g.phase==='final'){ g.scores={A:null,B:null}; g.stats={}; enterPick(g,1); }
+  // ping: marca um ponto, um altar ou um inimigo para a própria equipe (no máximo um por segundo)
+  if(a.type==='ping'&&g.phase==='play'){ const me=g.actors.find(b=>b.cid===cid); if(!me||me.st==='dead'||g.t-me.pingT<1) return;
+    const x=+a.x, z=+a.z; if(!isFinite(x)||!isFinite(z)) return; me.pingT=g.t;
+    const k=a.k==='altar'||a.k==='inimigo'||a.k==='perigo'?a.k:'ponto';
+    ev(g,{type:'ping',a:me.id,team:me.team,x:r2(clamp(x,-HALF.x,HALF.x)),z:r2(clamp(z,-HALF.z,HALF.z)),k,i:k==='altar'?clamp(a.i|0,0,5):-1}); }
 }
 function dropHuman(g,cid){
   const s=g.slots.find(s=>s.cid===cid); if(!s) return; s.cid=null;
