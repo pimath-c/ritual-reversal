@@ -15,6 +15,10 @@ namespace RitualReversal.Simulacao
         public static void Iniciar(string jsonSimulacao) { Mapa.Carregar(jsonSimulacao); }
 
         // ---------- utilidades ----------
+        public static readonly Dictionary<string, DifDef> DIF = new Dictionary<string, DifDef> {
+            { "facil", new DifDef { mira = .6, disp = 1.7, ritmo = 1.4, vista = .75 } }, { "normal", new DifDef { mira = 1, disp = 1, ritmo = 1, vista = 1 } }, { "dificil", new DifDef { mira = 1.22, disp = .6, ritmo = .85, vista = 1.15 } } };
+        // vale só para os bots do lado contrário ao dos jogadores humanos: o aliado bot continua no normal
+        public static DifDef DifDe(Jogo g, Ator b) { DifDef d; if (g == null || g.opts == null || g.opts.dificuldade == null || !DIF.TryGetValue(g.opts.dificuldade, out d) || d == DIF["normal"]) return DIF["normal"]; return b != null && g.actors.Any(o => o.human && o.team == b.team) ? DIF["normal"] : d; }
         public static double Dist(Ponto a, Ponto b) { return JS.Hypot(a.x - b.x, a.z - b.z); }
         static double R2(double v) { return JS.R2(v); }
         static double Rand(double a, double b) { return JS.Rand(a, b); }
@@ -370,12 +374,12 @@ namespace RitualReversal.Simulacao
         }
         static void FireBotAt(Jogo g, Ator a, double tx, double ty, double tz, bool miss)
         {
-            a.fireCd = .55 + Rand(0, .2); double dx = tx - a.x, dy = ty - 1.62, dz = tz - a.z; double l = JS.Hypot(dx, dy, dz); if (l == 0 || double.IsNaN(l)) l = 1; dx /= l; dy /= l; dz /= l;
+            a.fireCd = (.55 + Rand(0, .2)) * DifDe(g, a).ritmo; double dx = tx - a.x, dy = ty - 1.62, dz = tz - a.z; double l = JS.Hypot(dx, dy, dz); if (l == 0 || double.IsNaN(l)) l = 1; dx /= l; dy /= l; dz /= l;
             TraceShot(g, a, a.x, 1.62, a.z, dx, dy, dz, g.t, miss);
         }
         static void CastSigil(Jogo g, Ator a, double dx, double dy, double dz)
         {
-            a.veuT = 0; a.lastShotT = g.t; a.fireCd = a.human ? .42 : 1 + Rand(0, .3); a.fervor -= CFG.sigilCusto;
+            a.veuT = 0; a.lastShotT = g.t; a.fireCd = a.human ? .42 : (1 + Rand(0, .3)) * DifDe(g, a).ritmo; a.fervor -= CFG.sigilCusto;
             Ev(g, "sfx", "k", "sigil", "x", R2(a.x), "z", R2(a.z), "a", a.id);
             double rx = JS.Cos(a.yaw), rz = -JS.Sin(a.yaw); double ox = a.x + rx * .3, oy = 1.45, oz = a.z + rz * .3;
             double tx = a.x + dx * 40, ty = 1.62 + dy * 40, tz = a.z + dz * 40; double vx = tx - ox, vy = ty - oy, vz = tz - oz; double l = JS.Hypot(vx, vy, vz); if (l == 0 || double.IsNaN(l)) l = 1; double sp = CFG.sigilVel;

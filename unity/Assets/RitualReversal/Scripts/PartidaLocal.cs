@@ -46,7 +46,7 @@ namespace RitualReversal
                 ? new List<Slot> { new Slot("A", EU, "Você"), new Slot("A", null, "Irmã Beatriz"), new Slot("B", null, "Irmão Cinza"), new Slot("B", null, "Madre Vesper") }
                 : new List<Slot> { new Slot("A", null, "Irmã Beatriz"), new Slot("A", null, "Irmão Tomé"), new Slot("B", EU, "Você"), new Slot("B", null, "Madre Vesper") };
             if (online) SairOnline(""); EU = "local";
-            g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss") });
+            g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss"), dificuldade = dificuldade });
             faseAnterior = ""; lojaAberta = null; feed.Clear(); LimparVisual();
         }
 

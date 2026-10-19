@@ -88,7 +88,7 @@ static class CompararSim
             for (int m = 0; m < partidas; m++)
             {
                 var slots = new List<Slot>(); for (int j = 0; j < 4; j++) slots.Add(new Slot(j < 2 ? "A" : "B", (modo == "H" && j == 0) || (modo == "C" && j == 2) ? "eu" : null, "b" + j));
-                var g = Sim.CreateGame(new OpcoesJogo { timers = true, slots = slots, matchId = "cmp" + m });
+                var g = Sim.CreateGame(new OpcoesJogo { timers = true, slots = slots, matchId = "cmp" + m, dificuldade = Environment.GetEnvironmentVariable("DIF") });
                 int nLog = 0; var D = new Dir(); var r = JS.Mulberry32((semente ^ 0x5bd1e995u) + (uint)m);
                 for (int n = 0; n < passos && g.phase != "final"; n++)
                 {

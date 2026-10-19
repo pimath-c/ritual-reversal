@@ -161,7 +161,9 @@ namespace RitualReversal.Simulacao
     }
     public class Vencedor { public string win, why; }
 
-    public class OpcoesJogo { public bool timers; public List<Slot> slots; public string matchId; public int noites; }
+    public class OpcoesJogo { public bool timers; public List<Slot> slots; public string matchId; public int noites; public string dificuldade; }
+    // dificuldade dos bots (só no jogo local): mira, dispersão dos sigilos, ritmo de tiro e alcance da vista. Normal = 1 em tudo.
+    public class DifDef { public double mira, disp, ritmo, vista; }
 
     public class Jogo
     {

@@ -5,6 +5,7 @@
 // Com [humano] = H ou C, um dos lugares é um jogador roteirizado (anda por rotas, atira, segura E e T, usa Q/F/G/R,
 // habilidade, compra, escolhe altares e classe), dirigido pelo mesmo sorteio nos dois lados: cobre o código do jogador.
 // Precisa do Mono (mcs e mono). Uso: node tools/comparar-cs.js [partidas] [semente] [passos por partida] [bots|H|C]
+// Com DIF=facil ou DIF=dificil no ambiente, os bots inimigos do jogador roteirizado jogam nessa dificuldade.
 'use strict';
 const fs=require('fs'), path=require('path'), os=require('os'), {execFileSync}=require('child_process');
 const RAIZ=path.join(__dirname,'..'), SIMCS=path.join(RAIZ,'unity','Assets','RitualReversal','Scripts','Simulacao');
@@ -64,7 +65,7 @@ const Sim=require('../shared/sim.js');
 const saidaJS=path.join(tmp,'js.txt'), fd=fs.openSync(saidaJS,'w'), cobertura={};
 let t0=Date.now();
 for(let m=0;m<partidas;m++){
-  const g=Sim.createGame({timers:true,slots:slotsDe(),matchId:'cmp'+m});
+  const g=Sim.createGame({timers:true,slots:slotsDe(),matchId:'cmp'+m,dificuldade:process.env.DIF||undefined}); // DIF=facil|dificil testa a dificuldade dos bots
   let nLog=0; const D={alvo:null,trocaT:0,path:[],c:{q:0,f:0,g:0,r:0,ab:0},compraT:0}, r=mulberry32((semente^0x5bd1e995)+m);
   for(let n=0;n<passos&&g.phase!=='final';n++){ if(modo==='bots') Sim.step(g,1/30); else roteiro(Sim,g,D,r); fs.writeSync(fd,linha(Sim,g,nLog)+'\n'); nLog=g.log.length; g.events.length=0; }
   g.log.forEach(e=>cobertura[e.ev]=(cobertura[e.ev]||0)+1);

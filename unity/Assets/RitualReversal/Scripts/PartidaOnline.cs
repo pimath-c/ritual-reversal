@@ -9,6 +9,7 @@ namespace RitualReversal
 {
     public partial class PartidaLocal
     {
+        string dificuldade = "normal";
         bool online; Conexao rede; string salaCodigo = "", hostCid, erroRede = "", nomeJogador, servidor, codigoDigitado = "";
         string token; bool noLobby; List<Slot> lobbySlots = new List<Slot>();
         // tempo do servidor, previsão do próprio jogador e interpolação dos outros
@@ -20,7 +21,7 @@ namespace RitualReversal
 
         void CarregarPreferencias()
         {
-            sensibilidade = PlayerPrefs.GetFloat("rr-sens", sensibilidade);
+            sensibilidade = PlayerPrefs.GetFloat("rr-sens", sensibilidade); dificuldade = PlayerPrefs.GetString("rr-dif", "normal");
             nomeJogador = PlayerPrefs.GetString("rr-nome", "Jogador"); servidor = PlayerPrefs.GetString("rr-servidor", "localhost:8080");
             token = PlayerPrefs.GetString("rr-token", ""); if (token.Length == 0) { token = System.Guid.NewGuid().ToString("N").Substring(0, 20); PlayerPrefs.SetString("rr-token", token); }
         }

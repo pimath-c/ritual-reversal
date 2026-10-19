@@ -683,13 +683,17 @@ function fireHuman(g,a){
   const T=clamp(a.inp.viewT||g.t,g.t-CFG.compensacaoMax,g.t);
   traceShot(g,a,a.x,1.62,a.z,dx,dy,dz,T,false);
 }
+// dificuldade dos bots (só no jogo local): mira, dispersão dos sigilos, ritmo de tiro e alcance da vista. Normal = 1 em tudo.
+const DIF={facil:{mira:.6,disp:1.7,ritmo:1.4,vista:.75},normal:{mira:1,disp:1,ritmo:1,vista:1},dificil:{mira:1.22,disp:.6,ritmo:.85,vista:1.15}};
+// vale só para os bots do lado contrário ao dos jogadores humanos: o aliado bot continua no normal
+function difDe(g,b){ const d=DIF[g&&g.opts&&g.opts.dificuldade]; if(!d||d===DIF.normal) return DIF.normal; return b&&g.actors.some(o=>o.human&&o.team===b.team)?DIF.normal:d; }
 function fireBotAt(g,a,tx,ty,tz,miss){
-  a.fireCd=.55+rand(0,.2); let dx=tx-a.x,dy=ty-1.62,dz=tz-a.z; const l=Math.hypot(dx,dy,dz)||1; dx/=l; dy/=l; dz/=l;
+  a.fireCd=(.55+rand(0,.2))*difDe(g,a).ritmo; let dx=tx-a.x,dy=ty-1.62,dz=tz-a.z; const l=Math.hypot(dx,dy,dz)||1; dx/=l; dy/=l; dz/=l;
   traceShot(g,a,a.x,1.62,a.z,dx,dy,dz,g.t,miss);
 }
 let PID=1;
 function castSigil(g,a,dx,dy,dz){ a.veuT=0;
-  a.lastShotT=g.t; a.fireCd=a.human?.42:1+rand(0,.3); a.fervor-=CFG.sigilCusto;
+  a.lastShotT=g.t; a.fireCd=a.human?.42:(1+rand(0,.3))*difDe(g,a).ritmo; a.fervor-=CFG.sigilCusto;
   ev(g,{type:'sfx',k:'sigil',x:r2(a.x),z:r2(a.z),a:a.id});
   const rx=Math.cos(a.yaw), rz=-Math.sin(a.yaw); const ox=a.x+rx*.3, oy=1.45, oz=a.z+rz*.3;
   const tx=a.x+dx*40, ty=1.62+dy*40, tz=a.z+dz*40; let vx=tx-ox,vy=ty-oy,vz=tz-oz; const l=Math.hypot(vx,vy,vz)||1; const sp=CFG.sigilVel;
@@ -968,7 +972,7 @@ function canSee(g,b,t,range){
   return !(d>13&&lit<.35);
 }
 function botPickTarget(g,b){
-  const ens=enemiesOf(g,b).filter(e=>e.st==='alive'&&canSee(g,b,e,34)); if(!ens.length) return null;
+  const ens=enemiesOf(g,b).filter(e=>e.st==='alive'&&canSee(g,b,e,34*difDe(g,b).vista)); if(!ens.length) return null;
   const pri=e=>dist(b,e)-(e.sealing>=0?30:0)-(b.team==='H'&&g.altars.some(A=>A.state==='active'&&inCircle(e,A))?15:0);
   ens.sort((x,y)=>pri(x)-pri(y)); return ens[0];
 }
@@ -1008,9 +1012,9 @@ function botCombat(g,b,dt){
   const t=ai.target; b.yaw=lerpAngle(b.yaw,Math.atan2(-(t.x-b.x),-(t.z-b.z)),.25);
   if(b.fireCd<=0&&b.sealing<0&&b.hold.t<=0){ const d=dist(b,t);
     if(b.team==='H'){ if(b.reloadT>0) return true; if(b.ammo<=0){ reload(g,b); return true; }
-      const lit=lightAt(g,t.x,t.z)>.35, p=clamp(.78-d/55,.22,.78)*(t.moving?.8:1)*(lit?1:.72), hit=Math.random()<p, ex=hit?0:rand(-1.2,1.2);
+      const lit=lightAt(g,t.x,t.z)>.35, p=Math.min(.92,clamp(.78-d/55,.22,.78)*(t.moving?.8:1)*(lit?1:.72)*difDe(g,b).mira), hit=Math.random()<p, ex=hit?0:rand(-1.2,1.2);
       fireBotAt(g,b,t.x+ex,rand(.9,1.6),t.z+ex,!hit);
-    } else { if(b.fervor<CFG.sigilCusto) return true; const lead=d/CFG.sigilVel; castSigilAt(g,b,t.x+rand(-.7,.7)+(t._vx||0)*lead*.6,1.2,t.z+rand(-.7,.7)+(t._vz||0)*lead*.6); }
+    } else { if(b.fervor<CFG.sigilCusto) return true; const lead=d/CFG.sigilVel; const sd=.7*difDe(g,b).disp; castSigilAt(g,b,t.x+rand(-sd,sd)+(t._vx||0)*lead*.6,1.2,t.z+rand(-sd,sd)+(t._vz||0)*lead*.6); }
   }
   return true;
 }
@@ -1256,5 +1260,5 @@ function snapshot(g,role){
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

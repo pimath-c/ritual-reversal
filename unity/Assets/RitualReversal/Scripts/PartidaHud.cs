@@ -61,6 +61,10 @@ namespace RitualReversal
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(Cor("Caçar", OURO) + "\nvocê e um bot contra dois Cultistas", sBotao, GUILayout.Height(90))) NovaPartida(true);
             if (GUILayout.Button(Cor("Celebrar", CARMIM_VIVO) + "\nvocê e um bot contra dois Caçadores", sBotao, GUILayout.Height(90))) NovaPartida(false);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal(); GUILayout.Label("Bots inimigos", sPequeno, GUILayout.Width(150));
+            foreach (var d in new[] { new[] { "facil", "Fácil" }, new[] { "normal", "Normal" }, new[] { "dificil", "Difícil" } })
+                if (GUILayout.Button((dificuldade == d[0] ? "● " : "") + d[1], sBotao, GUILayout.Width(150))) { dificuldade = d[0]; PlayerPrefs.SetString("rr-dif", dificuldade); }
             GUILayout.EndHorizontal(); GUILayout.Space(16);
             GUILayout.Label("<b>Controles</b>: WASD anda, Shift corre, mouse mira, clique esquerdo ataca, clique direito usa o feitiço. E (segurar) interage, T (segurar) transfere o ritual. Q sensor, F lanterna, G sinalizador, R recarrega (Caçador). Tab mostra a planta. Esc pausa.", sPequeno);
             GUILayout.Space(10); TelaOnline(r); GUILayout.Space(10); Ajustes();

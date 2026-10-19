@@ -241,6 +241,9 @@ input[type=range]{ width:100%; accent-color:#d2ad62; height:22px; }
 #scr.inicial .online h3{ margin:0 0 8px; text-align:left; } .linha{ display:flex; gap:10px; margin-top:8px; } .linha .txt{ width:170px; }
 #scr.inicial .fine,#scr.inicial .err{ text-align:left; margin-left:0 !important; }
 @media (max-width:760px){ #scr.inicial{ place-items:center; background:rgba(3,3,6,.8); } #scr.inicial .panel{ margin-left:0; } }
+.dif{ display:flex; align-items:center; gap:6px; font-size:15px; color:var(--muted); } .dif span{ margin-right:4px; }
+.dif button{ font-family:var(--cond); font-size:15px; color:var(--bone); background:rgba(14,16,19,.7); border:1px solid #3a4149; padding:3px 12px; cursor:pointer; }
+.dif button.sel{ border-color:var(--gold-hi); color:var(--gold-hi); }
 .bolsa{ margin-top:8px; font-size:14px; color:var(--muted); } .bolsa b{ color:var(--gold-hi); font-size:17px; margin-left:4px; }
 #tarefas{ position:absolute; right:26px; top:120px; width:300px; font-size:14.5px; line-height:1.35; text-shadow:0 1px 3px #000; color:#d8cfbf; }
 #tarefas b{ display:block; font-family:var(--serif); font-weight:400; font-size:17px; color:var(--gold); margin-bottom:4px; }
@@ -2318,9 +2321,10 @@ function showTitle(msg){ titleMsg=msg||''; screenKey=''; }
 function salaSalva(){ try{ return sessionStorage.getItem('rr-sala')||''; }catch(e){ return ''; } }
 function titleScreen(){
   let savedName=''; try{ savedName=localStorage.getItem('rr-name')||''; }catch(e){}
-  setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva(),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
+  setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva()+(SET.dificuldade||''),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
     <p class="lede">${UMA_NOITE()?'Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence.':'Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.'}</p>
     <div class="acoes"><button class="go" id="bSolo">Jogar sozinho, com bots</button>
+      <div class="dif" role="group" aria-label="Dificuldade dos bots"><span>Bots inimigos</span>${[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([k,n])=>`<button data-dif="${k}" class="${(SET.dificuldade||'normal')===k?'sel':''}">${n}</button>`).join('')}</div>
       <div class="links"><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bPerfil">Perfil</button><button class="lk" id="bSet">Ajustes</button></div></div>
     ${APP?`<div class="online on"><h3>Servidor${ONLINE_OK?' <small style="color:var(--gold)">conectado</small>':''}</h3><div class="linha"><input class="txt" id="iServ" style="width:260px" placeholder="ex.: abcd.trycloudflare.com" value="${esc(SET.servidor||'')}" aria-label="Endereço do servidor" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="go ghost" id="bServ">${SONDANDO?'Procurando…':'Conectar'}</button></div></div>`:''}
     <div class="online ${ONLINE_OK?'on':''}"><h3>Jogar online</h3>
@@ -2330,6 +2334,7 @@ function titleScreen(){
     <p class="err" id="err">${esc(titleMsg)}</p>
     <p class="fine">${ONLINE_OK?'Use fones: o som diz onde e em que fase está cada ritual.':APP?'Para jogar online, alguém roda o servidor do projeto; digite aqui o endereço que ele mostra.':'Para jogar online com amigos, rode o servidor do projeto e abra o link dele.'}</p>`,
   ()=>{ $('#bSolo').onclick=()=>{ audioInit(); startLocal(); };
+    scrBody.querySelectorAll('.dif button').forEach(b=>b.onclick=()=>{ SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
     const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; };
     if(ONLINE_OK){ const go=create=>{ audioInit(); const name=($('#iName').value||'Jogador').trim(); try{ localStorage.setItem('rr-name',name); }catch(e){} const code=($('#iCode').value||'').trim().toUpperCase(); if(!create&&code.length!==4){ $('#err').textContent='Digite o código de 4 letras.'; return; } connect(create,code,name); };
       $('#bCreate').onclick=()=>go(true); $('#bJoin').onclick=()=>go(false);
@@ -2584,7 +2589,7 @@ function syncScreens(){
 }
 
 // ================= LOCAL MODE =================
-function startLocal(){ MODE='local'; meCid='local'; game=Sim.createGame({timers:false}); V=game; screenKey=''; }
+function startLocal(){ MODE='local'; meCid='local'; game=Sim.createGame({timers:false,dificuldade:SET.dificuldade||'normal'}); V=game; screenKey=''; }
 
 // ================= MAIN LOOP =================
 let fpsEMA=60;

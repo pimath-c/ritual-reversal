@@ -25,7 +25,7 @@ namespace RitualReversal.Simulacao
         }
         static Ator BotPickTarget(Jogo g, Ator b)
         {
-            var ens = EnemiesOf(g, b).Where(e => e.st == "alive" && CanSee(g, b, e, 34)).ToList(); if (ens.Count == 0) return null;
+            var ens = EnemiesOf(g, b).Where(e => e.st == "alive" && CanSee(g, b, e, 34 * DifDe(g, b).vista)).ToList(); if (ens.Count == 0) return null;
             Func<Ator, double> pri = e => Dist(b, e) - (e.sealing >= 0 ? 30 : 0) - (b.team == "H" && g.altars.Any(A => A.state == "active" && InCircle(e, A)) ? 15 : 0);
             JS.Sort(ens, (x, y) => pri(x) - pri(y)); return ens[0];
         }
@@ -85,13 +85,13 @@ namespace RitualReversal.Simulacao
                 if (b.team == "H")
                 {
                     if (b.reloadT > 0) return true; if (b.ammo <= 0) { Reload(g, b); return true; }
-                    bool lit = LightAt(g, t.x, t.z) > .35; double p = JS.Clamp(.78 - d / 55, .22, .78) * (t.moving ? .8 : 1) * (lit ? 1 : .72); bool hit = Rnd() < p; double ex = hit ? 0 : Rand(-1.2, 1.2);
+                    bool lit = LightAt(g, t.x, t.z) > .35; double p = Math.Min(.92, JS.Clamp(.78 - d / 55, .22, .78) * (t.moving ? .8 : 1) * (lit ? 1 : .72) * DifDe(g, b).mira); bool hit = Rnd() < p; double ex = hit ? 0 : Rand(-1.2, 1.2);
                     FireBotAt(g, b, t.x + ex, Rand(.9, 1.6), t.z + ex, !hit);
                 }
                 else
                 {
                     if (b.fervor < CFG.sigilCusto) return true; double lead = d / CFG.sigilVel;
-                    CastSigilAt(g, b, t.x + Rand(-.7, .7) + t._vx * lead * .6, 1.2, t.z + Rand(-.7, .7) + t._vz * lead * .6);
+                    double sd = .7 * DifDe(g, b).disp; CastSigilAt(g, b, t.x + Rand(-sd, sd) + t._vx * lead * .6, 1.2, t.z + Rand(-sd, sd) + t._vz * lead * .6);
                 }
             }
             return true;
