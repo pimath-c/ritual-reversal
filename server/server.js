@@ -14,6 +14,9 @@ const RESERVA_MS=120000; // quanto tempo a vaga de quem caiu fica guardada
 const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8']};
 const server=http.createServer((req,res)=>{
   const url=req.url.split('?')[0];
+  if(url==='/api/salas'){ // salas públicas que ainda não começaram, para a lista da tela inicial
+    const lista=[...rooms.values()].filter(r=>r.listada&&!r.game&&r.clients.size>0&&r.clients.size<4).map(r=>({code:r.code,anfitriao:(r.clients.get(r.host)||{}).name||'',jogadores:r.clients.size}));
+    res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}); return res.end(JSON.stringify(lista.slice(0,20))); }
   if(url==='/api/info'){ res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}); /* o app Android pergunta de outra origem */ return res.end(JSON.stringify({server:'ritual-reversal',rooms:rooms.size})); }
   if(url.startsWith('/logs/')){ const f=path.basename(url); const p=path.join(LOGDIR,f); if(/^[\w-]+\.json$/.test(f)&&fs.existsSync(p)){ res.writeHead(200,{'Content-Type':'application/json','Content-Disposition':`attachment; filename="${f}"`}); return fs.createReadStream(p).pipe(res); } }
   const f=FILES[url]; if(!f){ res.writeHead(404); return res.end('não encontrado'); }
@@ -23,9 +26,9 @@ const server=http.createServer((req,res)=>{
 const rooms=new Map();
 let CID=1;
 function code(){ const L='ABCDEFGHJKLMNPQRSTUVWXYZ'; let c; do{ c=''; for(let i=0;i<4;i++) c+=L[Math.floor(Math.random()*L.length)]; }while(rooms.has(c)); return c; }
-function newRoom(){ const r={code:code(),clients:new Map(),host:null,slots:[0,1,2,3].map(i=>({team:i<2?'A':'B',cid:null,name:Sim.BOT_NAMES[i<2?'A':'B'][i%2]})),game:null,acc:0,snapAcc:0,logFile:null,logN:0,emptyT:0,reservas:new Map()}; rooms.set(r.code,r); return r; }
+function newRoom(){ const r={code:code(),clients:new Map(),host:null,slots:[0,1,2,3].map(i=>({team:i<2?'A':'B',cid:null,name:Sim.BOT_NAMES[i<2?'A':'B'][i%2]})),game:null,acc:0,snapAcc:0,logFile:null,logN:0,emptyT:0,reservas:new Map(),listada:false}; rooms.set(r.code,r); return r; }
 const send=(ws,o)=>{ if(ws.readyState===1) ws.send(JSON.stringify(o)); };
-function lobbyState(r){ return {t:'lobby',code:r.code,host:r.host,inGame:!!r.game,slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name}))}; }
+function lobbyState(r){ return {t:'lobby',code:r.code,host:r.host,inGame:!!r.game,publica:r.listada,slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name}))}; }
 function broadcastLobby(r){ const m=lobbyState(r); r.clients.forEach(c=>send(c.ws,m)); }
 function seat(r,c){
   const hA=r.slots.filter(s=>s.cid&&s.team==='A').length, hB=r.slots.filter(s=>s.cid&&s.team==='B').length;
@@ -45,7 +48,7 @@ wss.on('connection',ws=>{
       c.name=String(m.name||'Jogador').replace(/[<>]/g,'').slice(0,16)||'Jogador';
       c.token=typeof m.token==='string'?m.token.slice(0,40):null;
       let r;
-      if(m.create) r=newRoom(); else { r=rooms.get(String(m.code||'').toUpperCase()); if(!r) return send(ws,{t:'error',msg:'Sala não encontrada. Confira o código.'}); }
+      if(m.create){ r=newRoom(); r.listada=m.publica===true; } else { r=rooms.get(String(m.code||'').toUpperCase()); if(!r) return send(ws,{t:'error',msg:'Sala não encontrada. Confira o código.'}); }
       if(r.game){
         const res=c.token&&r.reservas.get(c.token);
         if(!res||res.ate<Date.now()) return send(ws,{t:'error',msg:'Essa partida já começou. Peça para o anfitrião voltar ao lobby.'});
@@ -60,6 +63,10 @@ wss.on('connection',ws=>{
       send(ws,{t:'welcome',cid:c.cid,code:r.code}); broadcastLobby(r); return;
     }
     const r=c.room; if(!r) return;
+    if(m.t==='chat'){ // conversa da sala (lobby e partida): no máximo 140 caracteres, uma mensagem a cada 0,6 s
+      const agora=Date.now(); if(agora-(c.chatT||0)<600) return; c.chatT=agora;
+      const msg=String(m.msg||'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().slice(0,140); if(!msg) return;
+      const o={t:'chat',de:c.name,cid:c.cid,msg}; r.clients.forEach(k=>send(k.ws,o)); return; }
     if(m.t==='slot'&&!r.game){ const i=m.i|0; if(r.slots[i]&&!r.slots[i].cid){ unseat(r,c.cid); r.slots[i].cid=c.cid; r.slots[i].name=c.name; broadcastLobby(r); } }
     if(m.t==='start'&&!r.game&&c.cid===r.host){
       r.game=Sim.createGame({timers:true,slots:r.slots,matchId:r.code+'-'+Date.now()});

@@ -63,7 +63,8 @@ const VISTAS=[
     Object.assign(A,{state:'active',grande:true,localized:true,prog:.4}); g.events.push({type:'grande',altar:1});
     m.x=-6; m.z=-12; m.cls='soldado'; __T.LOOK.yaw=0; __T.LOOK.pitch=.3; m.inp.yaw=0; m.inp.pitch=.3; for(const a of g.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=0; } });
   await page.waitForTimeout(6000); await page.screenshot({path:path.join(OUT,'grande-ritual.png')});
-  const gr=await page.evaluate(()=>({corpo:document.body.classList.contains('grande'),relogio:document.querySelector('#roundName').textContent}));
+  const gr=await page.evaluate(()=>({corpo:document.body.classList.contains('grande'),relogio:document.querySelector('#roundName').textContent,bussola:document.querySelectorAll('#bussola .ct').length,legendas:document.querySelectorAll('#legendas .lg').length}));
+  if(!gr.bussola) erros.push('bússola vazia'); if(!gr.legendas) erros.push('o Grande Ritual não gerou legenda de som');
   console.log('grande ritual:',JSON.stringify(gr)); if(!gr.corpo) erros.push('Grande Ritual não mudou a interface');
   await page.evaluate(()=>{ Object.assign(__T.game.altars[1],window.__antes); });
   await page.waitForTimeout(600);
@@ -75,6 +76,12 @@ const VISTAS=[
     fases.push(r); await page.waitForTimeout(400); if(r.ph!=='play') break; }
   const ult=fases[fases.length-1]; console.log(`partida acelerada: ${fases.length} blocos, terminou em ${ult.ph} aos ${ult.rt} s, ${ult.fendas} Fendas, ${ult.far} Faróis`);
   await page.screenshot({path:path.join(OUT,'fim.png')});
+  // até o resultado: a tela final precisa abrir (a noite única quebrava aqui) com a linha do tempo da noite
+  if(ult.ph==='summary'){ await page.evaluate(()=>{ document.querySelectorAll('style').forEach(st=>{ if(st.textContent.includes('#scr{display:none')) st.remove(); }); __T.sendAct({type:'ready'}); });
+    await page.waitForFunction(()=>__T.game.phase==='final',null,{timeout:30000}); await page.waitForTimeout(2500);
+    const fin=await page.evaluate(()=>({titulo:(document.querySelector('#scrBody h2')||{}).textContent||'',grafico:!!document.querySelector('svg.linhaTempo')}));
+    console.log('resultado:',JSON.stringify(fin)); if(!/Vitória|Empate/.test(fin.titulo)) erros.push('tela de resultado não abriu: '+fin.titulo); if(!fin.grafico) erros.push('resultado sem a linha do tempo');
+    await page.screenshot({path:path.join(OUT,'resultado.png')}); }
   console.log('carregamento até o menu:',(boot/1000).toFixed(1),'s');
   console.table(medidas.map(m=>({vista:m.vista,chamadas:m.chamadas,triangulos:m.triangulos,geometrias:m.geometrias})));
   if(erros.length){ console.log('ERROS:'); [...new Set(erros)].slice(0,20).forEach(e=>console.log(' ',e)); }
