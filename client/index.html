@@ -1925,7 +1925,7 @@ function handleEvents(list,online){
     switch(e.type){
       case 'feed': feed(e.msg,e.cls); break;
       case 'sfx': if(e.k==='sigil'&&e.a!==id){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.cast=1; }
-        if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z); if(e.a!==id) legenda(e.k,e.x,e.z); break;
+        if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
       case 'tracer': { const own=e.a===id; const p0=own?camera.localToWorld(new THREE.Vector3(.27,-.2,-.9)):new THREE.Vector3(e.x0,e.y0+.1,e.z0);
         const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0,new THREE.Vector3(e.x1,e.y1,e.z1)]),new THREE.LineBasicMaterial({color:0xffd9a0,transparent:true,opacity:.8,toneMapped:false})); world.add(l); tracers.push({l,t:.07});
         if(e.alvo!=null){ particulas(e.x1,e.y1,e.z1,e.cab?22:12,0xb01830,2.2,.45,6,.6); if(e.cab) particulas(e.x1,e.y1,e.z1,8,0xffd070,3,.25,4,1); const mm=actorMeshes.get(e.alvo); if(mm){ mm.userData.anim.flinch=1; mm.userData.anim.golpe={x:e.x0,z:e.z0}; } }
@@ -1936,7 +1936,7 @@ function handleEvents(list,online){
       case 'hurt': if(e.a===id){ hurtT=.35; SFX.hurt(); if(e.sx!=null) direcaoDano(e.sx,e.sz); FX.kickP+=rand(-.02,.02); ESP.golpe={s:e.s,x:e.sx,z:e.sz,t:performance.now()}; }
         else { const mm=actorMeshes.get(e.a); if(mm){ mm.userData.anim.flinch=1; if(e.sx!=null) mm.userData.anim.golpe={x:e.sx,z:e.sz}; } } break;
       case 'burst': particulas(e.x,e.y,e.z,18,0xb050ff,3,.5,3,.8); particulas(e.x,e.y,e.z,8,0xff4a70,1.5,.7,1,.3); clarao(e.x,e.y,e.z,0xb050ff,2.2); SFX.estouro(e.x,e.z); legenda('estouro',e.x,e.z); break;
-      case 'reload': if(e.a===id) SFX.reload(null,null); else { SFX.reload(e.x,e.z); legenda('reload',e.x,e.z); } break;
+      case 'reload': if(e.a===id) SFX.reload(null,null); else { SFX.reload(e.x,e.z); const em=V.actors.find(b=>b.id===e.a); if(!(em&&m&&em.team===m.team)) legenda('reload',e.x,e.z); } break;
       case 'ping': receberPing(e); break;
       case 'fala': receberFala(e); break;
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
@@ -2094,6 +2094,24 @@ function atualizarDicas(dt,m){ const el=$('#dica'); if(!el) return; DC.t-=dt; DC
       if((V.pontos||[]).some(p=>p.tipo==='sentinela'&&p.acesa&&perto(p,14))) dica('c_sentinela'); } }
   if(DC.t<=0&&DC.fila.length){ const id=DC.fila.shift(); dicasVistas()[id]=1; try{ localStorage.setItem('rr-dicas',JSON.stringify(DC.vistas)); }catch(e){}
     el.innerHTML=`<small>Dica</small>${esc(DICAS[id])}`; el.classList.add('on'); DC.aberta=8; DC.t=12; } }
+
+// ================= TRILHA DE TENSÃO =================
+// Um bordão grave e um chiado alto que crescem com o perigo: inimigo à vista e perto, ritual ao alcance do ouvido,
+// sanidade baixa, ferimento recente, estar caído. Some durante o Grande Ritual (que tem a própria música).
+const TN={k:0,au:null};
+function tensaoSom(){ if(!AU.ok||TN.au) return; const c=AU.ctx, out=c.createGain(); out.gain.value=0; out.connect(AU.master); const nodes=[];
+  const gD=c.createGain(); gD.gain.value=.5; gD.connect(out); for(const [f,d] of [[55,0],[55.4,0],[82.6,0]]){ const o=c.createOscillator(); o.frequency.value=f; o.connect(gD); nodes.push(o); }
+  const tr=c.createOscillator(); tr.frequency.value=.35; const tg=c.createGain(); tg.gain.value=.25; tr.connect(tg); tg.connect(gD.gain); nodes.push(tr);
+  const src=c.createBufferSource(); src.buffer=AU.noise; src.loop=true; const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=3200; bp.Q.value=6; const gN=c.createGain(); gN.gain.value=.18;
+  const lf=c.createOscillator(); lf.frequency.value=.12; const lg=c.createGain(); lg.gain.value=900; lf.connect(lg); lg.connect(bp.frequency); src.connect(bp); bp.connect(gN); gN.connect(out); nodes.push(src,lf);
+  nodes.forEach(n=>n.start()); TN.au={out}; }
+function atualizarTensao(dt,m){ let alvo=0;
+  if(m&&V&&V.phase==='play'){ const P=camera.position;
+    for(const a of V.actors){ if(a.team===m.team||a.hidden||a.st==='dead') continue; const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z, d=Math.hypot(x-P.x,z-P.z); if(d<28&&Sim.segClear(P.x,P.z,x,z,0,Sim.TALL)) alvo=Math.max(alvo,.55+.4*(1-d/28)); }
+    if([...LEG.keys()].some(k=>k.startsWith('rit'))) alvo=Math.max(alvo,.45);
+    if(m.sanity<40) alvo=Math.max(alvo,.35+(40-m.sanity)/40*.4); if(hurtT>0) alvo=Math.max(alvo,.8); if(m.st==='down') alvo=1; if(m.st==='dead') alvo=0;
+    alvo*=1-GR.k; }
+  TN.k+=(alvo-TN.k)*Math.min(1,dt*(alvo>TN.k?2.5:.5)); if(TN.k>.02) tensaoSom(); if(TN.au) TN.au.out.gain.setTargetAtTime(.09*TN.k,AU.ctx.currentTime,.25); }
 
 // ================= PING DE EQUIPE =================
 // Marca o que está na mira para a própria equipe: um inimigo à vista, um altar ou um ponto no chão (até a parede).
@@ -2367,6 +2385,12 @@ function mapSvg(svg,opts){
   let h='';
   Sim.ALTARS.forEach((A,i)=>{ const st=opts.state?opts.state(V?V.altars[i]:A,i):null; const fill=st?st.fill:'#1b1f24',stroke=st?st.stroke:'#6d7e8e';
     h+=`<g class="${opts.click?'alt-hit':''}" data-i="${i}"><circle cx="${X(A.x)}" cy="${Z(A.z)}" r="${Math.max(7,CFG.circleR*S+3)}" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/><text x="${X(A.x)}" y="${Z(A.z)+(A.z<0?22:-14)}" fill="#e8e0d0" font-size="13" text-anchor="middle" font-family="IM Fell English, Georgia, serif">${A.name}</text></g>`; });
+  if(opts.me&&V&&V.actors){ const eu=me(), time=eu?eu.team:null;
+    for(const n of NPCS) if(!n.time||n.time===time) h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="none" stroke="#d2ad62" stroke-width="1.5"><title>${esc(n.nome)}</title></circle>`;
+    for(const f of V.flares||[]) if(f.t>0) h+=`<circle cx="${X(f.x)}" cy="${Z(f.z)}" r="5" fill="#ffb070" opacity=".8"/>`;
+    for(const p of PINGS) h+=`<g transform="translate(${X(p.x)} ${Z(p.z)})"><circle r="7" fill="none" stroke="#8ee8ff" stroke-width="2"/><circle r="2" fill="#8ee8ff"/><text y="-10" fill="#8ee8ff" font-size="11" text-anchor="middle">${esc(p.txt)}</text></g>`;
+    for(const a of V.actors){ if(!eu||a.cid===meCid||a.hidden||a.team!==time||a.st==='dead') continue; const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z;
+      h+=`<g transform="translate(${X(x)} ${Z(z)})"><rect x="-4" y="-4" width="8" height="8" transform="rotate(45)" fill="${a.st==='down'?'#e0435e':time==='H'?'#d2ad62':'#e0435e'}"/><text y="-9" fill="#e8e0d0" font-size="11" text-anchor="middle">${esc(a.name)}</text></g>`; } }
   if(opts.me) h+=`<g transform="translate(${X(opts.me.x)} ${Z(opts.me.z)}) rotate(${-LOOK.yaw*180/Math.PI})"><path d="M0 -9 L6 6 L0 2 L-6 6Z" fill="#fff"/></g>`;
   svg._fixa.innerHTML=h;
 }
@@ -2679,7 +2703,7 @@ function tick(now){
     ws.send(JSON.stringify(Object.assign({t:'in'},inp)));
     interpActors(); predictFire(dt,me());
   }
-  if(V&&V.phase!==lastPhase){ if(V.phase==='play'){ show('hud',true); { const C=CLIMAS[climaDe((V.matchId||'')+':'+(V.round||1))]; if(C.nome!=='Noite limpa') setTimeout(()=>anunciar(C.nome,C.sub),900); } if(!AUTOTEST) lock(); toolsKey=''; if(lastPhase!=='play'){ const m=me(); if(m){ LOOK.yaw=m.yaw; LOOK.pitch=0; } } } else { show('hud',false); atualizarMarcas(null); limparLegendas(); atualizarBussola(null); unlock(); AV.forEach((O,i)=>ritualLoopStop(i)); } lastPhase=V.phase; }
+  if(V&&V.phase!==lastPhase){ if(V.phase==='play'){ show('hud',true); { const C=CLIMAS[climaDe((V.matchId||'')+':'+(V.round||1))]; if(C.nome!=='Noite limpa') setTimeout(()=>anunciar(C.nome,C.sub),900); } if(!AUTOTEST) lock(); toolsKey=''; if(lastPhase!=='play'){ const m=me(); if(m){ LOOK.yaw=m.yaw; LOOK.pitch=0; } } } else { show('hud',false); atualizarMarcas(null); limparLegendas(); atualizarTensao(1,null); atualizarBussola(null); unlock(); AV.forEach((O,i)=>ritualLoopStop(i)); } lastPhase=V.phase; }
   wasLocked=locked;
   if(TQ.ativo){ const tq=$('#toque'), r=(myRole()||'')+(locked&&!lojaAberta?'':' solto'); if(tq.className!==r){ tq.className=r; if(r.includes('solto')) TQ.soltar(); } } // com menu aberto, os controles saem da frente dos botões
   syncScreens();
@@ -2729,7 +2753,7 @@ function tick(now){
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
-    updateHUD(dt,m); atualizarPings(dt); atualizarDicas(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
+    updateHUD(dt,m); atualizarPings(dt); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
     if(vmH){ vmH.visible=false; vmC.visible=false; } // fora da partida, nada de arma na mão
@@ -2754,7 +2778,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,fazerPing,PINGS,travar:()=>lock(),connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();
