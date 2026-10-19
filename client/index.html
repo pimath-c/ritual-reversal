@@ -1189,7 +1189,7 @@ function atualizarGrande(dt,agora){
   document.body.classList.toggle('grande',k>.05);
   if(CEU.ceu) CEU.ceu.material.color.setRGB(1+1.6*k,1-.45*k,1-.4*k);
   if(CEU.sangue){ CEU.sangue.visible=k>.01; CEU.sangue.material.opacity=k*(.8+.2*Math.sin(t*.9)); }
-  if(CEU.estrelas&&CEU.estrelas.material) CEU.estrelas.material.opacity=.8*(1-.75*k);
+  if(CEU.estrelas&&CEU.estrelas.material) CEU.estrelas.material.opacity=.8*(1-.75*k)*CL.estrelas;
   if(CEU.lua){ CEU.lua.material.color.copy(_corLua).lerp(_corLuaG,k); CEU.lua2.material.color.setRGB(.44+.5*k,.53-.35*k,.78-.6*k); }
   const pul=.75+.25*Math.sin(t*2.1);
   if(CEU.vitrais) for(const v of CEU.vitrais) v.m.color.copy(v.c).lerp(_corVit,k*pul);
@@ -1538,9 +1538,9 @@ function sfxTone(x,z,radius,f0,f1,dur,type,vol){ if(!AU.ok) return; const s=x==n
 const SFX={
   shot:(x,z)=>{ sfxNoise(x,z,55,.28,'lowpass',1600,.7,.9); sfxTone(x,z,55,160,50,.18,'sine',.6); },
   sigil:(x,z)=>{ sfxTone(x,z,35,720,160,.35,'triangle',.35); sfxNoise(x,z,35,.3,'bandpass',2400,3,.25); },
-  step:(x,z)=>sfxNoise(x,z,16,.09,'lowpass',520,.8,.55),
-  passoForte:(x,z)=>sfxNoise(x,z,24,.1,'lowpass',620,.8,.75),
-  mystep:()=>sfxNoise(null,null,1,.07,'lowpass',420,.8,.12),
+  step:(x,z)=>passo(x,z,16,.55),
+  passoForte:(x,z)=>passo(x,z,24,.75,true),
+  mystep:()=>passo(null,null,1,.12),
   hit:()=>sfxTone(null,null,1,1400,900,.07,'square',.12), hurt:()=>sfxTone(null,null,1,220,90,.25,'sawtooth',.2),
   presage:()=>{ sfxTone(null,null,1,78,26,3.2,'sine',.9); if(AU.ok){ const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(); src.buffer=AU.noise; const f=c.createBiquadFilter(); f.type='bandpass'; f.Q.value=5; f.frequency.setValueAtTime(3200,t); f.frequency.exponentialRampToValueAtTime(400,t+2.2); const g=outNode(0,0); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35,t+2); g.gain.linearRampToValueAtTime(0,t+2.3); src.connect(f); f.connect(g); src.start(t); src.stop(t+2.4);} },
   whisper:(x,z,dry)=>{ for(let i=0;i<4;i++) setTimeout(()=>sfxNoise(x,z,26,.35,'bandpass',rand(900,2600),6,.5,dry),i*170); },
@@ -1567,6 +1567,54 @@ const SFX={
   hab:(cls,x,z)=>{ if(cls==='soldado'){ sfxTone(x,z,40,5200,3000,.12,'square',.12); } else if(cls==='exorcista'){ [784,1046,1318].forEach((f,i)=>setTimeout(()=>sfxTone(x,z,34,f,f,.9,'sine',.12),i*70)); } else if(cls==='guardiao'){ sfxTone(x,z,34,60,30,.5,'sine',.9); } else { sfxTone(x,z,34,220,660,.9,'sawtooth',.08); } },
   estouro:(x,z)=>{ sfxNoise(x,z,22,.25,'bandpass',900,2,.5); sfxTone(x,z,22,420,90,.25,'triangle',.25); },
 };
+// Passos pelo chão de cada lugar: pedra na catedral e no Claustro, terra batida nas trilhas, folhas secas na mata
+// fechada; com chuva, todo passo fora do teto espirra.
+function superficie(x,z){ if(Sim.naCatedral(x,z)) return 'pedra';
+  for(const sg of Sim.SEG_TRILHA){ const dx=sg.bx-sg.ax,dz=sg.bz-sg.az,L=dx*dx+dz*dz; let t=L?((x-sg.ax)*dx+(z-sg.az)*dz)/L:0; t=clamp(t,0,1); if(Math.hypot(x-(sg.ax+dx*t),z-(sg.az+dz*t))<sg.w/2+.4) return 'terra'; }
+  return 'folhas'; }
+function passo(x,z,raio,vol,forte){ const P=x==null?camera.position:{x,z}, sup=superficie(P.x,P.z), v=vol*(forte?1.1:1);
+  if(sup==='pedra'){ sfxNoise(x,z,raio,.06,'bandpass',1900+rand(-200,200),2.2,v*.55); sfxNoise(x,z,raio,.08,'lowpass',300,.8,v*.6); }
+  else if(sup==='terra') sfxNoise(x,z,raio,.09,'lowpass',520+rand(-60,60),.8,v);
+  else { sfxNoise(x,z,raio,.11,'bandpass',2600+rand(-400,400),1.2,v*.5); setTimeout(()=>sfxNoise(x,z,raio,.07,'highpass',3200,1,v*.3),35); sfxNoise(x,z,raio,.08,'lowpass',380,.8,v*.5); }
+  if(CL.chuva>.2&&!(Sim.naCatedral(P.x,P.z)&&!naClaustro(P.x,P.z))) sfxNoise(x,z,raio,.12,'highpass',1800,1,v*.35*CL.chuva); }
+function naClaustro(x,z){ const C=Sim.CLAUSTRO; return x>C.x1&&x<C.x2&&z>C.z1&&z<C.z2; }
+
+// ================= CLIMA =================
+// Cada rodada sorteia o clima pelo código da partida: todos os jogadores da sala veem a mesma noite.
+// Névoa fecha a vista; chuva apaga as estrelas e soa no telhado; tempestade traz relâmpagos que iluminam a mata.
+const CLIMAS={limpa:{nome:'Noite limpa',sub:'Céu aberto, estrelas e luar',nevoa:1,chuva:0,raios:0,estrelas:1},
+  nevoa:{nome:'Noite de névoa',sub:'A névoa fecha a vista: ouça antes de ver',nevoa:1.4,chuva:0,raios:0,estrelas:.3},
+  chuva:{nome:'Chuva fina',sub:'A chuva apaga as estrelas e abafa os passos',nevoa:1.15,chuva:.55,raios:0,estrelas:.1},
+  tempestade:{nome:'Tempestade',sub:'Relâmpagos iluminam a mata por um instante',nevoa:1.2,chuva:1,raios:1,estrelas:0}};
+function climaDe(id){ let h=2166136261; for(const c of String(id)) h=Math.imul(h^c.charCodeAt(0),16777619)>>>0; const r=h%100; return r<38?'limpa':r<62?'nevoa':r<86?'chuva':'tempestade'; }
+const CL={tipo:null,nevoa:1,chuva:0,estrelas:1,raios:0,mesh:null,gotas:null,raioT:25,flash:0,au:null,trovoes:[]};
+function construirChuva(){ const N=PERF.nivel>=3?2200:PERF.nivel===2?1400:PERF.nivel===1?800:0; if(!N) return;
+  const pos=new Float32Array(N*6), dr=new Float32Array(N*3); for(let i=0;i<N;i++){ dr[i*3]=rand(-22,22); dr[i*3+1]=rand(0,18); dr[i*3+2]=rand(-22,22); }
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  CL.mesh=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0x9fb4cc,transparent:true,opacity:0,depthWrite:false,fog:true})); CL.mesh.frustumCulled=false; scene.add(CL.mesh); CL.gotas=dr; }
+function chuvaSom(on){ if(!AU.ok) return; if(on&&!CL.au){ const c=AU.ctx, src=c.createBufferSource(); src.buffer=AU.noise; src.loop=true; const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=700;
+    const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=4000; const g=c.createGain(); g.gain.value=0; src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(AU.master); src.start(); CL.au={src,lp,g}; }
+  if(!on&&CL.au){ const au=CL.au; CL.au=null; au.g.gain.setTargetAtTime(0,AU.ctx.currentTime,.5); setTimeout(()=>{ try{ au.src.stop(); }catch(e){} },3000); } }
+function atualizarClima(dt,now){
+  const jogo=V&&V.phase==='play', tipo=jogo?climaDe((V.matchId||'')+':'+(V.round||1)):'limpa', C=CLIMAS[tipo];
+  if(tipo!==CL.tipo){ CL.tipo=tipo; CL.raioT=rand(12,30); }
+  const k=Math.min(1,dt*.5); CL.nevoa=lerp(CL.nevoa,C.nevoa,k); CL.chuva=lerp(CL.chuva,C.chuva,k); CL.estrelas=lerp(CL.estrelas,C.estrelas,k);
+  const P=camera.position, coberto=Sim.naCatedral(P.x,P.z)&&!naClaustro(P.x,P.z);
+  if(CL.chuva>.02&&!CL.mesh) construirChuva();
+  if(CL.mesh){ const N=CL.gotas.length/3, pos=CL.mesh.geometry.attributes.position.array, vy=17+CL.chuva*6, vx=2.5*CL.chuva, n=Math.round(N*Math.min(1,CL.chuva*1.2));
+    for(let i=0;i<N;i++){ let y=CL.gotas[i*3+1]-vy*dt; if(y<0) y+=18; CL.gotas[i*3+1]=y; let x=P.x+CL.gotas[i*3], z=P.z+CL.gotas[i*3+2], yy=y;
+      if(i>=n||(Sim.naCatedral(x,z)&&!naClaustro(x,z))) yy=-60; // sob o telhado não chove
+      pos[i*6]=x; pos[i*6+1]=yy; pos[i*6+2]=z; pos[i*6+3]=x-vx*.04; pos[i*6+4]=yy+.55; pos[i*6+5]=z; }
+    CL.mesh.geometry.attributes.position.needsUpdate=true; CL.mesh.material.opacity=.32*Math.min(1,CL.chuva*1.5); CL.mesh.visible=CL.chuva>.02; }
+  chuvaSom(CL.chuva>.05&&jogo); if(CL.au){ const t=AU.ctx.currentTime; CL.au.g.gain.setTargetAtTime(.09*CL.chuva*(coberto?.55:1),t,.4); CL.au.lp.frequency.setTargetAtTime(coberto?650:4200,t,.3); }
+  // relâmpagos: dois clarões rápidos e o trovão depois, mais tarde quanto mais longe
+  if(jogo&&C.raios){ CL.raioT-=dt; if(CL.raioT<=0){ CL.raioT=rand(18,42); const d=rand(.3,2.6); CL.flash=1; setTimeout(()=>{ CL.flash=Math.max(CL.flash,.8); },140);
+      setTimeout(()=>{ sfxNoise(null,null,1,2.8+d,'lowpass',150,.8,.9); sfxTone(null,null,1,48,26,2.4,'sine',.5); legenda('trovao',null,null,'Trovão'); },d*1000); } }
+  CL.flash=Math.max(0,CL.flash-dt*5.5);
+  if(CEU.sol) CEU.sol.intensity=.42+CL.flash*(coberto?1.2:4.5);
+  if(CEU.ceu&&CL.flash>0) CEU.ceu.material.color.lerp(_branco,CL.flash*.8); }
+const _branco=new THREE.Color(2.5,2.6,3);
+
 // Legendas sonoras: cada som importante vira uma linha com seta (para onde ele está em relação à câmera) e distância.
 // Só aparece o que de fato se ouve (mesmo ganho do som espacial, com o abafamento das paredes).
 const LEG_TXT={shot:['Tiro',55,''],sigil:['Sigilo',35,'cult'],step:['Passos',16,''],passoForte:['Passos pesados',24,''],collect:['Algo foi coletado',26,''],flare:['Sinalizador aceso',20,''],
@@ -2023,8 +2071,8 @@ function lojaScreen(){ const n=NPCS.find(x=>x.id===lojaAberta), m=me(); if(!n||!
 const AMB=[{nevoa:.019,cor:new THREE.Color(0x16110f),vela:1.1},{nevoa:.026,cor:new THREE.Color(0x0b0d14),vela:1},{nevoa:.036,cor:new THREE.Color(0x15070a),vela:.8}];
 const COR_MATA=new THREE.Color(0x10140f), _corAlvo=new THREE.Color();
 function ambienteMomento(mi,dt){ const A=AMB[Math.min(2,mi)], k=Math.min(1,dt*.6), mata=Sim.zoneAt(camera.position.x,camera.position.z)==='Floresta';
-  scene.fog.density=lerp(scene.fog.density,A.nevoa*(mata?1.45:1),k); _corAlvo.copy(A.cor).lerp(COR_MATA,mata?.6:0).lerp(COR_GRANDE,GR.k*.75); scene.fog.color.lerp(_corAlvo,k); scene.background.lerp(_corAlvo,k); AMB.vela=lerp(AMB.vela||1,A.vela,k);
-  if(GRADE){ const U=GRADE.uniforms; U.uNevoaDens.value=lerp(U.uNevoaDens.value,[.024,.03,.04][Math.min(2,mi)],k); U.uNevoaCor.value.lerp(GR.k>.05?COR_NEVOA_GR:mi>=2?COR_NEVOA_HM:COR_NEVOA,k); } }
+  scene.fog.density=lerp(scene.fog.density,A.nevoa*(mata?1.45:1)*CL.nevoa,k); _corAlvo.copy(A.cor).lerp(COR_MATA,mata?.6:0).lerp(COR_GRANDE,GR.k*.75); scene.fog.color.lerp(_corAlvo,k); scene.background.lerp(_corAlvo,k); AMB.vela=lerp(AMB.vela||1,A.vela,k);
+  if(GRADE){ const U=GRADE.uniforms; U.uNevoaDens.value=lerp(U.uNevoaDens.value,[.024,.03,.04][Math.min(2,mi)]*(1+(CL.nevoa-1)*1.6),k); U.uNevoaCor.value.lerp(GR.k>.05?COR_NEVOA_GR:mi>=2?COR_NEVOA_HM:COR_NEVOA,k); } }
 const COR_NEVOA=new THREE.Color(.075,.086,.09), COR_NEVOA_HM=new THREE.Color(.085,.062,.068), COR_NEVOA_GR=new THREE.Color(.13,.035,.045), COR_GRANDE=new THREE.Color(0x2a0508);
 // ---------- a noite no mundo: mercadores, pontos de tarefa, sal ----------
 const NOITE={npcs:new Map(),pontos:new Map(),sal:new Map()};
@@ -2275,7 +2323,8 @@ function introScreen(){
   const H=role==='H';
   const brief=H?`<p>No <b>Crepúsculo</b> (3 min), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto. Negocie com o Ermitão, na cabana perto do acampamento. Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
     :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio. Negocie com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.</p>`;
-  setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2>${brief}
+  const CLn=CLIMAS[climaDe((V.matchId||'')+':'+(V.round||1))];
+  setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2><p class="lede" style="text-align:left!important;margin:0 0 8px!important">${CLn.nome}: ${CLn.sub.toLowerCase()}.</p>${brief}
     <h3>Arquétipo</h3><div class="choices ${CLASS_BY_TEAM[role].length>2?'tres':''}">${CLASS_BY_TEAM[role].map(c=>`<button class="choice ${c===mine?'sel':''}" data-c="${c}" ${rdy?'disabled':''}><b>${CLASSES[c].name}</b><span>${CLASSES[c].text}</span><small>${CLASSES[c].hp} de vida</small></button>`).join('')}</div>
     <h3>Feitiço</h3><div class="choices tres">${FEIT_BY_TEAM[role].map(f=>`<button class="choice ${f===feit?'sel':''}" data-f="${f}" ${rdy?'disabled':''}><b>${FEITICOS[f].nome}</b><span>${FEITICOS[f].text}</span><small>recarga de ${FEITICOS[f].cd} s</small></button>`).join('')}</div>
     <div class="btnrow"><button class="go ${H?'gold':''}" id="bReady" ${rdy?'disabled':''}>${rdy?'Aguardando os outros':'Estou pronto'}</button></div><p class="wait" id="dyn"></p>`,
@@ -2403,12 +2452,12 @@ function tick(now){
     ws.send(JSON.stringify(Object.assign({t:'in'},inp)));
     interpActors(); predictFire(dt,me());
   }
-  if(V&&V.phase!==lastPhase){ if(V.phase==='play'){ show('hud',true); if(!AUTOTEST) lock(); toolsKey=''; if(lastPhase!=='play'){ const m=me(); if(m){ LOOK.yaw=m.yaw; LOOK.pitch=0; } } } else { show('hud',false); atualizarMarcas(null); limparLegendas(); atualizarBussola(null); unlock(); AV.forEach((O,i)=>ritualLoopStop(i)); } lastPhase=V.phase; }
+  if(V&&V.phase!==lastPhase){ if(V.phase==='play'){ show('hud',true); { const C=CLIMAS[climaDe((V.matchId||'')+':'+(V.round||1))]; if(C.nome!=='Noite limpa') setTimeout(()=>anunciar(C.nome,C.sub),900); } if(!AUTOTEST) lock(); toolsKey=''; if(lastPhase!=='play'){ const m=me(); if(m){ LOOK.yaw=m.yaw; LOOK.pitch=0; } } } else { show('hud',false); atualizarMarcas(null); limparLegendas(); atualizarBussola(null); unlock(); AV.forEach((O,i)=>ritualLoopStop(i)); } lastPhase=V.phase; }
   wasLocked=locked;
   if(TQ.ativo){ const tq=$('#toque'), r=(myRole()||'')+(locked&&!lojaAberta?'':' solto'); if(tq.className!==r){ tq.className=r; if(r.includes('solto')) TQ.soltar(); } } // com menu aberto, os controles saem da frente dos botões
   syncScreens();
   // cosmetics
-  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); // transições em tempo real, mesmo com poucos quadros
+  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); // transições em tempo real, mesmo com poucos quadros
   flames.forEach((f,i)=>{ f.scale.y=.26+Math.sin(now*.02+i)*.03; });
   if(RT.dust){ RT.dust.rotation.y+=dt*.004; RT.dust.position.y=Math.sin(now*.0002)*.3; }
   updateParticles(dt); atualizarEfeitos(dt);
@@ -2478,7 +2527,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();
