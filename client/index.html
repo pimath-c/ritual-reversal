@@ -172,6 +172,11 @@ input.txt:focus{ outline:2px solid var(--gold); }
 table.res{ width:100%; border-collapse:collapse; font-size:17px; margin:10px 0; }
 table.res th, table.res td{ padding:6px 8px; border-bottom:1px solid #333a42; text-align:left; } table.res th{ color:var(--muted); font-weight:500; }
 table.res td.n{ text-align:right; } table.res th.n{ text-align:right; }
+#conquista{ position:fixed; right:22px; bottom:150px; width:300px; padding:10px 14px; background:linear-gradient(180deg,rgba(38,32,20,.95),rgba(18,15,10,.95)); border:1px solid var(--gold); transform:translateX(360px); transition:transform .5s cubic-bezier(.2,.9,.3,1.2); pointer-events:none; z-index:20; }
+#conquista.on{ transform:none; } #conquista small{ display:block; font-size:12px; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; } #conquista b{ display:block; font-family:var(--serif); font-weight:400; font-size:22px; color:var(--gold-hi); } #conquista span{ font-size:14px; color:#cfc6b6; }
+.conqs{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:6px; } .cq{ padding:6px 8px; border:1px solid #2c3239; background:rgba(14,16,19,.6); opacity:.5; }
+.cq b{ display:block; font-family:var(--serif); font-weight:400; font-size:16px; } .cq span{ font-size:12.5px; color:var(--muted); line-height:1.25; display:block; } .cq.ok{ opacity:1; border-color:var(--gold); } .cq.ok b{ color:var(--gold-hi); }
+@media (max-width:760px){ .conqs{ grid-template-columns:1fr 1fr; } }
 svg.linhaTempo{ width:100%; height:auto; display:block; margin:6px 0 2px; font-family:var(--cond); }
 .ltBox h3{ margin:14px 0 2px; } .ltLeg{ display:flex; flex-wrap:wrap; gap:4px 14px; font-size:14px; color:var(--muted); }
 .ltLeg i{ display:inline-block; width:14px; height:3px; margin-right:6px; vertical-align:middle; } .ltLeg i.selo{ background:repeating-linear-gradient(90deg,#f3d58e 0 4px,transparent 4px 7px); }
@@ -336,6 +341,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 </div>
 <div id="girar"><div>Gire o aparelho para jogar deitado</div></div>
 <div id="tabMap"><div class="panel plate"><svg id="tabSvg" viewBox="0 0 540 380"></svg></div></div>
+<div id="conquista" role="status"></div>
 <div class="screen" id="scr"><div class="panel plate" id="scrBody"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -1709,6 +1715,7 @@ const myRole=()=>{ const s=mySlot(); return s?Sim.roleOf(V,s.team):null; };
 function sendAct(a){ if(MODE==='local') Sim.act(game,'local',a); else if(ws) ws.send(JSON.stringify({t:'act',a})); SFX.click(); }
 function evVisible(e,role,meId){
   if(e.type==='feed'&&e.team&&e.team!==role) return false;
+  if(e.type==='ping'&&e.team!==role) return false;
   if(e.to!=null&&e.to!==meId) return false;
   if((e.type==='sensor'||e.type==='evp'||e.type==='blind'||e.type==='stun')&&e.a!==meId) return false;
   if(e.type==='presage'&&role!=='H') return false;
@@ -2286,9 +2293,9 @@ function salaSalva(){ try{ return sessionStorage.getItem('rr-sala')||''; }catch(
 function titleScreen(){
   let savedName=''; try{ savedName=localStorage.getItem('rr-name')||''; }catch(e){}
   setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva(),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
-    <p class="lede">Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.</p>
+    <p class="lede">${UMA_NOITE()?'Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence.':'Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.'}</p>
     <div class="acoes"><button class="go" id="bSolo">Jogar sozinho, com bots</button>
-      <div class="links"><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bSet">Ajustes</button></div></div>
+      <div class="links"><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bPerfil">Perfil</button><button class="lk" id="bSet">Ajustes</button></div></div>
     ${APP?`<div class="online on"><h3>Servidor${ONLINE_OK?' <small style="color:var(--gold)">conectado</small>':''}</h3><div class="linha"><input class="txt" id="iServ" style="width:260px" placeholder="ex.: abcd.trycloudflare.com" value="${esc(SET.servidor||'')}" aria-label="Endereço do servidor" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="go ghost" id="bServ">${SONDANDO?'Procurando…':'Conectar'}</button></div></div>`:''}
     <div class="online ${ONLINE_OK?'on':''}"><h3>Jogar online</h3>
       <div class="linha"><input class="txt" id="iName" maxlength="16" placeholder="Seu nome" value="${esc(savedName)}" aria-label="Seu nome"><button class="go gold" id="bCreate">Criar sala</button></div>
@@ -2297,7 +2304,7 @@ function titleScreen(){
     <p class="err" id="err">${esc(titleMsg)}</p>
     <p class="fine">${ONLINE_OK?'Use fones: o som diz onde e em que fase está cada ritual.':APP?'Para jogar online, alguém roda o servidor do projeto; digite aqui o endereço que ele mostra.':'Para jogar online com amigos, rode o servidor do projeto e abra o link dele.'}</p>`,
   ()=>{ $('#bSolo').onclick=()=>{ audioInit(); startLocal(); };
-    const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; };
+    const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; };
     if(ONLINE_OK){ const go=create=>{ audioInit(); const name=($('#iName').value||'Jogador').trim(); try{ localStorage.setItem('rr-name',name); }catch(e){} const code=($('#iCode').value||'').trim().toUpperCase(); if(!create&&code.length!==4){ $('#err').textContent='Digite o código de 4 letras.'; return; } connect(create,code,name); };
       $('#bCreate').onclick=()=>go(true); $('#bJoin').onclick=()=>go(false);
       const bv=$('#bVolta'); if(bv) bv.onclick=()=>{ $('#iCode').value=salaSalva(); go(false); }; } });
@@ -2308,7 +2315,7 @@ function lobbyScreen(){
   const key='lobby'+JSON.stringify(L.slots)+L.host;
   setScreen(key,`<h2 style="text-align:center">Sala</h2><p class="bigcode">${L.code}</p><p class="lede">Mande este código para seus amigos. Vagas sem jogador ficam com bots.</p>
     <div class="slots"><div class="slotcol a"><h3>Equipe A</h3>${L.slots.slice(0,2).map((s,i)=>slotBtn(s,i)).join('')}</div><div class="slotcol b"><h3>Equipe B</h3>${L.slots.slice(2).map((s,i)=>slotBtn(s,i+2)).join('')}</div></div>
-    <p class="fine">A Equipe A caça na rodada 1 e celebra na rodada 2. Clique numa vaga de bot para trocar de lugar.</p>
+    <p class="fine">${UMA_NOITE()?'A Equipe A caça e a Equipe B celebra.':'A Equipe A caça na rodada 1 e celebra na rodada 2.'} Clique numa vaga de bot para trocar de lugar.</p>
     <div class="btnrow">${isHost?'<button class="go" id="bStart">Começar a partida</button>':'<span class="wait">Aguardando o anfitrião começar…</span>'}</div>`,
   ()=>{ scrBody.querySelectorAll('.slot').forEach(b=>b.onclick=()=>ws.send(JSON.stringify({t:'slot',i:+b.dataset.i}))); const s=$('#bStart'); if(s) s.onclick=()=>ws.send(JSON.stringify({t:'start'})); });
 }
@@ -2348,7 +2355,7 @@ const LT={id:null,rod:{},ultimo:-9,logOnline:null,pedindo:false};
 function rodadaLT(){ const id=V.matchId||''; if(LT.id!==id){ LT.id=id; LT.rod={}; LT.logOnline=null; LT.pedindo=false; } const r=V.round||1;
   return LT.rod[r]||(LT.rod[r]={am:[],mk:[],est:V.altars.map(A=>A.state),grande:false}); }
 function marcoLT(tipo,txt){ if(!V||V.phase!=='play') return; const R=rodadaLT(); R.mk.push({rt:V.rt,tipo,txt}); }
-function amostrarNoite(){ if(!V||V.phase!=='play'||!V.altars) return; const R=rodadaLT();
+function amostrarNoite(){ if(!V||V.phase!=='play'||!V.altars) return; const R=rodadaLT(); { const eu=me(); if(eu){ R.cls=eu.cls; R.papel=eu.team; R.nome=eu.name; } }
   V.altars.forEach((A,i)=>{ const antes=R.est[i]; if(A.state!==antes){ R.est[i]=A.state;
       if(A.state==='active') R.mk.push({rt:V.rt,tipo:'inicio',txt:`Ritual começou em ${A.name}`,i});
       else if(A.state==='fenda') R.mk.push({rt:V.rt,tipo:'fenda',txt:`Fenda aberta em ${A.name}`,i});
@@ -2382,7 +2389,7 @@ function graficoNoite(r){ const R=LT.rod[r]; if(!R||!R.am.length) return '';
   h+='</svg>';
   const leg=V.altars.map((A,i)=>R.am.some(q=>q.a[i])?`<span><i style="background:${COR_ALT[i%6]}"></i>${esc(A.name)}</span>`:'').join('');
   const ev=R.mkFinal.filter(m=>m.tipo!=='momento').slice(0,12).map(m=>`<li><b>${fmt(m.rt)}</b> ${esc(m.txt)}</li>`).join('');
-  return `<div class="ltBox"><h3>A noite, rodada ${r}</h3>${h}<div class="ltLeg">${leg}<span><i class="selo"></i>Selamento</span></div>${ev?`<ul class="ltEv">${ev}</ul>`:''}</div>`; }
+  return `<div class="ltBox"><h3>${UMA_NOITE()?"A noite":"A noite, rodada "+r}</h3>${h}<div class="ltLeg">${leg}<span><i class="selo"></i>Selamento</span></div>${ev?`<ul class="ltEv">${ev}</ul>`:''}</div>`; }
 // prêmios: tirados do registro da partida (local: o jogo; online: o arquivo que o servidor libera no fim)
 const PREMIOS=[['down','by','Mão Pesada','derrubou','inimigo','inimigos'],['revive','by','Anjo da Guarda','reanimou','aliado','aliados'],['purge','by','Purificador','purgou','altar','altares'],
   ['ritual_start','by','Sumo Sacerdote','iniciou','ritual','rituais'],['consecrate','by','Consagrador','consagrou','altar','altares'],['ponto','by','Mãos Ocupadas','cumpriu','tarefa','tarefas'],
@@ -2396,6 +2403,62 @@ function premios(log){ if(!log||!log.length) return '';
 function logDaNoite(){ if(MODE==='local'&&game) return game.log;
   if(MODE==='online'&&V&&V.phase==='final'&&NET.logUrl&&!LT.logOnline&&!LT.pedindo){ LT.pedindo=true; fetch(NET.logUrl,{cache:'no-store'}).then(r=>r.json()).then(j=>{ LT.logOnline=j.events||[]; screenKey=''; }).catch(()=>{}); }
   return LT.logOnline; }
+// ================= PERFIL, HISTÓRICO E CONQUISTAS =================
+// Tudo no navegador (localStorage): partidas, vitórias por papel e classe, recordes e conquistas.
+const CONQ=[['primeira','Primeira noite','Termine uma partida.'],['vitoria','Amanhecer','Vença uma partida.'],['fenda','Fenda aberta','Complete um ritual como Cultista.'],
+  ['farol','Farol','Sele um ritual como Caçador.'],['doisazero','Dois a zero','Como Cultistas, abra duas Fendas sem deixar selar nenhum ritual.'],['muralha','Muralha de fé','Como Caçadores, sele dois rituais na mesma rodada.'],
+  ['anjo','Anjo da guarda','Reanime 3 aliados numa partida.'],['mao','Mão pesada','Derrube 5 inimigos numa partida.'],['purificador','Purificador','Purgue 3 altares numa partida.'],
+  ['ilusionista','Ilusionista','Plante um Chamariz.'],['andarilho','Andarilho','Transfira um ritual.'],['intocado','Intocado','Passe uma rodada inteira sem cair.'],
+  ['tempestade','Sob a tempestade','Jogue uma rodada sob tempestade.'],['classes','Todas as máscaras','Jogue com todas as cinco classes.'],['veterano','Veterano','Termine 10 partidas.'],['online','Em boa companhia','Termine uma partida online.']];
+function perfil(){ let p=null; try{ p=JSON.parse(localStorage.getItem('rr-perfil')||'null'); }catch(e){}
+  return Object.assign({partidas:0,vitorias:0,derrotas:0,empates:0,papel:{H:{rodadas:0,vitorias:0},C:{rodadas:0,vitorias:0}},classes:{},recordes:{},conq:{},hist:[],ids:[]},p||{}); }
+function salvarPerfil(p){ try{ localStorage.setItem('rr-perfil',JSON.stringify(p)); }catch(e){} }
+const PF={desde:0,id:null,fila:[],toastT:0};
+function perfilFim(){ if(!V||V.phase!=='final') return; const id=(V.matchId||'')+'|'+meCid; if(PF.id===id) return;
+  if(MODE==='online'&&!LT.logOnline){ if(!PF.desde) PF.desde=performance.now(); if(performance.now()-PF.desde<4000) return; }
+  PF.id=id; PF.desde=0; const p=perfil(); if(p.ids.includes(id)) return; p.ids.push(id); if(p.ids.length>60) p.ids.shift();
+  const slot=mySlot(); if(!slot) return; const w=Sim.winner(V)||{win:null}, venceu=w.win===slot.team, empate=w.win==null, eu=me()||{};
+  p.partidas++; if(empate) p.empates++; else if(venceu) p.vitorias++; else p.derrotas++;
+  const meu=eu.name||(LT.rod[1]&&LT.rod[1].nome)||'', log=logDaNoite()||[], conta=(ev,campo,r)=>log.filter(e=>e.ev===ev&&e[campo]===meu&&(r==null||e.r===r)).length;
+  const novas=[]; const ganha=k=>{ if(!p.conq[k]){ p.conq[k]=Date.now(); novas.push(k); } };
+  const linha={data:Date.now(),modo:MODE,resultado:empate?'empate':venceu?'vitória':'derrota',rodadas:[]};
+  for(const r of [1,2]){ const R=LT.rod[r]; if(!R||!R.papel) continue; const papel=R.papel, sc=papel==='C'?V.scores[slot.team]:V.scores[slot.team==='A'?'B':'A'];
+    const ganhouRodada=papel==='C'?(sc&&sc.done>=2):(sc&&sc.done<2);
+    p.papel[papel].rodadas++; if(ganhouRodada) p.papel[papel].vitorias++;
+    const C=p.classes[R.cls]||(p.classes[R.cls]={rodadas:0,vitorias:0}); C.rodadas++; if(ganhouRodada) C.vitorias++;
+    linha.rodadas.push({papel,cls:R.cls,fendas:sc?sc.done:0,farois:sc?sc.sealed:0,clima:climaDe((V.matchId||'')+':'+r)});
+    if(papel==='C'&&sc&&sc.done>=1) ganha('fenda'); if(papel==='C'&&sc&&sc.done>=2&&!sc.sealed) ganha('doisazero');
+    if(papel==='H'&&sc&&sc.sealed>=1) ganha('farol'); if(papel==='H'&&sc&&sc.sealed>=2) ganha('muralha');
+    if(log.length&&!log.some(e=>e.ev==='down'&&e.who===meu&&e.r===r)) ganha('intocado');
+    if(climaDe((V.matchId||'')+':'+r)==='tempestade') ganha('tempestade'); }
+  const n={quedas:conta('down','by'),reanimacoes:conta('revive','by'),purgas:conta('purge','by'),rituais:conta('ritual_start','by'),tarefas:conta('ponto','by')};
+  for(const k in n) if(n[k]>(p.recordes[k]||0)) p.recordes[k]=n[k];
+  Object.assign(linha,n);
+  ganha('primeira'); if(venceu) ganha('vitoria'); if(n.reanimacoes>=3) ganha('anjo'); if(n.quedas>=5) ganha('mao'); if(n.purgas>=3) ganha('purificador');
+  if(conta('decoy','by')) ganha('ilusionista'); if(conta('transfer','by')) ganha('andarilho'); if(MODE==='online') ganha('online');
+  if(p.partidas>=10) ganha('veterano'); if(Object.keys(CLASSES).every(c=>p.classes[c])) ganha('classes');
+  p.hist.unshift(linha); p.hist=p.hist.slice(0,20); salvarPerfil(p);
+  for(const k of novas){ const c=CONQ.find(q=>q[0]===k); if(c) PF.fila.push(c); } }
+function atualizarToast(dt){ const el=$('#conquista'); if(!el) return; PF.toastT-=dt;
+  if(PF.toastT<=0){ el.classList.remove('on'); if(PF.fila.length&&PF.toastT<-.6){ const c=PF.fila.shift(); el.innerHTML=`<small>Conquista</small><b>${esc(c[1])}</b><span>${esc(c[2])}</span>`; el.classList.add('on'); PF.toastT=4.5; SFX.sealed(); } } }
+let perfilAberto=false;
+function perfilScreen(){ const p=perfil(), pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  const cls=Object.keys(CLASSES).map(c=>{ const C=p.classes[c]; return `<tr><td>${esc(CLASSES[c].name)} <small style="color:var(--muted)">${CLASSES[c].team==='H'?'Caçador':'Cultista'}</small></td><td class="n">${C?C.rodadas:0}</td><td class="n">${C?pct(C.vitorias,C.rodadas):'—'}</td></tr>`; }).join('');
+  const rec=[['quedas','Inimigos derrubados'],['reanimacoes','Aliados reanimados'],['purgas','Altares purgados'],['rituais','Rituais iniciados'],['tarefas','Tarefas cumpridas']].map(([k,l])=>`<tr><td>${l}</td><td class="n">${p.recordes[k]||0}</td></tr>`).join('');
+  const cq=CONQ.map(c=>`<div class="cq${p.conq[c[0]]?' ok':''}"><b>${esc(c[1])}</b><span>${esc(c[2])}</span></div>`).join('');
+  const hist=p.hist.slice(0,8).map(h=>`<tr><td>${new Date(h.data).toLocaleDateString('pt-BR')} ${h.modo==='online'?'· online':''}</td><td>${h.rodadas.map(r=>esc(CLASSES[r.cls]?CLASSES[r.cls].name:r.cls)).join(' / ')}</td><td class="n" style="color:${h.resultado==='vitória'?'var(--gold-hi)':h.resultado==='derrota'?'var(--crimson-hi)':'var(--bone)'}">${h.resultado}</td></tr>`).join('');
+  const nc=Object.keys(p.conq).length;
+  setScreen('perfil'+p.partidas+nc,`<h2 style="text-align:center">Seu perfil</h2>
+    <p class="lede">${p.partidas} ${p.partidas===1?'partida':'partidas'} · ${p.vitorias} ${p.vitorias===1?'vitória':'vitórias'}, ${p.derrotas} ${p.derrotas===1?'derrota':'derrotas'}${p.empates?`, ${p.empates} ${p.empates===1?'empate':'empates'}`:''} · ${nc} de ${CONQ.length} conquistas</p>
+    <div class="cols"><div><h3>Por papel</h3><table class="res"><tr><th></th><th class="n">Rodadas</th><th class="n">Vencidas</th></tr>
+      <tr><td style="color:var(--gold)">Caçador</td><td class="n">${p.papel.H.rodadas}</td><td class="n">${pct(p.papel.H.vitorias,p.papel.H.rodadas)}</td></tr>
+      <tr><td style="color:var(--crimson-hi)">Cultista</td><td class="n">${p.papel.C.rodadas}</td><td class="n">${pct(p.papel.C.vitorias,p.papel.C.rodadas)}</td></tr></table>
+      <h3>Classes</h3><table class="res"><tr><th></th><th class="n">Rodadas</th><th class="n">Vencidas</th></tr>${cls}</table></div>
+    <div><h3>Recordes numa partida</h3><table class="res">${rec}</table>${hist?`<h3>Últimas partidas</h3><table class="res">${hist}</table>`:''}</div></div>
+    <h3>Conquistas</h3><div class="conqs">${cq}</div>
+    <div class="btnrow"><button class="go ghost" id="bZerar">Apagar perfil</button><button class="go" id="bPerfOk">Voltar</button></div>`,
+  ()=>{ $('#bPerfOk').onclick=()=>{ perfilAberto=false; screenKey=''; }; $('#bZerar').onclick=()=>{ if(confirm('Apagar todo o histórico e as conquistas?')){ try{ localStorage.removeItem('rr-perfil'); }catch(e){} screenKey=''; } }; }); }
+const UMA_NOITE=()=>!((V&&V.opts&&V.opts.noites||CFG.noites)>1);
 function statVal(k,v){ if(v==null) return '—'; if(k==='fracaoSobFogo') return Math.round(v*100)+'%'; if(k==='primeiroContato') return fmt(v); return v; }
 function statsTable(){ const r1=V.stats[1],r2=V.stats[2]; if(!r1) return '';
   return `<table class="res"><tr><th>Registro da partida</th><th class="n">Rodada 1</th>${r2?'<th class="n">Rodada 2</th>':''}</tr>${STAT_ROWS.map(([k,l])=>`<tr><td>${l}</td><td class="n">${statVal(k,r1[k])}</td>${r2?`<td class="n">${statVal(k,r2[k])}</td>`:''}</tr>`).join('')}</table>`; }
@@ -2403,19 +2466,19 @@ function summaryScreen(){
   const rdy=!!V.ready[meCid], sc=V.round===1?V.scores.B:V.scores.A, slot=mySlot();
   const cultIsMine=(V.round===1?'B':'A')===slot.team;
   const who=cultIsMine?'Sua equipe completou':'Os Cultistas adversários completaram';
-  setScreen('sum'+V.round+rdy,`<h2>Fim da rodada ${V.round}</h2><p>${who} <b>${sc.done}</b> de 3 rituais${sc.lastT!=null?`, o último aos ${fmt(sc.lastT)}`:''}. ${sc.sealed} ${sc.sealed===1?'ritual foi selado':'rituais foram selados'}.</p>
-    ${V.round===1?'<p>Agora os lados se invertem: quem caçou passa a celebrar.</p>':''}${MODE==='local'?premios((game.log||[]).filter(e=>e.r===V.round)):''}${graficoNoite(V.round)}${statsTable()}
-    <div class="btnrow"><button class="go" id="bReady" ${rdy?'disabled':''}>${rdy?'Aguardando os outros':V.round===1?'Continuar para a rodada 2':'Ver resultado'}</button></div><p class="wait" id="dyn"></p>`,
+  setScreen('sum'+V.round+rdy,`<h2>${UMA_NOITE()?'O amanhecer':'Fim da rodada '+V.round}</h2><p>${who} <b>${sc.done}</b> de 3 rituais${sc.lastT!=null?`, o último aos ${fmt(sc.lastT)}`:''}. ${sc.sealed} ${sc.sealed===1?'ritual foi selado':'rituais foram selados'}.</p>
+    ${V.round===1&&!UMA_NOITE()?'<p>Agora os lados se invertem: quem caçou passa a celebrar.</p>':''}${MODE==='local'?premios((game.log||[]).filter(e=>e.r===V.round)):''}${graficoNoite(V.round)}${statsTable()}
+    <div class="btnrow"><button class="go" id="bReady" ${rdy?'disabled':''}>${rdy?'Aguardando os outros':V.round===1&&!UMA_NOITE()?'Continuar para a rodada 2':'Ver resultado'}</button></div><p class="wait" id="dyn"></p>`,
   ()=>{ $('#bReady').onclick=()=>sendAct({type:'ready'}); });
   $('#dyn').textContent=(MODE==='online'?readyList():'')+timerText();
 }
 function finalScreen(){
   const slot=mySlot(), w=Sim.winner(V)||{win:null,why:''}, mineW=w.win===slot.team, A=V.scores[slot.team], B=V.scores[slot.team==='A'?'B':'A'];
   const title=w.win==null?'Empate':mineW?'Vitória da sua equipe':'Vitória dos adversários';
-  const row=(n,s)=>`<tr><td>${n}</td><td class="n">${s.done}</td><td class="n">${s.lastT!=null?fmt(s.lastT):'—'}</td><td class="n">${Math.round(s.maxP*100)}%</td></tr>`;
+  const row=(n,s)=>!s?'':`<tr><td>${n}</td><td class="n">${s.done}</td><td class="n">${s.lastT!=null?fmt(s.lastT):'—'}</td><td class="n">${Math.round(s.maxP*100)}%</td></tr>`;
   const isHost=MODE==='local'||NET.host===meCid;
   setScreen('final'+(V.matchId||''),`<h2 style="color:${w.win==null?'var(--bone)':mineW?'var(--gold)':'var(--crimson-hi)'}">${title}</h2><p>${w.why[0].toUpperCase()+w.why.slice(1)}.</p>
-    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row('Sua equipe',A)}${row('Adversários',B)}</table>${premios(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
+    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${premios(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
     <div class="btnrow"><button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
   ()=>{ $('#bLog').onclick=downloadLog; const a=$('#bAgain'); if(a) a.onclick=()=>sendAct({type:'restart'}); const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
 }
@@ -2431,7 +2494,7 @@ let comoJogarAberto=false;
 function comoJogarScreen(){
   const passo=(n,t,d)=>`<div class="passo"><b>${n}</b><div><strong>${t}</strong><span>${d}</span></div></div>`;
   setScreen('como',`<h2 style="text-align:center">Como jogar</h2>
-    <p class="lede">Duas rodadas. Na primeira sua equipe caça; na segunda, celebra. Vence quem completar mais rituais como Cultista.</p>
+    <p class="lede">${UMA_NOITE()?'Uma equipe celebra, a outra caça. Os Cultistas vencem completando dois dos três rituais; os Caçadores, selando dois ou resistindo até o amanhecer.':'Duas rodadas. Na primeira sua equipe caça; na segunda, celebra. Vence quem completar mais rituais como Cultista.'}</p>
     <p class="lede" style="margin-top:0">Cada partida é uma noite de 18 minutos, em três momentos: o Crepúsculo, a Vigília e a Hora Morta.</p>
     <p class="lede" style="margin-top:0">A catedral fica no meio de uma floresta. As trilhas e clareiras pegam luar; a mata fechada é breu. Dois altares ficam lá fora: os Menires e o Carvalho Oco.</p>
     <div class="cols">
@@ -2482,6 +2545,7 @@ function syncScreens(){
   if(RECON.ativo){ reconexaoScreen(); return; }
   if(settingsOpen){ settingsScreen(); return; }
   if(comoJogarAberto&&!MODE){ comoJogarScreen(); return; }
+  if(perfilAberto&&!MODE){ perfilScreen(); return; }
   if(!MODE){ titleScreen(); return; }
   if(MODE==='online'&&!V){ if(NET.lobby) lobbyScreen(); return; }
   if(!V) return;
@@ -2490,7 +2554,7 @@ function syncScreens(){
   if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause'+TQ.ativo,'<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">'+(TQ.ativo?'Toque':'Clique')+' para voltar ao jogo.</p><div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; }); }
     else if(MODE==='online'&&!locked){ setScreen('olock','<h2 style="text-align:center">Clique para jogar</h2><p style="text-align:center;margin:0 auto">No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado.</p><div class="btnrow"><button class="go" id="bRes">Jogar</button><button class="go ghost" id="bSet2">Ajustes</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; }); }
     else hideScreen(); return; }
-  if(ph==='pick') pickScreen(); else if(ph==='intro') introScreen(); else if(ph==='summary') summaryScreen(); else if(ph==='final') finalScreen();
+  if(ph==='pick') pickScreen(); else if(ph==='intro') introScreen(); else if(ph==='summary') summaryScreen(); else if(ph==='final'){ perfilFim(); finalScreen(); }
 }
 
 // ================= LOCAL MODE =================
@@ -2523,7 +2587,7 @@ function tick(now){
   distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); // transições em tempo real, mesmo com poucos quadros
   flames.forEach((f,i)=>{ f.scale.y=.26+Math.sin(now*.02+i)*.03; });
   if(RT.dust){ RT.dust.rotation.y+=dt*.004; RT.dust.position.y=Math.sin(now*.0002)*.3; }
-  updateParticles(dt); atualizarEfeitos(dt);
+  updateParticles(dt); atualizarEfeitos(dt); atualizarToast(dt);
   anuncioT=Math.max(0,anuncioT-dt); if(anuncioT<=0) $('#anuncio').classList.remove('on');
   habNotaT=Math.max(0,habNotaT-dt); if(habNotaT<=0) $('#habNota').classList.remove('on');
   atordT=Math.max(0,atordT-dt); $('#atordoado').style.opacity=(atordT*.9).toFixed(2);
@@ -2590,7 +2654,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();
