@@ -70,6 +70,10 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
   -webkit-mask:radial-gradient(circle, transparent 60%, #000 61%); filter:drop-shadow(0 0 6px rgba(230,40,60,.9)); transition:opacity 1.1s linear; }
 #habNota{ position:absolute; left:50%; top:calc(50% + 62px); transform:translateX(-50%); font-family:var(--serif); font-size:21px; background:rgba(8,9,11,.8); padding:4px 14px; border-left:2px solid currentColor; text-shadow:0 1px 2px #000; opacity:0; transition:opacity .5s; white-space:nowrap; }
 #habNota.on{ opacity:1; transition:none; }
+/* dicas da primeira noite */
+#dica{ position:absolute; right:26px; top:340px; width:300px; padding:9px 14px 10px; font-size:15px; line-height:1.35; color:#ddd3c2; background:rgba(8,9,11,.82); border-left:2px solid var(--gold); opacity:0; transform:translateX(16px); transition:opacity .5s, transform .5s; pointer-events:none; }
+#dica.on{ opacity:1; transform:none; } #dica small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:2px; }
+body.toque #dica{ top:auto; bottom:110px; right:auto; left:12px; width:240px; font-size:12px; }
 /* bússola: direções e marcadores (aliados, rituais revelados, mercadores, sinalizadores) */
 #bussola{ position:absolute; top:134px; left:50%; transform:translateX(-50%); width:440px; height:26px; overflow:hidden; pointer-events:none;
   -webkit-mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent); mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent); }
@@ -312,7 +316,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
   <div id="feed"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div>
-  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="atordoado"></div>
+  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="atordoado"></div>
   <div id="interact"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/><circle id="ring" cx="23" cy="23" r="19" fill="none" stroke="#f3d58e" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" transform="rotate(-90 23 23)"/></svg><div class="lbl" id="interactLbl"></div><div class="lbl" id="interactLbl2"></div></div>
   <div id="race" class="plate">
     <div class="t" id="raceName">Abside</div>
@@ -2039,6 +2043,50 @@ function syncAltars(dt){
   });
 }
 
+// ================= DICAS DA PRIMEIRA NOITE =================
+// Cada dica aparece uma vez (fica guardada no navegador), quando a situação acontece; no máximo uma a cada 12 s.
+const DICAS={
+  h_inicio:'Leia os santuários da floresta (segure E): cada sinal descarta um altar que o culto não escolheu.',
+  h_sentinela:'Sentinela apagada aqui perto: acenda (segure E) e ela avisa se alguém consagrar um altar ao redor.',
+  h_desperto:'Um altar despertou. Vá até ele e segure E para purgar antes que o ritual comece.',
+  h_ouvido:'Esse som é um ritual. Siga as legendas e o Sensor Áurico (Q) até o círculo.',
+  h_circulo:'Você está no círculo: segure E para selar. Em dupla o selo anda muito mais rápido.',
+  h_escuro:'A mata fechada é breu e abala a sanidade. A lanterna (F) ajuda, mas também denuncia você.',
+  c_inicio:'Colha ervas e profane túmulos para ganhar óbolos. Os reagentes livres ficam no Claustro.',
+  c_consagrar:'Este é um dos seus altares: segure E para consagrar (gasta 1 reagente). Faça isso no Crepúsculo.',
+  c_vigilia:'Os rituais já podem começar: segure E num altar consagrado, com um reagente, e fique no círculo.',
+  c_circulo:'O ritual só avança com alguém no círculo. Se os Caçadores chegarem, T transfere o ritual para outro altar.',
+  c_sentinela:'Sentinela acesa: consagrar perto dela avisa os Caçadores. Prefira altares longe da luz.',
+  queda:'Você caiu. Um aliado pode te reanimar segurando E perto de você; o inimigo pode te executar.',
+  aliado:'Seu aliado caiu. Vá até ele e segure E para reanimar antes que ele sangre até o fim.',
+  sanidade:'Sanidade baixa: saia do escuro, fique perto de velas ou do aliado. Em pânico, você se denuncia.',
+  loja:'Mercador aqui: aperte E para negociar com seus óbolos.',
+  ping:'Viu algo? Z marca um ponto, um altar ou um inimigo para o seu aliado.'};
+const DC={vistas:null,t:0,fila:[],aberta:0};
+function dicasVistas(){ if(!DC.vistas){ try{ DC.vistas=JSON.parse(localStorage.getItem('rr-dicas')||'{}'); }catch(e){ DC.vistas={}; } } return DC.vistas; }
+function dica(id){ if(SET.dicas===false||dicasVistas()[id]||DC.fila.includes(id)) return; DC.fila.push(id); }
+function atualizarDicas(dt,m){ const el=$('#dica'); if(!el) return; DC.t-=dt; DC.aberta-=dt; if(DC.aberta<=0) el.classList.remove('on');
+  if(!m||SET.dicas===false||!V||V.phase!=='play'){ return; }
+  const role=myRole(), P={x:m.x,z:m.z}, perto=(o,r)=>Math.hypot(o.x-P.x,o.z-P.z)<r;
+  const rt=V.rt||0; if(rt>4) dica(role==='H'?'h_inicio':'c_inicio');
+  if(rt>70) dica('ping');
+  if(m.st==='down') dica('queda');
+  if(m.st==='alive'){
+    if(V.actors.some(a=>a!==m&&a.team===m.team&&a.st==='down'&&perto(a,30))) dica('aliado');
+    if(m.sanity<40) dica('sanidade');
+    if(NPCS.some(n=>(!n.time||n.time===m.team)&&perto(n,4))) dica('loja');
+    if(role==='H'){ if((V.pontos||[]).some(p=>p.tipo==='sentinela'&&!p.acesa&&perto(p,7))) dica('h_sentinela');
+      if(V.know&&V.know.some(k=>k==='desperto'||k==='confirmado')) dica('h_desperto');
+      if([...LEG.keys()].some(k=>k.startsWith('rit'))) dica('h_ouvido');
+      if(V.altars.some(A=>A.state==='active'&&Sim.inCircle(m,A))) dica('h_circulo');
+      if(!m.lantern&&Sim.zoneAt(P.x,P.z)==='Floresta'&&Sim.lightAt(V,P.x,P.z)<.12&&rt>20) dica('h_escuro'); }
+    else { if(m.reag>0&&V.altars.some(A=>A.chosen&&A.state==='dormant'&&perto(A,6))) dica('c_consagrar');
+      if((V.momento||0)>=1&&V.altars.some(A=>A.chosen&&A.state==='awake')) dica('c_vigilia');
+      if(V.altars.some(A=>A.state==='active'&&Sim.inCircle(m,A))) dica('c_circulo');
+      if((V.pontos||[]).some(p=>p.tipo==='sentinela'&&p.acesa&&perto(p,14))) dica('c_sentinela'); } }
+  if(DC.t<=0&&DC.fila.length){ const id=DC.fila.shift(); dicasVistas()[id]=1; try{ localStorage.setItem('rr-dicas',JSON.stringify(DC.vistas)); }catch(e){}
+    el.innerHTML=`<small>Dica</small>${esc(DICAS[id])}`; el.classList.add('on'); DC.aberta=8; DC.t=12; } }
+
 // ================= PING DE EQUIPE =================
 // Marca o que está na mira para a própria equipe: um inimigo à vista, um altar ou um ponto no chão (até a parede).
 const PINGS=[]; let pingN=0;
@@ -2547,13 +2595,14 @@ function comoJogarScreen(){
 function openSettings(){ settingsOpen=true; backTo=screenKey; screenKey=''; }
 function settingsScreen(){
   const q=(id,v)=>`<button data-q="${v}" class="${SET.qual===v?'sel':''}">${id}</button>`;
-  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false),`<h2>Ajustes</h2>
+  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false),`<h2>Ajustes</h2>
     <div class="set"><label for="sSens">Sensibilidade do mouse</label><input id="sSens" type="range" min="20" max="300" step="5" value="${Math.round(SET.sens*100)}"><b id="vSens">${SET.sens.toFixed(2)}</b></div>
     <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" step="2" value="${Math.round(SET.vol*100)}"><b id="vVol">${Math.round(SET.vol*100)}</b></div>
     <div class="set"><label for="sFov">Campo de visão</label><input id="sFov" type="range" min="60" max="105" step="1" value="${SET.fov}"><b id="vFov">${SET.fov}</b></div>
     <div class="set"><label>Qualidade</label><div class="opts">${q('Alto','alto')}${q('Médio','medio')}${q('Baixo','baixo')}${q('Mínimo','minimo')}</div><b></b></div>
     <div class="set"><label>Resolução adaptativa</label><div class="opts"><button data-ar="1" class="${SET.autoRes!==false?'sel':''}">Ligada</button><button data-ar="0" class="${SET.autoRes===false?'sel':''}">Desligada</button></div><b></b></div>
     <div class="set"><label>Controles de toque</label><div class="opts"><button data-t="1" class="${SET.toque?'sel':''}">Ligados</button><button data-t="0" class="${!SET.toque?'sel':''}">Desligados</button></div><b></b></div>
+    <div class="set"><label>Dicas da primeira noite</label><div class="opts"><button data-dc="1" class="${SET.dicas!==false?'sel':''}">Ligadas</button><button data-dc="0" class="${SET.dicas===false?'sel':''}">Desligadas</button><button data-dc="r">Rever todas</button></div><b></b></div>
     <div class="set"><label>Legendas dos sons</label><div class="opts"><button data-lg="1" class="${SET.legendas!==false?'sel':''}">Ligadas</button><button data-lg="0" class="${SET.legendas===false?'sel':''}">Desligadas</button></div><b></b></div>
     <div class="set"><label>Movimento bruto do mouse</label><div class="opts"><button data-r="1" class="${SET.rawMouse!==false?'sel':''}">Ligado</button><button data-r="0" class="${SET.rawMouse===false?'sel':''}">Desligado</button></div><b></b></div>
     <p class="fine">Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. Texturas, partículas e árvores de fundo mudam ao recarregar a página. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
@@ -2566,7 +2615,7 @@ function settingsScreen(){
     bind('#sVol','#vVol',v=>SET.vol=v/100,v=>Math.round(v));
     $('#sVol').onchange=()=>SFX.click();
     bind('#sFov','#vFov',v=>SET.fov=v,v=>v);
-    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
+    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.bindrow').forEach(b=>b.onclick=()=>{ capturing=b.dataset.a; screenKey=''; });
     $('#sDef').onclick=()=>{ SET.binds=Object.assign({},DEF_BIND); saveSet(); toolsKey=''; screenKey=''; };
     $('#sBack').onclick=()=>{ settingsOpen=false; screenKey=''; };
@@ -2660,7 +2709,7 @@ function tick(now){
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
-    updateHUD(dt,m); atualizarPings(dt); atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
+    updateHUD(dt,m); atualizarPings(dt); atualizarDicas(dt,m); atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
     if(vmH){ vmH.visible=false; vmC.visible=false; } // fora da partida, nada de arma na mão
