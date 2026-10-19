@@ -18,6 +18,7 @@
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#050506; --bone:#e8e0d0; } }
+:root.dalt{ --crimson:#2f5fa8; --crimson-hi:#6ea8ff; }
 :root[data-theme="dark"]{ --bg:#050506; --bone:#e8e0d0; }
 html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
 *,*::before,*::after{ box-sizing:inherit; }
@@ -83,7 +84,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #caderno .cd{ padding:5px 0 6px; border-top:1px solid #262b31; } #caderno .cd b{ font-family:var(--serif); font-weight:400; font-size:17px; } #caderno .cd i{ font-style:normal; font-size:13px; font-weight:600; margin-left:8px; padding:0 6px; border:1px solid currentColor; }
 #caderno .cd span{ display:block; font-size:13.5px; color:#cfc6b6; } #caderno .cd em{ display:block; font-style:normal; font-size:12.5px; color:var(--muted); margin-top:1px; }
 #caderno .limpo i{ color:#7d858f; } #caderno .desperto i{ color:#c69cf0; } #caderno .confirmado i{ color:#e0c8ff; } #caderno .chamariz i{ color:#aaa; } #caderno .ativo i,#caderno .fenda i{ color:var(--crimson-hi); } #caderno .farol i{ color:var(--gold-hi); } #caderno .nada i{ color:#5c636b; }
-body.toque #caderno{ top:60px; right:200px; transform:scale(.75); transform-origin:top right; }
+body.toque #caderno{ top:118px; right:12px; transform:scale(.72); transform-origin:top right; }
 /* tutorial */
 #tutorial{ position:absolute; left:26px; top:300px; width:330px; padding:10px 14px 12px; background:rgba(8,9,11,.85); border-left:3px solid var(--crimson-hi); display:none; pointer-events:none; }
 #tutorial.on{ display:block; } #tutorial small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--crimson-hi); }
@@ -375,7 +376,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
     <button class="tq h mini" data-a="sensor" id="tqSens">Sensor</button>
     <button class="tq h mini" data-a="flare" id="tqFlare">Flare</button>
     <button class="tq mini" data-a="sprint" id="tqCorre">Correr</button>
-    <div id="tqTopo"><button class="tq mini" data-a="ping" id="tqPing">Marcar</button><button class="tq mini" data-a="falas" id="tqFalas">Frases</button><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" id="tqPausa">Pausa</button></div>
+    <div id="tqTopo"><button class="tq mini" data-a="ping" id="tqPing">Marcar</button><button class="tq mini" data-a="falas" id="tqFalas">Frases</button><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" data-a="caderno" id="tqCad">Caderno</button><button class="tq mini" id="tqPausa">Pausa</button></div>
   </div>
 </div>
 <div id="girar"><div>Gire o aparelho para jogar deitado</div></div>
@@ -1249,7 +1250,7 @@ function atualizarGrande(dt,agora){
   if(CEU.pocas) for(const m of CEU.pocas) m.opacity=.2+.4*k*pul;
   if(AU.amb) AU.amb.gain.value=.09*(1-.85*k); // a floresta se cala
   $('#grandeVinheta').style.opacity=(k*(.55+.25*Math.sin(t*2.6))).toFixed(2);
-  $('#grandeClarao').style.opacity=(clamp(1-(agora-GR.claraoT)/1200,0,1)*.85).toFixed(2); // clarão de 1,2 s em tempo real
+  $('#grandeClarao').style.opacity=(clamp(1-(agora-GR.claraoT)/1200,0,1)*(SET.suave?.25:.85)).toFixed(2); // clarão de 1,2 s em tempo real
   if(GR.ativo){ if(!GR.au) grandeLoopStart();
     GR.sinoT-=dt; if(GR.sinoT<=0){ GR.sinoT=11; SFX.sinoGrande(); }
     GR.batT-=dt; if(GR.batT<=0){ GR.batT=1.5-A.prog*.8; SFX.batida(A.prog); } }   // o tambor acelera com o progresso
@@ -1666,6 +1667,7 @@ function atualizarClima(dt,now){
   if(jogo&&C.raios){ CL.raioT-=dt; if(CL.raioT<=0){ CL.raioT=rand(18,42); const d=rand(.3,2.6); CL.flash=1; setTimeout(()=>{ CL.flash=Math.max(CL.flash,.8); },140);
       setTimeout(()=>{ sfxNoise(null,null,1,2.8+d,'lowpass',150,.8,.9); sfxTone(null,null,1,48,26,2.4,'sine',.5); legenda('trovao',null,null,'Trovão'); },d*1000); } }
   CL.flash=Math.max(0,CL.flash-dt*5.5);
+  if(SET.suave) CL.flash=Math.min(CL.flash,.25); // clarões reduzidos
   if(CEU.sol) CEU.sol.intensity=.42+CL.flash*(coberto?1.2:4.5);
   if(CEU.ceu&&CL.flash>0) CEU.ceu.material.color.lerp(_branco,CL.flash*.8); }
 const _branco=new THREE.Color(2.5,2.6,3);
@@ -1730,7 +1732,10 @@ function aplicarMira(){ const c=$('#cross'); if(!c) return; c.className=SET.mira
 // sair da noite local, ou da sala online, de volta ao menu
 function sairParaMenu(msg){ AV.forEach((O,i)=>ritualLoopStop(i)); grandeLoopStop(); chuvaSom(false); if(ws){ const w=ws; ws=null; try{ w.close(); }catch(e){} } try{ sessionStorage.removeItem('rr-sala'); }catch(e){}
   MODE=null; game=null; V=null; NET.lobby=null; NET.snaps=[]; NET.pred=null; lojaAberta=null; show('hud',false); atualizarMarcas(null); limparLegendas(); unlock(); showTitle(msg||''); }
+// cor do culto nas plantas e no replay (azul no modo para daltonismo)
+const corCulto=()=>SET.dalt?'#6ea8ff':'#e0435e';
 function applySet(){
+  document.documentElement.classList.toggle('dalt',!!SET.dalt);
   if(AU.master) AU.master.gain.value=SET.vol;
   renderer.toneMappingExposure=1.25*(SET.brilho||1);
   aplicarMira();
@@ -2285,6 +2290,18 @@ function receberFala(e){ const quem=V.actors.find(a=>a.id===e.a), nome=quem?quem
   feed(`${nome}: ${txt}`,myRole()==='H'?'h':'c'); sfxTone(null,null,1,660,740,.09,'triangle',.14);
   if(e.f===0||e.f===3){ for(let i=PINGS.length-1;i>=0;i--) if(PINGS[i].a===e.a) PINGS.splice(i,1); PINGS.push({id:++pingN,a:e.a,x:e.x,z:e.z,k:'fala',txt,nome,t:8}); BUS.pings=PINGS; }
   if(quem&&quem.cid!==meCid) legenda('fala'+e.a,e.x,e.z,`${nome}: ${txt}`,'',1e9); }
+// falas automáticas do bot da sua equipe (só no cliente, não mexem na simulação): pede ajuda ao cair, agradece a
+// reanimação, avisa quando inicia um ritual e, no jogo local, quando avista um inimigo longe de você
+const FB={id:null,st:{},t:{},alvo:{},alt:{}};
+function falaBot(a,f,x,z,int){ const k=a.id+':'+f; if(FB.t[k]!=null&&V.rt-FB.t[k]<(int||6)) return; FB.t[k]=V.rt; receberFala({a:a.id,f,team:a.team,x:x!=null?x:a.x,z:z!=null?z:a.z}); }
+function atualizarFalasBots(){ if(!V||V.phase!=='play'||!V.actors) return; const eu=me(); if(!eu) return;
+  const id=(V.matchId||'')+':'+(V.round||1); if(FB.id!==id){ FB.id=id; FB.st={}; FB.t={}; FB.alvo={}; FB.alt={}; }
+  for(const a of V.actors){ if(a.cid||a===eu||a.team!==eu.team) continue; const s=FB.st[a.id]; FB.st[a.id]=a.st;
+    if(s==='alive'&&a.st==='down') falaBot(a,0); else if(s==='down'&&a.st==='alive') falaBot(a,4);
+    if(a.st==='alive'&&a.ai){ const t=a.ai.target, ant=FB.alvo[a.id]; FB.alvo[a.id]=t?t.id:null;
+      if(t&&t.id!==ant&&t.st==='alive'&&Math.hypot(t.x-eu.x,t.z-eu.z)>18) falaBot(a,3,t.x,t.z,20); } }
+  if(eu.team==='C') V.altars.forEach((A,i)=>{ const ant=FB.alt[i]; FB.alt[i]=A.state; if(ant&&ant!=='active'&&A.state==='active'){
+    const q=V.actors.find(a=>!a.cid&&a.team===eu.team&&a.st==='alive'&&Math.hypot(a.x-A.x,a.z-A.z)<CFG.circleR+1.5); if(q) falaBot(q,5); } }); }
 function receberPing(e){ const quem=V.actors.find(a=>a.id===e.a), nome=quem?quem.name:'Aliado', A=e.k==='altar'?V.altars[e.i]:null;
   const txt=e.k==='altar'&&A?`Altar ${A.name}`:e.k==='inimigo'?'Inimigo visto':'Aqui';
   for(let i=PINGS.length-1;i>=0;i--) if(PINGS[i].a===e.a) PINGS.splice(i,1); // um ping por jogador
@@ -2415,8 +2432,8 @@ function marcador(key,x,y,z,html,cls,prender){
   let el=marcas.get(key); if(!el){ el=document.createElement('div'); $('#marks').appendChild(el); marcas.set(key,el); }
   _v3.set(x,y,z).project(camera); const atras=_v3.z>1;
   let sx=(_v3.x*.5+.5)*innerWidth, sy=(-_v3.y*.5+.5)*innerHeight;
-  if(atras){ if(!prender){ el.style.display='none'; el._vivo=true; return; } sx=innerWidth-sx; sy=innerHeight-8; }
-  if(prender){ sx=clamp(sx,50,innerWidth-50); sy=clamp(sy,110,innerHeight-60); }
+  if(atras){ if(!prender){ el.style.display='none'; el._vivo=true; return; } sx=innerWidth-sx<innerWidth/2?70:innerWidth-70; sy=innerHeight*.45; } // atrás: na borda do lado mais perto, à meia altura
+  if(prender){ sx=clamp(sx,70,innerWidth-70); sy=clamp(sy,120,innerHeight-200); } // fora da faixa do HUD de baixo
   el.style.display='block'; el.style.left=sx+'px'; el.style.top=sy+'px'; if(el.className!=='mk '+cls) el.className='mk '+cls; if(el._h!==html){ el.innerHTML=html; el._h=html; } el._vivo=true;
 }
 function atualizarMarcas(m){
@@ -2467,7 +2484,7 @@ function updateHUD(dt,m){
   const bl=k=>MODE==='local'?Math.max(0,game.buff[k]-game.t):V.buff[k]; const bf=[]; if(role==='H'&&bl('ess')>0) bf.push(`Essência Profana: selamento a 125% (${Math.ceil(bl('ess'))} s)`); if(role==='C'&&bl('selo')>0) bf.push(`Selo de Luz: próximo ritual +10% (${Math.ceil(bl('selo'))} s)`); if(m.runeT>0) bf.push(`Runa ativa (${Math.ceil(m.runeT)} s)`);
   $('#buffs').textContent=bf.join('   ');
   hurtT=Math.max(0,hurtT-dt); hitT=Math.max(0,hitT-dt); blindT=Math.max(0,blindT-dt);
-  $('#hurt').style.opacity=(hurtT/.35).toFixed(2); $('#hitmark').style.opacity=(hitT/.15).toFixed(2); $('#blind').style.opacity=clamp(blindT/1.2,0,1).toFixed(2);
+  $('#hurt').style.opacity=(hurtT/.35).toFixed(2); $('#hitmark').style.opacity=(hitT/.15).toFixed(2); $('#blind').style.opacity=(clamp(blindT/1.2,0,1)*(SET.suave?.55:1)).toFixed(2);
   // death / down
   const dO=$('#death');
   if(m.st!==ESP.prev){ if((m.st==='down'||m.st==='dead')&&ESP.prev==='alive') registrarQueda(m); if(m.st==='alive') ESP.quem=''; ESP.prev=m.st; }
@@ -2524,7 +2541,7 @@ function plantaFixa(X,Z,S){ if(PLANTA_FIXA) return PLANTA_FIXA;
   TALL.forEach(b=>{ if(Sim.WALLS.some(q=>q.x1===b.x1&&q.z1===b.z1&&q.x2===b.x2&&q.z2===b.z2)) return; h+=`<rect x="${f(X(b.x1))}" y="${f(Z(b.z1))}" width="${f(Math.max(1.5,(b.x2-b.x1)*S))}" height="${f(Math.max(1.5,(b.z2-b.z1)*S))}" fill="#58524a"/>`; }); // pilares
   NPCS.forEach(n=>h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="#d2ad62"/><text x="${X(n.x)}" y="${Z(n.z)-7}" fill="#d2ad62" font-size="10" text-anchor="middle" font-family="Barlow Condensed, sans-serif">${n.nome.replace(/^(o|a) /,'')}</text>`);
   (Sim.LUGARES||[]).forEach(L=>h+=`<text x="${X(L.x)}" y="${Z(L.z)}" fill="#8a8272" font-size="10" font-style="italic" text-anchor="middle" font-family="IM Fell English, Georgia, serif">${L.name}</text>`);
-  h+=`<text x="${X(SPAWN.H.x)}" y="${Z(SPAWN.H.z)+34}" fill="#d2ad62" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Caçadores</text><text x="${X(SPAWN.C.x)}" y="${Z(SPAWN.C.z)+34}" fill="#e0435e" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Cultistas</text>`;
+  h+=`<text x="${X(SPAWN.H.x)}" y="${Z(SPAWN.H.z)+34}" fill="#d2ad62" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Caçadores</text><text x="${X(SPAWN.C.x)}" y="${Z(SPAWN.C.z)+34}" fill="${corCulto()}" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Cultistas</text>`;
   return PLANTA_FIXA=h; }
 function mapSvg(svg,opts){
   const S=Math.min(500/(HALF.x*2),350/(HALF.z*2)),ox=270,oz=190,X=x=>ox+x*S,Z=z=>oz+z*S;
@@ -2537,7 +2554,7 @@ function mapSvg(svg,opts){
     for(const f of V.flares||[]) if(f.t>0) h+=`<circle cx="${X(f.x)}" cy="${Z(f.z)}" r="5" fill="#ffb070" opacity=".8"/>`;
     for(const p of PINGS) h+=`<g transform="translate(${X(p.x)} ${Z(p.z)})"><circle r="7" fill="none" stroke="#8ee8ff" stroke-width="2"/><circle r="2" fill="#8ee8ff"/><text y="-10" fill="#8ee8ff" font-size="11" text-anchor="middle">${esc(p.txt)}</text></g>`;
     for(const a of V.actors){ if(!eu||a.cid===meCid||a.hidden||a.team!==time||a.st==='dead') continue; const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z;
-      h+=`<g transform="translate(${X(x)} ${Z(z)})"><rect x="-4" y="-4" width="8" height="8" transform="rotate(45)" fill="${a.st==='down'?'#e0435e':time==='H'?'#d2ad62':'#e0435e'}"/><text y="-9" fill="#e8e0d0" font-size="11" text-anchor="middle">${esc(a.name)}</text></g>`; } }
+      h+=`<g transform="translate(${X(x)} ${Z(z)})"><rect x="-4" y="-4" width="8" height="8" transform="rotate(45)" fill="${a.st==='down'?'#ffffff':time==='H'?'#d2ad62':corCulto()}"/><text y="-9" fill="#e8e0d0" font-size="11" text-anchor="middle">${esc(a.name)}</text></g>`; } }
   if(opts.me) h+=`<g transform="translate(${X(opts.me.x)} ${Z(opts.me.z)}) rotate(${-LOOK.yaw*180/Math.PI})"><path d="M0 -9 L6 6 L0 2 L-6 6Z" fill="#fff"/></g>`;
   svg._fixa.innerHTML=h;
 }
@@ -2701,10 +2718,10 @@ function amostrarPosicoes(R){ if(!R.pos){ R.pos=[]; R.posUlt=-9; R.quedas=[]; R.
   if(V.rt-R.posUlt<2) return; R.posUlt=V.rt;
   R.pos.push({rt:V.rt,p:R.atores.map(o=>{ const a=V.actors.find(b=>b.id===o.id); return a&&!a.hidden&&a.st!=='dead'?[+a.x.toFixed(1),+a.z.toFixed(1),a.st==='down'?1:0]:null; })}); }
 function temReplay(r){ const R=LT.rod[r]; return !!(R&&R.pos&&R.pos.length>3); }
-const COR_REP={H:['#f3d58e','#c99a3e'],C:['#ff6a7e','#b8243e']};
+const COR_REP={H:['#f3d58e','#c99a3e'],C:['#ff6a7e','#b8243e']}, COR_REP_D=['#8ec4ff','#4a7fd8'];
 function replayScreen(){ const R=LT.rod[REP.r]; if(!temReplay(REP.r)){ REP.aberto=false; screenKey=''; return; }
   const fim=Math.ceil(R.pos[R.pos.length-1].rt), vel=[10,20,40,80];
-  const n={H:0,C:0}, cores=R.atores.map(o=>COR_REP[o.team]?COR_REP[o.team][(n[o.team]++)%2]:'#ccc'); R.cores=cores;
+  const n={H:0,C:0}, cores=R.atores.map(o=>{ const L=o.team==='C'&&SET.dalt?COR_REP_D:COR_REP[o.team]; return L?L[(n[o.team]++)%2]:'#ccc'; }); R.cores=cores;
   const leg=R.atores.map((o,i)=>`<span${o.eu?' class="eu"':''}><i style="background:${cores[i]}"></i>${esc(o.nome)}</span>`).join('')+'<span><i class="qd">✚</i>Queda</span>';
   const ok=setScreen('replay'+(V.matchId||'')+REP.r,`<h2 style="text-align:center">Rever a noite${UMA_NOITE()?'':' · rodada '+REP.r}</h2>
     <p class="lede" style="margin-top:0">${MODE==='online'?'Os inimigos só aparecem onde você os viu. ':''}Os rastros mostram os últimos 20 segundos de cada um.</p>
@@ -2853,7 +2870,7 @@ function comoJogarScreen(){
 function openSettings(){ settingsOpen=true; backTo=screenKey; screenKey=''; }
 function settingsScreen(){
   const q=(id,v)=>`<button data-q="${v}" class="${SET.qual===v?'sel':''}">${id}</button>`;
-  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor,`<h2>Ajustes</h2>
+  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor+(SET.suave?1:0)+(SET.dalt?1:0),`<h2>Ajustes</h2>
     <div class="set"><label for="sSens">Sensibilidade do mouse</label><input id="sSens" type="range" min="20" max="300" step="5" value="${Math.round(SET.sens*100)}"><b id="vSens">${SET.sens.toFixed(2)}</b></div>
     <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" step="2" value="${Math.round(SET.vol*100)}"><b id="vVol">${Math.round(SET.vol*100)}</b></div>
     <div class="set"><label for="sFov">Campo de visão</label><input id="sFov" type="range" min="60" max="105" step="1" value="${SET.fov}"><b id="vFov">${SET.fov}</b></div>
@@ -2868,6 +2885,10 @@ function settingsScreen(){
     <div class="set"><label>Legendas dos sons</label><div class="opts"><button data-lg="1" class="${SET.legendas!==false?'sel':''}">Ligadas</button><button data-lg="0" class="${SET.legendas===false?'sel':''}">Desligadas</button></div><b></b></div>
     <div class="set"><label>Movimento bruto do mouse</label><div class="opts"><button data-r="1" class="${SET.rawMouse!==false?'sel':''}">Ligado</button><button data-r="0" class="${SET.rawMouse===false?'sel':''}">Desligado</button></div><b></b></div>
     <p class="fine">Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. Texturas, partículas e árvores de fundo mudam ao recarregar a página. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
+    <h3>Acessibilidade</h3>
+    <div class="set"><label>Clarões e tremor</label><div class="opts"><button data-sv="0" class="${!SET.suave?'sel':''}">Normais</button><button data-sv="1" class="${SET.suave?'sel':''}">Reduzidos</button></div><b></b></div>
+    <div class="set"><label>Cores das equipes</label><div class="opts"><button data-dl="0" class="${!SET.dalt?'sel':''}">Ouro e carmim</button><button data-dl="1" class="${SET.dalt?'sel':''}">Ouro e azul</button></div><b></b></div>
+    <p class="fine">Reduzidos: relâmpagos, o clarão do Grande Ritual e a cegueira do Flash ficam mais fracos, e a câmera não treme com a sanidade baixa. Ouro e azul troca o carmim do culto por azul no placar, nos altares do HUD, na planta e no replay (ajuda com daltonismo vermelho-verde).</p>
     <h3>Controles</h3><div class="binds">${Object.keys(BIND_LABEL).map(a=>`<button class="bindrow ${capturing===a?'cap':''}" data-a="${a}"><span>${BIND_LABEL[a]}</span><kbd>${capturing===a?'aperte…':kb(a)}</kbd></button>`).join('')}</div>
     <p class="fine">Clique numa linha e aperte a tecla ou o botão do mouse. Esc cancela. Se a tecla já estiver em uso, as duas ações trocam de lugar.</p>
     <h3>Com controle</h3><p class="fine" style="text-align:left!important">Analógico esquerdo anda, direito olha (a sensibilidade é a mesma do mouse). RT ataca, RB feitiço, LT ou clique no analógico esquerdo corre. A interage, B transfere, X recarrega, Y lanterna, LB sensor, clique no analógico direito marca (ping), direcional para cima abre as frases (cima/baixo escolhe, A envia), para baixo sinalizador. Select mostra a planta, Start pausa. Nos menus: cima/baixo escolhe, A confirma, B volta.</p>
@@ -2880,7 +2901,7 @@ function settingsScreen(){
     bind('#sFov','#vFov',v=>SET.fov=v,v=>v);
     bind('#sBri','#vBri',v=>SET.brilho=v/100,v=>v+'%');
     bind('#sMt','#vMt',v=>SET.miraTam=v/100,v=>v+'%');
-    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
+    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.sv){ SET.suave=b.dataset.sv==='1'; } else if(b.dataset.dl){ SET.dalt=b.dataset.dl==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.bindrow').forEach(b=>b.onclick=()=>{ capturing=b.dataset.a; screenKey=''; });
     $('#sDef').onclick=()=>{ SET.binds=Object.assign({},DEF_BIND); saveSet(); toolsKey=''; screenKey=''; };
     $('#sBack').onclick=()=>{ settingsOpen=false; screenKey=''; };
@@ -2947,7 +2968,7 @@ function tick(now){
   if(V&&V.phase==='play'&&m){
     syncActors(dt); syncAltars(dt); syncNoite(dt,now/1000); amostrarNoite(); if(DES.feito) DES.feito=null;
     const pos=MODE==='online'&&NET.pred?NET.pred:m;
-    const s=m.sanity, shake=s<40?(40-s)/40*.012:0, down=m.st==='down';
+    const s=m.sanity, shake=s<40&&!SET.suave?(40-s)/40*.012:0, down=m.st==='down';
     const bob=pos.moving?Math.sin(now*.011)*.045:0;
     const suav=MODE==='online'?Math.exp(-dt*14):0; NET.erro.x*=suav; NET.erro.z*=suav;
     camera.position.set(pos.x+NET.erro.x,down?.45:1.65+bob,pos.z+NET.erro.z); // sensação: campo de visão abre na corrida, câmera inclina ao andar de lado, coice volta sozinho
@@ -2980,7 +3001,7 @@ function tick(now){
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
-    updateHUD(dt,m); atualizarPings(dt); atualizarCaderno(); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
+    updateHUD(dt,m); atualizarPings(dt); atualizarCaderno(); atualizarFalasBots(); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
     if(vmH){ vmH.visible=false; vmC.visible=false; } // fora da partida, nada de arma na mão
