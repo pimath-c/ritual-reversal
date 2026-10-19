@@ -1584,6 +1584,33 @@ function audioInit(){ if(AU.ctx){ if(AU.ctx.state==='suspended') AU.ctx.resume()
     const src=AU.ctx.createBufferSource(); src.buffer=AU.noise; src.loop=true; const lp=AU.ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=260; const g=AU.ctx.createGain(); g.gain.value=.09; AU.amb=g;
     const lfo=AU.ctx.createOscillator(); lfo.frequency.value=.07; const lg=AU.ctx.createGain(); lg.gain.value=120; lfo.connect(lg); lg.connect(lp.frequency); lfo.start(); src.connect(lp); lp.connect(g); g.connect(AU.master); src.start();
   }catch(e){ AU.ok=false; } }
+// ================= MÚSICA DA TELA INICIAL =================
+// Órgão em ré menor (Rém, Si♭, Solm, Lá), coro em "ah" e um sino a cada volta, tudo sintetizado, com eco de nave.
+// Toca só fora da partida; o primeiro clique ou tecla da página libera o áudio.
+const MUS={au:null,prox:0,i:0,k:0};
+const MUS_ACORDES=[[50,53,57,62],[46,50,53,58],[43,50,55,58],[45,52,57,61]], MUS_CORO=[69,70,67,69,65,67,64,62];
+const midiHz=n=>440*Math.pow(2,(n-69)/12);
+function musicaNos(){ const c=AU.ctx, out=c.createGain(); out.gain.value=0; out.connect(AU.master);
+  const seco=c.createGain(); seco.gain.value=.7; seco.connect(out);
+  const eco=c.createDelay(2); eco.delayTime.value=.43; const fb=c.createGain(); fb.gain.value=.52; const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1600;
+  seco.connect(eco); eco.connect(lp); lp.connect(fb); fb.connect(eco); lp.connect(out);
+  MUS.au={out,entrada:seco}; }
+function musicaAcorde(t0){ const c=AU.ctx, A=MUS_ACORDES[MUS.i%4], dur=6.4;
+  for(const n of A) for(const [mul,tipo,g] of [[1,'sine',.05],[2,'triangle',.018],[4,'sine',.006]]){ const o=c.createOscillator(), e=c.createGain(); o.type=tipo; o.frequency.value=midiHz(n)*mul;
+    o.detune.value=(Math.random()-.5)*6; e.gain.setValueAtTime(0,t0); e.gain.linearRampToValueAtTime(g,t0+1.6); e.gain.setValueAtTime(g,t0+dur-1.2); e.gain.linearRampToValueAtTime(0,t0+dur+1.8);
+    o.connect(e); e.connect(MUS.au.entrada); o.start(t0); o.stop(t0+dur+2); }
+  if(MUS.i%2===1){ const n=MUS_CORO[(MUS.i>>1)%MUS_CORO.length], o=c.createOscillator(), e=c.createGain(); o.type='sawtooth'; o.frequency.value=midiHz(n);
+    const vib=c.createOscillator(), vg=c.createGain(); vib.frequency.value=5; vg.gain.value=3.5; vib.connect(vg); vg.connect(o.detune);
+    e.gain.setValueAtTime(0,t0); e.gain.linearRampToValueAtTime(.022,t0+1.4); e.gain.linearRampToValueAtTime(0,t0+dur);
+    for(const [f,q,g] of [[780,7,1],[1150,9,.6],[2600,12,.18]]){ const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=f; bp.Q.value=q; const bg=c.createGain(); bg.gain.value=g; o.connect(bp); bp.connect(bg); bg.connect(e); }
+    e.connect(MUS.au.entrada); o.start(t0); vib.start(t0); o.stop(t0+dur+.2); vib.stop(t0+dur+.2); }
+  if(MUS.i%4===0) for(const [r,g,d] of [[1,.05,4.5],[2.76,.022,2.6],[5.4,.01,1.4],[.5,.03,5]]){ const o=c.createOscillator(), e=c.createGain(); o.frequency.value=midiHz(62)*r;
+    e.gain.setValueAtTime(g,t0+.05); e.gain.exponentialRampToValueAtTime(.0001,t0+d); o.connect(e); e.connect(MUS.au.entrada); o.start(t0); o.stop(t0+d+.1); }
+  MUS.i++; }
+function atualizarMusica(dt){ if(!AU.ok) return; const alvo=!MODE&&SET.musica!==false?1:0; MUS.k+=(alvo-MUS.k)*Math.min(1,dt*(alvo?.5:1.5));
+  if(MUS.k<.01&&!alvo){ return; } if(!MUS.au) musicaNos(); MUS.au.out.gain.setTargetAtTime(.9*MUS.k,AU.ctx.currentTime,.3);
+  const agora=AU.ctx.currentTime; if(alvo&&agora>MUS.prox-.4){ if(MUS.prox<agora) MUS.prox=agora+.1; musicaAcorde(MUS.prox); MUS.prox+=6.4; } }
+['pointerdown','keydown'].forEach(t=>document.addEventListener(t,function liberaAudio(){ audioInit(); document.removeEventListener(t,liberaAudio); },{once:true}));
 function spatial(x,z,radius){ const dx=x-camera.position.x,dz=z-camera.position.z,d=Math.hypot(dx,dz),yaw=camera.rotation.y,rx=Math.cos(yaw),rz=-Math.sin(yaw);
   const p=d>.5?clamp((dx*rx+dz*rz)/d,-1,1):0; let g=clamp(1-d/radius,0,1); g*=g; if(g>0) g*=Sim.occlusion(camera.position.x,camera.position.z,x,z); return {g,p}; }
 function outNode(gain,pan){ const g=AU.ctx.createGain(); g.gain.value=gain; const p=AU.ctx.createStereoPanner(); p.pan.value=pan; g.connect(p); p.connect(AU.master); return g; }
@@ -2893,7 +2920,7 @@ function comoJogarScreen(){
 function openSettings(){ settingsOpen=true; backTo=screenKey; screenKey=''; }
 function settingsScreen(){
   const q=(id,v)=>`<button data-q="${v}" class="${SET.qual===v?'sel':''}">${id}</button>`;
-  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor+(SET.suave?1:0)+(SET.dalt?1:0),`<h2>Ajustes</h2>
+  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor+(SET.suave?1:0)+(SET.dalt?1:0)+(SET.musica!==false?1:0),`<h2>Ajustes</h2>
     <div class="set"><label for="sSens">Sensibilidade do mouse</label><input id="sSens" type="range" min="20" max="300" step="5" value="${Math.round(SET.sens*100)}"><b id="vSens">${SET.sens.toFixed(2)}</b></div>
     <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" step="2" value="${Math.round(SET.vol*100)}"><b id="vVol">${Math.round(SET.vol*100)}</b></div>
     <div class="set"><label for="sFov">Campo de visão</label><input id="sFov" type="range" min="60" max="105" step="1" value="${SET.fov}"><b id="vFov">${SET.fov}</b></div>
@@ -2905,6 +2932,7 @@ function settingsScreen(){
     <div class="set"><label>Cor da mira</label><div class="opts">${[['#e8e0d0','Osso'],['#7dff9a','Verde'],['#ffe066','Amarelo'],['#8ee8ff','Ciano']].map(([c,n])=>`<button data-mcor="${c}" class="${(SET.miraCor||'#e8e0d0')===c?'sel':''}" style="color:${c}">${n}</button>`).join('')}</div><b></b></div>
     <div class="set"><label for="sMt">Tamanho da mira</label><input id="sMt" type="range" min="60" max="180" step="10" value="${Math.round((SET.miraTam||1)*100)}"><b id="vMt">${Math.round((SET.miraTam||1)*100)}%</b></div>
     <div class="set"><label>Dicas da primeira noite</label><div class="opts"><button data-dc="1" class="${SET.dicas!==false?'sel':''}">Ligadas</button><button data-dc="0" class="${SET.dicas===false?'sel':''}">Desligadas</button><button data-dc="r">Rever todas</button></div><b></b></div>
+    <div class="set"><label>Música da tela inicial</label><div class="opts"><button data-mu="1" class="${SET.musica!==false?'sel':''}">Ligada</button><button data-mu="0" class="${SET.musica===false?'sel':''}">Desligada</button></div><b></b></div>
     <div class="set"><label>Legendas dos sons</label><div class="opts"><button data-lg="1" class="${SET.legendas!==false?'sel':''}">Ligadas</button><button data-lg="0" class="${SET.legendas===false?'sel':''}">Desligadas</button></div><b></b></div>
     <div class="set"><label>Movimento bruto do mouse</label><div class="opts"><button data-r="1" class="${SET.rawMouse!==false?'sel':''}">Ligado</button><button data-r="0" class="${SET.rawMouse===false?'sel':''}">Desligado</button></div><b></b></div>
     <p class="fine">Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. Texturas, partículas e árvores de fundo mudam ao recarregar a página. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
@@ -2924,7 +2952,7 @@ function settingsScreen(){
     bind('#sFov','#vFov',v=>SET.fov=v,v=>v);
     bind('#sBri','#vBri',v=>SET.brilho=v/100,v=>v+'%');
     bind('#sMt','#vMt',v=>SET.miraTam=v/100,v=>v+'%');
-    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.sv){ SET.suave=b.dataset.sv==='1'; } else if(b.dataset.dl){ SET.dalt=b.dataset.dl==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
+    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.mu){ SET.musica=b.dataset.mu==='1'; } else if(b.dataset.sv){ SET.suave=b.dataset.sv==='1'; } else if(b.dataset.dl){ SET.dalt=b.dataset.dl==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.bindrow').forEach(b=>b.onclick=()=>{ capturing=b.dataset.a; screenKey=''; });
     $('#sDef').onclick=()=>{ SET.binds=Object.assign({},DEF_BIND); saveSet(); toolsKey=''; screenKey=''; };
     $('#sBack').onclick=()=>{ settingsOpen=false; screenKey=''; };
@@ -2979,7 +3007,7 @@ function tick(now){
   if(TQ.ativo){ const tq=$('#toque'), r=(myRole()||'')+(locked&&!lojaAberta?'':' solto'); if(tq.className!==r){ tq.className=r; if(r.includes('solto')) TQ.soltar(); } } // com menu aberto, os controles saem da frente dos botões
   syncScreens(); atualizarReplay(Math.min(.25,raw));
   // cosmetics
-  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); // transições em tempo real, mesmo com poucos quadros
+  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); atualizarMusica(Math.min(.25,raw)); // transições em tempo real, mesmo com poucos quadros
   flames.forEach((f,i)=>{ f.scale.y=.26+Math.sin(now*.02+i)*.03; });
   if(RT.dust){ RT.dust.rotation.y+=dt*.004; RT.dust.position.y=Math.sin(now*.0002)*.3; }
   updateParticles(dt); atualizarEfeitos(dt); atualizarToast(dt);
@@ -3049,7 +3077,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();
