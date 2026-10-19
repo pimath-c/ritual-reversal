@@ -16,7 +16,7 @@ namespace RitualReversal.Simulacao
 
         // ---------- utilidades ----------
         public static readonly Dictionary<string, DifDef> DIF = new Dictionary<string, DifDef> {
-            { "facil", new DifDef { mira = .6, disp = 1.7, ritmo = 1.4, vista = .75 } }, { "normal", new DifDef { mira = 1, disp = 1, ritmo = 1, vista = 1 } }, { "dificil", new DifDef { mira = 1.22, disp = .6, ritmo = .85, vista = 1.15 } } };
+            { "treino", new DifDef { mira = .12, disp = 3.2, ritmo = 2.4, vista = .45 } }, { "facil", new DifDef { mira = .6, disp = 1.7, ritmo = 1.4, vista = .75 } }, { "normal", new DifDef { mira = 1, disp = 1, ritmo = 1, vista = 1 } }, { "dificil", new DifDef { mira = 1.22, disp = .6, ritmo = .85, vista = 1.15 } } };
         // vale só para os bots do lado contrário ao dos jogadores humanos: o aliado bot continua no normal
         public static DifDef DifDe(Jogo g, Ator b) { DifDef d; if (g == null || g.opts == null || g.opts.dificuldade == null || !DIF.TryGetValue(g.opts.dificuldade, out d) || d == DIF["normal"]) return DIF["normal"]; return b != null && g.actors.Any(o => o.human && o.team == b.team) ? DIF["normal"] : d; }
         public static double Dist(Ponto a, Ponto b) { return JS.Hypot(a.x - b.x, a.z - b.z); }

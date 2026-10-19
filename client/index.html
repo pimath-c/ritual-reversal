@@ -77,6 +77,13 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #falas.on{ display:flex; } #falas small{ font-size:12px; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; margin-bottom:2px; }
 #falas button{ text-align:left; font-family:var(--cond); font-size:16px; color:var(--bone); background:none; border:0; padding:3px 4px; cursor:pointer; } #falas button:hover,#falas button.sel{ color:var(--gold-hi); } #falas button.sel{ background:rgba(243,213,142,.1); }
 #falas kbd{ font-family:var(--cond); font-weight:700; color:var(--gold-hi); border:1px solid #4a525c; padding:0 5px; margin-right:8px; }
+/* caderno dos altares */
+#caderno{ position:absolute; right:26px; top:120px; width:360px; max-height:calc(100% - 300px); overflow:hidden; padding:10px 14px; background:rgba(8,9,11,.97); border:1px solid rgba(232,224,208,.16); display:none; pointer-events:none; z-index:6; }
+#caderno.on{ display:block; } #caderno small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
+#caderno .cd{ padding:5px 0 6px; border-top:1px solid #262b31; } #caderno .cd b{ font-family:var(--serif); font-weight:400; font-size:17px; } #caderno .cd i{ font-style:normal; font-size:13px; font-weight:600; margin-left:8px; padding:0 6px; border:1px solid currentColor; }
+#caderno .cd span{ display:block; font-size:13.5px; color:#cfc6b6; } #caderno .cd em{ display:block; font-style:normal; font-size:12.5px; color:var(--muted); margin-top:1px; }
+#caderno .limpo i{ color:#7d858f; } #caderno .desperto i{ color:#c69cf0; } #caderno .confirmado i{ color:#e0c8ff; } #caderno .chamariz i{ color:#aaa; } #caderno .ativo i,#caderno .fenda i{ color:var(--crimson-hi); } #caderno .farol i{ color:var(--gold-hi); } #caderno .nada i{ color:#5c636b; }
+body.toque #caderno{ top:60px; right:200px; transform:scale(.75); transform-origin:top right; }
 /* tutorial */
 #tutorial{ position:absolute; left:26px; top:300px; width:330px; padding:10px 14px 12px; background:rgba(8,9,11,.85); border-left:3px solid var(--crimson-hi); display:none; pointer-events:none; }
 #tutorial.on{ display:block; } #tutorial small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--crimson-hi); }
@@ -335,7 +342,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
   <div id="feed"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div>
-  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div>
+  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="caderno"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div>
   <div id="interact"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/><circle id="ring" cx="23" cy="23" r="19" fill="none" stroke="#f3d58e" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" transform="rotate(-90 23 23)"/></svg><div class="lbl" id="interactLbl"></div><div class="lbl" id="interactLbl2"></div></div>
   <div id="race" class="plate">
     <div class="t" id="raceName">Abside</div>
@@ -1759,8 +1766,8 @@ function evVisible(e,role,meId){
 }
 
 // ================= INPUT =================
-const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',map:'Tab',ping:'KeyZ',falas:'KeyV'};
-const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',map:'Planta da catedral',ping:'Marcar para a equipe',falas:'Frases rápidas'};
+const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',map:'Tab',ping:'KeyZ',falas:'KeyV',caderno:'KeyJ'};
+const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',map:'Planta da catedral',ping:'Marcar para a equipe',falas:'Frases rápidas',caderno:'Caderno dos altares'};
 const KEYNAMES={Space:'Espaço',ShiftLeft:'Shift esq.',ShiftRight:'Shift dir.',ControlLeft:'Ctrl esq.',ControlRight:'Ctrl dir.',AltLeft:'Alt esq.',AltRight:'Alt dir.',Tab:'Tab',Enter:'Enter',Backquote:'`',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',CapsLock:'CapsLock',
   Mouse0:'Botão esq.',Mouse1:'Botão meio',Mouse2:'Botão dir.',Mouse3:'Mouse 4',Mouse4:'Mouse 5'};
 const keyLabel=c=>KEYNAMES[c]||(c||'').replace(/^Key/,'').replace(/^Digit/,'').replace(/^Numpad/,'Num ')||'—';
@@ -1805,6 +1812,7 @@ function pressed(code,e){
   if(SET.binds.flare===code) C.g++;
   if(SET.binds.reload===code) C.r++;
   if(SET.binds.ping===code) fazerPing();
+  if(SET.binds.caderno===code){ CAD.aberto=!CAD.aberto; CAD.h=''; }
   if(code==='KeyN'&&TUT.ativo) pularPassoTutorial();
   if(SET.binds.falas===code){ FL.aberto=!FL.aberto; FL.t=4; desenharFalas(); }
   if(FL.aberto&&/^Digit[1-6]$/.test(code)){ falar(+code.slice(5)-1); }
@@ -1980,7 +1988,7 @@ function handleEvents(list,online){
   for(const e of list){
     if(!evVisible(e,role,id)) continue;
     switch(e.type){
-      case 'feed': feed(e.msg,e.cls); break;
+      case 'feed': feed(e.msg,e.cls); anotarCaderno(e.msg); break;
       case 'sfx': if(e.k==='sigil'&&e.a!==id){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.cast=1; }
         if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
       case 'tracer': { const own=e.a===id; const p0=own?camera.localToWorld(new THREE.Vector3(.27,-.2,-.9)):new THREE.Vector3(e.x0,e.y0+.1,e.z0);
@@ -2224,6 +2232,27 @@ function atualizarTensao(dt,m){ let alvo=0;
     if(m.sanity<40) alvo=Math.max(alvo,.35+(40-m.sanity)/40*.4); if(hurtT>0) alvo=Math.max(alvo,.8); if(m.st==='down') alvo=1; if(m.st==='dead') alvo=0;
     alvo*=1-GR.k; }
   TN.k+=(alvo-TN.k)*Math.min(1,dt*(alvo>TN.k?2.5:.5)); if(TN.k>.02) tensaoSom(); if(TN.au) TN.au.out.gain.setTargetAtTime(.09*TN.k,AU.ctx.currentTime,.25); }
+
+// ================= CADERNO DOS ALTARES =================
+// J abre: o que sua equipe sabe de cada altar e a última pista sobre ele, com a hora. O Caçador vê a investigação;
+// o Cultista vê os próprios altares (consagrado, chamariz, ritual) e o que já foi resolvido.
+const CAD={aberto:false,notas:{},id:null,h:''};
+function anotarCaderno(msg){ if(!V||!V.altars) return; if(CAD.id!==V.matchId){ CAD.id=V.matchId; CAD.notas={}; }
+  V.altars.forEach((A,i)=>{ if(msg.includes(A.name)) CAD.notas[i]={msg,rt:V.rt||0}; }); }
+function estadoCaderno(A,i,papel){
+  if(A.state==='fenda') return ['Fenda','Ritual completo: conta para o culto','fenda']; if(A.state==='farol') return ['Farol','Ritual selado: conta para os Caçadores','farol'];
+  if(papel==='H'){ const k=V.know[i]; if(A.state==='active'&&A.localized) return ['Ritual!',`Ritual em andamento, ${Math.floor(A.prog*100)}%: vá selar`,'ativo'];
+    return {'?':['Sem pistas','Nada se sabe ainda: santuários, sentinelas e o sensor ajudam','nada'],limpo:['Descartado','O culto não escolheu este altar (ou já foi purgado)','limpo'],
+      desperto:['Desperto','Consagrado ou Chamariz: purgue, ou confirme com a lanterna','desperto'],confirmado:['Confirmado','Resíduo de reagente: é um altar do culto. Purgue antes da Vigília','confirmado'],
+      chamariz:['Chamariz','Sem resíduo: é isca. Não perca tempo aqui','chamariz'],ativo:['Ritual!','Ritual em andamento: vá selar','ativo']}[k]||['?','','nada']; }
+  if(A.state==='active') return ['Ritual',`Seu ritual está em ${Math.floor(A.prog*100)}%${A.localized?', e os Caçadores sabem onde':''}`,'ativo'];
+  if(A.decoy) return ['Chamariz','Isca plantada: atrai os Caçadores','chamariz'];
+  if(A.chosen) return A.state==='awake'?['Consagrado','Pronto: inicie o ritual com um reagente na Vigília','confirmado']:['Seu altar','Ainda não consagrado: traga um reagente','desperto'];
+  return ['Fora do plano','Não é um dos altares escolhidos','limpo']; }
+function atualizarCaderno(){ const el=$('#caderno'); if(!el) return; if(!CAD.aberto||!V||V.phase!=='play'){ if(el.classList.contains('on')) el.classList.remove('on'); return; }
+  const papel=myRole(); const h=`<small>Caderno dos altares · ${kb('caderno')} fecha</small>`+V.altars.map((A,i)=>{ const [t,d,c]=estadoCaderno(A,i,papel), n=CAD.notas[i];
+    return `<div class="cd ${c}"><b>${esc(A.name)}</b><i>${esc(t)}</i><span>${esc(d)}</span>${n?`<em>${fmt(n.rt)} · ${esc(n.msg)}</em>`:''}</div>`; }).join('');
+  if(h!==CAD.h){ el.innerHTML=h; CAD.h=h; } el.classList.add('on'); }
 
 // ================= PING DE EQUIPE =================
 // Marca o que está na mira para a própria equipe: um inimigo à vista, um altar ou um ponto no chão (até a parede).
@@ -2735,7 +2764,7 @@ function finalScreen(){
   setScreen('final'+(V.matchId||'')+(DES.feito?DES.feito.p:''),`<h2 style="color:${w.win==null?'var(--bone)':mineW?'var(--gold)':'var(--crimson-hi)'}">${title}</h2><p>${w.why[0].toUpperCase()+w.why.slice(1)}.</p>
     <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${blocoDesafio()}${premios(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
     <div class="btnrow"><button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
-  ()=>{ $('#bLog').onclick=downloadLog; const a=$('#bAgain'); if(a) a.onclick=()=>{ if(MODE==='local'&&game) game.matchId=DES.ativo?String(game.matchId).split('#')[0]+'#'+Date.now():String(Date.now()); sendAct({type:'restart'}); // id novo: o perfil conta a revanche e o clima muda (no desafio, o clima do dia fica) }; const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
+  ()=>{ $('#bLog').onclick=downloadLog; const a=$('#bAgain'); if(a) a.onclick=()=>{ if(MODE==='local'&&game) game.matchId=DES.ativo?String(game.matchId).split('#')[0]+'#'+Date.now():String(Date.now()); sendAct({type:'restart'}); /* id novo: o perfil conta a revanche e o clima muda (no desafio, o clima do dia fica) */ }; const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
 }
 async function downloadLog(){
   const msg=$('#logMsg');
@@ -2898,7 +2927,7 @@ function tick(now){
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
-    updateHUD(dt,m); atualizarPings(dt); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
+    updateHUD(dt,m); atualizarPings(dt); atualizarCaderno(); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
     if(vmH){ vmH.visible=false; vmC.visible=false; } // fora da partida, nada de arma na mão

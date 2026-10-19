@@ -45,6 +45,14 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 
 - v5.2: Grande Ritual cinematográfico (céu e vitrais de sangue, sino, coro e tambor, corvos, névoa carmim;
   `atualizarGrande` no cliente, `grande` no snapshot do altar); um bot Cultista planta até dois Chamarizes.
+- v5.3 (notas em `notas/v5.3.md`): jogo solo com escolha de papel e dificuldade (`opts.dificuldade` treino/facil/
+  normal/dificil, `difDe(g,b)` só vale para os bots do lado contrário ao dos humanos; normal = comportamento antigo bit a
+  bit), ping (`act` 'ping', evento com `team`, só a equipe recebe; servidor filtra) e frases rápidas (`act` 'fala'),
+  bot aliado atende ping/ajuda (`ai.pedido`, `botAtendePing`), tutorial guiado e desafio da noite (no cliente),
+  legendas dos sons, bússola, espectador, clima por partida (`climaDe` do matchId, cliente), linha do tempo e
+  destaques, perfil/conquistas (localStorage), dicas, controle (gamepad), salas públicas (`/api/salas`) e chat do
+  lobby (`t:'chat'`). Tudo de regra portado para o C# (comparar-cs com o roteiro usando ping e frases; `DIF=` testa
+  a dificuldade).
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

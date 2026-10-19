@@ -691,7 +691,7 @@ function fireHuman(g,a){
   traceShot(g,a,a.x,1.62,a.z,dx,dy,dz,T,false);
 }
 // dificuldade dos bots (só no jogo local): mira, dispersão dos sigilos, ritmo de tiro e alcance da vista. Normal = 1 em tudo.
-const DIF={facil:{mira:.6,disp:1.7,ritmo:1.4,vista:.75},normal:{mira:1,disp:1,ritmo:1,vista:1},dificil:{mira:1.22,disp:.6,ritmo:.85,vista:1.15}};
+const DIF={treino:{mira:.12,disp:3.2,ritmo:2.4,vista:.45},facil:{mira:.6,disp:1.7,ritmo:1.4,vista:.75},normal:{mira:1,disp:1,ritmo:1,vista:1},dificil:{mira:1.22,disp:.6,ritmo:.85,vista:1.15}};
 // vale só para os bots do lado contrário ao dos jogadores humanos: o aliado bot continua no normal
 function difDe(g,b){ const d=DIF[g&&g.opts&&g.opts.dificuldade]; if(!d||d===DIF.normal) return DIF.normal; return b&&g.actors.some(o=>o.human&&o.team===b.team)?DIF.normal:d; }
 function fireBotAt(g,a,tx,ty,tz,miss){
