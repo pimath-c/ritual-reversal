@@ -210,6 +210,9 @@ table.res td.n{ text-align:right; } table.res th.n{ text-align:right; }
 .difOnline{ flex-wrap:wrap; justify-content:center; margin:6px 0 2px; } .difOnline b{ color:var(--bone); font-weight:600; } .difOnline small{ flex-basis:100%; text-align:center; color:var(--muted); font-size:12.5px; }
 table.placar tr.h td:first-child b{ color:var(--gold-hi); } table.placar tr.c td:first-child b{ color:var(--crimson-hi); } table.placar tr.meu td{ background:rgba(210,173,98,.08); } table.placar small{ color:var(--muted); font-size:12px; } table.placar td:first-child, table.placar td:nth-child(2){ white-space:nowrap; }
 @media (max-width:760px){ table.placar th:nth-child(2), table.placar td:nth-child(2), table.placar th:last-child, table.placar td:last-child{ display:none; } }
+.novidades{ display:grid; grid-template-columns:1fr 1fr; gap:10px 22px; margin:12px 0; } .novidades div{ border-left:2px solid var(--gold); padding:2px 0 2px 12px; } .novidades b{ display:block; font-family:var(--serif); font-weight:400; font-size:19px; color:var(--gold-hi); } .novidades span{ font-size:15px; color:#cfc6b6; }
+.cola{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px; margin:14px auto 4px; max-width:620px; font-size:14px; color:var(--muted); } .cola kbd{ font-family:var(--cond); font-weight:700; color:var(--gold-hi); border:1px solid #4a525c; padding:0 5px; margin-right:6px; }
+@media (max-width:760px){ .novidades{ grid-template-columns:1fr; } }
 .repCtl{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; } .repCtl input[type=range]{ flex:1; min-width:160px; accent-color:var(--gold); } .repCtl b{ font-family:var(--cond); font-size:18px; min-width:52px; }
 .repCtl .opts{ display:flex; gap:4px; } .repCtl .opts button{ font-family:var(--cond); font-size:15px; color:var(--bone); background:rgba(14,16,19,.8); border:1px solid #3a4149; padding:4px 9px; cursor:pointer; } .repCtl .opts button.on{ border-color:var(--gold-hi); color:var(--gold-hi); }
 .repLeg span.eu{ color:var(--bone); font-weight:600; } .repLeg i.qd{ background:none; font-style:normal; color:#fff; width:auto; height:auto; }
@@ -1949,7 +1952,7 @@ function lerControle(dt){ const gps=navigator.getGamepads?navigator.getGamepads(
     const eixo=ax(1); let passo=0; if(novo(12)||(eixo<-.6&&PAD.eixoAnt>=-.6)) passo=-1; if(novo(13)||(eixo>.6&&PAD.eixoAnt<=.6)) passo=1;
     if(lista.length&&passo){ let i=lista.indexOf(document.activeElement); i=i<0?0:(i+passo+lista.length)%lista.length; lista[i].focus(); }
     if(novo(0)&&document.activeElement&&lista.includes(document.activeElement)) document.activeElement.click();
-    if(novo(1)){ if(settingsOpen){ settingsOpen=false; screenKey=''; } else if(lojaAberta) fecharLoja(); else if(comoJogarAberto){ comoJogarAberto=false; screenKey=''; } else if(perfilAberto){ perfilAberto=false; screenKey=''; } else if(REP.aberto){ REP.aberto=false; screenKey=''; } }
+    if(novo(1)){ if(settingsOpen){ settingsOpen=false; screenKey=''; } else if(lojaAberta) fecharLoja(); else if(comoJogarAberto){ comoJogarAberto=false; screenKey=''; } else if(perfilAberto){ perfilAberto=false; screenKey=''; } else if(novidadesAberto){ novidadesAberto=false; screenKey=''; } else if(REP.aberto){ REP.aberto=false; screenKey=''; } }
     if(novo(9)&&V&&V.phase==='play') lock();
     PAD.eixoAnt=eixo; }
   PAD.ant=agora; }
@@ -2632,7 +2635,7 @@ function titleScreen(){
       <div class="dif" role="group" aria-label="Seu papel"><span>Você</span>${[['H','Caça'],['C','Celebra'],['?','Sorteia']].map(([k,n])=>`<button data-papel="${k}" class="${(SET.papelSolo||'H')===k?'sel':''}">${n}</button>`).join('')}</div>
       <div class="dif" role="group" aria-label="Dificuldade dos bots"><span>Bots inimigos</span>${[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([k,n])=>`<button data-dif="${k}" class="${(SET.dificuldade||'normal')===k?'sel':''}">${n}</button>`).join('')}</div>
       ${(()=>{ const D=desafioDe(hojeDesafio()); let rec=null; try{ rec=(perfil().desafios||{})[hojeDesafio()]; }catch(e){} return `<button class="go ghost desafioBtn" id="bDesafio">Desafio da noite<small>Hoje você ${D.papel==='H'?'caça':'celebra'}, ${CLIMAS[D.clima].nome.toLowerCase()}, contra bots difíceis${rec!=null?` · recorde ${rec}`:''}</small></button>`; })()}
-      <div class="links"><button class="lk" id="bAprender">Aprender a jogar</button><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bPerfil">Perfil</button><button class="lk" id="bSet">Ajustes</button></div></div>
+      <div class="links"><button class="lk" id="bAprender">Aprender a jogar</button><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bPerfil">Perfil</button><button class="lk" id="bNovo">Novidades</button><button class="lk" id="bSet">Ajustes</button></div></div>
     ${APP?`<div class="online on"><h3>Servidor${ONLINE_OK?' <small style="color:var(--gold)">conectado</small>':''}</h3><div class="linha"><input class="txt" id="iServ" style="width:260px" placeholder="ex.: abcd.trycloudflare.com" value="${esc(SET.servidor||'')}" aria-label="Endereço do servidor" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="go ghost" id="bServ">${SONDANDO?'Procurando…':'Conectar'}</button></div></div>`:''}
     <div class="online ${ONLINE_OK?'on':''}"><h3>Jogar online</h3>
       <div class="linha"><input class="txt" id="iName" maxlength="16" placeholder="Seu nome" value="${esc(savedName)}" aria-label="Seu nome"><button class="go gold" id="bCreate">Criar sala</button></div>
@@ -2646,7 +2649,7 @@ function titleScreen(){
     scrBody.querySelectorAll('.dif button').forEach(b=>b.onclick=()=>{ if(b.dataset.papel) SET.papelSolo=b.dataset.papel; else SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
     $('#bAprender').onclick=()=>{ aprenderAberto=true; screenKey=''; };
     $('#bDesafio').onclick=()=>{ audioInit(); startDesafio(); };
-    const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; };
+    const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; }; $('#bNovo').onclick=()=>{ novidadesAberto=true; screenKey=''; };
     if(ONLINE_OK){ const go=create=>{ audioInit(); const name=($('#iName').value||'Jogador').trim(); try{ localStorage.setItem('rr-name',name); }catch(e){} const code=($('#iCode').value||'').trim().toUpperCase(); if(!create&&code.length!==4){ $('#err').textContent='Digite o código de 4 letras.'; return; } connect(create,code,name); };
       $('#bCreate').onclick=()=>go(true); $('#bJoin').onclick=()=>go(false);
       $('#iPub').onchange=()=>{ SET.salaPublica=$('#iPub').checked; saveSet(); };
@@ -2894,6 +2897,22 @@ async function downloadLog(){
   catch(e){ if(e&&e.code==='declined'){ msg.textContent='Download cancelado.'; return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); msg.textContent='Registro salvo.';
 }
+// ================= NOVIDADES =================
+let novidadesAberto=false;
+const NOVIDADES=[['Sozinho','Escolha caçar, celebrar ou sortear, e a dificuldade dos bots. O bot aliado atende seus pings e fala com você.'],
+  ['Aprender a jogar','Uma noite guiada, passo a passo, como Caçador ou como Cultista.'],
+  ['Desafio da noite','Uma noite por dia, igual para todos, contra bots difíceis, com pontos e recorde.'],
+  ['Equipe','Ping (Z), frases rápidas (V), chat na partida online (Enter) e salas públicas com chat no lobby.'],
+  ['Ler a noite','Legendas dos sons com direção, bússola, caderno dos altares (J) e trilha de tensão.'],
+  ['A noite','Clima sorteado (névoa, chuva, tempestade) e passos que soam diferente em cada chão.'],
+  ['Depois da noite','Rever a noite na planta, linha do tempo, placar por jogador, destaques e um perfil com 18 conquistas.'],
+  ['Ajustes','Controle (gamepad), brilho, mira, música, clarões reduzidos e cores para daltonismo.']];
+function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.3</h2><p class="lede">O que mudou desde a última versão.</p>
+    <div class="novidades">${NOVIDADES.map(([t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
+    <div class="btnrow"><button class="go" id="bNovOk">Voltar</button></div>`,()=>{ $('#bNovOk').onclick=()=>{ novidadesAberto=false; screenKey=''; }; }); }
+// cola das teclas, na pausa
+function colaTeclas(){ const r=myRole()||'H', L=[['fwd','Andar'],['sprint','Correr'],['fire','Atacar'],['abil','Feitiço'],['use','Interagir'],...(r==='H'?[['sensor','Sensor'],['lantern','Lanterna'],['flare','Flare'],['reload','Recarregar']]:[['use2','Transferir']]),['map','Planta'],['caderno','Caderno'],['ping','Ping'],['falas','Frases']];
+  return `<div class="cola">${L.map(([a,n])=>`<span><kbd>${a==='fwd'?(SET.binds.fwd==='KeyW'&&SET.binds.left==='KeyA'&&SET.binds.back==='KeyS'&&SET.binds.right==='KeyD'?'WASD':['fwd','left','back','right'].map(kb).join(' ')):kb(a)}</kbd>${n}</span>`).join('')}${MODE==='online'?'<span><kbd>Enter</kbd>Chat</span>':''}</div>`; }
 let comoJogarAberto=false;
 function comoJogarScreen(){
   const passo=(n,t,d)=>`<div class="passo"><b>${n}</b><div><strong>${t}</strong><span>${d}</span></div></div>`;
@@ -2963,13 +2982,14 @@ function syncScreens(){
   if(settingsOpen){ settingsScreen(); return; }
   if(comoJogarAberto&&!MODE){ comoJogarScreen(); return; }
   if(perfilAberto&&!MODE){ perfilScreen(); return; }
+  if(novidadesAberto&&!MODE){ novidadesScreen(); return; }
   if(aprenderAberto&&!MODE){ aprenderScreen(); return; }
   if(!MODE){ titleScreen(); buscarSalas(); return; }
   if(MODE==='online'&&!V){ if(NET.lobby) lobbyScreen(); return; }
   if(!V) return;
   const ph=V.phase;
   if(ph==='play'&&lojaAberta){ lojaScreen(); return; }
-  if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause'+TQ.ativo,'<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">'+(TQ.ativo?'Toque':'Clique')+' para voltar ao jogo.</p><div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button><button class="go ghost" id="bSair">Abandonar a noite</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; $('#bSair').onclick=()=>{ if(confirm('Abandonar esta noite e voltar ao menu?')) sairParaMenu(); }; }); }
+  if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause'+TQ.ativo,'<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">'+(TQ.ativo?'Toque':'Clique')+' para voltar ao jogo.</p>'+(TQ.ativo?'':colaTeclas())+'<div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button><button class="go ghost" id="bSair">Abandonar a noite</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; $('#bSair').onclick=()=>{ if(confirm('Abandonar esta noite e voltar ao menu?')) sairParaMenu(); }; }); }
     else if(MODE==='online'&&!locked){ setScreen('olock','<h2 style="text-align:center">Clique para jogar</h2><p style="text-align:center;margin:0 auto">No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado.</p><div class="btnrow"><button class="go" id="bRes">Jogar</button><button class="go ghost" id="bSet2">Ajustes</button><button class="go ghost" id="bSair">Sair da sala</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; $('#bSair').onclick=()=>{ if(confirm('Sair da sala? Um bot assume o seu lugar.')) sairParaMenu(); }; }); }
     else hideScreen(); return; }
   if(ph==='pick') pickScreen(); else if(ph==='intro') introScreen(); else if(ph==='summary') summaryScreen(); else if(ph==='final'){ perfilFim(); desafioFim(); if(REP.aberto) replayScreen(); else finalScreen(); }
@@ -3079,6 +3099,7 @@ function boot(){
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
   if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
+{ const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">Esculpindo a catedral…<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();
 </script>
