@@ -208,6 +208,8 @@ table.res td.n{ text-align:right; } table.res th.n{ text-align:right; }
 @media (max-width:760px){ .conqs{ grid-template-columns:1fr 1fr; } }
 #repSvg{ width:100%; height:auto; display:block; margin:6px 0; background:rgba(6,7,9,.6); }
 .difOnline{ flex-wrap:wrap; justify-content:center; margin:6px 0 2px; } .difOnline b{ color:var(--bone); font-weight:600; } .difOnline small{ flex-basis:100%; text-align:center; color:var(--muted); font-size:12.5px; }
+table.placar tr.h td:first-child b{ color:var(--gold-hi); } table.placar tr.c td:first-child b{ color:var(--crimson-hi); } table.placar tr.meu td{ background:rgba(210,173,98,.08); } table.placar small{ color:var(--muted); font-size:12px; } table.placar td:first-child, table.placar td:nth-child(2){ white-space:nowrap; }
+@media (max-width:760px){ table.placar th:nth-child(2), table.placar td:nth-child(2), table.placar th:last-child, table.placar td:last-child{ display:none; } }
 .repCtl{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; } .repCtl input[type=range]{ flex:1; min-width:160px; accent-color:var(--gold); } .repCtl b{ font-family:var(--cond); font-size:18px; min-width:52px; }
 .repCtl .opts{ display:flex; gap:4px; } .repCtl .opts button{ font-family:var(--cond); font-size:15px; color:var(--bone); background:rgba(14,16,19,.8); border:1px solid #3a4149; padding:4px 9px; cursor:pointer; } .repCtl .opts button.on{ border-color:var(--gold-hi); color:var(--gold-hi); }
 .repLeg span.eu{ color:var(--bone); font-weight:600; } .repLeg i.qd{ background:none; font-style:normal; color:#fff; width:auto; height:auto; }
@@ -2720,6 +2722,14 @@ function premios(log){ if(!log||!log.length) return '';
   out.sort((a,b)=>b.n-a.n); if(!out.length) return '';
   const meu=V.actors.find(a=>a.cid===meCid);
   return `<h3>Destaques da noite</h3><div class="premios">${out.slice(0,6).map(p=>`<div class="premio${meu&&p.quem===meu.name?' meu':''}"><b>${p.nome}</b><span>${esc(p.quem)}</span><small>${p.verbo} ${p.n} ${p.n===1?p.um:p.varios}</small></div>`).join('')}</div>`; }
+// placar de cada jogador, tirado do registro (uma tabela por rodada)
+function placarJogadores(log){ if(!log||!log.length) return ''; const meu=V.actors.find(a=>a.cid===meCid), rods=[...new Set(log.filter(e=>e.ev==='round_start').map(e=>e.r))];
+  return rods.map(r=>{ const ini=log.find(e=>e.ev==='round_start'&&e.r===r); if(!ini||!ini.teams) return ''; const L=log.filter(e=>e.r===r), n=(f)=>L.filter(f).length;
+    const linhas=ini.teams.map(t=>{ const C=CLASSES[t.cls]||{}, alt=t.team==='H'?n(e=>e.ev==='purge'&&e.by===t.name):n(e=>(e.ev==='consecrate'||e.ev==='ritual_start'||e.ev==='decoy'||e.ev==='transfer')&&e.by===t.name);
+      return {t,C,v:[n(e=>e.ev==='down'&&e.by===t.name),n(e=>e.ev==='down'&&e.who===t.name),n(e=>e.ev==='revive'&&e.by===t.name),alt,n(e=>e.ev==='ponto'&&e.by===t.name),n(e=>e.ev==='compra'&&e.who===t.name)]}; });
+    linhas.sort((a,b)=>(a.t.team===b.t.team?0:a.t.team==='H'?-1:1));
+    const tr=linhas.map(L=>`<tr class="${L.t.team==='H'?'h':'c'}${meu&&L.t.name===meu.name?' meu':''}"><td><b>${esc(L.t.name)}</b>${L.t.human?'':' <small>bot</small>'}</td><td>${esc(L.C.name||L.t.cls)}</td>${L.v.map(x=>`<td class="n">${x}</td>`).join('')}</tr>`).join('');
+    return `<h3>${UMA_NOITE()||rods.length<2?'Placar da noite':'Placar da rodada '+r}</h3><table class="res placar"><tr><th>Jogador</th><th>Classe</th><th class="n" title="Inimigos derrubados">Derrubou</th><th class="n">Caiu</th><th class="n">Reanimou</th><th class="n" title="Caçador: altares purgados. Cultista: consagrações, rituais iniciados, chamarizes e transferências">Altares</th><th class="n" title="Santuários, sentinelas, ervas e túmulos">Tarefas</th><th class="n">Compras</th></tr>${tr}</table>`; }).join(''); }
 function logDaNoite(){ if(MODE==='local'&&game) return game.log;
   if(MODE==='online'&&V&&V.phase==='final'&&NET.logUrl&&!LT.logOnline&&!LT.pedindo){ LT.pedindo=true; fetch(NET.logUrl,{cache:'no-store'}).then(r=>r.json()).then(j=>{ LT.logOnline=j.events||[]; screenKey=''; }).catch(()=>{}); }
   return LT.logOnline; }
@@ -2845,7 +2855,7 @@ function finalScreen(){
   const row=(n,s)=>!s?'':`<tr><td>${n}</td><td class="n">${s.done}</td><td class="n">${s.lastT!=null?fmt(s.lastT):'—'}</td><td class="n">${Math.round(s.maxP*100)}%</td></tr>`;
   const isHost=MODE==='local'||NET.host===meCid;
   setScreen('final'+(V.matchId||'')+(DES.feito?DES.feito.p:''),`<h2 style="color:${w.win==null?'var(--bone)':mineW?'var(--gold)':'var(--crimson-hi)'}">${title}</h2><p>${w.why[0].toUpperCase()+w.why.slice(1)}.</p>
-    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${blocoDesafio()}${premios(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
+    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${blocoDesafio()}${premios(logDaNoite())}${placarJogadores(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
     <div class="btnrow">${temReplay(1)?'<button class="go ghost" id="bRep1">Rever a noite</button>':''}${!UMA_NOITE()&&temReplay(2)?'<button class="go ghost" id="bRep2">Rever a rodada 2</button>':''}<button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
   ()=>{ $('#bLog').onclick=downloadLog; [1,2].forEach(r=>{ const b=$('#bRep'+r); if(b) b.onclick=()=>{ REP.aberto=true; REP.r=r; REP.t=0; REP.play=true; screenKey=''; }; }); const a=$('#bAgain'); if(a) a.onclick=()=>{ if(MODE==='local'&&game) game.matchId=DES.ativo?String(game.matchId).split('#')[0]+'#'+Date.now():String(Date.now()); sendAct({type:'restart'}); /* id novo: o perfil conta a revanche e o clima muda (no desafio, o clima do dia fica) */ }; const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
 }
