@@ -145,7 +145,17 @@ namespace RitualReversal.Simulacao
                 var me = g.actors.FirstOrDefault(b => b.cid == cid); if (me == null || me.st == "dead" || g.t - me.pingT < 1) return;
                 double x = a.x, z = a.z; if (double.IsNaN(x) || double.IsInfinity(x) || double.IsNaN(z) || double.IsInfinity(z)) return; me.pingT = g.t;
                 string k = a.k == "altar" || a.k == "inimigo" || a.k == "perigo" ? a.k : "ponto";
-                Ev(g, "ping", "a", me.id, "team", me.team, "x", R2(JS.Clamp(x, -Mapa.HX, Mapa.HX)), "z", R2(JS.Clamp(z, -Mapa.HZ, Mapa.HZ)), "k", k, "i", k == "altar" ? JS.Clamp(a.i, 0, 5) : -1);
+                double px = R2(JS.Clamp(x, -Mapa.HX, Mapa.HX)), pz = R2(JS.Clamp(z, -Mapa.HZ, Mapa.HZ));
+                Ev(g, "ping", "a", me.id, "team", me.team, "x", px, "z", pz, "k", k, "i", k == "altar" ? JS.Clamp(a.i, 0, 5) : -1);
+                g.pedidos++; foreach (var o in g.actors) if (o != me && o.team == me.team && !o.human && o.st == "alive") o.ai.pedido = new Pedido { x = px, z = pz, k = k, ate = g.t + (k == "inimigo" ? 12 : 30), chegou = -1, n = g.pedidos };
+            }
+            // frases rápidas para a equipe (0 ajuda, 1 indo, 2 recuar, 3 inimigo aqui, 4 obrigado, 5 purgar/iniciar); o bot aliado atende a ajuda e o recuo
+            if (a.type == "fala" && g.phase == "play")
+            {
+                var me = g.actors.FirstOrDefault(b => b.cid == cid); int f = a.i; if (me == null || me.st == "dead" || f < 0 || f > 5 || g.t - me.pingT < 1) return; me.pingT = g.t;
+                Ev(g, "fala", "a", me.id, "team", me.team, "f", f, "x", R2(me.x), "z", R2(me.z));
+                if (f == 0 || f == 3) { g.pedidos++; foreach (var o in g.actors) if (o != me && o.team == me.team && !o.human && o.st == "alive") o.ai.pedido = new Pedido { x = R2(me.x), z = R2(me.z), k = "ponto", ate = g.t + 20, chegou = -1, n = g.pedidos }; }
+                if (f == 2) foreach (var o in g.actors) if (o != me && o.team == me.team && !o.human) o.ai.pedido = null;
             }
             if (a.type == "restart" && g.phase == "final") { g.scores = new Dictionary<string, Placar> { { "A", null }, { "B", null } }; g.stats = new Dictionary<int, Estatisticas>(); EnterPick(g, 1); }
         }

@@ -126,6 +126,13 @@ namespace RitualReversal
                         break;
                     }
                 case "ping": if (e.Str("team") == papel) ReceberPing(e); break;
+                case "fala":
+                    if (e.Str("team") == papel)
+                    {
+                        string[] falas = { "Preciso de ajuda!", "Estou indo", "Recuar!", "Inimigo aqui!", "Obrigado", papel == "H" ? "Vou purgar este altar" : "Vou iniciar o ritual" };
+                        int f = e.Int("f"); var quem = g.actors.Find(x => x.id == e.Int("a")); if (f >= 0 && f < falas.Length) Feed((quem != null ? quem.name : "Aliado") + ": " + falas[f], papel == "H" ? "h" : "c");
+                    }
+                    break;
                 case "doom": som.Tocar("doom"); break;
                 case "sealed": som.Tocar("sealed"); break;
             }

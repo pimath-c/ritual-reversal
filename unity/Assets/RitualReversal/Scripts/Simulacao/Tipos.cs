@@ -89,6 +89,7 @@ namespace RitualReversal.Simulacao
         public bool temYaw = true, temPitch = true, temViewT = true; // o JS só troca o valor quando ele veio na mensagem
     }
     public class Alerta : Ponto { public double t; }
+    public class Pedido : Ponto { public string k; public double ate, chegou; public int n; }
     public class RastroAlvo : Ponto { public double ate; public string k; }
     public class VigiaPt : Ponto { public int i; }
     public class Vigia : Ponto { public double t; }
@@ -101,6 +102,7 @@ namespace RitualReversal.Simulacao
         public Dictionary<string, double> ignora; public string progKey; public double melhor, progT, progX, progZ;
         public RastroAlvo rastro; public VigiaPt vigiaPt; public Vigia vigia; public double esperando; public int? esperaAltar;
         public int? decoyAlvo; public double decoyT, decoyPrazo; public int chamarizes; public double chamarizT, emperrado;
+        public Pedido pedido; // ping de um humano da equipe
         public bool Ignorado(string k, double t) { double v; return ignora != null && ignora.TryGetValue(k, out v) && v > t; }
         public void Ignorar(string k, double ate) { if (ignora == null) ignora = new Dictionary<string, double>(); ignora[k] = ate; }
     }
@@ -179,5 +181,6 @@ namespace RitualReversal.Simulacao
         public int momento; public List<PontoNoite> pontos = new List<PontoNoite>(); public List<Sal> sal = new List<Sal>(); public List<double> realocar = new List<double>();
         public Dictionary<string, List<Tarefa>> tarefas = new Dictionary<string, List<Tarefa>> { { "H", new List<Tarefa>() }, { "C", new List<Tarefa>() } };
         public List<Rastro> rastros = new List<Rastro>(); public List<Pegada> pegadas = new List<Pegada>();
+        public int pedidos;
     }
 }

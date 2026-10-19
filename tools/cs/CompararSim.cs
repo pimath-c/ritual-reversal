@@ -75,6 +75,7 @@ static class CompararSim
             Sim.Act(g, "eu", new Acao { type = "comprar", npc = n.id, item = n.vende[(int)Math.Floor(r() * n.vende.Count)] });
         }
         if (r() < .01) { string k = new[] { "ponto", "altar", "inimigo" }[(int)Math.Floor(r() * 3)]; double px = m.x + (r() - .5) * 40, pz = m.z + (r() - .5) * 40; int pi = (int)Math.Floor(r() * 7) - 1; Sim.Act(g, "eu", new Acao { type = "ping", x = px, z = pz, k = k, i = pi }); }
+        if (r() < .006) { int f = (int)Math.Floor(r() * 7) - 1; Sim.Act(g, "eu", new Acao { type = "fala", i = f }); }
         Sim.MoveHuman(g, m, new Entrada { mx = mx, mz = mz, sp = sp, yaw = yaw, pitch = pitch, fire = fire, use = use, use2 = use2, c = D.c.Copia(), viewT = g.t - .05 }, dt); Sim.Step(g, dt);
     }
     static int Main(string[] args)

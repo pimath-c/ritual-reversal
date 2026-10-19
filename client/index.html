@@ -70,6 +70,11 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
   -webkit-mask:radial-gradient(circle, transparent 60%, #000 61%); filter:drop-shadow(0 0 6px rgba(230,40,60,.9)); transition:opacity 1.1s linear; }
 #habNota{ position:absolute; left:50%; top:calc(50% + 62px); transform:translateX(-50%); font-family:var(--serif); font-size:21px; background:rgba(8,9,11,.8); padding:4px 14px; border-left:2px solid currentColor; text-shadow:0 1px 2px #000; opacity:0; transition:opacity .5s; white-space:nowrap; }
 #habNota.on{ opacity:1; transition:none; }
+/* frases rápidas */
+#falas{ position:absolute; left:50%; top:calc(50% + 90px); transform:translateX(-50%); display:none; flex-direction:column; gap:3px; min-width:250px; padding:8px 10px; background:rgba(8,9,11,.86); border:1px solid rgba(232,224,208,.18); pointer-events:auto; }
+#falas.on{ display:flex; } #falas small{ font-size:12px; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; margin-bottom:2px; }
+#falas button{ text-align:left; font-family:var(--cond); font-size:16px; color:var(--bone); background:none; border:0; padding:3px 4px; cursor:pointer; } #falas button:hover{ color:var(--gold-hi); }
+#falas kbd{ font-family:var(--cond); font-weight:700; color:var(--gold-hi); border:1px solid #4a525c; padding:0 5px; margin-right:8px; }
 /* dicas da primeira noite */
 #dica{ position:absolute; right:26px; top:340px; width:300px; padding:9px 14px 10px; font-size:15px; line-height:1.35; color:#ddd3c2; background:rgba(8,9,11,.82); border-left:2px solid var(--gold); opacity:0; transform:translateX(16px); transition:opacity .5s, transform .5s; pointer-events:none; }
 #dica.on{ opacity:1; transform:none; } #dica small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:2px; }
@@ -316,7 +321,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
   <div id="feed"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div>
-  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="atordoado"></div>
+  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="falas"></div><div id="atordoado"></div>
   <div id="interact"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/><circle id="ring" cx="23" cy="23" r="19" fill="none" stroke="#f3d58e" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" transform="rotate(-90 23 23)"/></svg><div class="lbl" id="interactLbl"></div><div class="lbl" id="interactLbl2"></div></div>
   <div id="race" class="plate">
     <div class="t" id="raceName">Abside</div>
@@ -344,7 +349,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
     <button class="tq h mini" data-a="sensor" id="tqSens">Sensor</button>
     <button class="tq h mini" data-a="flare" id="tqFlare">Flare</button>
     <button class="tq mini" data-a="sprint" id="tqCorre">Correr</button>
-    <div id="tqTopo"><button class="tq mini" data-a="ping" id="tqPing">Marcar</button><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" id="tqPausa">Pausa</button></div>
+    <div id="tqTopo"><button class="tq mini" data-a="ping" id="tqPing">Marcar</button><button class="tq mini" data-a="falas" id="tqFalas">Frases</button><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" id="tqPausa">Pausa</button></div>
   </div>
 </div>
 <div id="girar"><div>Gire o aparelho para jogar deitado</div></div>
@@ -1723,7 +1728,7 @@ const myRole=()=>{ const s=mySlot(); return s?Sim.roleOf(V,s.team):null; };
 function sendAct(a){ if(MODE==='local') Sim.act(game,'local',a); else if(ws) ws.send(JSON.stringify({t:'act',a})); SFX.click(); }
 function evVisible(e,role,meId){
   if(e.type==='feed'&&e.team&&e.team!==role) return false;
-  if(e.type==='ping'&&e.team!==role) return false;
+  if((e.type==='ping'||e.type==='fala')&&e.team!==role) return false;
   if(e.to!=null&&e.to!==meId) return false;
   if((e.type==='sensor'||e.type==='evp'||e.type==='blind'||e.type==='stun')&&e.a!==meId) return false;
   if(e.type==='presage'&&role!=='H') return false;
@@ -1731,8 +1736,8 @@ function evVisible(e,role,meId){
 }
 
 // ================= INPUT =================
-const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',map:'Tab',ping:'KeyZ'};
-const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',map:'Planta da catedral',ping:'Marcar para a equipe'};
+const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',map:'Tab',ping:'KeyZ',falas:'KeyV'};
+const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',map:'Planta da catedral',ping:'Marcar para a equipe',falas:'Frases rápidas'};
 const KEYNAMES={Space:'Espaço',ShiftLeft:'Shift esq.',ShiftRight:'Shift dir.',ControlLeft:'Ctrl esq.',ControlRight:'Ctrl dir.',AltLeft:'Alt esq.',AltRight:'Alt dir.',Tab:'Tab',Enter:'Enter',Backquote:'`',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',CapsLock:'CapsLock',
   Mouse0:'Botão esq.',Mouse1:'Botão meio',Mouse2:'Botão dir.',Mouse3:'Mouse 4',Mouse4:'Mouse 5'};
 const keyLabel=c=>KEYNAMES[c]||(c||'').replace(/^Key/,'').replace(/^Digit/,'').replace(/^Numpad/,'Num ')||'—';
@@ -1776,6 +1781,8 @@ function pressed(code,e){
   if(SET.binds.flare===code) C.g++;
   if(SET.binds.reload===code) C.r++;
   if(SET.binds.ping===code) fazerPing();
+  if(SET.binds.falas===code){ FL.aberto=!FL.aberto; FL.t=4; desenharFalas(); }
+  if(FL.aberto&&/^Digit[1-6]$/.test(code)){ falar(+code.slice(5)-1); }
   if(SET.binds.abil===code){ const m=me(); if(m&&m.st==='alive'){ if(m.stunT>0) notaHab('Atordoado: não dá para usar agora','var(--muted)');
       else if(m.abilCd>0){ notaHab(`${FEITICOS[m.feitico].nome} recarregando: ${Math.ceil(m.abilCd)} s`,'var(--muted)'); SFX.vazio(); } } C.ab++; }
   if(SET.binds.fire===code) mouseL=true;
@@ -1931,6 +1938,7 @@ function handleEvents(list,online){
       case 'burst': particulas(e.x,e.y,e.z,18,0xb050ff,3,.5,3,.8); particulas(e.x,e.y,e.z,8,0xff4a70,1.5,.7,1,.3); clarao(e.x,e.y,e.z,0xb050ff,2.2); SFX.estouro(e.x,e.z); legenda('estouro',e.x,e.z); break;
       case 'reload': if(e.a===id) SFX.reload(null,null); else { SFX.reload(e.x,e.z); legenda('reload',e.x,e.z); } break;
       case 'ping': receberPing(e); break;
+      case 'fala': receberFala(e); break;
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
       case 'sensor': sensorV=e.v; sensorShowT=5; SFX.ping(e.v); break;
       case 'evp': SFX.whisper(e.x,e.z); legenda('evp',e.x,e.z); break;
@@ -2101,6 +2109,18 @@ function fazerPing(){ const m=me(); if(!m||!V||V.phase!=='play'||m.st==='dead') 
     if(!Sim.segClear(P.x,P.z,P.x+ux*h,P.z+uz*h,0,Sim.TALL)){ let a=0,b=h; for(let k=0;k<12;k++){ const c=(a+b)/2; if(Sim.segClear(P.x,P.z,P.x+ux*c,P.z+uz*c,0,Sim.TALL)) a=c; else b=c; } h=Math.max(0,a-.4); }
     alvo={k:'ponto',x:P.x+ux*h,z:P.z+uz*h,i:-1}; }
   sendAct({type:'ping',x:+alvo.x.toFixed(2),z:+alvo.z.toFixed(2),k:alvo.k,i:alvo.i}); }
+// frases rápidas: V abre a lista, 1 a 6 escolhe (ou clique); só a própria equipe ouve
+const FALAS=['Preciso de ajuda!','Estou indo','Recuar!','Inimigo aqui!','Obrigado'], FALA6={H:'Vou purgar este altar',C:'Vou iniciar o ritual'};
+const FL={aberto:false,t:0};
+function textoFala(f,team){ return f===5?FALA6[team]||FALA6.H:FALAS[f]||''; }
+function desenharFalas(){ const el=$('#falas'); if(!el) return; const m=me(); if(!FL.aberto||!m){ el.classList.remove('on'); return; }
+  el.innerHTML=`<small>Frases para a equipe</small>`+[0,1,2,3,4,5].map(f=>`<button data-f="${f}"><kbd>${f+1}</kbd>${esc(textoFala(f,m.team))}</button>`).join('');
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>falar(+b.dataset.f)); el.classList.add('on'); }
+function falar(f){ FL.aberto=false; desenharFalas(); sendAct({type:'fala',i:f}); }
+function receberFala(e){ const quem=V.actors.find(a=>a.id===e.a), nome=quem?quem.name:'Aliado', txt=textoFala(e.f,e.team);
+  feed(`${nome}: ${txt}`,myRole()==='H'?'h':'c'); sfxTone(null,null,1,660,740,.09,'triangle',.14);
+  if(e.f===0||e.f===3){ for(let i=PINGS.length-1;i>=0;i--) if(PINGS[i].a===e.a) PINGS.splice(i,1); PINGS.push({id:++pingN,a:e.a,x:e.x,z:e.z,k:'fala',txt,nome,t:8}); BUS.pings=PINGS; }
+  if(quem&&quem.cid!==meCid) legenda('fala'+e.a,e.x,e.z,`${nome}: ${txt}`,'',1e9); }
 function receberPing(e){ const quem=V.actors.find(a=>a.id===e.a), nome=quem?quem.name:'Aliado', A=e.k==='altar'?V.altars[e.i]:null;
   const txt=e.k==='altar'&&A?`Altar ${A.name}`:e.k==='inimigo'?'Inimigo visto':'Aqui';
   for(let i=PINGS.length-1;i>=0;i--) if(PINGS[i].a===e.a) PINGS.splice(i,1); // um ping por jogador
@@ -2245,7 +2265,7 @@ function atualizarMarcas(m){
       else marcador('a'+a.id,x,2.35,z,`${esc(a.name)}<b></b>`,m.team==='C'?'cult':'',false); }
     for(const n of NPCS){ const d=dm(n.x,n.z); if(d<14&&(!n.time||n.time===m.team)) marcador('n'+n.id,n.x,2.3,n.z,`${esc(n.nome[0].toUpperCase()+n.nome.slice(1))}<small>mercador</small><b></b>`,'npc',false); }
     if(role==='H') for(const a of V.actors){ if(a.team==='C'&&a.revelT>0&&a.st==='alive'){ const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z; marcador('r'+a.id,x,2.4,z,`${esc(a.name)}<small>denunciado pelo sal</small><b></b>`,'caido',true); } }
-    for(const p of PINGS){ const d=dm(p.x,p.z); marcador('pg'+p.id,p.x,p.k==='altar'?3.6:p.k==='inimigo'?2.2:.6,p.z,`${esc(p.txt)}<small>${esc(p.nome)} · ${d} m</small><b></b>`,'ping',true); }
+    for(const p of PINGS){ const d=dm(p.x,p.z); marcador('pg'+p.id,p.x,p.k==='altar'?3.6:p.k==='inimigo'||p.k==='fala'?2.2:.6,p.z,`${esc(p.txt)}<small>${esc(p.nome)} · ${d} m</small><b></b>`,'ping',true); }
     for(const A of V.altars){ if(A.state!=='active') continue; if(role==='H'&&!A.localized) continue;
       marcador('o'+A.i,A.x,3.2,A.z,`${A.grande?'Grande Ritual':'Ritual'} em ${esc(A.name)}<small>${dm(A.x,A.z)} m</small><b></b>`,'obj',true); }
   }
@@ -2709,7 +2729,7 @@ function tick(now){
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
-    updateHUD(dt,m); atualizarPings(dt); atualizarDicas(dt,m); atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
+    updateHUD(dt,m); atualizarPings(dt); atualizarDicas(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
     if(vmH){ vmH.visible=false; vmC.visible=false; } // fora da partida, nada de arma na mão

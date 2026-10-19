@@ -56,6 +56,7 @@ function roteiro(Sim,g,D,r){
   if(g.t>D.compraT){ D.compraT=g.t+10; let n=null, nd=1e9; for(const x of Sim.NPCS){ const d=Math.hypot(x.x-m.x,x.z-m.z); if(d<nd){ nd=d; n=x; } }
     Sim.act(g,'eu',{type:'comprar',npc:n.id,item:n.vende[Math.floor(r()*n.vende.length)]}); }
   if(r()<.01){ const k=['ponto','altar','inimigo'][Math.floor(r()*3)], px=m.x+(r()-.5)*40, pz=m.z+(r()-.5)*40, pi=Math.floor(r()*7)-1; Sim.act(g,'eu',{type:'ping',x:px,z:pz,k,i:pi}); }
+  if(r()<.006){ const f=Math.floor(r()*7)-1; Sim.act(g,'eu',{type:'fala',i:f}); }
   Sim.moveHuman(g,m,{mx,mz,sp,yaw,pitch,fire,use,use2,c:Object.assign({},D.c),viewT:g.t-.05},dt); Sim.step(g,dt);
 }
 

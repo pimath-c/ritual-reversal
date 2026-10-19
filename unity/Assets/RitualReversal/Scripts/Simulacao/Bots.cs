@@ -103,6 +103,21 @@ namespace RitualReversal.Simulacao
             b.hold.t += dt; if (b.hold.t >= time) { DoAction(g, b, ctx); b.hold = new Hold(); }
         }
         static bool InEnemySpawn(Ator b, Ponto p) { var s = Mapa.SPAWN[b.team == "H" ? "C" : "H"]; return JS.Hypot(p.x - s.x, p.z - s.z) < CFG.spawnSafe + 2; }
+        // Ping de um humano da equipe: o bot aliado vai até lá (30 s; 12 s para um inimigo marcado). Num ponto ou inimigo,
+        // fica vigiando 6 s ao chegar; num altar, volta ao fluxo normal (purgar, consagrar, canalizar) assim que chega.
+        static bool BotAtendePing(Jogo g, Ator b, double dt, bool fighting)
+        {
+            var P = b.ai.pedido; if (P == null) return false;
+            if (g.t > P.ate || b.st != "alive") { b.ai.pedido = null; return false; }
+            if (fighting) return false;
+            if (JS.Hypot(P.x - b.x, P.z - b.z) < 3.2)
+            {
+                if (P.k == "altar") { b.ai.pedido = null; return false; }
+                if (P.chegou < 0) P.chegou = g.t; if (g.t - P.chegou > 6) { b.ai.pedido = null; return false; }
+                b.moving = false; return true;
+            }
+            SetGoal(g, b, P.x, P.z, "pedido" + P.n); BotMove(g, b, dt, 1.1); return true;
+        }
         static bool BotHelpDowned(Jogo g, Ator b, double dt, bool fighting)
         {
             var ally = g.actors.FirstOrDefault(o => o != b && o.team == b.team && o.st == "down" && Dist(o, b) < 20);
@@ -167,6 +182,7 @@ namespace RitualReversal.Simulacao
             }
             if (b.feitico == "sal" && b.abilCd <= 0) { var As = g.altars.FirstOrDefault(A => (A.state == "active" || g.know[A.i] == "confirmado") && Dist(b, A) < 7); if (As != null) UseAbility(g, b); }
             if (BotHelpDowned(g, b, dt, fighting)) return;
+            if (BotAtendePing(g, b, dt, fighting)) return;
             if (!fighting && BotNoite(g, b, dt)) return;
             var act = JS.Primeiro(g.altars.Where(A => A.state == "active" && A.localized).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
             if (act != null)
@@ -238,6 +254,7 @@ namespace RitualReversal.Simulacao
                 if (t != null) { b.yaw = JS.Atan2(-(t.x - b.x), -(t.z - b.z)); UseAbility(g, b); }
             }
             if (BotHelpDowned(g, b, dt, fighting)) return;
+            if (BotAtendePing(g, b, dt, fighting)) return;
             if (!fighting && BotNoite(g, b, dt)) return;
             var act = JS.Primeiro(g.altars.Where(A => A.state == "active" && A.chosen).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
             if (act != null)

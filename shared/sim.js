@@ -498,7 +498,14 @@ function act(g,cid,a){
   if(a.type==='ping'&&g.phase==='play'){ const me=g.actors.find(b=>b.cid===cid); if(!me||me.st==='dead'||g.t-me.pingT<1) return;
     const x=+a.x, z=+a.z; if(!isFinite(x)||!isFinite(z)) return; me.pingT=g.t;
     const k=a.k==='altar'||a.k==='inimigo'||a.k==='perigo'?a.k:'ponto';
-    ev(g,{type:'ping',a:me.id,team:me.team,x:r2(clamp(x,-HALF.x,HALF.x)),z:r2(clamp(z,-HALF.z,HALF.z)),k,i:k==='altar'?clamp(a.i|0,0,5):-1}); }
+    const px=r2(clamp(x,-HALF.x,HALF.x)), pz=r2(clamp(z,-HALF.z,HALF.z));
+    ev(g,{type:'ping',a:me.id,team:me.team,x:px,z:pz,k,i:k==='altar'?clamp(a.i|0,0,5):-1});
+    g.pedidos=(g.pedidos||0)+1; for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human&&o.st==='alive') o.ai.pedido={x:px,z:pz,k,ate:g.t+(k==='inimigo'?12:30),chegou:-1,n:g.pedidos}; }
+  // frases rápidas para a equipe (0 ajuda, 1 indo, 2 recuar, 3 inimigo aqui, 4 obrigado, 5 purgar/iniciar); o bot aliado atende a ajuda e o recuo
+  if(a.type==='fala'&&g.phase==='play'){ const me=g.actors.find(b=>b.cid===cid), f=a.i|0; if(!me||me.st==='dead'||f<0||f>5||g.t-me.pingT<1) return; me.pingT=g.t;
+    ev(g,{type:'fala',a:me.id,team:me.team,f,x:r2(me.x),z:r2(me.z)});
+    if(f===0||f===3){ g.pedidos=(g.pedidos||0)+1; for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human&&o.st==='alive') o.ai.pedido={x:r2(me.x),z:r2(me.z),k:'ponto',ate:g.t+20,chegou:-1,n:g.pedidos}; }
+    if(f===2) for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human) o.ai.pedido=null; }
 }
 function dropHuman(g,cid){
   const s=g.slots.find(s=>s.cid===cid); if(!s) return; s.cid=null;
@@ -1028,6 +1035,13 @@ function botHelpDowned(g,b,dt,fighting){
   if(foe&&!fighting){ if(dist(b,foe)<1.5){ b.moving=false; botHold(g,b,'exe'+foe.id,CFG.execute,dt,{type:'execute',b:foe.id}); return true; } setGoal(g,b,foe.x,foe.z,'ex'+foe.id); botMove(g,b,dt,1.05); return true; }
   return false;
 }
+// Ping de um humano da equipe: o bot aliado vai até lá (30 s; 12 s para um inimigo marcado). Num ponto ou inimigo,
+// fica vigiando 6 s ao chegar; num altar, volta ao fluxo normal (purgar, consagrar, canalizar) assim que chega.
+function botAtendePing(g,b,dt,fighting){ const P=b.ai.pedido; if(!P) return false;
+  if(g.t>P.ate||b.st!=='alive'){ b.ai.pedido=null; return false; } if(fighting) return false;
+  if(Math.hypot(P.x-b.x,P.z-b.z)<3.2){ if(P.k==='altar'){ b.ai.pedido=null; return false; }
+    if(P.chegou<0) P.chegou=g.t; if(g.t-P.chegou>6){ b.ai.pedido=null; return false; } b.moving=false; return true; }
+  setGoal(g,b,P.x,P.z,'pedido'+P.n); botMove(g,b,dt,1.1); return true; }
 function botNoite(g,b,dt){ const ai=b.ai, role=b.team;
   // compras: Cultista sem reagente compra; Caçador com pouca munição compra
   const quer=role==='C'?(b.reag===0&&b.obolos>=ITENS.reagente.preco&&'reagente'):(b.reserve<16&&b.obolos>=ITENS.municao.preco&&'municao');
@@ -1054,6 +1068,7 @@ function aiHunter(g,b,dt){
     if(b.feitico==='purificacao'&&enemiesOf(g,b).some(e=>e.st==='alive'&&dist(b,e)<5.5&&losClear(b,e))) useAbility(g,b); }
   if(b.feitico==='sal'&&b.abilCd<=0){ const A=g.altars.find(A=>(A.state==='active'||g.know[A.i]==='confirmado')&&dist(b,A)<7); if(A) useAbility(g,b); }
   if(botHelpDowned(g,b,dt,fighting)) return;
+  if(botAtendePing(g,b,dt,fighting)) return;
   if(!fighting&&botNoite(g,b,dt)) return;
   const act=g.altars.filter(A=>A.state==='active'&&A.localized).sort((x,y)=>dist(b,x)-dist(b,y))[0];
   if(act){
@@ -1093,6 +1108,7 @@ function aiCult(g,b,dt){
   if(b.feitico==='empurrao'&&b.abilCd<=0){ const t=enemiesOf(g,b).find(e=>e.st==='alive'&&dist(b,e)<3.4&&(e.sealing>=0||ai.target===e));
     if(t){ b.yaw=Math.atan2(-(t.x-b.x),-(t.z-b.z)); useAbility(g,b); } }
   if(botHelpDowned(g,b,dt,fighting)) return;
+  if(botAtendePing(g,b,dt,fighting)) return;
   if(!fighting&&botNoite(g,b,dt)) return;
   const act=g.altars.filter(A=>A.state==='active'&&A.chosen).sort((x,y)=>dist(b,x)-dist(b,y))[0];
   if(act){ if(b.feitico==='runa'&&b.abilCd<=0&&inCircle(b,act)) useAbility(g,b);
