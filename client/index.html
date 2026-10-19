@@ -53,7 +53,9 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #feed div.c{ border-left-color:var(--crimson-hi); } #feed div.h{ border-left-color:var(--gold); } #feed div.big{ font-family:var(--serif); font-size:20px; }
 #buffs{ position:absolute; top:168px; left:50%; transform:translateX(-50%); font-size:15px; text-align:center; color:var(--gold-hi); text-shadow:0 1px 2px #000; }
 #cross{ position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; }
-#cross::before,#cross::after{ content:''; position:absolute; background:rgba(232,224,208,.85); }
+#cross::before,#cross::after{ content:''; position:absolute; background:var(--mira,rgba(232,224,208,.85)); }
+#cross.ponto::before,#cross.ponto::after{ display:none; } #cross.ponto i{ left:8px; top:8px; width:6px; height:6px; border-radius:50%; background:var(--mira,#e8e0d0); }
+#cross.circulo::before,#cross.circulo::after{ display:none; } #cross.circulo i{ left:3px; top:3px; width:16px; height:16px; border-radius:50%; background:none; border:2px solid var(--mira,#e8e0d0); }
 #cross::before{ left:10px; top:3px; width:2px; height:16px; } #cross::after{ top:10px; left:3px; height:2px; width:16px; }
 #cross i{ position:absolute; left:8px; top:8px; width:6px; height:6px; background:var(--bg); }
 #marks{ position:absolute; inset:0; overflow:hidden; }
@@ -1697,8 +1699,14 @@ const C={q:0,f:0,g:0,r:0,ab:0};
 const SET={sens:1,vol:.8,fov:72,qual:QUAL0,autoRes:true,toque:TOQUE_DISP};
 try{ Object.assign(SET,JSON.parse(localStorage.getItem('rr-cfg')||'{}')); }catch(e){}
 function saveSet(){ try{ localStorage.setItem('rr-cfg',JSON.stringify(SET)); }catch(e){} }
+function aplicarMira(){ const c=$('#cross'); if(!c) return; c.className=SET.mira&&SET.mira!=='cruz'?SET.mira:''; c.style.setProperty('--mira',SET.miraCor||'rgba(232,224,208,.85)'); }
+// sair da noite local, ou da sala online, de volta ao menu
+function sairParaMenu(msg){ AV.forEach((O,i)=>ritualLoopStop(i)); grandeLoopStop(); chuvaSom(false); if(ws){ const w=ws; ws=null; try{ w.close(); }catch(e){} } try{ sessionStorage.removeItem('rr-sala'); }catch(e){}
+  MODE=null; game=null; V=null; NET.lobby=null; NET.snaps=[]; NET.pred=null; lojaAberta=null; show('hud',false); atualizarMarcas(null); limparLegendas(); unlock(); showTitle(msg||''); }
 function applySet(){
   if(AU.master) AU.master.gain.value=SET.vol;
+  renderer.toneMappingExposure=1.25*(SET.brilho||1);
+  aplicarMira();
   camera.fov=SET.fov; camera.updateProjectionMatrix();
   const n=nivelQ(SET.qual); PERF.nivelAtual=n;
   RES.base=Math.min(window.devicePixelRatio||1,[.75,1,1.25,1.5][n]); if(SET.autoRes===false) RES.k=1;
@@ -2316,7 +2324,7 @@ function updateHUD(dt,m){
     else if(m.fervor<CFG.sigilCusto) dica='Fervor esgotado: pare de conjurar um instante para recuperar'; }
   const ah=$('#ammoHint'); if(ah.textContent!==dica) ah.textContent=dica;
   FX.spread=Math.max(0,FX.spread-dt*2.2); const mov=(ULT_INP&&(ULT_INP.mx||ULT_INP.mz))?.35:0;
-  $('#cross').style.transform=`scale(${(1+FX.spread*.8+mov).toFixed(2)})`;
+  $('#cross').style.transform=`scale(${((1+FX.spread*.8+mov)*(SET.miraTam||1)).toFixed(2)})`;
   const bl=k=>MODE==='local'?Math.max(0,game.buff[k]-game.t):V.buff[k]; const bf=[]; if(role==='H'&&bl('ess')>0) bf.push(`Essência Profana: selamento a 125% (${Math.ceil(bl('ess'))} s)`); if(role==='C'&&bl('selo')>0) bf.push(`Selo de Luz: próximo ritual +10% (${Math.ceil(bl('selo'))} s)`); if(m.runeT>0) bf.push(`Runa ativa (${Math.ceil(m.runeT)} s)`);
   $('#buffs').textContent=bf.join('   ');
   hurtT=Math.max(0,hurtT-dt); hitT=Math.max(0,hitT-dt); blindT=Math.max(0,blindT-dt);
@@ -2439,8 +2447,8 @@ function lobbyScreen(){
   setScreen(key,`<h2 style="text-align:center">Sala</h2><p class="bigcode">${L.code}</p><p class="lede">Mande este código para seus amigos. Vagas sem jogador ficam com bots.</p>
     <div class="slots"><div class="slotcol a"><h3>Equipe A</h3>${L.slots.slice(0,2).map((s,i)=>slotBtn(s,i)).join('')}</div><div class="slotcol b"><h3>Equipe B</h3>${L.slots.slice(2).map((s,i)=>slotBtn(s,i+2)).join('')}</div></div>
     <p class="fine">${UMA_NOITE()?'A Equipe A caça e a Equipe B celebra.':'A Equipe A caça na rodada 1 e celebra na rodada 2.'} Clique numa vaga de bot para trocar de lugar.</p>
-    <div class="btnrow">${isHost?'<button class="go" id="bStart">Começar a partida</button>':'<span class="wait">Aguardando o anfitrião começar…</span>'}</div>`,
-  ()=>{ scrBody.querySelectorAll('.slot').forEach(b=>b.onclick=()=>ws.send(JSON.stringify({t:'slot',i:+b.dataset.i}))); const s=$('#bStart'); if(s) s.onclick=()=>ws.send(JSON.stringify({t:'start'})); });
+    <div class="btnrow">${isHost?'<button class="go" id="bStart">Começar a partida</button>':'<span class="wait">Aguardando o anfitrião começar…</span>'}<button class="go ghost" id="bSairSala">Sair da sala</button></div>`,
+  ()=>{ $('#bSairSala').onclick=()=>sairParaMenu(); scrBody.querySelectorAll('.slot').forEach(b=>b.onclick=()=>ws.send(JSON.stringify({t:'slot',i:+b.dataset.i}))); const s=$('#bStart'); if(s) s.onclick=()=>ws.send(JSON.stringify({t:'start'})); });
 }
 function timerText(){ return V.timers?` (${Math.ceil(Math.max(0,V.phaseT))} s)`:''; }
 function readyList(){ const hs=V.slots.filter(s=>s.cid); return hs.map(s=>`${esc(s.name)} ${V.ready[s.cid]?'✓':'…'}`).join('   '); }
@@ -2639,13 +2647,17 @@ function comoJogarScreen(){
 function openSettings(){ settingsOpen=true; backTo=screenKey; screenKey=''; }
 function settingsScreen(){
   const q=(id,v)=>`<button data-q="${v}" class="${SET.qual===v?'sel':''}">${id}</button>`;
-  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false),`<h2>Ajustes</h2>
+  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor,`<h2>Ajustes</h2>
     <div class="set"><label for="sSens">Sensibilidade do mouse</label><input id="sSens" type="range" min="20" max="300" step="5" value="${Math.round(SET.sens*100)}"><b id="vSens">${SET.sens.toFixed(2)}</b></div>
     <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" step="2" value="${Math.round(SET.vol*100)}"><b id="vVol">${Math.round(SET.vol*100)}</b></div>
     <div class="set"><label for="sFov">Campo de visão</label><input id="sFov" type="range" min="60" max="105" step="1" value="${SET.fov}"><b id="vFov">${SET.fov}</b></div>
     <div class="set"><label>Qualidade</label><div class="opts">${q('Alto','alto')}${q('Médio','medio')}${q('Baixo','baixo')}${q('Mínimo','minimo')}</div><b></b></div>
     <div class="set"><label>Resolução adaptativa</label><div class="opts"><button data-ar="1" class="${SET.autoRes!==false?'sel':''}">Ligada</button><button data-ar="0" class="${SET.autoRes===false?'sel':''}">Desligada</button></div><b></b></div>
     <div class="set"><label>Controles de toque</label><div class="opts"><button data-t="1" class="${SET.toque?'sel':''}">Ligados</button><button data-t="0" class="${!SET.toque?'sel':''}">Desligados</button></div><b></b></div>
+    <div class="set"><label for="sBri">Brilho</label><input id="sBri" type="range" min="60" max="180" step="5" value="${Math.round((SET.brilho||1)*100)}"><b id="vBri">${Math.round((SET.brilho||1)*100)}%</b></div>
+    <div class="set"><label>Mira</label><div class="opts">${[['cruz','Cruz'],['ponto','Ponto'],['circulo','Círculo']].map(([k,n])=>`<button data-mira="${k}" class="${(SET.mira||'cruz')===k?'sel':''}">${n}</button>`).join('')}</div><b></b></div>
+    <div class="set"><label>Cor da mira</label><div class="opts">${[['#e8e0d0','Osso'],['#7dff9a','Verde'],['#ffe066','Amarelo'],['#8ee8ff','Ciano']].map(([c,n])=>`<button data-mcor="${c}" class="${(SET.miraCor||'#e8e0d0')===c?'sel':''}" style="color:${c}">${n}</button>`).join('')}</div><b></b></div>
+    <div class="set"><label for="sMt">Tamanho da mira</label><input id="sMt" type="range" min="60" max="180" step="10" value="${Math.round((SET.miraTam||1)*100)}"><b id="vMt">${Math.round((SET.miraTam||1)*100)}%</b></div>
     <div class="set"><label>Dicas da primeira noite</label><div class="opts"><button data-dc="1" class="${SET.dicas!==false?'sel':''}">Ligadas</button><button data-dc="0" class="${SET.dicas===false?'sel':''}">Desligadas</button><button data-dc="r">Rever todas</button></div><b></b></div>
     <div class="set"><label>Legendas dos sons</label><div class="opts"><button data-lg="1" class="${SET.legendas!==false?'sel':''}">Ligadas</button><button data-lg="0" class="${SET.legendas===false?'sel':''}">Desligadas</button></div><b></b></div>
     <div class="set"><label>Movimento bruto do mouse</label><div class="opts"><button data-r="1" class="${SET.rawMouse!==false?'sel':''}">Ligado</button><button data-r="0" class="${SET.rawMouse===false?'sel':''}">Desligado</button></div><b></b></div>
@@ -2659,7 +2671,9 @@ function settingsScreen(){
     bind('#sVol','#vVol',v=>SET.vol=v/100,v=>Math.round(v));
     $('#sVol').onchange=()=>SFX.click();
     bind('#sFov','#vFov',v=>SET.fov=v,v=>v);
-    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
+    bind('#sBri','#vBri',v=>SET.brilho=v/100,v=>v+'%');
+    bind('#sMt','#vMt',v=>SET.miraTam=v/100,v=>v+'%');
+    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.bindrow').forEach(b=>b.onclick=()=>{ capturing=b.dataset.a; screenKey=''; });
     $('#sDef').onclick=()=>{ SET.binds=Object.assign({},DEF_BIND); saveSet(); toolsKey=''; screenKey=''; };
     $('#sBack').onclick=()=>{ settingsOpen=false; screenKey=''; };
@@ -2675,8 +2689,8 @@ function syncScreens(){
   if(!V) return;
   const ph=V.phase;
   if(ph==='play'&&lojaAberta){ lojaScreen(); return; }
-  if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause'+TQ.ativo,'<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">'+(TQ.ativo?'Toque':'Clique')+' para voltar ao jogo.</p><div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; }); }
-    else if(MODE==='online'&&!locked){ setScreen('olock','<h2 style="text-align:center">Clique para jogar</h2><p style="text-align:center;margin:0 auto">No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado.</p><div class="btnrow"><button class="go" id="bRes">Jogar</button><button class="go ghost" id="bSet2">Ajustes</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; }); }
+  if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause'+TQ.ativo,'<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">'+(TQ.ativo?'Toque':'Clique')+' para voltar ao jogo.</p><div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button><button class="go ghost" id="bSair">Abandonar a noite</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; $('#bSair').onclick=()=>{ if(confirm('Abandonar esta noite e voltar ao menu?')) sairParaMenu(); }; }); }
+    else if(MODE==='online'&&!locked){ setScreen('olock','<h2 style="text-align:center">Clique para jogar</h2><p style="text-align:center;margin:0 auto">No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado.</p><div class="btnrow"><button class="go" id="bRes">Jogar</button><button class="go ghost" id="bSet2">Ajustes</button><button class="go ghost" id="bSair">Sair da sala</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; $('#bSair').onclick=()=>{ if(confirm('Sair da sala? Um bot assume o seu lugar.')) sairParaMenu(); }; }); }
     else hideScreen(); return; }
   if(ph==='pick') pickScreen(); else if(ph==='intro') introScreen(); else if(ph==='summary') summaryScreen(); else if(ph==='final'){ perfilFim(); finalScreen(); }
 }
