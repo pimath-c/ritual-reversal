@@ -75,7 +75,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 /* frases rápidas */
 #falas{ position:absolute; left:50%; top:calc(50% + 90px); transform:translateX(-50%); display:none; flex-direction:column; gap:3px; min-width:250px; padding:8px 10px; background:rgba(8,9,11,.86); border:1px solid rgba(232,224,208,.18); pointer-events:auto; }
 #falas.on{ display:flex; } #falas small{ font-size:12px; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; margin-bottom:2px; }
-#falas button{ text-align:left; font-family:var(--cond); font-size:16px; color:var(--bone); background:none; border:0; padding:3px 4px; cursor:pointer; } #falas button:hover{ color:var(--gold-hi); }
+#falas button{ text-align:left; font-family:var(--cond); font-size:16px; color:var(--bone); background:none; border:0; padding:3px 4px; cursor:pointer; } #falas button:hover,#falas button.sel{ color:var(--gold-hi); } #falas button.sel{ background:rgba(243,213,142,.1); }
 #falas kbd{ font-family:var(--cond); font-weight:700; color:var(--gold-hi); border:1px solid #4a525c; padding:0 5px; margin-right:8px; }
 /* dicas da primeira noite */
 #dica{ position:absolute; right:26px; top:340px; width:300px; padding:9px 14px 10px; font-size:15px; line-height:1.35; color:#ddd3c2; background:rgba(8,9,11,.82); border-left:2px solid var(--gold); opacity:0; transform:translateX(16px); transition:opacity .5s, transform .5s; pointer-events:none; }
@@ -1761,12 +1761,13 @@ let ignoreMoveUntil=0, lastMoveT=0;
 function lock(){
   if(AUTOTEST){ locked=true; return; }
   if(TQ.ativo){ locked=true; telaCheia(); return; }
+  if(PAD.ativo){ locked=true; return; } // com controle não há ponteiro para capturar
   const c=renderer.domElement; if(!c.requestPointerLock) return;
   ignoreMoveUntil=performance.now()+120;
   try{ const p=c.requestPointerLock({unadjustedMovement:SET.rawMouse!==false}); if(p&&p.catch) p.catch(()=>{ try{ c.requestPointerLock(); }catch(e){} }); }
   catch(e){ try{ c.requestPointerLock(); }catch(e2){} }
 }
-function unlock(){ if(TQ.ativo){ locked=false; TQ.soltar(); } if(document.pointerLockElement) document.exitPointerLock(); }
+function unlock(){ if(TQ.ativo||PAD.ativo){ locked=false; if(TQ.ativo) TQ.soltar(); } if(document.pointerLockElement) document.exitPointerLock(); }
 document.addEventListener('pointerlockchange',()=>{ locked=document.pointerLockElement===renderer.domElement; if(locked) ignoreMoveUntil=performance.now()+120; else { down.clear(); mouseL=false; } });
 renderer.domElement.addEventListener('click',()=>{ if(V&&V.phase==='play'&&!locked) lock(); });
 document.addEventListener('mousemove',e=>{
@@ -1848,10 +1849,41 @@ function setBind(acao,code){
   for(const k in SET.binds) if(k!==acao&&SET.binds[k]===code) SET.binds[k]=SET.binds[acao]; // troca, nunca deixa duas ações na mesma tecla
   SET.binds[acao]=code; saveSet(); toolsKey='';
 }
+// ================= CONTROLE (GAMEPAD) =================
+// Mapeamento padrão (Xbox/PlayStation): analógico esquerdo anda, direito olha; RT ataca, RB feitiço, LT ou L3 corre;
+// A interage, B transfere, X recarrega, Y lanterna, LB sensor, R3 marca (ping), cima abre as frases, baixo sinalizador,
+// Select planta, Start pausa. Nos menus: cima/baixo escolhe, A confirma, B volta.
+const PAD={ativo:false,mx:0,mz:0,ant:[],eixoAnt:0,repet:0};
+const PAD_BOTAO={0:'use',1:'use2',2:'reload',3:'lantern',4:'sensor',5:'abil',6:'sprint',7:'fire',8:'map',10:'sprint',11:'ping',13:'flare'};
+function lerControle(dt){ const gps=navigator.getGamepads?navigator.getGamepads():[]; let gp=null; for(const g of gps) if(g&&g.connected){ gp=g; break; }
+  if(!gp){ if(PAD.ativo){ PAD.ativo=false; PAD.mx=PAD.mz=0; } return; }
+  const b=i=>!!(gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>.5)), ax=i=>{ const v=gp.axes[i]||0; return Math.abs(v)<.18?0:Math.sign(v)*(Math.abs(v)-.18)/.82; };
+  const agora=gp.buttons.map((_,i)=>b(i)), novo=i=>agora[i]&&!PAD.ant[i], solto=i=>!agora[i]&&PAD.ant[i];
+  if(!PAD.ativo&&(agora.some(x=>x)||[0,1,2,3].some(i=>ax(i)!==0))) PAD.ativo=true;
+  if(!PAD.ativo){ PAD.ant=agora; return; }
+  const jogando=V&&V.phase==='play'&&locked&&!lojaAberta&&!settingsOpen;
+  if(jogando){
+    PAD.mx=ax(0); PAD.mz=ax(1); const lx=ax(2), ly=ax(3), k=2.8*SET.sens*dt;
+    LOOK.yaw-=Math.sign(lx)*lx*lx*k; LOOK.pitch=clamp(LOOK.pitch-Math.sign(ly)*ly*ly*k*.8,-1.45,1.45); VM.mdx+=lx*6; VM.mdy+=ly*6;
+    if(FL.aberto){ if(novo(12)){ FL.sel=((FL.sel||0)+5)%6; desenharFalas(); } if(novo(13)){ FL.sel=((FL.sel||0)+1)%6; desenharFalas(); } if(novo(0)){ falar(FL.sel||0); PAD.ant=agora; return; } if(novo(1)){ FL.aberto=false; desenharFalas(); PAD.ant=agora; return; } }
+    else if(novo(12)){ FL.aberto=true; FL.sel=0; FL.t=6; desenharFalas(); }
+    for(const i in PAD_BOTAO){ const code=SET.binds[PAD_BOTAO[i]]; if(!code) continue; if(novo(+i)) pressed(code); else if(solto(+i)) released(code); }
+    if(novo(9)) unlock(); }
+  else { PAD.mx=PAD.mz=0; for(const i in PAD_BOTAO){ const code=SET.binds[PAD_BOTAO[i]]; if(code&&PAD.ant[+i]) released(code); }
+    // menus: cima/baixo (ou analógico) passa pelos botões, A confirma, B volta, Start continua
+    const lista=[...document.querySelectorAll('#scr.on button:not([disabled]), #scr.on input')].filter(e=>e.offsetParent!==null);
+    const eixo=ax(1); let passo=0; if(novo(12)||(eixo<-.6&&PAD.eixoAnt>=-.6)) passo=-1; if(novo(13)||(eixo>.6&&PAD.eixoAnt<=.6)) passo=1;
+    if(lista.length&&passo){ let i=lista.indexOf(document.activeElement); i=i<0?0:(i+passo+lista.length)%lista.length; lista[i].focus(); }
+    if(novo(0)&&document.activeElement&&lista.includes(document.activeElement)) document.activeElement.click();
+    if(novo(1)){ if(settingsOpen){ settingsOpen=false; screenKey=''; } else if(lojaAberta) fecharLoja(); else if(comoJogarAberto){ comoJogarAberto=false; screenKey=''; } else if(perfilAberto){ perfilAberto=false; screenKey=''; } }
+    if(novo(9)&&V&&V.phase==='play') lock();
+    PAD.eixoAnt=eixo; }
+  PAD.ant=agora; }
 function readInput(dt){
   const act=V&&V.phase==='play'&&locked;
   let mx=0,mz=0; if(act){ if(held('fwd')) mz-=1; if(held('back')) mz+=1; if(held('left')) mx-=1; if(held('right')) mx+=1;
-    if(TQ.ativo){ mx=clamp(mx+TQ.mx,-1,1); mz=clamp(mz+TQ.mz,-1,1); } }
+    if(TQ.ativo){ mx=clamp(mx+TQ.mx,-1,1); mz=clamp(mz+TQ.mz,-1,1); }
+    if(PAD.ativo){ mx=clamp(mx+PAD.mx,-1,1); mz=clamp(mz+PAD.mz,-1,1); } }
   return {mx,mz,sp:act&&held('sprint'),yaw:LOOK.yaw,pitch:LOOK.pitch,fire:act&&held('fire'),use:act&&held('use'),use2:act&&held('use2'),c:{...C},dt,viewT:renderT()};
 }
 
@@ -2140,7 +2172,7 @@ const FALAS=['Preciso de ajuda!','Estou indo','Recuar!','Inimigo aqui!','Obrigad
 const FL={aberto:false,t:0};
 function textoFala(f,team){ return f===5?FALA6[team]||FALA6.H:FALAS[f]||''; }
 function desenharFalas(){ const el=$('#falas'); if(!el) return; const m=me(); if(!FL.aberto||!m){ el.classList.remove('on'); return; }
-  el.innerHTML=`<small>Frases para a equipe</small>`+[0,1,2,3,4,5].map(f=>`<button data-f="${f}"><kbd>${f+1}</kbd>${esc(textoFala(f,m.team))}</button>`).join('');
+  el.innerHTML=`<small>Frases para a equipe</small>`+[0,1,2,3,4,5].map(f=>`<button data-f="${f}" class="${PAD.ativo&&(FL.sel||0)===f?'sel':''}"><kbd>${f+1}</kbd>${esc(textoFala(f,m.team))}</button>`).join('');
   el.querySelectorAll('button').forEach(b=>b.onclick=()=>falar(+b.dataset.f)); el.classList.add('on'); }
 function falar(f){ FL.aberto=false; desenharFalas(); sendAct({type:'fala',i:f}); }
 function receberFala(e){ const quem=V.actors.find(a=>a.id===e.a), nome=quem?quem.name:'Aliado', txt=textoFala(e.f,e.team);
@@ -2664,6 +2696,7 @@ function settingsScreen(){
     <p class="fine">Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. Texturas, partículas e árvores de fundo mudam ao recarregar a página. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
     <h3>Controles</h3><div class="binds">${Object.keys(BIND_LABEL).map(a=>`<button class="bindrow ${capturing===a?'cap':''}" data-a="${a}"><span>${BIND_LABEL[a]}</span><kbd>${capturing===a?'aperte…':kb(a)}</kbd></button>`).join('')}</div>
     <p class="fine">Clique numa linha e aperte a tecla ou o botão do mouse. Esc cancela. Se a tecla já estiver em uso, as duas ações trocam de lugar.</p>
+    <h3>Com controle</h3><p class="fine" style="text-align:left!important">Analógico esquerdo anda, direito olha (a sensibilidade é a mesma do mouse). RT ataca, RB feitiço, LT ou clique no analógico esquerdo corre. A interage, B transfere, X recarrega, Y lanterna, LB sensor, clique no analógico direito marca (ping), direcional para cima abre as frases (cima/baixo escolhe, A envia), para baixo sinalizador. Select mostra a planta, Start pausa. Nos menus: cima/baixo escolhe, A confirma, B volta.</p>
     <div class="btnrow"><button class="go ghost" id="sDef">Restaurar padrão</button><button class="go" id="sBack">Voltar</button></div>`,
   ()=>{
     const bind=(id,lab,fn,fmt)=>{ const el=$(id); el.oninput=()=>{ fn(+el.value); $(lab).textContent=fmt(+el.value); applySet(); saveSet(); }; };
@@ -2704,6 +2737,7 @@ let last=performance.now(), lastPhase='', bellT=45, hallT=8, heartT=0, stepT=0, 
 function tick(now){
   requestAnimationFrame(tick);
   const raw=Math.max(.001,(now-last)/1000), dt=Math.min(.05,raw); last=now; fpsEMA=fpsEMA*.92+(1/raw)*.08; medirRes(raw);
+  try{ lerControle(dt); }catch(e){ PAD.ativo=false; }
   if(MODE==='local'&&game){
     paused=game.phase==='play'&&!locked&&!lojaAberta;
     const m=me(); const inp=readInput(dt); ULT_INP=inp;
