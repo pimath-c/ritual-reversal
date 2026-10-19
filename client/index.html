@@ -172,6 +172,14 @@ input.txt:focus{ outline:2px solid var(--gold); }
 table.res{ width:100%; border-collapse:collapse; font-size:17px; margin:10px 0; }
 table.res th, table.res td{ padding:6px 8px; border-bottom:1px solid #333a42; text-align:left; } table.res th{ color:var(--muted); font-weight:500; }
 table.res td.n{ text-align:right; } table.res th.n{ text-align:right; }
+svg.linhaTempo{ width:100%; height:auto; display:block; margin:6px 0 2px; font-family:var(--cond); }
+.ltBox h3{ margin:14px 0 2px; } .ltLeg{ display:flex; flex-wrap:wrap; gap:4px 14px; font-size:14px; color:var(--muted); }
+.ltLeg i{ display:inline-block; width:14px; height:3px; margin-right:6px; vertical-align:middle; } .ltLeg i.selo{ background:repeating-linear-gradient(90deg,#f3d58e 0 4px,transparent 4px 7px); }
+.ltEv{ list-style:none; padding:0; margin:6px 0 0; columns:2; column-gap:22px; font-size:14px; color:#cfc6b6; } .ltEv li{ margin:2px 0; break-inside:avoid; } .ltEv b{ color:var(--gold); font-weight:600; margin-right:4px; }
+.premios{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; } .premio{ background:rgba(14,16,19,.8); border:1px solid #3a4149; padding:8px 10px; }
+.premio b{ display:block; font-family:var(--serif); font-weight:400; font-size:18px; color:var(--gold-hi); } .premio span{ display:block; font-size:17px; } .premio small{ color:var(--muted); font-size:13px; }
+.premio.meu{ border-color:var(--gold-hi); box-shadow:inset 0 0 0 1px rgba(243,213,142,.4); }
+@media (max-width:760px){ .premios{ grid-template-columns:1fr 1fr; } .ltEv{ columns:1; } }
 #mapSvg, #tabSvg{ width:100%; height:auto; display:block; margin:10px 0; } .alt-hit{ cursor:pointer; }
 #loading{ position:fixed; inset:0; display:grid; place-items:center; background:var(--bg); font-family:var(--serif); font-size:24px; color:var(--muted); }
 #tabMap{ position:fixed; inset:0; display:none; place-items:center; pointer-events:none; } #tabMap .panel{ width:min(700px,90vw); padding:18px 22px; }
@@ -1911,7 +1919,7 @@ function handleEvents(list,online){
       case 'evp': SFX.whisper(e.x,e.z); legenda('evp',e.x,e.z); break;
       case 'blind': blindT=1.5; notaHab('Você foi cegado','#fff4d0'); break;
       case 'stun': atordT=1; notaHab('Você foi atordoado','var(--gold-hi)'); FX.kickP+=.03; break;
-      case 'momento': anunciar(e.nome,e.i===1?'Os altares despertam':'Os rituais aceleram e a névoa se fecha'); SFX.bell(); legenda('bell',null,null,'O sino da catedral'); break;
+      case 'momento': anunciar(e.nome,e.i===1?'Os altares despertam':'Os rituais aceleram e a névoa se fecha'); SFX.bell(); marcoLT('momento',e.nome); legenda('bell',null,null,'O sino da catedral'); break;
       case 'grande': iniciarGrande(e); break;
       case 'hab': efeitoHabilidade(e,e.a===id); SFX.hab&&SFX.hab(e.cls,e.x,e.z); if(e.a!==id) legenda('hab',e.x,e.z,FEITICOS[e.f]?FEITICOS[e.f].nome:'Feitiço',FEIT_BY_TEAM.C.includes(e.f)?'cult':'');
         if(e.a===id){ const n=(e.alvos||[]).length; notaHab(HAB_TXT[e.f](n),n||['runa','veu','sal'].includes(e.f)?'var(--gold-hi)':'var(--muted)'); const t=$('#tAb'); if(t){ t.classList.remove('pulso'); void t.offsetWidth; t.classList.add('pulso'); } if(e.f==='empurrao') FX.kickP+=.02; }
@@ -2022,7 +2030,7 @@ function syncAltars(dt){
 // Caído: a câmera vira para quem te derrubou. Morto: a câmera acompanha um aliado de pé (o botão de atacar troca),
 // ou gira devagar sobre o lugar onde você caiu se não houver nenhum.
 const ESP={prev:'alive',golpe:null,quem:'',alvo:null,idx:0,pos:null,cliqueAntes:false,virar:null,nAliados:0,ang:0};
-function registrarQueda(m){ const G=ESP.golpe; ESP.quem='';
+function registrarQueda(m){ const G=ESP.golpe; ESP.quem=''; marcoLT(m.st==='down'?'queda':'morte',m.st==='down'?'Você caiu':'Você morreu');
   if(G&&performance.now()-G.t<4000){ const a=V.actors.find(b=>b.id===G.s);
     if(a){ const C=CLASSES[a.cls]||{}, d=Math.round(Math.hypot(G.x-m.x,G.z-m.z)), arma=C.arma||'';
       ESP.quem=`Derrubado por <b style="color:${a.team==='H'?'var(--gold-hi)':'var(--crimson-hi)'}">${esc(a.name)}</b> (${esc(C.name||'')}${arma?', '+esc(arma.toLowerCase()):''}) a ${d} m`;
@@ -2333,6 +2341,61 @@ function introScreen(){
 }
 
 const STAT_ROWS=[['rituais','Rituais iniciados'],['completos','Rituais completos'],['selados','Rituais selados'],['chegadas','Caçador chegou ao círculo'],['tentativasSelo','Tentativas de selamento'],['cancelados','Selamentos interrompidos'],['fracaoSobFogo','Tempo selando sob fogo'],['primeiroContato','Primeiro contato'],['quedas','Quedas'],['reanimacoes','Reanimações'],['purgas','Purgas'],['chamarizes','Chamarizes'],['transferencias','Transferências']];
+// ================= LINHA DO TEMPO E PRÊMIOS =================
+// O cliente anota a noite a cada segundo (progresso e selo de cada ritual, momentos, Grande Ritual, suas quedas)
+// e desenha no fim da rodada: a verdade da noite, inclusive o que os Caçadores não viram na hora.
+const LT={id:null,rod:{},ultimo:-9,logOnline:null,pedindo:false};
+function rodadaLT(){ const id=V.matchId||''; if(LT.id!==id){ LT.id=id; LT.rod={}; LT.logOnline=null; LT.pedindo=false; } const r=V.round||1;
+  return LT.rod[r]||(LT.rod[r]={am:[],mk:[],est:V.altars.map(A=>A.state),grande:false}); }
+function marcoLT(tipo,txt){ if(!V||V.phase!=='play') return; const R=rodadaLT(); R.mk.push({rt:V.rt,tipo,txt}); }
+function amostrarNoite(){ if(!V||V.phase!=='play'||!V.altars) return; const R=rodadaLT();
+  V.altars.forEach((A,i)=>{ const antes=R.est[i]; if(A.state!==antes){ R.est[i]=A.state;
+      if(A.state==='active') R.mk.push({rt:V.rt,tipo:'inicio',txt:`Ritual começou em ${A.name}`,i});
+      else if(A.state==='fenda') R.mk.push({rt:V.rt,tipo:'fenda',txt:`Fenda aberta em ${A.name}`,i});
+      else if(A.state==='farol') R.mk.push({rt:V.rt,tipo:'farol',txt:`Ritual selado em ${A.name}: Farol`,i}); }
+    if(A.grande&&A.state==='active'&&!R.grande){ R.grande=true; R.mk.push({rt:V.rt,tipo:'grande',txt:`Grande Ritual em ${A.name}`,i}); } });
+  if(V.rt-R.ultimo<1&&R.am.length) return; R.ultimo=V.rt;
+  R.am.push({rt:V.rt,a:V.altars.map(A=>A.state==='active'?[+A.prog.toFixed(3),+A.seal.toFixed(3)]:null)}); }
+const COR_ALT=['#e0435e','#b98cff','#ff9a5a','#5ad1c8','#7fb2ff','#ff6fb0'];
+function marcosDoLog(log,r){ const out=[]; for(const e of log){ if(e.r!==r) continue;
+    if(e.ev==='ritual_start') out.push({rt:e.t,tipo:'inicio',txt:`${e.by} iniciou o ritual em ${e.altar}`});
+    else if(e.ev==='ritual_complete') out.push({rt:e.t,tipo:'fenda',txt:`Fenda aberta em ${e.altar}`});
+    else if(e.ev==='sealed') out.push({rt:e.t,tipo:'farol',txt:`Ritual selado em ${e.altar}: Farol`});
+    else if(e.ev==='down') out.push({rt:e.t,tipo:'queda',txt:`${e.by} derrubou ${e.who}`});
+    else if(e.ev==='revive') out.push({rt:e.t,tipo:'reanima',txt:`${e.by} reanimou ${e.who}`});
+    else if(e.ev==='transfer') out.push({rt:e.t,tipo:'inicio',txt:`${e.by} transferiu o ritual de ${e.from} para ${e.to}`}); }
+  return out; }
+function graficoNoite(r){ const R=LT.rod[r]; if(!R||!R.am.length) return '';
+  const log=logDaNoite(); if(log&&log.length){ const doLog=marcosDoLog(log,r); R.mkFinal=R.mk.filter(m=>m.tipo==='momento'||m.tipo==='grande').concat(doLog).sort((a,b)=>a.rt-b.rt); } else R.mkFinal=R.mk;
+  const W=640,H=150,T=Math.max(CFG.roundTime||1080,R.am[R.am.length-1].rt), X=t=>(t/T*W).toFixed(1), Y=v=>(H-8-v*(H-30)).toFixed(1);
+  let h=`<svg viewBox="0 -14 ${W} ${H+30}" class="linhaTempo" role="img" aria-label="Linha do tempo da rodada ${r}">`;
+  h+=`<rect x="0" y="0" width="${W}" height="${H}" fill="rgba(10,12,15,.6)" stroke="#333a42"/>`;
+  for(const M of CFG.momentos){ if(M.ate>=T) continue; h+=`<line x1="${X(M.ate)}" x2="${X(M.ate)}" y1="0" y2="${H}" stroke="#4a525c" stroke-dasharray="3 4"/>`; }
+  CFG.momentos.forEach((M,i)=>{ const a=i?CFG.momentos[i-1].ate:0; h+=`<text x="${X((a+Math.min(M.ate,T))/2)}" y="${H+14}" fill="#8f877b" font-size="11" text-anchor="middle">${esc(M.nome)}</text>`; });
+  for(let i=0;i<V.altars.length;i++){ let seg=[],sel=[]; const linhas=[],selos=[];
+    for(const q of R.am){ const v=q.a[i]; if(v){ seg.push(X(q.rt)+','+Y(v[0])); sel.push(X(q.rt)+','+Y(v[1])); } else { if(seg.length) linhas.push(seg), selos.push(sel); seg=[]; sel=[]; } }
+    if(seg.length) linhas.push(seg), selos.push(sel);
+    for(const L of linhas) h+=`<polyline points="${L.join(' ')}" fill="none" stroke="${COR_ALT[i%6]}" stroke-width="2.2"/>`;
+    for(const L of selos) if(L.some(p=>+p.split(',')[1]<H-9)) h+=`<polyline points="${L.join(' ')}" fill="none" stroke="#f3d58e" stroke-width="1.6" stroke-dasharray="4 3"/>`; }
+  const IC={inicio:['▲','#e0435e'],fenda:['✕','#e0435e'],farol:['✓','#f3d58e'],grande:['✶','#ff5a6e'],momento:['◆','#8f877b'],queda:['✚','#c9d3dc'],morte:['☠','#c9d3dc'],reanima:['♥','#8fd0a0']};
+  for(const m of R.mkFinal){ const ic=IC[m.tipo]||['•','#ccc']; h+=`<text x="${X(m.rt)}" y="-2" fill="${ic[1]}" font-size="12" text-anchor="middle"><title>${fmt(m.rt)} · ${esc(m.txt)}</title>${ic[0]}</text>`; }
+  h+='</svg>';
+  const leg=V.altars.map((A,i)=>R.am.some(q=>q.a[i])?`<span><i style="background:${COR_ALT[i%6]}"></i>${esc(A.name)}</span>`:'').join('');
+  const ev=R.mkFinal.filter(m=>m.tipo!=='momento').slice(0,12).map(m=>`<li><b>${fmt(m.rt)}</b> ${esc(m.txt)}</li>`).join('');
+  return `<div class="ltBox"><h3>A noite, rodada ${r}</h3>${h}<div class="ltLeg">${leg}<span><i class="selo"></i>Selamento</span></div>${ev?`<ul class="ltEv">${ev}</ul>`:''}</div>`; }
+// prêmios: tirados do registro da partida (local: o jogo; online: o arquivo que o servidor libera no fim)
+const PREMIOS=[['down','by','Mão Pesada','derrubou','inimigo','inimigos'],['revive','by','Anjo da Guarda','reanimou','aliado','aliados'],['purge','by','Purificador','purgou','altar','altares'],
+  ['ritual_start','by','Sumo Sacerdote','iniciou','ritual','rituais'],['consecrate','by','Consagrador','consagrou','altar','altares'],['ponto','by','Mãos Ocupadas','cumpriu','tarefa','tarefas'],
+  ['decoy','by','Ilusionista','plantou','chamariz','chamarizes'],['transfer','by','Andarilho','transferiu','ritual','rituais'],['push_seal','by','Muralha','empurrou','selador','seladores'],['rastro_lido','by','Farejador','leu','rastro','rastros'],['compra','who','Freguês','fez','compra','compras']];
+function premios(log){ if(!log||!log.length) return '';
+  const out=[]; for(const [ev,campo,nome,verbo,um,varios] of PREMIOS){ const n={}; for(const e of log) if(e.ev===ev&&e[campo]) n[e[campo]]=(n[e[campo]]||0)+1;
+    const top=Object.entries(n).sort((a,b)=>b[1]-a[1])[0]; if(top&&top[1]>0) out.push({nome,quem:top[0],n:top[1],verbo,um,varios}); }
+  out.sort((a,b)=>b.n-a.n); if(!out.length) return '';
+  const meu=V.actors.find(a=>a.cid===meCid);
+  return `<h3>Destaques da noite</h3><div class="premios">${out.slice(0,6).map(p=>`<div class="premio${meu&&p.quem===meu.name?' meu':''}"><b>${p.nome}</b><span>${esc(p.quem)}</span><small>${p.verbo} ${p.n} ${p.n===1?p.um:p.varios}</small></div>`).join('')}</div>`; }
+function logDaNoite(){ if(MODE==='local'&&game) return game.log;
+  if(MODE==='online'&&V&&V.phase==='final'&&NET.logUrl&&!LT.logOnline&&!LT.pedindo){ LT.pedindo=true; fetch(NET.logUrl,{cache:'no-store'}).then(r=>r.json()).then(j=>{ LT.logOnline=j.events||[]; screenKey=''; }).catch(()=>{}); }
+  return LT.logOnline; }
 function statVal(k,v){ if(v==null) return '—'; if(k==='fracaoSobFogo') return Math.round(v*100)+'%'; if(k==='primeiroContato') return fmt(v); return v; }
 function statsTable(){ const r1=V.stats[1],r2=V.stats[2]; if(!r1) return '';
   return `<table class="res"><tr><th>Registro da partida</th><th class="n">Rodada 1</th>${r2?'<th class="n">Rodada 2</th>':''}</tr>${STAT_ROWS.map(([k,l])=>`<tr><td>${l}</td><td class="n">${statVal(k,r1[k])}</td>${r2?`<td class="n">${statVal(k,r2[k])}</td>`:''}</tr>`).join('')}</table>`; }
@@ -2341,7 +2404,7 @@ function summaryScreen(){
   const cultIsMine=(V.round===1?'B':'A')===slot.team;
   const who=cultIsMine?'Sua equipe completou':'Os Cultistas adversários completaram';
   setScreen('sum'+V.round+rdy,`<h2>Fim da rodada ${V.round}</h2><p>${who} <b>${sc.done}</b> de 3 rituais${sc.lastT!=null?`, o último aos ${fmt(sc.lastT)}`:''}. ${sc.sealed} ${sc.sealed===1?'ritual foi selado':'rituais foram selados'}.</p>
-    ${V.round===1?'<p>Agora os lados se invertem: quem caçou passa a celebrar.</p>':''}${statsTable()}
+    ${V.round===1?'<p>Agora os lados se invertem: quem caçou passa a celebrar.</p>':''}${MODE==='local'?premios((game.log||[]).filter(e=>e.r===V.round)):''}${graficoNoite(V.round)}${statsTable()}
     <div class="btnrow"><button class="go" id="bReady" ${rdy?'disabled':''}>${rdy?'Aguardando os outros':V.round===1?'Continuar para a rodada 2':'Ver resultado'}</button></div><p class="wait" id="dyn"></p>`,
   ()=>{ $('#bReady').onclick=()=>sendAct({type:'ready'}); });
   $('#dyn').textContent=(MODE==='online'?readyList():'')+timerText();
@@ -2352,7 +2415,7 @@ function finalScreen(){
   const row=(n,s)=>`<tr><td>${n}</td><td class="n">${s.done}</td><td class="n">${s.lastT!=null?fmt(s.lastT):'—'}</td><td class="n">${Math.round(s.maxP*100)}%</td></tr>`;
   const isHost=MODE==='local'||NET.host===meCid;
   setScreen('final'+(V.matchId||''),`<h2 style="color:${w.win==null?'var(--bone)':mineW?'var(--gold)':'var(--crimson-hi)'}">${title}</h2><p>${w.why[0].toUpperCase()+w.why.slice(1)}.</p>
-    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row('Sua equipe',A)}${row('Adversários',B)}</table>${statsTable()}
+    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row('Sua equipe',A)}${row('Adversários',B)}</table>${premios(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
     <div class="btnrow"><button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
   ()=>{ $('#bLog').onclick=downloadLog; const a=$('#bAgain'); if(a) a.onclick=()=>sendAct({type:'restart'}); const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
 }
@@ -2467,7 +2530,7 @@ function tick(now){
   for(let i=tracers.length-1;i>=0;i--){ const tr=tracers[i]; tr.t-=dt; tr.l.material.opacity=Math.max(0,tr.t/.07); if(tr.t<=0){ world.remove(tr.l); descartar(tr.l); tracers.splice(i,1); } }
   const m=V?me():null;
   if(V&&V.phase==='play'&&m){
-    syncActors(dt); syncAltars(dt); syncNoite(dt,now/1000);
+    syncActors(dt); syncAltars(dt); syncNoite(dt,now/1000); amostrarNoite();
     const pos=MODE==='online'&&NET.pred?NET.pred:m;
     const s=m.sanity, shake=s<40?(40-s)/40*.012:0, down=m.st==='down';
     const bob=pos.moving?Math.sin(now*.011)*.045:0;
@@ -2527,7 +2590,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();
