@@ -120,6 +120,9 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #sensor{ position:absolute; right:18px; bottom:196px; width:300px; padding:8px 14px; display:none; text-align:right; }
 #sensor .v{ font-family:var(--serif); font-size:19px; } #sensor .trk{ height:6px; background:#101316; margin-top:4px; } #sensor .trk span{ display:block; height:100%; background:linear-gradient(90deg,#5a3a74,#d9b7ff); }
 #death{ position:absolute; inset:0; display:none; place-items:center; background:radial-gradient(ellipse at center, rgba(40,0,8,.3), rgba(0,0,0,.75)); }
+#death.espect{ place-items:start center; background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0) 28%, rgba(0,0,0,0) 75%, rgba(0,0,0,.5)); }
+#death.espect div{ margin-top:190px; } #death.espect h2{ font-size:34px; }
+#death small{ display:block; font-size:16px; color:#cfc6b6; margin-top:8px; } #death small b{ color:var(--gold-hi); font-weight:600; }
 #death div{ text-align:center; } #death h2{ font-family:var(--serif); font-weight:400; font-size:44px; margin:0; } #death p{ font-size:20px; color:var(--muted); margin:6px 0; }
 #net{ position:absolute; right:18px; top:16px; font-size:13px; color:var(--muted); }
 #vignette,#hurt,#blind{ position:fixed; inset:0; pointer-events:none; opacity:0; }
@@ -308,7 +311,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
   </div>
   <div id="sensor" class="plate"><div class="v" id="sensorV">Sem leitura</div><div class="trk"><span id="sensorFill"></span></div></div>
   <div id="kit" class="plate"><div id="ammo">8 <small>/ 48</small></div><div class="tools" id="tools"></div></div>
-  <div id="death"><div><h2 id="deathT">Você caiu</h2><p id="deathP"></p></div></div>
+  <div id="death"><div><h2 id="deathT">Você caiu</h2><p id="deathP"></p><p id="deathQuem"></p><small id="deathEsp"></small></div></div>
   <div id="toque">
     <div id="tqEsq"></div><div id="tqDir"></div><div id="tqStick"><i></i></div>
     <button class="tq" data-a="fire" id="tqFire">Atacar</button>
@@ -1851,7 +1854,7 @@ function handleEvents(list,online){
         if(!own){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.kick=1; }
         if(own) ultimoTiroCab=!!e.cab; break; }
       case 'hit': if(e.a===id){ const cls=e.derrubou?'kill':ultimoTiroCab?'head':''; marcaAcerto(cls); if(e.derrubou) SFX.derrubou(); else if(ultimoTiroCab) SFX.cabeca(); else SFX.hit(); ultimoTiroCab=false; } break;
-      case 'hurt': if(e.a===id){ hurtT=.35; SFX.hurt(); if(e.sx!=null) direcaoDano(e.sx,e.sz); FX.kickP+=rand(-.02,.02); }
+      case 'hurt': if(e.a===id){ hurtT=.35; SFX.hurt(); if(e.sx!=null) direcaoDano(e.sx,e.sz); FX.kickP+=rand(-.02,.02); ESP.golpe={s:e.s,x:e.sx,z:e.sz,t:performance.now()}; }
         else { const mm=actorMeshes.get(e.a); if(mm){ mm.userData.anim.flinch=1; if(e.sx!=null) mm.userData.anim.golpe={x:e.sx,z:e.sz}; } } break;
       case 'burst': particulas(e.x,e.y,e.z,18,0xb050ff,3,.5,3,.8); particulas(e.x,e.y,e.z,8,0xff4a70,1.5,.7,1,.3); clarao(e.x,e.y,e.z,0xb050ff,2.2); SFX.estouro(e.x,e.z); legenda('estouro',e.x,e.z); break;
       case 'reload': if(e.a===id) SFX.reload(null,null); else { SFX.reload(e.x,e.z); legenda('reload',e.x,e.z); } break;
@@ -1966,6 +1969,30 @@ function syncAltars(dt){
     else if(O.au) ritualLoopStop(i);
   });
 }
+
+// ================= ESPECTADOR =================
+// Caído: a câmera vira para quem te derrubou. Morto: a câmera acompanha um aliado de pé (o botão de atacar troca),
+// ou gira devagar sobre o lugar onde você caiu se não houver nenhum.
+const ESP={prev:'alive',golpe:null,quem:'',alvo:null,idx:0,pos:null,cliqueAntes:false,virar:null,nAliados:0,ang:0};
+function registrarQueda(m){ const G=ESP.golpe; ESP.quem='';
+  if(G&&performance.now()-G.t<4000){ const a=V.actors.find(b=>b.id===G.s);
+    if(a){ const C=CLASSES[a.cls]||{}, d=Math.round(Math.hypot(G.x-m.x,G.z-m.z)), arma=C.arma||'';
+      ESP.quem=`Derrubado por <b style="color:${a.team==='H'?'var(--gold-hi)':'var(--crimson-hi)'}">${esc(a.name)}</b> (${esc(C.name||'')}${arma?', '+esc(arma.toLowerCase()):''}) a ${d} m`;
+      if(m.st==='down'){ const dx=G.x-m.x, dz=G.z-m.z; ESP.virar={yaw:Math.atan2(-dx,-dz),t:.7}; } } }
+  if(!ESP.quem&&m.st==='dead') ESP.quem='Você sangrou até o fim'; }
+function viraParaGolpe(m,dt){ const v=ESP.virar; if(!v) return; if(m.st!=='down'){ ESP.virar=null; return; } v.t-=dt;
+  let d=v.yaw-LOOK.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); LOOK.yaw+=d*Math.min(1,dt*7); if(v.t<=0||Math.abs(d)<.02) ESP.virar=null; }
+function espectar(m,dt){
+  const al=V.actors.filter(a=>a.team===m.team&&a.cid!==meCid&&a.st!=='dead'&&!a.hidden); ESP.nAliados=al.length;
+  const clique=mouseL&&locked; if(clique&&!ESP.cliqueAntes&&al.length) ESP.idx=(ESP.idx+1)%al.length; ESP.cliqueAntes=clique;
+  const a=al.length?al[ESP.idx%al.length]:null; ESP.alvo=a;
+  let ax,az,ay,cx,cy,cz;
+  if(a){ ax=a._rx!=null?a._rx:a.x; az=a._rz!=null?a._rz:a.z; ay=a.st==='down'?.5:1.45; const yaw=a._ryaw!=null?a._ryaw:a.yaw;
+    let d=3.4; const bx=Math.sin(yaw), bz=Math.cos(yaw); while(d>.9&&!Sim.segClear(ax,az,ax+bx*d,az+bz*d,.3,Sim.BOX)) d-=.35;
+    cx=ax+bx*d; cz=az+bz*d; cy=ay+.9; }
+  else { ESP.ang+=dt*.25; ax=m.x; az=m.z; ay=.3; cx=ax+Math.cos(ESP.ang)*5; cz=az+Math.sin(ESP.ang)*5; cy=4.2; }
+  const alvoP=new THREE.Vector3(cx,cy,cz); if(!ESP.pos||ESP.pos.distanceTo(alvoP)>40) ESP.pos=alvoP.clone();
+  ESP.pos.lerp(alvoP,1-Math.exp(-dt*6)); camera.position.copy(ESP.pos); camera.lookAt(ax,ay,az); }
 
 // ================= HUD =================
 function buildStrip(){ const s=$('#strip'); s.innerHTML=''; AV.forEach((O,i)=>{ const d=document.createElement('div'); d.className='pip'; d.innerHTML=`<div class="gem"><i>?</i></div><div>${Sim.ALTARS[i].name}</div><div class="bar"><span></span></div>`; s.appendChild(d); O.pip=d; }); }
@@ -2118,9 +2145,13 @@ function updateHUD(dt,m){
   $('#hurt').style.opacity=(hurtT/.35).toFixed(2); $('#hitmark').style.opacity=(hitT/.15).toFixed(2); $('#blind').style.opacity=clamp(blindT/1.2,0,1).toFixed(2);
   // death / down
   const dO=$('#death');
+  if(m.st!==ESP.prev){ if((m.st==='down'||m.st==='dead')&&ESP.prev==='alive') registrarQueda(m); if(m.st==='alive') ESP.quem=''; ESP.prev=m.st; }
   if(m.st==='dead'){ dO.style.display='grid'; $('#deathT').textContent='Você morreu'; $('#deathP').textContent=`Retorno em ${Math.ceil(m.respawnT)} s`; }
   else if(m.st==='down'){ dO.style.display='grid'; $('#deathT').textContent='Você está caído'; $('#deathP').textContent=`Um aliado pode te reanimar. Sangrando: ${Math.ceil(m.downT)} s${m.revUsed?' (sem reanimação neste ciclo)':''}`; }
   else dO.style.display='none';
+  dO.classList.toggle('espect',m.st==='dead'&&!!ESP.alvo);
+  const qh=ESP.quem||''; if($('#deathQuem').innerHTML!==qh) $('#deathQuem').innerHTML=qh;
+  const eh=m.st==='dead'?(ESP.alvo?`Acompanhando <b>${esc(ESP.alvo.name)}</b>${ESP.nAliados>1?` · ${kb('fire')} troca`:''}`:'Nenhum aliado de pé: vendo onde você caiu'):''; if($('#deathEsp').innerHTML!==eh) $('#deathEsp').innerHTML=eh;
   // strip
   AV.forEach((O,i)=>{ const A=V.altars[i]; let st='',ch='?';
     if(A.state==='fenda'){ st='fenda'; ch='✕'; } else if(A.state==='farol'){ st='farol'; ch='✓'; }
@@ -2396,7 +2427,9 @@ function tick(now){
     const I=ULT_INP||{mx:0,mz:0,sp:false}, correndo=I.sp&&I.mz<0&&pos.moving&&m.st==='alive';
     FX.fov=lerp(FX.fov,SET.fov+(correndo?7:0),.1); if(Math.abs(camera.fov-FX.fov)>.05){ camera.fov=FX.fov; camera.updateProjectionMatrix(); }
     FX.roll=lerp(FX.roll,pos.moving&&!down?-I.mx*.022:0,.1); FX.kickP=lerp(FX.kickP,0,.14);
-    camera.rotation.set(LOOK.pitch+FX.kickP+rand(-shake,shake),LOOK.yaw+rand(-shake,shake),FX.roll);
+    viraParaGolpe(m,dt); camera.rotation.set(LOOK.pitch+FX.kickP+rand(-shake,shake),LOOK.yaw+rand(-shake,shake),FX.roll);
+    if(m.st==='dead') espectar(m,dt); else ESP.alvo=null;
+    camera.updateMatrixWorld(); $('#cross').style.visibility=m.st==='dead'?'hidden':'';
     lantern.intensity=m.team==='H'&&m.lantern&&m.st==='alive'?3.2:0;
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*30); vmFlash.material.opacity=Math.max(0,vmFlash.material.opacity-dt*14); 
     VM.k=Math.max(0,VM.k-dt*7); VM.cast=Math.max(0,VM.cast-dt*4);
@@ -2445,7 +2478,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 })();
