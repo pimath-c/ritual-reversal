@@ -156,6 +156,8 @@ namespace RitualReversal
             // o snapshot manda quanto falta; o HUD compara com g.t
             var bf = O(G(s, "buff")); if (bf != null) { double ess = D(G(bf, "ess")), selo = D(G(bf, "selo")); g.buff.ess = ess > 0 ? g.t + ess : 0; g.buff.selo = selo > 0 ? g.t + selo : 0; }
             g.lastResolveT = D(G(s, "lastResolveT"));
+            // regras do laboratório de playtest escolhidas pelo anfitrião (relógio do Crepúsculo, mercadores)
+            var lb = O(G(s, "lab")); if (lb != null) g.lab = Lab.De(new Lab { crepusculo = D(G(lb, "crepusculo")), fogo = S(G(lb, "fogo")), execucao = D(G(lb, "execucao")), economia = !(G(lb, "economia") is bool) || B(G(lb, "economia")), formato = S(G(lb, "formato")) });
             return g;
         }
 

@@ -78,6 +78,20 @@ static class CompararSim
         if (r() < .006) { int f = (int)Math.Floor(r() * 7) - 1; Sim.Act(g, "eu", new Acao { type = "fala", i = f }); }
         Sim.MoveHuman(g, m, new Entrada { mx = mx, mz = mz, sp = sp, yaw = yaw, pitch = pitch, fire = fire, use = use, use2 = use2, c = D.c.Copia(), viewT = g.t - .05 }, dt); Sim.Step(g, dt);
     }
+    // LAB=crepusculo=90,fogo=b,execucao=6,economia=0,formato=placar  (o mesmo formato que tools/comparar-cs.js lê)
+    static Lab LabDoAmbiente()
+    {
+        var s = Environment.GetEnvironmentVariable("LAB"); if (string.IsNullOrEmpty(s)) return null;
+        var L = new Lab();
+        foreach (var par in s.Split(','))
+        {
+            var kv = par.Split('='); if (kv.Length != 2) continue; string k = kv[0].Trim(), v = kv[1].Trim();
+            if (k == "crepusculo") L.crepusculo = double.Parse(v, System.Globalization.CultureInfo.InvariantCulture);
+            else if (k == "execucao") L.execucao = double.Parse(v, System.Globalization.CultureInfo.InvariantCulture);
+            else if (k == "fogo") L.fogo = v; else if (k == "formato") L.formato = v; else if (k == "economia") L.economia = v != "0" && v != "false";
+        }
+        return L;
+    }
     static int Main(string[] args)
     {
         Sim.Iniciar(File.ReadAllText(args[0]));
@@ -89,7 +103,7 @@ static class CompararSim
             for (int m = 0; m < partidas; m++)
             {
                 var slots = new List<Slot>(); for (int j = 0; j < 4; j++) slots.Add(new Slot(j < 2 ? "A" : "B", (modo == "H" && j == 0) || (modo == "C" && j == 2) ? "eu" : null, "b" + j));
-                var g = Sim.CreateGame(new OpcoesJogo { timers = true, slots = slots, matchId = "cmp" + m, dificuldade = Environment.GetEnvironmentVariable("DIF") });
+                var g = Sim.CreateGame(new OpcoesJogo { timers = true, slots = slots, matchId = "cmp" + m, dificuldade = Environment.GetEnvironmentVariable("DIF"), lab = LabDoAmbiente() });
                 int nLog = 0; var D = new Dir(); var r = JS.Mulberry32((semente ^ 0x5bd1e995u) + (uint)m);
                 for (int n = 0; n < passos && g.phase != "final"; n++)
                 {

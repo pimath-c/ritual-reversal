@@ -27,6 +27,9 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
   // só o anfitrião muda a dificuldade dos bots
   B.envia({t:'opcoes',dif:'facil'}); A.envia({t:'opcoes',dif:'nada'}); A.envia({t:'opcoes',dif:'dificil'});
   { const lb=await B.ate(m=>m.t==='lobby'&&m.dif!=='normal'); if(!lb||lb.dif!=='dificil') falha('opção de dificuldade: '+(lb&&lb.dif)); else console.log('  dificuldade dos bots: '+lb.dif+' (só o anfitrião muda)'); }
+  // laboratório de playtest: só o anfitrião muda, e valores desconhecidos voltam ao normal
+  B.envia({t:'opcoes',lab:{crepusculo:90}}); A.envia({t:'opcoes',lab:[1,2]}); A.envia({t:'opcoes',lab:{crepusculo:120,fogo:'<x>',economia:false}});
+  { const lb=await B.ate(m=>m.t==='lobby'&&m.lab); if(!lb||lb.lab.crepusculo!==120||lb.lab.fogo!=='atual'||lb.lab.economia!==false) falha('laboratório no lobby: '+JSON.stringify(lb&&lb.lab)); else console.log('  laboratório: crepúsculo '+lb.lab.crepusculo+' s, sem economia (só o anfitrião muda)'); }
   // lixo antes de começar
   for(const lixo of ['null','42','[]','{"t":5}','{','{"t":"in","mx":"x","yaw":null}',JSON.stringify({t:'act',a:null}),JSON.stringify({t:'hello',create:true})]) A.envia(lixo);
   A.envia({t:'start'});
@@ -36,6 +39,13 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
     for(const C of [A,B]){ if(!C.ultimo) continue; const s=C.ultimo.s; if(s.phase==='pick'){ C.envia({t:'act',a:{type:'pickRandom'}}); C.envia({t:'act',a:{type:'pickConfirm'}}); } if(s.phase==='intro') C.envia({t:'act',a:{type:'ready'}}); }
     await espera(250); }
   if(!A.ultimo||A.ultimo.s.phase!=='play') return fim('não chegou à fase de jogo: '+(A.ultimo&&A.ultimo.s.phase));
+  if(!A.ultimo.s.lab||A.ultimo.s.lab.crepusculo!==120) falha('a partida não usou o laboratório: '+JSON.stringify(A.ultimo.s.lab));
+  // chat na partida: por padrão só a equipe; 'todos' chega aos adversários
+  { const antes=B.msgs.length; A.envia({t:'chat',msg:'segredo da equipe'}); await espera(700); A.envia({t:'chat',msg:'boa sorte',para:'todos'});
+    const meu=await A.ate(m=>m.t==='chat'&&m.msg==='segredo da equipe'), todos=await B.ate(m=>m.t==='chat'&&m.msg==='boa sorte');
+    const vazou=B.msgs.slice(antes).some(m=>m.t==='chat'&&m.msg==='segredo da equipe'), mesmo=B.ultimo.s.actors.find(a=>a.id===B.ultimo.you).team===A.ultimo.s.actors.find(a=>a.id===A.ultimo.you).team;
+    if(!meu||meu.para!=='equipe') falha('chat de equipe não voltou para quem falou'); else if(!mesmo&&vazou) falha('chat de equipe vazou para os adversários');
+    else if(!todos||todos.para!=='todos') falha('chat para todos não chegou'); else console.log('  chat na partida: equipe fica na equipe, "todos" chega a todos'); }
   const s0=A.snaps, t0=Date.now(); let seq=0;
   while(Date.now()-t0<6000){ seq++; for(const C of [A,B]) C.envia({t:'in',seq,dt:1/30,mx:0,mz:-1,sp:true,yaw:Math.sin(seq/20),pitch:0,fire:seq%10===0,use:false,use2:false,c:{q:0,f:0,g:0,r:0,ab:0}}); await espera(33); }
   const taxa=(A.snaps-s0)/6; console.log(`  snapshots: ${taxa.toFixed(1)}/s (meta 20)`); if(taxa<15) falha('poucos snapshots');

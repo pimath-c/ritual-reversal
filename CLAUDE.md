@@ -31,12 +31,12 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.3)
+## Estado atual (v5.4)
 - Números: selar sob fogo 70%/45%, executar 4,5 s, reanimar 5 s, momentos 3:00 / 10:00 / 18:00.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
 - Qualidade Alto/Médio/Baixo/Mínimo, resolução adaptativa, controles de toque, app Android.
-- Rituais (v5.1): no máximo 3 por noite, um de cada vez, sem altar substituto; Cultistas vencem com 2 Fendas. `CFG.formatoNoite`: 'placar' (padrão, a noite sempre chega à Hora Morta) ou 'melhorDeTres' (2 a 0 encerra). A regra de início fica em `bloqueioRitual(g)`, usada pelo jogador e pelos bots.
+- Rituais (v5.1): no máximo 3 por noite, um de cada vez, sem altar substituto; Cultistas vencem com 2 Fendas. `CFG.formatoNoite`: 'melhorDeTres' (padrão desde a v5.4: 2 rituais de um lado encerram) ou 'placar' (a noite vai até o amanhecer). A regra de início fica em `bloqueioRitual(g)`, usada pelo jogador e pelos bots.
 - v5.1a: localização mais tardia (0,55/0,5), dano base menor, bots usam Transferência; snapshots escondem inimigos
   sem linha de visão (`CFG.visaoRede` 75 m, 0,6 s de tolerância; o cliente guarda o boneco invisível e não interpola
   desde a origem). O teste 3 de `tools/testar.js` confere isso.
@@ -56,6 +56,14 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   automáticas do bot aliado (`atualizarFalasBots`, só cliente), música do menu (`MUS`), acessibilidade (`SET.suave`,
   `SET.dalt`) e Novidades. Tudo de regra portado para o C# (comparar-cs com o roteiro usando ping e frases; `DIF=`
   testa a dificuldade). `__T.perfil` é o desempenho; o perfil do jogador é `__T.perfilJogador`.
+- v5.4 (notas em `notas/v5.4.md`, resposta a uma análise de especialista; preparação para o playtest com pessoas):
+  a noite acaba quando um lado leva 2 rituais (`CFG.formatoNoite` 'melhorDeTres'); laboratório de playtest
+  (`opts.lab` → `g.lab` via `labDe`: crepusculo, fogo, execucao, economia, formato; menu solo `SET.lab`, lobby
+  `t:'opcoes'` com `lab`, vai no snapshot); relatório do playtest (`Sim.relatorio(log,r)`, tela no fim da noite,
+  JSON com respostas; `tools/analisar.js` usa o mesmo); chat de equipe na partida (`para:'equipe'|'todos'`, o
+  servidor filtra por papel; `SET.mudoAdv`); bots Caçadores conferem altar desperto com a Lanterna (sem sorteio).
+  `tools/simular.js` e `tools/comparar-cs.js` aceitam `LAB=fogo=a,execucao=6,...`. Bots, 210 noites: culto 78% no
+  normal, 67% com selo sob fogo 80%/60%; sem economia, 75%.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

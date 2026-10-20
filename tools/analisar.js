@@ -8,6 +8,8 @@ const fs=require('fs'), path=require('path');
 const args=process.argv.slice(2);
 const dir=args.find(a=>!a.startsWith('--'))||path.join(__dirname,'..','logs');
 const csvOut=args.includes('--csv')?args[args.indexOf('--csv')+1]:null;
+const Sim=require('../shared/sim.js');
+const NOITE={n:0,culto:0,fendas:0,farois:0,duracao:[],verdade:[],semVerdade:0,maiorSemPista:[],pistas:[],lanterna:0,desmasc:0,localizarFim:[],labs:{}};
 
 const METAS={
   chegada:[.45,.50,'Caçador chega ao círculo a tempo'],
@@ -60,6 +62,13 @@ for(const f of files){
     }
   }
   for(const r of Object.values(J.stats||{})) if(r&&r.fracaoSobFogo!=null) A.sobFogo.push(r.fracaoSobFogo);
+  // noite única: relatório de playtest (o mesmo que o jogo mostra no fim) e quem venceu
+  if(!(J.scores&&J.scores.A)&&J.scores&&J.scores.B){ const M=Sim.relatorio(ev,1), I=M.investigacao; NOITE.n++; if(J.scores.B.done>=2) NOITE.culto++;
+    NOITE.fendas+=M.fendas; NOITE.farois+=M.farois; NOITE.duracao.push(M.duracao); NOITE.pistas.push(I.pistasNovas); NOITE.maiorSemPista.push(I.maiorIntervaloSemPista);
+    if(I.primeiraVerdade!=null) NOITE.verdade.push(I.primeiraVerdade); else NOITE.semVerdade++;
+    NOITE.lanterna+=M.ferramentas.lanterna; NOITE.desmasc+=M.engano.chamarizesDesmascarados;
+    M.rituais.forEach(R=>{ if(R.localizarAoFim!=null) NOITE.localizarFim.push(R.localizarAoFim); });
+    const lab=Sim.labDe(J.lab), mud=Object.keys(Sim.LAB_OPCOES).filter(k=>lab[k]!==Sim.labDe()[k]).map(k=>`${k}=${lab[k]}`).join(',')||'padrão'; NOITE.labs[mud]=(NOITE.labs[mud]||0)+1; }
   const S=J.scores||{};
   if(S.A&&S.B){ A.vitorias.total++; if(S.A.done===S.B.done){ if(S.A.lastT!==S.B.lastT||Math.abs(S.A.maxP-S.B.maxP)>.005) A.desempates++; else A.empates++; } }
 }
@@ -118,6 +127,17 @@ if(A.vitorias.total){ L.push('\nRESULTADOS'); L.push('-'.repeat(78));
   linha('Partidas com placar', A.vitorias.total, '', '');
   linha('Decididas no desempate', A.desempates, pct(A.desempates/A.vitorias.total), '');
   linha('Empate exato (iria ao Ritual Final)', A.empates, pct(A.empates/A.vitorias.total), ''); }
+
+if(NOITE.n){ L.push('\nNOITE ÚNICA (relatório de playtest)'); L.push('-'.repeat(78));
+  linha('Noites', NOITE.n, Object.entries(NOITE.labs).map(([k,v])=>`${k}: ${v}`).join('; '), '');
+  linha('Vitórias dos Cultistas', `${NOITE.culto} (${pct(NOITE.culto/NOITE.n)})`, '', '');
+  linha('Fendas / Faróis por noite', `${num(NOITE.fendas/NOITE.n)} / ${num(NOITE.farois/NOITE.n)}`, '', '');
+  linha('Duração da noite (mediana)', seg(med(NOITE.duracao)), '', '');
+  linha('Primeira verdade da caça (mediana)', seg(med(NOITE.verdade)), NOITE.semVerdade?`${NOITE.semVerdade} noites sem nenhuma`:'', '');
+  linha('Pistas novas por noite', num(avg(NOITE.pistas)), '', '');
+  linha('Maior trecho sem pista (mediana)', seg(med(NOITE.maiorSemPista)), '', '');
+  linha('Da localização ao fim do ritual', num(med(NOITE.localizarFim),0)+' s', 'mediana', '');
+  linha('Lanterna em altar desperto', NOITE.lanterna, `${NOITE.desmasc} Chamarizes desmascarados`, ''); }
 
 const fora=Object.keys(METAS).filter(k=>medido[k]!=null&&status(k,medido[k])!=='na meta');
 L.push('\n'+(fora.length?`Fora da meta: ${fora.map(k=>METAS[k][2]).join('; ')}.`:'Todas as métricas principais estão dentro da meta.'));

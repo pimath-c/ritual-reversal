@@ -46,7 +46,7 @@ namespace RitualReversal.Simulacao
         public static Jogo CreateGame(OpcoesJogo opts = null)
         {
             if (opts == null) opts = new OpcoesJogo();
-            var g = new Jogo { opts = opts, timers = opts.timers, matchId = opts.matchId ?? DateTime.Now.Ticks.ToString() };
+            var g = new Jogo { opts = opts, timers = opts.timers, matchId = opts.matchId ?? DateTime.Now.Ticks.ToString(), lab = Lab.De(opts.lab) };
             foreach (var s in (opts.slots ?? DefaultSlots())) g.slots.Add(new Slot(s.team, s.cid, s.name));
             for (int i = 0; i < Mapa.REAG.Count; i++) g.reagents.Add(new Reagente { i = i, x = Mapa.REAG[i].x, z = Mapa.REAG[i].z, has = true, t = 0 });
             for (int i = 0; i < 6; i++) g.flares.Add(new Sinalizador());
@@ -109,7 +109,7 @@ namespace RitualReversal.Simulacao
         static Ator MakeActor(Jogo g, Slot slot, int si, string role, string cls, string feit)
         {
             var C = Regras.CLASSES[cls];
-            return new Ator { id = g.nid++, slot = si, cid = slot.cid, human = slot.cid != null, name = slot.name, team = role, cls = cls, maxHp = C.hp, hp = C.hp, speed = C.speed, feitico = feit, obolos = CFG.obolosInicio };
+            return new Ator { id = g.nid++, slot = si, cid = slot.cid, human = slot.cid != null, name = slot.name, team = role, cls = cls, maxHp = C.hp, hp = C.hp, speed = C.speed, feitico = feit, obolos = g.lab.economia ? CFG.obolosInicio : 0 };
         }
         static void Spawn(Jogo g, Ator a, bool first)
         {
@@ -146,14 +146,14 @@ namespace RitualReversal.Simulacao
                 double x = a.x, z = a.z; if (double.IsNaN(x) || double.IsInfinity(x) || double.IsNaN(z) || double.IsInfinity(z)) return; me.pingT = g.t;
                 string k = a.k == "altar" || a.k == "inimigo" || a.k == "perigo" ? a.k : "ponto";
                 double px = R2(JS.Clamp(x, -Mapa.HX, Mapa.HX)), pz = R2(JS.Clamp(z, -Mapa.HZ, Mapa.HZ));
-                Ev(g, "ping", "a", me.id, "team", me.team, "x", px, "z", pz, "k", k, "i", k == "altar" ? JS.Clamp(a.i, 0, 5) : -1);
+                Ev(g, "ping", "a", me.id, "team", me.team, "x", px, "z", pz, "k", k, "i", k == "altar" ? JS.Clamp(a.i, 0, 5) : -1); LogE(g, "ping", "who", me.name, "team", me.team, "k", k);
                 g.pedidos++; foreach (var o in g.actors) if (o != me && o.team == me.team && !o.human && o.st == "alive") o.ai.pedido = new Pedido { x = px, z = pz, k = k, ate = g.t + (k == "inimigo" ? 12 : 30), chegou = -1, n = g.pedidos };
             }
             // frases rápidas para a equipe (0 ajuda, 1 indo, 2 recuar, 3 inimigo aqui, 4 obrigado, 5 purgar/iniciar); o bot aliado atende a ajuda e o recuo
             if (a.type == "fala" && g.phase == "play")
             {
                 var me = g.actors.FirstOrDefault(b => b.cid == cid); int f = a.i; if (me == null || me.st == "dead" || f < 0 || f > 5 || g.t - me.pingT < 1) return; me.pingT = g.t;
-                Ev(g, "fala", "a", me.id, "team", me.team, "f", f, "x", R2(me.x), "z", R2(me.z));
+                Ev(g, "fala", "a", me.id, "team", me.team, "f", f, "x", R2(me.x), "z", R2(me.z)); LogE(g, "fala", "who", me.name, "team", me.team, "f", f);
                 if (f == 0 || f == 3) { g.pedidos++; foreach (var o in g.actors) if (o != me && o.team == me.team && !o.human && o.st == "alive") o.ai.pedido = new Pedido { x = R2(me.x), z = R2(me.z), k = "ponto", ate = g.t + 20, chegou = -1, n = g.pedidos }; }
                 if (f == 2) foreach (var o in g.actors) if (o != me && o.team == me.team && !o.human) o.ai.pedido = null;
             }
@@ -161,14 +161,17 @@ namespace RitualReversal.Simulacao
         }
         public static void DropHuman(Jogo g, string cid)
         {
-            var s = g.slots.FirstOrDefault(x => x.cid == cid); if (s == null) return; s.cid = null;
+            var s = g.slots.FirstOrDefault(x => x.cid == cid); if (s == null) return; s.cid = null; if (g.phase != "final") LogE(g, "saiu", "who", s.name, "fase", g.phase);
             var a = g.actors.FirstOrDefault(x => x.cid == cid); if (a != null) { a.cid = null; a.human = false; a.inp.fire = false; a.inp.use = false; }
             g.ready.Remove(cid);
             if ((g.phase == "intro" || g.phase == "summary") && AllReady(g)) { if (g.phase == "intro") StartPlay(g); else AfterSummary(g); }
         }
 
         // ============ A NOITE ============
-        public static int MomentoDe(double rt) { for (int i = 0; i < CFG.momentoAte.Length; i++) if (rt < CFG.momentoAte[i]) return i; return CFG.momentoAte.Length - 1; }
+        // o fim do Crepúsculo vem do laboratório (180 s no padrão)
+        public static int MomentoDe(double rt, double crep = 0) { for (int i = 0; i < CFG.momentoAte.Length; i++) if (rt < (i == 0 && crep > 0 ? crep : CFG.momentoAte[i])) return i; return CFG.momentoAte.Length - 1; }
+        public static double FimMomento(Jogo g, int i) { return i == 0 ? g.lab.crepusculo : CFG.momentoAte[i]; }
+        static void GanhaObolos(Jogo g, Ator a, int n) { if (g.lab.economia) a.obolos += n; }
         public static int Fendas(Jogo g) { return g.altars.Count(A => A.state == "fenda"); }
         public static int Farois(Jogo g) { return g.altars.Count(A => A.state == "farol"); }
         // três rituais por noite, no máximo, e um de cada vez; devolve o motivo do bloqueio ou null
@@ -207,15 +210,15 @@ namespace RitualReversal.Simulacao
             t.prog = Math.Min(t.meta, t.prog + n);
             if (t.prog >= t.meta)
             {
-                t.feita = true; foreach (var a in g.actors.Where(a => a.team == role)) a.obolos += t.rec;
-                Feed(g, "Tarefa cumprida: " + t.nome + ". +" + t.rec + " óbolos para cada um.", role == "H" ? "h" : "c", role); Ev(g, "tarefa", "team", role, "id", id); LogE(g, "tarefa", "team", role, "id", id);
+                t.feita = true; bool paga = g.lab.economia; if (paga) foreach (var a in g.actors.Where(a => a.team == role)) a.obolos += t.rec;
+                Feed(g, paga ? "Tarefa cumprida: " + t.nome + ". +" + t.rec + " óbolos para cada um." : "Tarefa cumprida: " + t.nome + ".", role == "H" ? "h" : "c", role); Ev(g, "tarefa", "team", role, "id", id); LogE(g, "tarefa", "team", role, "id", id);
             }
         }
         static void Comprar(Jogo g, string cid, string npcId, string itemId)
         {
             var a = g.actors.FirstOrDefault(x => x.cid == cid); var n = Mapa.NPCS.FirstOrDefault(x => x.id == npcId); ItemDef it = null; if (itemId != null) Regras.ITENS.TryGetValue(itemId, out it);
             Action<string> nega = msg => { if (a != null) Ev(g, "feed", "msg", msg, "cls", "", "to", a.id); };
-            if (a == null || n == null || it == null || a.st != "alive") return; if (Dist(a, n) > 3.2) { nega("Chegue mais perto para negociar."); return; }
+            if (a == null || n == null || it == null || a.st != "alive" || !g.lab.economia) return; if (Dist(a, n) > 3.2) { nega("Chegue mais perto para negociar."); return; }
             if (!n.vende.Contains(itemId) || (n.time != null && n.time != a.team) || (it.time != null && it.time != a.team)) { nega("Este item não é para você."); return; }
             if (it.momento > 0 && g.momento < it.momento) { nega(it.nome + " só aparece a partir da Vigília."); return; }
             if (a.obolos < it.preco) { nega("Faltam " + (it.preco - a.obolos) + " óbolos."); return; }
@@ -231,7 +234,7 @@ namespace RitualReversal.Simulacao
         }
         static void PassoNoite(Jogo g, double dt)
         {
-            int mi = MomentoDe(g.rt); if (mi != g.momento) NovoMomento(g, mi);
+            int mi = MomentoDe(g.rt, g.lab.crepusculo); if (mi != g.momento) NovoMomento(g, mi);
             foreach (var p in g.pontos) if (p.tipo == "erva" && !p.ativo) { p.t -= dt; if (p.t <= 0) p.ativo = true; }
             for (int i = g.realocar.Count - 1; i >= 0; i--) if (g.rt >= g.realocar[i])
                 {
@@ -410,7 +413,7 @@ namespace RitualReversal.Simulacao
         static void GoDown(Jogo g, Ator t, Ator src)
         {
             if (t.revUsed) { Kill(g, t, src); return; }
-            if (src != null && src.team != t.team) src.obolos += 1;
+            if (src != null && src.team != t.team) GanhaObolos(g, src, 1);
             t.st = "down"; t.hp = 0; t.downT = CFG.downTime; t.sealing = -1; t.hold = new Hold(); t.lantern = false;
             Feed(g, src.name + " derrubou " + t.name, t.team == "C" ? "h" : "c"); LogE(g, "down", "who", t.name, "team", t.team, "by", src.name, "x", R2(t.x), "z", R2(t.z));
         }
@@ -479,10 +482,10 @@ namespace RitualReversal.Simulacao
             foreach (var b in g.actors)
             {
                 if (b == a || b.st != "down" || Dist(a, b) > 1.8) continue;
-                o.e = b.team == a.team ? new Ctx { key = "rev" + b.id, type = "revive", b = b.id, label = "Segure E para reanimar " + b.name, time = CFG.revive } : new Ctx { key = "exe" + b.id, type = "execute", b = b.id, label = "Segure E para executar " + b.name, time = CFG.execute };
+                o.e = b.team == a.team ? new Ctx { key = "rev" + b.id, type = "revive", b = b.id, label = "Segure E para reanimar " + b.name, time = CFG.revive } : new Ctx { key = "exe" + b.id, type = "execute", b = b.id, label = "Segure E para executar " + b.name, time = g.lab.execucao };
                 return o;
             }
-            foreach (var n in Mapa.NPCS)
+            if (g.lab.economia) foreach (var n in Mapa.NPCS)
             {
                 if (Dist(a, n) > 2.6) continue;
                 if (n.time != null && n.time != a.team) { o.info = char.ToUpper(n.nome[0]) + n.nome.Substring(1) + " não negocia com você"; return o; }
@@ -540,15 +543,15 @@ namespace RitualReversal.Simulacao
                         var p = ctx.P.HasValue && ctx.P.Value < g.pontos.Count ? g.pontos[ctx.P.Value] : null; if (p == null || !p.ativo) break;
                         if (p.tipo == "pista")
                         {
-                            p.ativo = false; a.obolos += 1; TarefaProg(g, "H", "pistas");
+                            p.ativo = false; GanhaObolos(g, a, 1); TarefaProg(g, "H", "pistas");
                             // o sinal responde "onde NÃO está": descarta um altar que o culto não escolheu e que a equipe ainda não conhece
                             var cand = g.altars.Where(X => !X.chosen && X.state == "dormant" && g.know[X.i] == "?").ToList(); int k = Idx(cand.Count); var D = k < cand.Count ? cand[k] : null;
                             if (D != null) { g.know[D.i] = "limpo"; Feed(g, a.name + " leu um sinal antigo: " + D.name + " não foi escolhido pelo culto.", "h", "H"); LogE(g, "pista_info", "altar", D.name); }
                             else Feed(g, a.name + " examinou um sinal antigo; ele não diz nada novo.", "h", "H");
                         }
                         else if (p.tipo == "sentinela") { p.acesa = true; TarefaProg(g, "H", "sentinelas"); Feed(g, a.name + " acendeu uma sentinela.", "h", "H"); Ev(g, "sfx", "k", "flare", "x", p.x, "z", p.z, "a", a.id); }
-                        else if (p.tipo == "erva") { p.ativo = false; p.t = 50; a.obolos += 1; TarefaProg(g, "C", "ervas"); }
-                        else if (p.tipo == "tumulo") { p.ativo = false; if (a.reag < CFG.carry) a.reag++; else a.obolos += 2; TarefaProg(g, "C", "tumulos"); Feed(g, a.name + " profanou um túmulo.", "c", "C"); }
+                        else if (p.tipo == "erva") { p.ativo = false; p.t = 50; GanhaObolos(g, a, 1); TarefaProg(g, "C", "ervas"); }
+                        else if (p.tipo == "tumulo") { p.ativo = false; if (a.reag < CFG.carry) a.reag++; else GanhaObolos(g, a, 2); TarefaProg(g, "C", "tumulos"); Feed(g, a.name + " profanou um túmulo.", "c", "C"); }
                         LogE(g, "ponto", "tipo", p.tipo, "by", a.name); break;
                     }
                 case "purge":
@@ -654,7 +657,7 @@ namespace RitualReversal.Simulacao
             else { Ev(g, "sealed"); g.buff.ess = 0; Feed(g, A.name + " foi selado. Um Farol se acendeu.", "big h"); LogE(g, "sealed", "altar", A.name, "prog", R2(A.prog), "canalizadores", A.maxN > 0 ? A.maxN : 1); }
             if (kind == "fenda") TarefaProg(g, "C", "ritual");
             int F = Fendas(g), P = Farois(g);
-            if (F + P >= 3 || (CFG.formatoNoite != "placar" && (F >= 2 || P >= 2))) g.endAt = g.rt + 3;
+            if (F + P >= 3 || (g.lab.formato != "placar" && (F >= 2 || P >= 2))) g.endAt = g.rt + 3;
         }
         static void UpdateAltars(Jogo g, double dt)
         {
@@ -686,7 +689,7 @@ namespace RitualReversal.Simulacao
                     double rate = 0; foreach (var s in sealers) rate = Math.Max(rate, 1 / (s.cls == "exorcista" ? CFG.sealExo : CFG.seal));
                     if (sealers.Count >= 2) rate *= CFG.coSeal; if (g.buff.ess > g.t) rate *= 1.25; rate = Math.Min(rate, 1 / CFG.sealMin);
                     int at = 0; foreach (var s in sealers) at = Math.Max(at, RecentAttackers(g, s));
-                    if (at >= 2) rate *= CFG.fire2; else if (at == 1) rate *= CFG.fire1;
+                    if (at >= 2) rate *= g.lab.fire2; else if (at == 1) rate *= g.lab.fire1;
                     A.seal += rate * dt; A.sealIdle = 0; A.fireT = A.fireT + (at != 0 ? dt : 0); A.sealT = A.sealT + dt;
                 }
                 else
@@ -713,12 +716,11 @@ namespace RitualReversal.Simulacao
                     var A = g.altars[i]; double d = Dist(h, A); if (d >= 10) continue; g.visit[i] = g.t; string k = g.know[i];
                     if (A.state == "awake")
                     {
-                        if (k == "?" || k == "limpo") { g.know[i] = "desperto"; Ev(g, "evp", "a", h.id, "x", A.x, "z", A.z); Feed(g, "EVP: vozes em " + A.name + ".", "h", "H"); }
-                        if (!h.human && d < 6 && g.know[i] == "desperto" && Rnd() < dt * .35) g.know[i] = A.decoy ? "chamariz" : "confirmado";
+                        if (k == "?" || k == "limpo") { g.know[i] = "desperto"; Ev(g, "evp", "a", h.id, "x", A.x, "z", A.z); Feed(g, "EVP: vozes em " + A.name + ".", "h", "H"); LogE(g, "evp", "altar", A.name, "real", A.chosen && !A.decoy, "by", h.name); }
                     }
                     else if (A.state == "dormant" && k != "limpo") g.know[i] = "limpo";
                 }
-                if (h.human && h.lantern)
+                if (h.lantern)
                 {
                     double fx = -JS.Sin(h.yaw), fz = -JS.Cos(h.yaw);
                     for (int i = 0; i < g.altars.Count; i++)
@@ -726,7 +728,7 @@ namespace RitualReversal.Simulacao
                         var A = g.altars[i]; if (A.state != "awake" && A.state != "active") continue; double dx = A.x - h.x, dz = A.z - h.z, d = JS.Hypot(dx, dz); if (d > 16 || d < .5) continue;
                         if ((dx * fx + dz * fz) / d < .9 || !Mapa.LosClear(h, A)) continue;
                         if (A.decoy) { if (g.know[i] != "chamariz") { g.know[i] = "chamariz"; Feed(g, "Lanterna: nenhum resíduo em " + A.name + ". É um Chamariz.", "h", "H"); LogE(g, "decoy_spotted", "altar", A.name, "by", h.name); } }
-                        else if (g.know[i] != "confirmado" && g.know[i] != "ativo") { g.know[i] = "confirmado"; Feed(g, "Lanterna: resíduo de reagente em " + A.name + ".", "h", "H"); }
+                        else if (g.know[i] != "confirmado" && g.know[i] != "ativo") { g.know[i] = "confirmado"; Feed(g, "Lanterna: resíduo de reagente em " + A.name + ".", "h", "H"); LogE(g, "lanterna", "altar", A.name, "by", h.name); }
                     }
                 }
             }

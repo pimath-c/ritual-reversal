@@ -9,7 +9,7 @@ namespace RitualReversal.Simulacao
     {
         public static double roundTime = 1080; public static int noites = 1; public static int obolosInicio = 3;
         public static double[] respawnMomento = { 8, 14, 22 };
-        public static string formatoNoite = "placar"; // "placar": a noite sempre chega à Hora Morta; "melhorDeTres": 2 a 0 encerra
+        public static string formatoNoite = "melhorDeTres"; // "melhorDeTres": quem leva dois rituais vence e a noite acaba; "placar": a noite sempre chega ao amanhecer
         public static readonly string[] momentoId = { "crepusculo", "vigilia", "horamorta" };
         public static readonly string[] momentoNome = { "Crepúsculo", "Vigília", "Hora Morta" };
         public static readonly double[] momentoAte = { 180, 600, 1080 };
@@ -163,13 +163,35 @@ namespace RitualReversal.Simulacao
     }
     public class Vencedor { public string win, why; }
 
-    public class OpcoesJogo { public bool timers; public List<Slot> slots; public string matchId; public int noites; public string dificuldade; }
+    public class OpcoesJogo { public bool timers; public List<Slot> slots; public string matchId; public int noites; public string dificuldade; public Lab lab; }
+    // Laboratório de playtest: variações que o anfitrião escolhe para comparar noites (o padrão é a regra normal).
+    // crepusculo: segundos até a Vigília; fogo: selo sob fogo de 1 e de 2 inimigos; execucao: segundos para executar; economia: óbolos e mercadores.
+    public class Lab
+    {
+        public double crepusculo = 180, execucao = 4.5, fire1, fire2; public string fogo = "atual", formato; public bool economia = true;
+        public static readonly double[] CREPUSCULO = { 180, 120, 90 }, EXECUCAO = { 4.5, 6, 7.5 };
+        public static readonly string[] FOGO = { "atual", "a", "b" }, FORMATO = { "melhorDeTres", "placar" };
+        public static Lab De(Lab o)
+        {
+            var L = new Lab();
+            if (o != null)
+            {
+                if (Array.IndexOf(CREPUSCULO, o.crepusculo) >= 0) L.crepusculo = o.crepusculo;
+                if (Array.IndexOf(FOGO, o.fogo) >= 0) L.fogo = o.fogo;
+                if (Array.IndexOf(EXECUCAO, o.execucao) >= 0) L.execucao = o.execucao;
+                L.economia = o.economia; L.formato = o.formato;
+            }
+            if (Array.IndexOf(FORMATO, L.formato) < 0) L.formato = Array.IndexOf(FORMATO, CFG.formatoNoite) >= 0 ? CFG.formatoNoite : FORMATO[0];
+            L.fire1 = L.fogo == "a" ? .8 : L.fogo == "b" ? .9 : CFG.fire1; L.fire2 = L.fogo == "a" ? .6 : L.fogo == "b" ? .7 : CFG.fire2;
+            return L;
+        }
+    }
     // dificuldade dos bots (só no jogo local): mira, dispersão dos sigilos, ritmo de tiro e alcance da vista. Normal = 1 em tudo.
     public class DifDef { public double mira, disp, ritmo, vista; }
 
     public class Jogo
     {
-        public OpcoesJogo opts; public double t, rt, phaseT; public string phase = "pick"; public int round = 1; public bool timers;
+        public OpcoesJogo opts; public Lab lab = Lab.De(null); public double t, rt, phaseT; public string phase = "pick"; public int round = 1; public bool timers;
         public List<Slot> slots = new List<Slot>(); public List<Altar> altars = new List<Altar>(); public List<Reagente> reagents = new List<Reagente>();
         public List<Ator> actors = new List<Ator>(); public List<Projetil> proj = new List<Projetil>(); public List<Coletavel> pickups = new List<Coletavel>();
         public List<Sinalizador> flares = new List<Sinalizador>(); public string[] know = new string[0]; public double[] visit = new double[0];

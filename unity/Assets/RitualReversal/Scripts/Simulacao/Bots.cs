@@ -129,7 +129,7 @@ namespace RitualReversal.Simulacao
             var foe = g.actors.FirstOrDefault(o => o.team != b.team && o.st == "down" && Dist(o, b) < 10);
             if (foe != null && !fighting)
             {
-                if (Dist(b, foe) < 1.5) { b.moving = false; BotHold(g, b, "exe" + foe.id, CFG.execute, dt, new Ctx { type = "execute", b = foe.id }); return true; }
+                if (Dist(b, foe) < 1.5) { b.moving = false; BotHold(g, b, "exe" + foe.id, g.lab.execucao, dt, new Ctx { type = "execute", b = foe.id }); return true; }
                 SetGoal(g, b, foe.x, foe.z, "ex" + foe.id); BotMove(g, b, dt, 1.05); return true;
             }
             return false;
@@ -138,7 +138,7 @@ namespace RitualReversal.Simulacao
         {
             var ai = b.ai; string role = b.team;
             // compras: Cultista sem reagente compra; Caçador com pouca munição compra
-            string quer = role == "C" ? (b.reag == 0 && b.obolos >= Regras.ITENS["reagente"].preco ? "reagente" : null) : (b.reserve < 16 && b.obolos >= Regras.ITENS["municao"].preco ? "municao" : null);
+            string quer = !g.lab.economia ? null : role == "C" ? (b.reag == 0 && b.obolos >= Regras.ITENS["reagente"].preco ? "reagente" : null) : (b.reserve < 16 && b.obolos >= Regras.ITENS["municao"].preco ? "municao" : null);
             if (quer != null)
             {
                 var n = JS.Primeiro(Mapa.NPCS.Where(x => (x.time == null || x.time == role) && x.vende.Contains(quer)).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
@@ -173,6 +173,9 @@ namespace RitualReversal.Simulacao
         static void AiHunter(Jogo g, Ator b, double dt)
         {
             bool fighting = BotCombat(g, b, dt); var ai = b.ai; b.sealing = -1;
+            // Lanterna do bot: só acesa enquanto confere um altar (gasta carga e o denuncia, como a do jogador)
+            if (b.lantern) { b.carga -= dt * 3.2; if (b.carga <= 0) b.carga = 0; } else if (b.carga < 100 && LightAt(g, b.x, b.z) > .5) b.carga = Math.Min(100, b.carga + dt * 6);
+            b.lantern = false;
             if (b.reloadT > 0) { b.reloadT -= dt; if (b.reloadT <= 0) { int n = Math.Min(8 - b.ammo, b.reserve); b.ammo += n; b.reserve -= n; if (b.reserve <= 0) b.reserve = 24; } }
             if (ai.target != null && b.abilCd <= 0)
             {
@@ -199,6 +202,12 @@ namespace RitualReversal.Simulacao
             var known = JS.Primeiro(g.altars.Where(A => A.state == "awake" && CONHECIDO.Contains(g.know[A.i])).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
             if (known != null && !(g.know[known.i] == "chamariz" && Dist(b, known) > 12))
             {
+                // antes de purgar, confere com a Lanterna se o altar desperto é de verdade ou um Chamariz
+                if (g.know[known.i] == "desperto" && !fighting && b.carga > 5)
+                {
+                    double dk = Dist(b, known);
+                    if (dk < 14 && dk > 1.5 && Mapa.LosClear(b, known)) { b.moving = false; b.lantern = true; b.yaw = LerpAngle(b.yaw, JS.Atan2(-(known.x - b.x), -(known.z - b.z)), .3); return; }
+                }
                 if (Dist(b, known) < 3) { b.moving = false; if (!fighting) BotHold(g, b, "purge" + known.i, CFG.purge, dt, new Ctx { type = "purge", A = known.i }); return; }
                 var s = CircleSpot(known, b); SetGoal(g, b, s.x, s.z, "pg" + known.i); BotMove(g, b, dt, 1); return;
             }

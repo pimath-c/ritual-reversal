@@ -38,6 +38,13 @@ const VISTAS=[
   await page.goto('file://'+(process.env.HTML||path.join(ROOT,'dist','ritual-reversal.html'))+'#autotest');
   await page.waitForFunction(()=>window.__T,null,{timeout:120000});
   const boot=Date.now()-t0;
+  // laboratório de playtest no menu: abre, muda o Crepúsculo e volta ao normal
+  { await page.waitForSelector('details.lab',{timeout:20000}); await page.evaluate(()=>{ document.querySelector('details.lab').open=true; }); await page.waitForTimeout(300);
+    await page.click('button[data-lab="crepusculo"][data-v="120"]'); // o menu redesenha no próximo quadro, que no swiftshader demora
+    await page.waitForFunction(()=>/alterada/.test((document.querySelector('details.lab summary')||{}).textContent||''),null,{timeout:20000}).catch(()=>{});
+    const lab=await page.evaluate(()=>({resumo:(document.querySelector('details.lab summary')||{}).textContent||''}));
+    await page.screenshot({path:path.join(OUT,'menu-laboratorio.png')}); if(!/1 regra alterada/.test(lab.resumo)) erros.push('laboratório não marcou a regra alterada: '+lab.resumo);
+    await page.click('#bLabPadrao'); await page.waitForFunction(()=>!/alterada/.test((document.querySelector('details.lab summary')||{}).textContent||''),null,{timeout:20000}).catch(()=>erros.push('laboratório não voltou ao normal')); console.log('laboratório no menu:',lab.resumo.trim()); }
   await page.addStyleTag({content:'#scr{display:none!important}'}); // sem mouse capturado o jogo mostra a pausa por cima
   await page.evaluate(()=>{ __T.startLocal(); });
   await page.waitForFunction(()=>__T.game&&__T.game.phase==='intro',null,{timeout:30000});
@@ -81,7 +88,15 @@ const VISTAS=[
     await page.waitForFunction(()=>__T.game.phase==='final',null,{timeout:30000}); await page.waitForTimeout(2500);
     const fin=await page.evaluate(()=>({titulo:(document.querySelector('#scrBody h2')||{}).textContent||'',grafico:!!document.querySelector('svg.linhaTempo')}));
     console.log('resultado:',JSON.stringify(fin)); if(!/Vitória|Empate/.test(fin.titulo)) erros.push('tela de resultado não abriu: '+fin.titulo); if(!fin.grafico) erros.push('resultado sem a linha do tempo');
-    await page.screenshot({path:path.join(OUT,'resultado.png')}); }
+    await page.screenshot({path:path.join(OUT,'resultado.png')});
+    // relatório do playtest: tabelas da noite, perguntas e o texto para copiar
+    await page.click('#bRel'); await page.waitForFunction(()=>document.querySelectorAll('.perguntas textarea').length===6,null,{timeout:20000}).catch(()=>{});
+    const rel=await page.evaluate(()=>({tabelas:document.querySelectorAll('table.rel').length,perguntas:document.querySelectorAll('.perguntas textarea').length}));
+    await page.fill('.perguntas textarea[data-i="0"]','Quando a Lanterna mostrou o Chamariz.');
+    const txt=await page.evaluate(()=>__T.textoRelatorio?__T.textoRelatorio():'');
+    console.log('relatório:',JSON.stringify(rel)); if(rel.tabelas<3||rel.perguntas!==6) erros.push('relatório do playtest incompleto');
+    if(!/Lanterna mostrou/.test(txt)) erros.push('a resposta não entrou no texto do relatório');
+    await page.screenshot({path:path.join(OUT,'relatorio.png'),fullPage:true}); }
   console.log('carregamento até o menu:',(boot/1000).toFixed(1),'s');
   console.table(medidas.map(m=>({vista:m.vista,chamadas:m.chamadas,triangulos:m.triangulos,geometrias:m.geometrias})));
   if(erros.length){ console.log('ERROS:'); [...new Set(erros)].slice(0,20).forEach(e=>console.log(' ',e)); }

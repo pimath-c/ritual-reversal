@@ -11,7 +11,7 @@ const r2=v=>Math.round(v*100)/100;
 // ============ CONFIG (v2 escalada para 104 × 72 m e 2v2) ============
 const CFG={
   roundTime:1080, noites:1, obolosInicio:3, respawnMomento:[8,14,22],
-  formatoNoite:'placar', // 'placar': a noite sempre passa pelos três momentos; 'melhorDeTres': um 2 a 0 encerra a noite
+  formatoNoite:'melhorDeTres', // 'melhorDeTres': quem leva dois rituais vence e a noite acaba ali; 'placar': a noite sempre passa pelos três momentos
   momentos:[{id:'crepusculo',nome:'Crepúsculo',ate:180},{id:'vigilia',nome:'Vigília',ate:600},{id:'horamorta',nome:'Hora Morta',ate:1080}],
   rit:{1:{dur:45,rad:14,loc:0.55},2:{dur:34,rad:24,loc:0.5}},
   circleR:3, seal:8, sealExo:6.5, coSeal:1.35, fire1:0.7, fire2:0.45, sealMin:5, cps:[0.25,0.75],
@@ -21,6 +21,14 @@ const CFG={
   regrow:40, sensorRaio:58, pegadaVida:20, visaoRede:75, /* além de ~75 m a névoa apaga qualquer vulto */ nevoaAlcance:26, respawn:[10,3,18], speed:4.6, sprint:6, botSpeed:3.9, spawnSafe:7,
   timers:{pick:35,intro:25,summary:15},
 };
+// Laboratório de playtest: variações que o anfitrião escolhe para comparar noites (o padrão é a regra normal).
+// crepusculo: segundos até a Vigília; fogo: quanto o selo anda sob fogo de 1 e de 2 inimigos; execucao: segundos para
+// executar um caído; economia: óbolos, tarefas pagas e mercadores; formato: como a noite termina.
+const FOGO={atual:[CFG.fire1,CFG.fire2],a:[.8,.6],b:[.9,.7]};
+const LAB_OPCOES={crepusculo:[180,120,90],fogo:['atual','a','b'],execucao:[4.5,6,7.5],economia:[true,false],formato:['melhorDeTres','placar']};
+function labDe(o){ o=o||{}; const L={};
+  for(const k in LAB_OPCOES){ const ops=LAB_OPCOES[k]; L[k]=ops.includes(o[k])?o[k]:(k==='formato'&&ops.includes(CFG.formatoNoite)?CFG.formatoNoite:ops[0]); }
+  L.fire1=FOGO[L.fogo][0]; L.fire2=FOGO[L.fogo][1]; return L; }
 const CLASSES={
   ritualista:{team:'C',name:'Ritualista',hp:150,speed:4.6,arma:'Cetro de vértebras',
     text:'Cetro de vértebras. Passiva: quem canaliza com você ganha escudo ao atingir 25% e 75% do ritual.'},
@@ -419,7 +427,7 @@ function createGame(opts){
   const g={opts:opts,t:0,rt:0,phase:'pick',phaseT:0,round:1,timers:!!opts.timers,slots:(opts.slots||defaultSlots()).map(s=>({...s})),
     altars:[],reagents:REAG.map(([x,z],i)=>({i,x,z,has:true,t:0})),actors:[],proj:[],pickups:[],flares:[0,1,2,3,4,5].map(()=>({x:0,z:0,t:0})),
     know:[],visit:[],decoys:2,transferUsed:false,lastResolveT:0,endAt:0,events:[],log:[],scores:{A:null,B:null},stats:{},picks:[],ready:{},cls:{},
-    nid:1,feit:{},buff:{ess:0,selo:0},firstContact:null,matchId:opts.matchId||String(Date.now())};
+    nid:1,feit:{},buff:{ess:0,selo:0},firstContact:null,matchId:opts.matchId||String(Date.now()),lab:labDe(opts.lab)};
   enterPick(g,1);
   return g;
 }
@@ -466,7 +474,7 @@ function makeActor(g,slot,si,role,cls,feit){
   return {id:g.nid++,slot:si,cid:slot.cid||null,human:!!slot.cid,name:slot.name,team:role,cls,maxHp:C.hp,hp:C.hp,speed:C.speed,
     x:0,z:0,yaw:0,pitch:0,st:'alive',downT:0,respawnT:0,deaths:0,dc:0,revUsed:false,reag:0,hitT:-9,att:{},fireCd:0,ammo:8,reserve:48,reloadT:0,
     fervor:100,sanity:100,invuln:0,sealing:-1,hold:{key:'',t:0,max:0},lantern:false,carga:100,flares:2,sensorCd:0,abilCd:0,lastShotT:-9,moving:false,
-    panicT:-9,blindT:0,stunT:0,runeT:0,shield:0,shieldT:0,pushedT:-9,pingT:-9,hist:[],feitico:feit,obolos:CFG.obolosInicio,veuT:0,slowT:0,revelT:0,curaT:0,amuleto:false,
+    panicT:-9,blindT:0,stunT:0,runeT:0,shield:0,shieldT:0,pushedT:-9,pingT:-9,hist:[],feitico:feit,obolos:g.lab.economia?CFG.obolosInicio:0,veuT:0,slowT:0,revelT:0,curaT:0,amuleto:false,
     inp:{mx:0,mz:0,sp:false,yaw:0,pitch:0,fire:false,use:false,use2:false,viewT:0,c:{q:0,f:0,g:0,r:0,ab:0}},lc:{q:0,f:0,g:0,r:0,ab:0},
     ai:{path:[],goal:null,goalKey:'',repath:0,stuckT:0,lx:0,lz:0,alert:null,target:null,wait:0,decoyUsed:false,strafe:1,strafeT:0,patrol:null,patrolT:0}};
 }
@@ -499,16 +507,16 @@ function act(g,cid,a){
     const x=+a.x, z=+a.z; if(!isFinite(x)||!isFinite(z)) return; me.pingT=g.t;
     const k=a.k==='altar'||a.k==='inimigo'||a.k==='perigo'?a.k:'ponto';
     const px=r2(clamp(x,-HALF.x,HALF.x)), pz=r2(clamp(z,-HALF.z,HALF.z));
-    ev(g,{type:'ping',a:me.id,team:me.team,x:px,z:pz,k,i:k==='altar'?clamp(a.i|0,0,5):-1});
+    ev(g,{type:'ping',a:me.id,team:me.team,x:px,z:pz,k,i:k==='altar'?clamp(a.i|0,0,5):-1}); logE(g,'ping',{who:me.name,team:me.team,k});
     g.pedidos=(g.pedidos||0)+1; for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human&&o.st==='alive') o.ai.pedido={x:px,z:pz,k,ate:g.t+(k==='inimigo'?12:30),chegou:-1,n:g.pedidos}; }
   // frases rápidas para a equipe (0 ajuda, 1 indo, 2 recuar, 3 inimigo aqui, 4 obrigado, 5 purgar/iniciar); o bot aliado atende a ajuda e o recuo
   if(a.type==='fala'&&g.phase==='play'){ const me=g.actors.find(b=>b.cid===cid), f=a.i|0; if(!me||me.st==='dead'||f<0||f>5||g.t-me.pingT<1) return; me.pingT=g.t;
-    ev(g,{type:'fala',a:me.id,team:me.team,f,x:r2(me.x),z:r2(me.z)});
+    ev(g,{type:'fala',a:me.id,team:me.team,f,x:r2(me.x),z:r2(me.z)}); logE(g,'fala',{who:me.name,team:me.team,f});
     if(f===0||f===3){ g.pedidos=(g.pedidos||0)+1; for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human&&o.st==='alive') o.ai.pedido={x:r2(me.x),z:r2(me.z),k:'ponto',ate:g.t+20,chegou:-1,n:g.pedidos}; }
     if(f===2) for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human) o.ai.pedido=null; }
 }
 function dropHuman(g,cid){
-  const s=g.slots.find(s=>s.cid===cid); if(!s) return; s.cid=null;
+  const s=g.slots.find(s=>s.cid===cid); if(!s) return; s.cid=null; if(g.phase!=='final') logE(g,'saiu',{who:s.name,fase:g.phase});
   const a=g.actors.find(a=>a.cid===cid); if(a){ a.cid=null; a.human=false; a.inp.fire=false; a.inp.use=false; }
   delete g.ready[cid];
   if((g.phase==='intro'||g.phase==='summary')&&allReady(g)){ if(g.phase==='intro') startPlay(g); else afterSummary(g); }
@@ -556,7 +564,8 @@ const TAREFAS=[
    C:[{id:'consagrar',nome:'Consagre altares',meta:2,rec:4},{id:'ritual',nome:'Complete um ritual',meta:1,rec:5}]},
   {H:[{id:'final',nome:'Sele dois dos três rituais ou resista até o amanhecer',meta:0,rec:0}],
    C:[{id:'final',nome:'Vença dois dos três rituais antes do amanhecer',meta:0,rec:0}]}];
-const momentoDe=rt=>{ const M=CFG.momentos; for(let i=0;i<M.length;i++) if(rt<M[i].ate) return i; return M.length-1; };
+// o fim do Crepúsculo vem do laboratório (180 s no padrão)
+const momentoDe=(rt,crep)=>{ const M=CFG.momentos; for(let i=0;i<M.length;i++) if(rt<(i===0&&crep?crep:M[i].ate)) return i; return M.length-1; };
 const fendas=g=>g.altars.filter(A=>A.state==='fenda').length;
 const farois=g=>g.altars.filter(A=>A.state==='farol').length;
 // Três rituais por noite, no máximo, e um de cada vez. Devolve o motivo do bloqueio, ou null se pode começar.
@@ -581,12 +590,13 @@ function novoMomento(g,mi){
   logE(g,'momento',{i:mi,nome:CFG.momentos[mi].nome});
 }
 function tarefaProg(g,role,id,n){ const t=(g.tarefas&&g.tarefas[role]||[]).find(t=>t.id===id); if(!t||t.feita||!t.meta) return;
-  t.prog=Math.min(t.meta,t.prog+(n||1)); if(t.prog>=t.meta){ t.feita=true; g.actors.filter(a=>a.team===role).forEach(a=>a.obolos+=t.rec);
-    feed(g,`Tarefa cumprida: ${t.nome}. +${t.rec} óbolos para cada um.`,role==='H'?'h':'c',role); ev(g,{type:'tarefa',team:role,id}); logE(g,'tarefa',{team:role,id}); } }
+  t.prog=Math.min(t.meta,t.prog+(n||1)); if(t.prog>=t.meta){ t.feita=true; const paga=g.lab.economia; if(paga) g.actors.filter(a=>a.team===role).forEach(a=>a.obolos+=t.rec);
+    feed(g,paga?`Tarefa cumprida: ${t.nome}. +${t.rec} óbolos para cada um.`:`Tarefa cumprida: ${t.nome}.`,role==='H'?'h':'c',role); ev(g,{type:'tarefa',team:role,id}); logE(g,'tarefa',{team:role,id}); } }
+const ganhaObolos=(g,a,n)=>{ if(g.lab.economia) a.obolos+=n; };
 function comprar(g,cid,npcId,itemId){
   const a=g.actors.find(x=>x.cid===cid), n=NPCS.find(x=>x.id===npcId), it=ITENS[itemId];
   const nega=msg=>{ if(a) ev(g,{type:'feed',msg,cls:'',to:a.id}); };
-  if(!a||!n||!it||a.st!=='alive') return; if(dist(a,n)>3.2) return nega('Chegue mais perto para negociar.');
+  if(!a||!n||!it||a.st!=='alive'||!g.lab.economia) return; if(dist(a,n)>3.2) return nega('Chegue mais perto para negociar.');
   if(!n.vende.includes(itemId)||(n.time&&n.time!==a.team)||(it.time&&it.time!==a.team)) return nega('Este item não é para você.');
   if(it.momento&&g.momento<it.momento) return nega(`${it.nome} só aparece a partir da Vigília.`);
   if(a.obolos<it.preco) return nega(`Faltam ${it.preco-a.obolos} óbolos.`);
@@ -601,7 +611,7 @@ function comprar(g,cid,npcId,itemId){
   logE(g,'compra',{who:a.name,item:itemId,npc:npcId});
 }
 function passoNoite(g,dt){
-  const mi=momentoDe(g.rt); if(mi!==g.momento) novoMomento(g,mi);
+  const mi=momentoDe(g.rt,g.lab.crepusculo); if(mi!==g.momento) novoMomento(g,mi);
   for(const p of g.pontos) if(p.tipo==='erva'&&!p.ativo){ p.t-=dt; if(p.t<=0) p.ativo=true; }
   for(let i=g.realocar.length-1;i>=0;i--) if(g.rt>=g.realocar[i]){ g.realocar.splice(i,1);
     const livres=g.altars.filter(A=>!A.chosen&&A.state==='dormant'); if(livres.length){ const N=livres[Math.floor(Math.random()*livres.length)]; N.chosen=true; feed(g,`Um novo altar foi escolhido: ${N.name}.`,'c','C'); logE(g,'realocado',{altar:N.name}); } }
@@ -719,7 +729,7 @@ function damage(g,t,amt,src){
 }
 function goDown(g,t,src){
   if(t.revUsed){ kill(g,t,src); return; }
-  if(src&&src.team!==t.team) src.obolos+=1;
+  if(src&&src.team!==t.team) ganhaObolos(g,src,1);
   t.st='down'; t.hp=0; t.downT=CFG.downTime; t.sealing=-1; t.hold={key:'',t:0,max:0}; t.lantern=false;
   feed(g,`${src.name} derrubou ${t.name}`,t.team==='C'?'h':'c'); logE(g,'down',{who:t.name,team:t.team,by:src.name,x:r2(t.x),z:r2(t.z)});
 }
@@ -767,9 +777,9 @@ function contexts(g,a){
   const out={e:null,t:null,info:null};
   if(!a||a.st!=='alive') return out;
   for(const b of g.actors){ if(b===a||b.hidden||b.st!=='down'||dist(a,b)>1.8) continue;
-    out.e=b.team===a.team?{key:'rev'+b.id,type:'revive',b:b.id,label:`Segure E para reanimar ${b.name}`,time:CFG.revive}:{key:'exe'+b.id,type:'execute',b:b.id,label:`Segure E para executar ${b.name}`,time:CFG.execute};
+    out.e=b.team===a.team?{key:'rev'+b.id,type:'revive',b:b.id,label:`Segure E para reanimar ${b.name}`,time:CFG.revive}:{key:'exe'+b.id,type:'execute',b:b.id,label:`Segure E para executar ${b.name}`,time:g.lab.execucao};
     return out; }
-  for(const n of NPCS){ if(dist(a,n)>2.6) continue; if(n.time&&n.time!==a.team){ out.info=`${n.nome[0].toUpperCase()+n.nome.slice(1)} não negocia com você`; return out; }
+  if(g.lab.economia) for(const n of NPCS){ if(dist(a,n)>2.6) continue; if(n.time&&n.time!==a.team){ out.info=`${n.nome[0].toUpperCase()+n.nome.slice(1)} não negocia com você`; return out; }
     out.e={key:'loja'+n.id,type:'loja',npc:n.id,label:`Aperte E para negociar com ${n.nome}`,time:0}; return out; }
   for(const p of g.pontos||[]){ if(!p.ativo||Math.hypot(a.x-p.x,a.z-p.z)>1.9) continue;
     if(a.team==='H'&&p.tipo==='pista'){ out.e={key:'pt'+p.i,type:'ponto',P:p.i,label:'Segure E para examinar o sinal antigo',time:2}; return out; }
@@ -803,14 +813,14 @@ function doAction(g,a,ctx){
   const A=ctx.A!=null?g.altars[ctx.A]:null, R=ctx.R!=null?g.reagents[ctx.R]:null, B=ctx.b!=null?g.actors.find(x=>x.id===ctx.b):null;
   switch(ctx.type){
     case 'ponto': { const p=g.pontos[ctx.P]; if(!p||!p.ativo) break;
-      if(p.tipo==='pista'){ p.ativo=false; a.obolos+=1; tarefaProg(g,'H','pistas');
+      if(p.tipo==='pista'){ p.ativo=false; ganhaObolos(g,a,1); tarefaProg(g,'H','pistas');
         // o sinal responde "onde NÃO está": descarta um altar que o culto não escolheu e que a equipe ainda não conhece
         const cand=g.altars.filter(A=>!A.chosen&&A.state==='dormant'&&g.know[A.i]==='?'); const D=cand[Math.floor(Math.random()*cand.length)];
         if(D){ g.know[D.i]='limpo'; feed(g,`${a.name} leu um sinal antigo: ${D.name} não foi escolhido pelo culto.`,'h','H'); logE(g,'pista_info',{altar:D.name}); }
         else feed(g,`${a.name} examinou um sinal antigo; ele não diz nada novo.`,'h','H'); }
       else if(p.tipo==='sentinela'){ p.acesa=true; tarefaProg(g,'H','sentinelas'); feed(g,`${a.name} acendeu uma sentinela.`,'h','H'); ev(g,{type:'sfx',k:'flare',x:p.x,z:p.z,a:a.id}); }
-      else if(p.tipo==='erva'){ p.ativo=false; p.t=50; a.obolos+=1; tarefaProg(g,'C','ervas'); }
-      else if(p.tipo==='tumulo'){ p.ativo=false; if(a.reag<CFG.carry) a.reag++; else a.obolos+=2; tarefaProg(g,'C','tumulos'); feed(g,`${a.name} profanou um túmulo.`,'c','C'); }
+      else if(p.tipo==='erva'){ p.ativo=false; p.t=50; ganhaObolos(g,a,1); tarefaProg(g,'C','ervas'); }
+      else if(p.tipo==='tumulo'){ p.ativo=false; if(a.reag<CFG.carry) a.reag++; else ganhaObolos(g,a,2); tarefaProg(g,'C','tumulos'); feed(g,`${a.name} profanou um túmulo.`,'c','C'); }
       logE(g,'ponto',{tipo:p.tipo,by:a.name}); break; }
     case 'purge': { const was=A.decoy; tarefaProg(g,'H','purgar'); A.state='dormant'; A.decoy=false; g.know[A.i]='limpo';
       feed(g,was?`Chamariz queimado em ${A.name}.`:`${A.name} foi purgado.`,'h','H'); feed(g,`Um altar foi purgado: ${A.name}.`,'c','C');
@@ -896,7 +906,7 @@ function resolveAltar(g,A,kind){
   else { ev(g,{type:'sealed'}); g.buff.ess=0; feed(g,`${A.name} foi selado. Um Farol se acendeu.`,'big h'); logE(g,'sealed',{altar:A.name,prog:r2(A.prog),canalizadores:A.maxN||1}); }
   if(kind==='fenda') tarefaProg(g,'C','ritual');
   const F=fendas(g), P=farois(g);
-  if(F+P>=3||(CFG.formatoNoite!=='placar'&&(F>=2||P>=2))) g.endAt=g.rt+3;
+  if(F+P>=3||(g.lab.formato!=='placar'&&(F>=2||P>=2))) g.endAt=g.rt+3;
 }
 function updateAltars(g,dt){
   for(const A of g.altars){
@@ -919,7 +929,7 @@ function updateAltars(g,dt){
       let rate=0; sealers.forEach(s=>rate=Math.max(rate,1/(s.cls==='exorcista'?CFG.sealExo:CFG.seal)));
       if(sealers.length>=2) rate*=CFG.coSeal; if(g.buff.ess>g.t) rate*=1.25; rate=Math.min(rate,1/CFG.sealMin);
       let at=0; sealers.forEach(s=>at=Math.max(at,recentAttackers(g,s)));
-      if(at>=2) rate*=CFG.fire2; else if(at===1) rate*=CFG.fire1;
+      if(at>=2) rate*=g.lab.fire2; else if(at===1) rate*=g.lab.fire1;
       A.seal+=rate*dt; A.sealIdle=0; A.fireT=(A.fireT||0)+(at?dt:0); A.sealT=(A.sealT||0)+dt;
     } else {
       if(A.sealers.length){ const who=A.sealers.map(id=>g.actors.find(x=>x.id===id)).filter(Boolean);
@@ -934,15 +944,15 @@ function updateAltars(g,dt){
 function updateKnowledge(g,dt){
   for(const h of g.actors){ if(h.team!=='H'||h.st!=='alive') continue;
     g.altars.forEach((A,i)=>{ const d=dist(h,A); if(d>=10) return; g.visit[i]=g.t; const k=g.know[i];
-      if(A.state==='awake'){ if(k==='?'||k==='limpo'){ g.know[i]='desperto'; ev(g,{type:'evp',a:h.id,x:A.x,z:A.z}); feed(g,`EVP: vozes em ${A.name}.`,'h','H'); }
-        if(!h.human&&d<6&&g.know[i]==='desperto'&&Math.random()<dt*.35) g.know[i]=A.decoy?'chamariz':'confirmado'; }
+      if(A.state==='awake'){ if(k==='?'||k==='limpo'){ g.know[i]='desperto'; ev(g,{type:'evp',a:h.id,x:A.x,z:A.z}); feed(g,`EVP: vozes em ${A.name}.`,'h','H'); logE(g,'evp',{altar:A.name,real:A.chosen&&!A.decoy,by:h.name}); }
+      }
       else if(A.state==='dormant'&&k!=='limpo') g.know[i]='limpo';
     });
-    if(h.human&&h.lantern){ const fx=-Math.sin(h.yaw),fz=-Math.cos(h.yaw);
+    if(h.lantern){ const fx=-Math.sin(h.yaw),fz=-Math.cos(h.yaw);
       g.altars.forEach((A,i)=>{ if(A.state!=='awake'&&A.state!=='active') return; const dx=A.x-h.x,dz=A.z-h.z,d=Math.hypot(dx,dz); if(d>16||d<.5) return;
         if((dx*fx+dz*fz)/d<.9||!losClear(h,A)) return;
         if(A.decoy){ if(g.know[i]!=='chamariz'){ g.know[i]='chamariz'; feed(g,`Lanterna: nenhum resíduo em ${A.name}. É um Chamariz.`,'h','H'); logE(g,'decoy_spotted',{altar:A.name,by:h.name}); } }
-        else if(g.know[i]!=='confirmado'&&g.know[i]!=='ativo'){ g.know[i]='confirmado'; feed(g,`Lanterna: resíduo de reagente em ${A.name}.`,'h','H'); } }); }
+        else if(g.know[i]!=='confirmado'&&g.know[i]!=='ativo'){ g.know[i]='confirmado'; feed(g,`Lanterna: resíduo de reagente em ${A.name}.`,'h','H'); logE(g,'lanterna',{altar:A.name,by:h.name}); } }); }
   }
 }
 
@@ -1032,7 +1042,7 @@ function botHelpDowned(g,b,dt,fighting){
   const ally=g.actors.find(o=>o!==b&&o.team===b.team&&o.st==='down'&&dist(o,b)<20);
   if(ally&&!fighting){ if(dist(b,ally)<1.5){ b.moving=false; botHold(g,b,'rev'+ally.id,CFG.revive,dt,{type:'revive',b:ally.id}); return true; } setGoal(g,b,ally.x,ally.z,'rv'+ally.id); botMove(g,b,dt,1.05); return true; }
   const foe=g.actors.find(o=>o.team!==b.team&&o.st==='down'&&dist(o,b)<10);
-  if(foe&&!fighting){ if(dist(b,foe)<1.5){ b.moving=false; botHold(g,b,'exe'+foe.id,CFG.execute,dt,{type:'execute',b:foe.id}); return true; } setGoal(g,b,foe.x,foe.z,'ex'+foe.id); botMove(g,b,dt,1.05); return true; }
+  if(foe&&!fighting){ if(dist(b,foe)<1.5){ b.moving=false; botHold(g,b,'exe'+foe.id,g.lab.execucao,dt,{type:'execute',b:foe.id}); return true; } setGoal(g,b,foe.x,foe.z,'ex'+foe.id); botMove(g,b,dt,1.05); return true; }
   return false;
 }
 // Ping de um humano da equipe: o bot aliado vai até lá (30 s; 12 s para um inimigo marcado). Num ponto ou inimigo,
@@ -1044,7 +1054,7 @@ function botAtendePing(g,b,dt,fighting){ const P=b.ai.pedido; if(!P) return fals
   setGoal(g,b,P.x,P.z,'pedido'+P.n); botMove(g,b,dt,1.1); return true; }
 function botNoite(g,b,dt){ const ai=b.ai, role=b.team;
   // compras: Cultista sem reagente compra; Caçador com pouca munição compra
-  const quer=role==='C'?(b.reag===0&&b.obolos>=ITENS.reagente.preco&&'reagente'):(b.reserve<16&&b.obolos>=ITENS.municao.preco&&'municao');
+  const quer=g.lab.economia&&(role==='C'?(b.reag===0&&b.obolos>=ITENS.reagente.preco&&'reagente'):(b.reserve<16&&b.obolos>=ITENS.municao.preco&&'municao'));
   if(quer){ const n=NPCS.filter(n=>(!n.time||n.time===role)&&n.vende.includes(quer)).sort((x,y)=>dist(b,x)-dist(b,y))[0];
     if(n&&dist(b,n)<55){ if(dist(b,n)<2.4){ b.moving=false; if(b.cid==null) comprarBot(g,b,n,quer); return true; } setGoal(g,b,n.x,n.z,'npc'+n.id); botMove(g,b,dt,1); return true; } }
   // tarefas do Crepúsculo
@@ -1062,6 +1072,9 @@ function comprarBot(g,b,n,item){ const it=ITENS[item]; if(b.obolos<it.preco) ret
   if(item==='reagente'&&b.reag<CFG.carry) b.reag++; else if(item==='municao') b.reserve=Math.min(80,b.reserve+16); logE(g,'compra',{who:b.name,item,npc:n.id}); }
 function aiHunter(g,b,dt){
   const fighting=botCombat(g,b,dt), ai=b.ai; b.sealing=-1;
+  // Lanterna do bot: só acesa enquanto confere um altar (gasta carga e o denuncia, como a do jogador)
+  if(b.lantern){ b.carga-=dt*3.2; if(b.carga<=0){ b.carga=0; } } else if(b.carga<100&&lightAt(g,b.x,b.z)>.5) b.carga=Math.min(100,b.carga+dt*6);
+  b.lantern=false;
   if(b.reloadT>0){ b.reloadT-=dt; if(b.reloadT<=0){ const n=Math.min(8-b.ammo,b.reserve); b.ammo+=n; b.reserve-=n; if(b.reserve<=0) b.reserve=24; } }
   if(ai.target&&b.abilCd<=0){ const d=dist(b,ai.target);
     if(b.feitico==='flash'&&d<12) useAbility(g,b);
@@ -1080,6 +1093,9 @@ function aiHunter(g,b,dt){
   }
   const known=g.altars.filter(A=>A.state==='awake'&&['confirmado','desperto','chamariz'].includes(g.know[A.i])).sort((x,y)=>dist(b,x)-dist(b,y))[0];
   if(known&&!(g.know[known.i]==='chamariz'&&dist(b,known)>12)){
+    // antes de purgar, confere com a Lanterna se o altar desperto é de verdade ou um Chamariz
+    if(g.know[known.i]==='desperto'&&!fighting&&b.carga>5){ const d=dist(b,known);
+      if(d<14&&d>1.5&&losClear(b,known)){ b.moving=false; b.lantern=true; b.yaw=lerpAngle(b.yaw,Math.atan2(-(known.x-b.x),-(known.z-b.z)),.3); return; } }
     if(dist(b,known)<3){ b.moving=false; if(!fighting) botHold(g,b,'purge'+known.i,CFG.purge,dt,{type:'purge',A:known.i}); return; }
     const s=circleSpot(known,b); setGoal(g,b,s.x,s.z,'pg'+known.i); botMove(g,b,dt,1); return; }
   if(ai.alert&&g.t-ai.alert.t<6&&!fighting&&!inEnemySpawn(b,ai.alert)){ setGoal(g,b,ai.alert.x,ai.alert.z,'al'+Math.round(ai.alert.t)); botMove(g,b,dt,1); if(dist(b,ai.alert)<2) ai.alert=null; return; }
@@ -1233,6 +1249,37 @@ function roundStats(g,round){
     fracaoSobFogo:sealT>0?r2(fireT/sealT):null,primeiroContato:L.find(e=>e.ev==='first_contact')?.t??null,
     quedas:c('down').length,mortes:c('death').length,reanimacoes:c('revive').length,purgas:c('purge').length,chamarizes:c('decoy').length,transferencias:c('transfer').length};
 }
+// Relatório de playtest de uma rodada, a partir do registro (serve para o cliente, o servidor e tools/analisar.js).
+// Mede o que importa para saber se a investigação funciona: quando a caça descobre a verdade, quanto tempo passa sem
+// pista nova, quanto o engano custa, como as descobertas viram (ou não) Faróis, e o que o combate faz com isso.
+const INFO_CACA=['pista_info','evp','sentinela','lanterna','decoy_spotted','rastro_visto','rastro_lido','localized','sal'];
+function relatorio(log,r){ r=r||1;
+  const L=(log||[]).filter(e=>(e.r||1)===r), c=k=>L.filter(e=>e.ev===k), fim=c('round_end')[0], T=fim?fim.t:(L.length?L[L.length-1].t:0);
+  const verdade=L.filter(e=>(e.ev==='evp'&&e.real)||e.ev==='sentinela'||e.ev==='lanterna'||e.ev==='rastro_lido'||e.ev==='localized');
+  const info=L.filter(e=>INFO_CACA.includes(e.ev)||(e.ev==='sensor'&&e.v>.02)).map(e=>e.t).sort((a,b)=>a-b);
+  let maior=0, soma=0, n=0, ant=0; for(const t of info.concat([T])){ const d=t-ant; if(d>maior) maior=d; soma+=d; n++; ant=t; }
+  const rituais=c('ritual_start').map(s=>{ const fimR=L.find(e=>(e.ev==='sealed'||e.ev==='ritual_complete')&&e.altar===s.altar&&e.t>=s.t);
+    const loc=L.find(e=>e.ev==='localized'&&e.altar===s.altar&&e.t>=s.t), cheg=L.find(e=>e.ev==='hunter_arrive'&&e.altar===s.altar&&e.t>=s.t);
+    const sel=L.filter(e=>e.ev==='seal_start'&&e.altar===s.altar&&e.t>=s.t&&(!fimR||e.t<=fimR.t)).length;
+    return {altar:s.altar,inicio:s.t,localizado:loc?r2(loc.t-s.t):null,chegada:cheg?r2(cheg.t-s.t):null,tentativasSelo:sel,
+      resultado:fimR?(fimR.ev==='sealed'?'farol':'fenda'):'aberto',duracao:fimR?r2(fimR.t-s.t):null,localizarAoFim:loc&&fimR?r2(fimR.t-loc.t):null}; });
+  const causas={}; c('seal_stop').forEach(e=>causas[e.cause]=(causas[e.cause]||0)+1);
+  const feiticos={}; c('ability').forEach(e=>feiticos[e.feitico]=(feiticos[e.feitico]||0)+1);
+  const mortes=c('death'), purgas=c('purge');
+  return {rodada:r,duracao:T,fendas:c('ritual_complete').length,farois:c('sealed').length,
+    investigacao:{primeiraVerdade:verdade.length?verdade[0].t:null,comoDescobriu:verdade.length?verdade[0].ev:null,pistasNovas:info.length,
+      maiorIntervaloSemPista:r2(maior),intervaloMedioSemPista:n?r2(soma/n):null},
+    ferramentas:{sinaisLidos:c('pista_info').length,sentinelasAcesas:L.filter(e=>e.ev==='ponto'&&e.tipo==='sentinela').length,avisosDeSentinela:c('sentinela').length,
+      sensor:c('sensor').length,sensorComSinal:c('sensor').filter(e=>e.v>.02).length,evp:c('evp').length,lanterna:c('lanterna').length+c('decoy_spotted').length,
+      sal:c('sal').length,rastrosVistos:c('rastro_visto').length,rastrosLidos:c('rastro_lido').length,pings:c('ping').length,frases:c('fala').length,feiticos},
+    engano:{chamarizes:c('decoy').length,chamarizesDesmascarados:c('decoy_spotted').length,chamarizesQueimados:purgas.filter(e=>e.decoy).length,
+      purgasDeAltarVerdadeiro:purgas.filter(e=>!e.decoy).length,evpEmChamariz:c('evp').filter(e=>!e.real).length,transferencias:c('transfer').length},
+    rituais,
+    selamento:{tentativas:c('seal_start').length,interrupcoes:causas,selados:c('sealed').length},
+    combate:{primeiraQueda:c('down').length?c('down')[0].t:null,quedas:c('down').length,execucoes:mortes.filter(e=>e.how==='exec').length,
+      sangraram:mortes.filter(e=>e.how==='bleed').length,reanimacoes:c('revive').length},
+    sessao:{saidas:c('saiu').length,reconexoes:c('reconnect').length,botsReiniciados:c('bot_reiniciado').length}};
+}
 function winner(g){
   if(!((g.opts&&g.opts.noites||CFG.noites)>1)){ const S=g.scores.B; if(!S) return null; return S.done>=2?{win:'B',why:'os Cultistas venceram dois dos três rituais'}:{win:'A',why:(S.sealed||0)>=2?'os Caçadores selaram dois dos três rituais':'os Caçadores resistiram até o amanhecer'}; }
   const A=g.scores.A,B=g.scores.B; if(!A||!B) return null;
@@ -1272,9 +1319,9 @@ function snapshot(g,role){
     know:hide?g.know.slice():g.know.map(()=>'?'),
     momento:g.momento,tarefas:g.tarefas,pontos:(g.pontos||[]).map(p=>({i:p.i,tipo:p.tipo,x:p.x,z:p.z,ativo:p.ativo,acesa:p.acesa})),sal:(g.sal||[]).map(q=>({id:q.id,x:q.x,z:q.z})),feit:Object.assign({},g.feit),
     decoys:g.decoys,transferUsed:g.transferUsed,pegadas:hide?(g.pegadas||[]):[],rastros:hide?(g.rastros||[]).filter(R=>g.rt-R.t<180).map(R=>({x:R.x,z:R.z,t:R.t})):[],picks:hide?[]:g.picks.slice(),ready:Object.assign({},g.ready),cls:Object.assign({},g.cls),
-    scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT};
+    scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT,lab:g.lab};
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

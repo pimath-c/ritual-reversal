@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ritual Reversal — Protótipo v5.3</title>
+<title>Ritual Reversal — Protótipo v5.4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -30,6 +30,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
   clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px); }
 #top{ position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:18px; padding:8px 22px; }
 #top .side{ font-size:15px; color:var(--muted); min-width:130px; } #top .side b{ font-size:26px; color:var(--bone); font-weight:600; margin:0 6px; }
+#regra{ font-size:11px; color:var(--muted); letter-spacing:.05em; margin-top:1px; } body.toque #regra{ display:none; }
 #top .a{ text-align:right; }
 #clock{ font-size:34px; font-weight:600; min-width:88px; text-align:center; line-height:1.05; }
 #roundName{ font-family:var(--serif); font-size:15px; color:var(--gold); text-align:center; }
@@ -52,7 +53,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #feed{ position:absolute; top:16px; left:18px; width:350px; display:flex; flex-direction:column; gap:4px; }
 #feed div{ font-size:16px; padding:5px 10px; background:rgba(8,9,11,.68); border-left:2px solid var(--steel); transition:opacity .6s; }
 #feed div.c{ border-left-color:var(--crimson-hi); } #feed div.h{ border-left-color:var(--gold); } #feed div.big{ font-family:var(--serif); font-size:20px; }
-#buffs{ position:absolute; top:168px; left:50%; transform:translateX(-50%); font-size:15px; text-align:center; color:var(--gold-hi); text-shadow:0 1px 2px #000; }
+#buffs{ position:absolute; top:182px; left:50%; transform:translateX(-50%); font-size:15px; text-align:center; color:var(--gold-hi); text-shadow:0 1px 2px #000; }
 #cross{ position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; }
 #cross::before,#cross::after{ content:''; position:absolute; background:var(--mira,rgba(232,224,208,.85)); }
 #cross.ponto::before,#cross.ponto::after{ display:none; } #cross.ponto i{ left:8px; top:8px; width:6px; height:6px; border-radius:50%; background:var(--mira,#e8e0d0); }
@@ -80,6 +81,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #falas kbd{ font-family:var(--cond); font-weight:700; color:var(--gold-hi); border:1px solid #4a525c; padding:0 5px; margin-right:8px; }
 /* caderno dos altares */
 #chatJogo{ position:absolute; left:18px; top:76px; width:350px; display:none; z-index:6; } #chatJogo.on{ display:block; }
+#chatJogo.todos input{ border-color:var(--crimson-hi); }
 #chatJogo input{ width:100%; box-sizing:border-box; font:15px var(--sans,sans-serif); color:var(--bone); background:rgba(8,9,11,.92); border:1px solid var(--gold); padding:7px 10px; outline:none; }
 #caderno{ position:absolute; right:26px; top:120px; width:360px; max-height:calc(100% - 300px); overflow:hidden; padding:10px 14px; background:rgba(8,9,11,.97); border:1px solid rgba(232,224,208,.16); display:none; pointer-events:none; z-index:6; }
 #caderno.on{ display:block; } #caderno small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
@@ -99,7 +101,7 @@ body.toque #tutorial{ top:auto; bottom:110px; width:250px; } body.toque #tutoria
 #dica.on{ opacity:1; transform:none; } #dica small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:2px; }
 body.toque #dica{ top:auto; bottom:14px; right:auto; left:calc(50% - 150px); width:300px; font-size:12px; } /* no meio, embaixo: as tarefas ficam à esquerda */
 /* bússola: direções e marcadores (aliados, rituais revelados, mercadores, sinalizadores) */
-#bussola{ position:absolute; top:134px; left:50%; transform:translateX(-50%); width:440px; height:26px; overflow:hidden; pointer-events:none;
+#bussola{ position:absolute; top:148px; left:50%; transform:translateX(-50%); width:440px; height:26px; overflow:hidden; pointer-events:none;
   -webkit-mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent); mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent); }
 #bussola .tk{ position:absolute; top:0; width:1px; height:6px; background:rgba(232,224,208,.35); }
 #bussola .ct{ position:absolute; top:6px; transform:translateX(-50%); font-size:13px; font-weight:600; color:#cfc6b6; text-shadow:0 1px 2px #000; }
@@ -251,7 +253,7 @@ input[type=range]{ width:100%; accent-color:#d2ad62; height:22px; }
 #top .side{ font-size:14px; min-width:150px; letter-spacing:.01em; } #top .side b{ font-size:30px; }
 #clock{ font-size:36px; text-shadow:0 2px 10px rgba(0,0,0,.8); }
 #roundName{ font-size:14px; }
-#strip{ top:74px; gap:6px; } .pip{ width:62px; font-size:11.5px; line-height:1.15; color:#bdb4a4; text-shadow:0 1px 2px #000; }
+#strip{ top:88px; gap:6px; } .pip{ width:62px; font-size:11.5px; line-height:1.15; color:#bdb4a4; text-shadow:0 1px 2px #000; }
 .pip .gem{ width:22px; height:22px; }
 #vitals{ left:26px; bottom:22px; width:250px; padding:0; }
 #roleLine{ font-size:19px; text-shadow:0 1px 3px #000; }
@@ -288,6 +290,14 @@ input[type=range]{ width:100%; accent-color:#d2ad62; height:22px; }
 .dif{ display:flex; align-items:center; gap:6px; font-size:15px; color:var(--muted); } .dif span{ margin-right:4px; }
 .dif button{ font-family:var(--cond); font-size:15px; color:var(--bone); background:rgba(14,16,19,.7); border:1px solid #3a4149; padding:3px 12px; cursor:pointer; }
 .dif button.sel{ border-color:var(--gold-hi); color:var(--gold-hi); }
+table.rel td.fine{ font-size:13px; color:var(--muted); text-align:left; } table.rel{ margin-bottom:10px; }
+.perguntas label{ display:block; text-align:left; font-size:15px; margin:8px 0; color:var(--bone); }
+.perguntas textarea{ display:block; width:100%; box-sizing:border-box; margin-top:4px; font:15px var(--serif,serif); color:var(--bone); background:rgba(8,9,11,.85); border:1px solid #3a4149; padding:6px 8px; resize:vertical; }
+details.lab{ width:min(640px,100%); box-sizing:border-box; text-align:left; font-size:14px; color:var(--muted); border:1px solid #3a4149; padding:6px 12px; background:rgba(8,9,11,.55); margin:4px auto; }
+details.lab summary{ cursor:pointer; font-family:var(--cond); font-size:15px; letter-spacing:.04em; color:var(--bone); } details.lab summary b{ color:var(--gold-hi); font-weight:500; }
+details.lab .fine{ text-align:left!important; margin:6px 0!important; }
+details.lab .labRow{ flex-wrap:wrap; margin:6px 0; font-size:14px; } details.lab .labRow span{ min-width:170px; } details.lab .labRow button{ padding:3px 9px; font-size:14px; } details.lab .labRow b{ color:var(--gold-hi); font-weight:500; }
+.labAviso{ color:var(--gold-hi); font-size:14px; text-align:left; }
 .bolsa{ margin-top:8px; font-size:14px; color:var(--muted); } .bolsa b{ color:var(--gold-hi); font-size:17px; margin-left:4px; }
 #tarefas{ position:absolute; right:26px; top:120px; width:300px; font-size:14.5px; line-height:1.35; text-shadow:0 1px 3px #000; color:#d8cfbf; }
 #tarefas b{ display:block; font-family:var(--serif); font-weight:400; font-size:17px; color:var(--gold); margin-bottom:4px; }
@@ -351,7 +361,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 <div id="hud">
   <div id="top" class="plate">
     <div class="side a"><span id="nameA">Sua equipe</span><b id="scoreA">0</b></div>
-    <div id="clockWrap"><div id="clock">6:00</div><div id="roundName">Rodada 1 de 2</div></div>
+    <div id="clockWrap"><div id="clock">6:00</div><div id="roundName">Rodada 1 de 2</div><div id="regra"></div></div>
     <div class="side b"><b id="scoreB">0</b><span id="nameB">Adversários</span></div>
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
@@ -1738,7 +1748,7 @@ function atualizarBussola(m){ const el=$('#bussola'); if(!el) return; if(!m){ if
   const role=myRole();
   for(const a of V.actors){ if(a.cid===meCid||a.hidden||a.team!==m.team||a.st==='dead') continue; const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z; mk(x,z,'al'+(m.team==='C'?' c':'')+(a.st==='down'?' cai':''),a.st==='down'?'✚':'◆'); }
   for(const A of V.altars){ if(A.state!=='active'||(role==='H'&&!A.localized)) continue; mk(A.x,A.z,'rit','✶'); }
-  for(const n of NPCS){ if(!n.time||n.time===m.team){ if(Math.hypot(n.x-P.x,n.z-P.z)<60) mk(n.x,n.z,'npc','○'); } }
+  if(LAB().economia) for(const n of NPCS){ if(!n.time||n.time===m.team){ if(Math.hypot(n.x-P.x,n.z-P.z)<60) mk(n.x,n.z,'npc','○'); } }
   for(const f of V.flares||[]) if(f.t>0) mk(f.x,f.z,'fl','✦');
   for(const p of BUS.pings) mk(p.x,p.z,'ping','⬥');
   if(TUT.ativo&&TUT.alvo&&!TUT.fim) mk(TUT.alvo.x,TUT.alvo.z,'rit','◉');
@@ -1867,11 +1877,14 @@ function pressed(code,e){
   if(SET.binds.fire===code) mouseL=true;
   if(SET.binds.use===code){ const m=me(); if(m){ const mv=MODE==='online'&&NET.pred?Object.assign({},m,{x:NET.pred.x,z:NET.pred.z}):m; const c=Sim.contexts(V,mv).e; if(c&&c.type==='loja') abrirLoja(c.npc); } }
 }
-// chat na partida online (Enter): a mensagem vai para a sala toda e aparece no registro à esquerda
-function abrirChatJogo(){ const box=$('#chatJogo'), ic=$('#iChatJogo'); [...down].forEach(released); box.classList.add('on'); ic.value=''; setTimeout(()=>ic.focus(),0); }
+// chat na partida online (Enter): vai só para a sua equipe; Tab troca para a sala toda (aparece no registro à esquerda)
+function placeholderChat(){ const ic=$('#iChatJogo'), eq=NET.chatPara!=='todos'; ic.placeholder=eq?'Para a sua equipe · Tab: para todos · Enter envia, Esc cancela':'Para todos, inclusive os adversários · Tab: só a equipe';
+  $('#chatJogo').classList.toggle('todos',!eq); }
+function abrirChatJogo(){ const box=$('#chatJogo'), ic=$('#iChatJogo'); [...down].forEach(released); NET.chatPara='equipe'; placeholderChat(); box.classList.add('on'); ic.value=''; setTimeout(()=>ic.focus(),0); }
 function fecharChatJogo(){ $('#chatJogo').classList.remove('on'); const ic=$('#iChatJogo'); ic.blur(); }
 $('#iChatJogo').addEventListener('keydown',e=>{ e.stopPropagation(); const ic=e.target;
-  if(e.key==='Enter'){ e.preventDefault(); const t=ic.value.trim(); if(t&&ws&&ws.readyState===1) ws.send(JSON.stringify({t:'chat',msg:t})); fecharChatJogo(); }
+  if(e.key==='Enter'){ e.preventDefault(); const t=ic.value.trim(); if(t&&ws&&ws.readyState===1) ws.send(JSON.stringify({t:'chat',msg:t,para:NET.chatPara==='todos'?'todos':'equipe'})); fecharChatJogo(); }
+  else if(e.key==='Tab'){ e.preventDefault(); NET.chatPara=NET.chatPara==='todos'?'equipe':'todos'; placeholderChat(); }
   else if(e.key==='Escape'){ e.preventDefault(); fecharChatJogo(); } });
 $('#iChatJogo').addEventListener('blur',()=>$('#chatJogo').classList.remove('on'));
 function released(code){ down.delete(code); if(SET.binds.map===code) $('#tabMap').style.display='none'; if(SET.binds.fire===code) mouseL=false; }
@@ -1981,7 +1994,8 @@ function connect(create,code,name){
       if(m.voltou||RECON.ativo){ RECON.ativo=false; clearTimeout(RECON.timer); NET.snaps=[]; NET.pred=null; NET.pending=[]; NET.offset=null; screenKey=''; feed('Conexão restabelecida. Você voltou ao seu personagem.','big'); } }
     if(m.t==='lobby'){ NET.lobby=m; NET.host=m.host; if(!m.inGame){ V=null; NET.snaps=[]; NET.pred=null; screenKey=''; } }
     if(m.t==='snap') onSnap(m);
-    if(m.t==='chat'){ NET.chat.push(m); while(NET.chat.length>40) NET.chat.shift(); renderChat(); if(V&&V.phase==='play') feed(`${m.de}: ${m.msg}`); else if(m.cid!==meCid) SFX.click(); }
+    if(m.t==='chat'){ if(SET.mudoAdv&&m.time&&V&&m.time!==myRole()) return; // adversários silenciados nos Ajustes
+      NET.chat.push(m); while(NET.chat.length>40) NET.chat.shift(); renderChat(); if(V&&V.phase==='play') feed(`${m.de}${m.para==='equipe'?' (equipe)':m.time?' (para todos)':''}: ${m.msg}`); else if(m.cid!==meCid) SFX.click(); }
   };
   sock.onclose=()=>{ if(ws!==sock) return;
     // Caiu no meio de uma partida: tenta voltar por até 2 minutos, que é quanto o servidor guarda a vaga.
@@ -2175,7 +2189,7 @@ function syncAltars(dt){
 const DES={ativo:false,data:'',feito:null};
 function hojeDesafio(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function desafioDe(data){ let h=2166136261; for(const c of data) h=Math.imul(h^c.charCodeAt(0),16777619)>>>0; const id='desafio-'+data; return {id,papel:h%2?'C':'H',clima:climaDe(id+':1')}; }
-function startDesafio(){ const data=hojeDesafio(), D=desafioDe(data); startLocal({papel:D.papel,dificuldade:'dificil'}); game.matchId=D.id+'#'+Date.now(); DES.ativo=true; DES.data=data; DES.feito=null; }
+function startDesafio(){ const data=hojeDesafio(), D=desafioDe(data); startLocal({papel:D.papel,dificuldade:'dificil',desafio:true}); game.matchId=D.id+'#'+Date.now(); DES.ativo=true; DES.data=data; DES.feito=null; }
 function pontosDesafio(){ if(!V||!V.scores) return null; const slot=mySlot(); if(!slot) return null; const w=Sim.winner(V)||{}, papel=Sim.roleOf(V,slot.team), sc=V.scores.B||{done:0,sealed:0,lastT:null};
   const log=game?game.log:[], conta=ev=>log.filter(e=>e.ev===ev&&e.by==='Você').length, quedas=log.filter(e=>e.ev==='down'&&e.who==='Você').length;
   let p=w.win===slot.team?1000:0, partes=[];
@@ -2214,7 +2228,7 @@ function atualizarTutorial(dt,m){ const el=$('#tutorial'); if(!el) return; if(!T
   const L=PASSOS_TUT[TUT.papel], P=L[TUT.i];
   if(!P){ if(!TUT.fim){ TUT.fim=true; SFX.sealed(); try{ const p=perfil(); if(!p.conq.aprendiz){ p.conq.aprendiz=Date.now(); salvarPerfil(p); PF.fila.push(['aprendiz','Aprendiz','Termine o tutorial.']); } }catch(e){} }
     el.className='on fim'; const h=`<small>Tutorial completo</small><p>Você já sabe o básico de ${TUT.papel==='H'?'caçar':'celebrar'}. Termine a noite contra os bots ou saia pela pausa (Esc).</p>`; if(el._h!==h){ el.innerHTML=h; el._h=h; } return; }
-  if(P.avanca&&!TUT.avancou&&MODE==='local'&&game){ TUT.avancou=true; const ate=CFG.momentos[0].ate; if(game.rt<ate-3) game.rt=ate-3; }
+  if(P.avanca&&!TUT.avancou&&MODE==='local'&&game){ TUT.avancou=true; const ate=fimMomento(0); if(game.rt<ate-3) game.rt=ate-3; }
   if(P.feito()){ TUT.i++; TUT.avancou=false; sfxTone(null,null,1,660,880,.18,'sine',.2); return; }
   const a=P.alvo?P.alvo(m):null; TUT.alvo=a;
   el.className='on'; const h=`<small>Aprender · passo ${TUT.i+1} de ${L.length}</small><p>${esc(P.t)}</p><em>N pula este passo</em><div class="barra"><span style="width:${(TUT.i/L.length*100).toFixed(0)}%"></span></div>`; if(el._h!==h){ el.innerHTML=h; el._h=h; } }
@@ -2255,7 +2269,7 @@ function atualizarDicas(dt,m){ const el=$('#dica'); if(!el) return; DC.t-=dt; DC
   if(m.st==='alive'){
     if(V.actors.some(a=>a!==m&&a.team===m.team&&a.st==='down'&&perto(a,30))) dica('aliado');
     if(m.sanity<40) dica('sanidade');
-    if(NPCS.some(n=>(!n.time||n.time===m.team)&&perto(n,4))) dica('loja');
+    if(LAB().economia&&NPCS.some(n=>(!n.time||n.time===m.team)&&perto(n,4))) dica('loja');
     if(role==='H'){ if((V.pontos||[]).some(p=>p.tipo==='sentinela'&&!p.acesa&&perto(p,7))) dica('h_sentinela');
       if(V.know&&V.know.some(k=>k==='desperto'||k==='confirmado')) dica('h_desperto');
       if([...LEG.keys()].some(k=>k.startsWith('rit'))) dica('h_ouvido');
@@ -2448,7 +2462,8 @@ function fazerPonto(p){ const g=new THREE.Group(); g.position.set(p.x,0,p.z);
 function syncNoite(dt,t){
   if(!NOITE.npcs.size) for(const n of NPCS) NOITE.npcs.set(n.id,fazerNPC(n));
   const cx=camera.position.x, cz=camera.position.z;
-  for(const [id,g] of NOITE.npcs){ const U=g.userData; U.fase+=dt; U.corpo.position.y=Math.sin(U.fase*1.3)*.015; const n=NPCS.find(q=>q.id===id);
+  const comMercadores=LAB().economia;
+  for(const [id,g] of NOITE.npcs){ g.visible=comMercadores; if(!comMercadores) continue; const U=g.userData; U.fase+=dt; U.corpo.position.y=Math.sin(U.fase*1.3)*.015; const n=NPCS.find(q=>q.id===id);
     if(Math.hypot(cx-n.x,cz-n.z)<9) g.rotation.y=lerp(g.rotation.y,Math.atan2(-(cx-n.x),-(cz-n.z))+Math.PI,.05); }
   const vistos=new Set();
   for(const p of V.pontos||[]){ const k=p.tipo+p.i+'_'+Math.round(p.x)+'_'+Math.round(p.z); vistos.add(k); let g=NOITE.pontos.get(k); if(!g){ g=fazerPonto(p); NOITE.pontos.set(k,g); }
@@ -2487,7 +2502,7 @@ function atualizarMarcas(m){
       const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z;
       if(a.st==='down') marcador('a'+a.id,x,1.1,z,`${esc(a.name)}<small>caído, ${dm(x,z)} m</small><b></b>`,'caido',true);
       else marcador('a'+a.id,x,2.35,z,`${esc(a.name)}<b></b>`,m.team==='C'?'cult':'',false); }
-    for(const n of NPCS){ const d=dm(n.x,n.z); if(d<14&&(!n.time||n.time===m.team)) marcador('n'+n.id,n.x,2.3,n.z,`${esc(n.nome[0].toUpperCase()+n.nome.slice(1))}<small>mercador</small><b></b>`,'npc',false); }
+    if(LAB().economia) for(const n of NPCS){ const d=dm(n.x,n.z); if(d<14&&(!n.time||n.time===m.team)) marcador('n'+n.id,n.x,2.3,n.z,`${esc(n.nome[0].toUpperCase()+n.nome.slice(1))}<small>mercador</small><b></b>`,'npc',false); }
     if(role==='H') for(const a of V.actors){ if(a.team==='C'&&a.revelT>0&&a.st==='alive'){ const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z; marcador('r'+a.id,x,2.4,z,`${esc(a.name)}<small>denunciado pelo sal</small><b></b>`,'caido',true); } }
     if(TUT.ativo&&TUT.alvo&&!TUT.fim){ const a=TUT.alvo; marcador('tut',a.x,a.state?3.4:1.4,a.z,`Objetivo<small>${dm(a.x,a.z)} m</small><b></b>`,'obj',true); }
     for(const p of PINGS){ const d=dm(p.x,p.z); marcador('pg'+p.id,p.x,p.k==='altar'?3.6:p.k==='inimigo'||p.k==='fala'?2.2:.6,p.z,`${esc(p.txt)}<small>${esc(p.nome)} · ${d} m</small><b></b>`,'ping',true); }
@@ -2499,7 +2514,8 @@ function atualizarMarcas(m){
 function fmt(s){ s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 function updateHUD(dt,m){
   const role=myRole(), slot=mySlot();
-  const Mo=CFG.momentos, mi=Math.max(0,V.momento||0), prox=Mo[mi+1]; $('#clock').textContent=fmt(Mo[mi].ate-V.rt);
+  const Mo=CFG.momentos, mi=Math.max(0,V.momento||0), prox=Mo[mi+1]; $('#clock').textContent=fmt(fimMomento(mi)-V.rt);
+  const LB=LAB(); $('#regra').textContent=LB.formato==='placar'?'2 rituais decidem · a noite vai até o amanhecer':'Quem levar 2 dos 3 rituais vence';
   const GA=V.altars.find(A=>A.state==='active'&&A.grande);
   $('#roundName').textContent=GA?`Grande Ritual em ${GA.name}${role==='C'||GA.localized?`: ${Math.floor(GA.prog*100)}%`:''}`:prox?`${Mo[mi].nome}, ${prox.nome} em seguida`:`${Mo[mi].nome}, depois o amanhecer`;
   atualizarTarefas(role); ambienteMomento(mi,dt);
@@ -2518,7 +2534,7 @@ function updateHUD(dt,m){
     sensorShowT=Math.max(0,sensorShowT-dt); $('#sensor').style.opacity=sensorShowT>0?1:.45; $('#sensorV').textContent=sensorV>.6?'Sinal forte':sensorV>.3?'Sinal médio':sensorV>.02?'Sinal fraco':'Nenhum sinal'; $('#sensorFill').style.width=(sensorV*100)+'%';
   } else { $('#ammo').innerHTML=`${Math.floor(m.fervor)} <small>Fervor</small>`; const r=$('#rgN'); if(r) r.textContent=m.reag; const d=$('#dcN'); if(d) d.textContent=V.decoys; }
   const ab=$('#tAb'); if(ab) ab.querySelector('.cd').style.height=(m.abilCd/FEITICOS[m.feitico].cd*100)+'%';
-  const ob=$('#obolos'); if(ob) ob.textContent=Math.floor(m.obolos||0);
+  const ob=$('#obolos'); if(ob){ ob.textContent=Math.floor(m.obolos||0); ob.parentNode.style.display=LB.economia?'':'none'; }
   let dica=''; if(m.st==='alive'){ if(m.team==='H'){ if(m.reloadT<=0&&m.ammo===0) dica=m.reserve>0?`Sem munição: ${kb('reload')} para recarregar`:'Sem munição: volte ao spawn para repor'; else if(m.reloadT<=0&&m.ammo<=2) dica=`Munição baixa (${m.ammo})`; }
     else if(m.fervor<CFG.sigilCusto) dica='Fervor esgotado: pare de conjurar um instante para recuperar'; }
   const ah=$('#ammoHint'); if(ah.textContent!==dica) ah.textContent=dica;
@@ -2582,7 +2598,7 @@ function plantaFixa(X,Z,S){ if(PLANTA_FIXA) return PLANTA_FIXA;
   const COR={ruina:'#4e4e46',pilar_ruina:'#5e5e55',estatua:'#8a8a80',sebe:'#3a5a3c',ossos:'#8a7f68',menir:'#77746a',carvalho:'#4a3a2e',tenda:'#5a4c34',madeira:'#6a5040',mausoleu:'#58524a',torre:'#6a645a',limite:'#2b3328'};
   Sim.WALLS.forEach(b=>{ if(b.kind==='arvore_f') return; if(b.kind==='espinheiro'){ h+=`<circle cx="${f(X((b.x1+b.x2)/2))}" cy="${f(Z((b.z1+b.z2)/2))}" r="${f(Math.max(1,(b.x2-b.x1)*.6*S))}" fill="#15201a"/>`; return; } const low=!b.tall; h+=`<rect x="${f(X(b.x1))}" y="${f(Z(b.z1))}" width="${f(Math.max(low?1.2:1.5,(b.x2-b.x1)*S))}" height="${f(Math.max(low?1.2:1.5,(b.z2-b.z1)*S))}" fill="${COR[b.kind]||(low?(b.kind==='sebe'?'#27402a':'#3a3630'):'#58524a')}"/>`; });
   TALL.forEach(b=>{ if(Sim.WALLS.some(q=>q.x1===b.x1&&q.z1===b.z1&&q.x2===b.x2&&q.z2===b.z2)) return; h+=`<rect x="${f(X(b.x1))}" y="${f(Z(b.z1))}" width="${f(Math.max(1.5,(b.x2-b.x1)*S))}" height="${f(Math.max(1.5,(b.z2-b.z1)*S))}" fill="#58524a"/>`; }); // pilares
-  NPCS.forEach(n=>h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="#d2ad62"/><text x="${X(n.x)}" y="${Z(n.z)-7}" fill="#d2ad62" font-size="10" text-anchor="middle" font-family="Barlow Condensed, sans-serif">${n.nome.replace(/^(o|a) /,'')}</text>`);
+  if(LAB().economia) NPCS.forEach(n=>h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="#d2ad62"/><text x="${X(n.x)}" y="${Z(n.z)-7}" fill="#d2ad62" font-size="10" text-anchor="middle" font-family="Barlow Condensed, sans-serif">${n.nome.replace(/^(o|a) /,'')}</text>`);
   (Sim.LUGARES||[]).forEach(L=>h+=`<text x="${X(L.x)}" y="${Z(L.z)}" fill="#8a8272" font-size="10" font-style="italic" text-anchor="middle" font-family="IM Fell English, Georgia, serif">${L.name}</text>`);
   h+=`<text x="${X(SPAWN.H.x)}" y="${Z(SPAWN.H.z)+34}" fill="#d2ad62" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Caçadores</text><text x="${X(SPAWN.C.x)}" y="${Z(SPAWN.C.z)+34}" fill="${corCulto()}" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Cultistas</text>`;
   return PLANTA_FIXA=h; }
@@ -2593,7 +2609,7 @@ function mapSvg(svg,opts){
   Sim.ALTARS.forEach((A,i)=>{ const st=opts.state?opts.state(V?V.altars[i]:A,i):null; const fill=st?st.fill:'#1b1f24',stroke=st?st.stroke:'#6d7e8e';
     h+=`<g class="${opts.click?'alt-hit':''}" data-i="${i}"><circle cx="${X(A.x)}" cy="${Z(A.z)}" r="${Math.max(7,CFG.circleR*S+3)}" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/><text x="${X(A.x)}" y="${Z(A.z)+(A.z<0?22:-14)}" fill="#e8e0d0" font-size="13" text-anchor="middle" font-family="IM Fell English, Georgia, serif">${A.name}</text></g>`; });
   if(opts.me&&V&&V.actors){ const eu=me(), time=eu?eu.team:null;
-    for(const n of NPCS) if(!n.time||n.time===time) h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="none" stroke="#d2ad62" stroke-width="1.5"><title>${esc(n.nome)}</title></circle>`;
+    if(LAB().economia) for(const n of NPCS) if(!n.time||n.time===time) h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="none" stroke="#d2ad62" stroke-width="1.5"><title>${esc(n.nome)}</title></circle>`;
     for(const f of V.flares||[]) if(f.t>0) h+=`<circle cx="${X(f.x)}" cy="${Z(f.z)}" r="5" fill="#ffb070" opacity=".8"/>`;
     for(const p of PINGS) h+=`<g transform="translate(${X(p.x)} ${Z(p.z)})"><circle r="7" fill="none" stroke="#8ee8ff" stroke-width="2"/><circle r="2" fill="#8ee8ff"/><text y="-10" fill="#8ee8ff" font-size="11" text-anchor="middle">${esc(p.txt)}</text></g>`;
     for(const a of V.actors){ if(!eu||a.cid===meCid||a.hidden||a.team!==time||a.st==='dead') continue; const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z;
@@ -2624,16 +2640,17 @@ function renderSalas(go){ if(go) _goSalas=go; const el=$('#salasAbertas'); if(!e
   el.innerHTML=NET.salas.length?`<h3>Salas abertas</h3>`+NET.salas.map(r=>`<div class="sala"><b>${esc(r.code)}</b><span>${esc(r.anfitriao)} · ${r.jogadores} de 4</span><button class="go ghost" data-sala="${esc(r.code)}">Entrar</button></div>`).join(''):'';
   el.querySelectorAll('[data-sala]').forEach(b=>b.onclick=()=>{ $('#iCode').value=b.dataset.sala; if(_goSalas) _goSalas(false); }); }
 function renderChat(){ const el=$('#chatLista'); if(!el) return;
-  el.innerHTML=NET.chat.map(c=>`<div><b style="color:${c.cid===meCid?'var(--gold-hi)':'var(--bone)'}">${esc(c.de)}</b> ${esc(c.msg)}</div>`).join('')||'<div class="vazio">Ninguém falou ainda.</div>'; el.scrollTop=el.scrollHeight; }
+  el.innerHTML=NET.chat.map(c=>`<div><b style="color:${c.cid===meCid?'var(--gold-hi)':'var(--bone)'}">${esc(c.de)}</b>${c.para==='equipe'?' <small>(equipe)</small>':''} ${esc(c.msg)}</div>`).join('')||'<div class="vazio">Ninguém falou ainda.</div>'; el.scrollTop=el.scrollHeight; }
 function showTitle(msg){ titleMsg=msg||''; screenKey=''; }
 function salaSalva(){ try{ return sessionStorage.getItem('rr-sala')||''; }catch(e){ return ''; } }
 function titleScreen(){
   let savedName=''; try{ savedName=localStorage.getItem('rr-name')||''; }catch(e){}
-  setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva()+(SET.dificuldade||'')+(SET.papelSolo||''),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
+  setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva()+(SET.dificuldade||'')+(SET.papelSolo||'')+JSON.stringify(SET.lab||{}),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
     <p class="lede">${UMA_NOITE()?'Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence.':'Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.'}</p>
     <div class="acoes"><button class="go" id="bSolo">Jogar sozinho, com bots</button>
       <div class="dif" role="group" aria-label="Seu papel"><span>Você</span>${[['H','Caça'],['C','Celebra'],['?','Sorteia']].map(([k,n])=>`<button data-papel="${k}" class="${(SET.papelSolo||'H')===k?'sel':''}">${n}</button>`).join('')}</div>
       <div class="dif" role="group" aria-label="Dificuldade dos bots"><span>Bots inimigos</span>${[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([k,n])=>`<button data-dif="${k}" class="${(SET.dificuldade||'normal')===k?'sel':''}">${n}</button>`).join('')}</div>
+      ${labPainel(SET.lab,true)}
       ${(()=>{ const D=desafioDe(hojeDesafio()); let rec=null; try{ rec=(perfil().desafios||{})[hojeDesafio()]; }catch(e){} return `<button class="go ghost desafioBtn" id="bDesafio">Desafio da noite<small>Hoje você ${D.papel==='H'?'caça':'celebra'}, ${CLIMAS[D.clima].nome.toLowerCase()}, contra bots difíceis${rec!=null?` · recorde ${rec}`:''}</small></button>`; })()}
       <div class="links"><button class="lk" id="bAprender">Aprender a jogar</button><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bPerfil">Perfil</button><button class="lk" id="bNovo">Novidades</button><button class="lk" id="bSet">Ajustes</button></div></div>
     ${APP?`<div class="online on"><h3>Servidor${ONLINE_OK?' <small style="color:var(--gold)">conectado</small>':''}</h3><div class="linha"><input class="txt" id="iServ" style="width:260px" placeholder="ex.: abcd.trycloudflare.com" value="${esc(SET.servidor||'')}" aria-label="Endereço do servidor" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="go ghost" id="bServ">${SONDANDO?'Procurando…':'Conectar'}</button></div></div>`:''}
@@ -2646,7 +2663,8 @@ function titleScreen(){
     <p class="err" id="err">${esc(titleMsg)}</p>
     <p class="fine">${ONLINE_OK?'Use fones: o som diz onde e em que fase está cada ritual.':APP?'Para jogar online, alguém roda o servidor do projeto; digite aqui o endereço que ele mostra.':'Para jogar online com amigos, rode o servidor do projeto e abra o link dele.'}</p>`,
   ()=>{ $('#bSolo').onclick=()=>{ audioInit(); startLocal(); };
-    scrBody.querySelectorAll('.dif button').forEach(b=>b.onclick=()=>{ if(b.dataset.papel) SET.papelSolo=b.dataset.papel; else SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
+    ligarLab(v=>{ SET.lab=v; saveSet(); screenKey=''; });
+    scrBody.querySelectorAll('.dif button:not([data-lab])').forEach(b=>b.onclick=()=>{ if(b.dataset.papel) SET.papelSolo=b.dataset.papel; else SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
     $('#bAprender').onclick=()=>{ aprenderAberto=true; screenKey=''; };
     $('#bDesafio').onclick=()=>{ audioInit(); startDesafio(); };
     const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; }; $('#bNovo').onclick=()=>{ novidadesAberto=true; screenKey=''; };
@@ -2659,15 +2677,17 @@ function titleScreen(){
 function lobbyScreen(){
   const L=NET.lobby, isHost=L.host===meCid;
   const slotBtn=(s,i)=>`<button class="slot ${s.cid?'':'bot'} ${s.cid===meCid?'me':''}" data-i="${i}" ${s.cid?'disabled':''}>${esc(s.name)}${s.cid?(s.cid===L.host?' (anfitrião)':''):' (bot)'}${s.cid===meCid?' (você)':''}</button>`;
-  const key='lobby'+JSON.stringify(L.slots)+L.host+L.dif; const DN={facil:'Fáceis',normal:'Normais',dificil:'Difíceis'};
+  const key='lobby'+JSON.stringify(L.slots)+L.host+L.dif+JSON.stringify(L.lab||{})+(SET.labAberto?1:0); const DN={facil:'Fáceis',normal:'Normais',dificil:'Difíceis'};
   setScreen(key,`<h2 style="text-align:center">Sala</h2><p class="bigcode">${L.code}</p><p class="lede">Mande este código para seus amigos. Vagas sem jogador ficam com bots.</p>
     <div class="slots"><div class="slotcol a"><h3>Equipe A</h3>${L.slots.slice(0,2).map((s,i)=>slotBtn(s,i)).join('')}</div><div class="slotcol b"><h3>Equipe B</h3>${L.slots.slice(2).map((s,i)=>slotBtn(s,i+2)).join('')}</div></div>
     <p class="fine">${UMA_NOITE()?'A Equipe A caça e a Equipe B celebra.':'A Equipe A caça na rodada 1 e celebra na rodada 2.'} Clique numa vaga de bot para trocar de lugar.${L.publica?' Esta sala aparece na lista de salas abertas.':''}</p>
     ${L.slots.some(s=>!s.cid)?`<div class="dif difOnline" role="group" aria-label="Dificuldade dos bots"><span>Bots</span>${isHost?['facil','normal','dificil'].map(k=>`<button class="${(L.dif||'normal')===k?'sel':''}" data-dif="${k}">${DN[k]}</button>`).join(''):`<b>${DN[L.dif||'normal']}</b>`}<small>valem para os bots do lado sem jogadores</small></div>`:''}
+    ${labPainel(L.lab,isHost)}
     <div class="chat"><div id="chatLista"></div><div class="linha"><input class="txt" id="iChat" maxlength="140" placeholder="Mensagem para a sala" aria-label="Mensagem para a sala" style="flex:1"><button class="go ghost" id="bChat">Enviar</button></div></div>
     <div class="btnrow">${isHost?'<button class="go" id="bStart">Começar a partida</button>':'<span class="wait">Aguardando o anfitrião começar…</span>'}<button class="go ghost" id="bSairSala">Sair da sala</button></div>`,
   ()=>{ $('#bSairSala').onclick=()=>sairParaMenu(); const ic=$('#iChat'); ic.value=NET.rascunho; ic.oninput=()=>NET.rascunho=ic.value;
     scrBody.querySelectorAll('.difOnline button').forEach(b=>b.onclick=()=>{ if(ws) ws.send(JSON.stringify({t:'opcoes',dif:b.dataset.dif})); });
+    if(isHost) ligarLab(v=>{ if(ws) ws.send(JSON.stringify({t:'opcoes',lab:v})); }); else ligarLab(null);
     const envia=()=>{ const t=ic.value.trim(); if(!t||!ws) return; ws.send(JSON.stringify({t:'chat',msg:t})); ic.value=''; NET.rascunho=''; }; $('#bChat').onclick=envia; ic.onkeydown=e=>{ if(e.key==='Enter') envia(); e.stopPropagation(); }; renderChat(); scrBody.querySelectorAll('.slot').forEach(b=>b.onclick=()=>ws.send(JSON.stringify({t:'slot',i:+b.dataset.i}))); const s=$('#bStart'); if(s) s.onclick=()=>ws.send(JSON.stringify({t:'start'})); });
 }
 function timerText(){ return V.timers?` (${Math.ceil(Math.max(0,V.phaseT))} s)`:''; }
@@ -2687,10 +2707,11 @@ function introScreen(){
   const role=myRole(), mine=V.cls[meCid]||CLASS_BY_TEAM[role][0], feit=(V.feit&&V.feit[meCid])||FEIT_BY_TEAM[role][0], rdy=!!V.ready[meCid];
   const key='intro'+V.round+mine+feit+rdy+JSON.stringify(SET.binds);
   const H=role==='H';
-  const brief=H?`<p>No <b>Crepúsculo</b> (3 min), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto. Negocie com o Ermitão, na cabana perto do acampamento. Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
-    :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio. Negocie com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.</p>`;
+  const LB=LAB(), mud=labMudancas(LB), crep=fmt(LB.crepusculo);
+  const brief=H?`<p>No <b>Crepúsculo</b> (${crep}), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto.${LB.economia?' Negocie com o Ermitão, na cabana perto do acampamento.':''} Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
+    :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio.${LB.economia?' Negocie com a Carpideira, no cemitério.':''} Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.</p>`;
   const CLn=CLIMAS[climaDe(chaveClima()+':'+(V.round||1))];
-  setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2><p class="lede" style="text-align:left!important;margin:0 0 8px!important">${CLn.nome}: ${CLn.sub.toLowerCase()}.</p>${brief}
+  setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2><p class="lede" style="text-align:left!important;margin:0 0 8px!important">${CLn.nome}: ${CLn.sub.toLowerCase()}.</p>${brief}${mud.length?`<p class="labAviso">Laboratório de playtest: ${esc(mud.join(' · '))}.</p>`:''}
     <h3>Arquétipo</h3><div class="choices ${CLASS_BY_TEAM[role].length>2?'tres':''}">${CLASS_BY_TEAM[role].map(c=>`<button class="choice ${c===mine?'sel':''}" data-c="${c}" ${rdy?'disabled':''}><b>${CLASSES[c].name}</b><span>${CLASSES[c].text}</span><small>${CLASSES[c].hp} de vida</small></button>`).join('')}</div>
     <h3>Feitiço</h3><div class="choices tres">${FEIT_BY_TEAM[role].map(f=>`<button class="choice ${f===feit?'sel':''}" data-f="${f}" ${rdy?'disabled':''}><b>${FEITICOS[f].nome}</b><span>${FEITICOS[f].text}</span><small>recarga de ${FEITICOS[f].cd} s</small></button>`).join('')}</div>
     <div class="btnrow"><button class="go ${H?'gold':''}" id="bReady" ${rdy?'disabled':''}>${rdy?'Aguardando os outros':'Estou pronto'}</button></div><p class="wait" id="dyn"></p>`,
@@ -2729,8 +2750,8 @@ function graficoNoite(r){ const R=LT.rod[r]; if(!R||!R.am.length) return '';
   const W=640,H=150,T=Math.max(CFG.roundTime||1080,R.am[R.am.length-1].rt), X=t=>(t/T*W).toFixed(1), Y=v=>(H-8-v*(H-30)).toFixed(1);
   let h=`<svg viewBox="0 -14 ${W} ${H+30}" class="linhaTempo" role="img" aria-label="Linha do tempo da rodada ${r}">`;
   h+=`<rect x="0" y="0" width="${W}" height="${H}" fill="rgba(10,12,15,.6)" stroke="#333a42"/>`;
-  for(const M of CFG.momentos){ if(M.ate>=T) continue; h+=`<line x1="${X(M.ate)}" x2="${X(M.ate)}" y1="0" y2="${H}" stroke="#4a525c" stroke-dasharray="3 4"/>`; }
-  CFG.momentos.forEach((M,i)=>{ const a=i?CFG.momentos[i-1].ate:0; h+=`<text x="${X((a+Math.min(M.ate,T))/2)}" y="${H+14}" fill="#8f877b" font-size="11" text-anchor="middle">${esc(M.nome)}</text>`; });
+  CFG.momentos.forEach((M,i)=>{ const ate=fimMomento(i); if(ate<T) h+=`<line x1="${X(ate)}" x2="${X(ate)}" y1="0" y2="${H}" stroke="#4a525c" stroke-dasharray="3 4"/>`; });
+  CFG.momentos.forEach((M,i)=>{ const a=i?fimMomento(i-1):0; if(a>=T) return; h+=`<text x="${X((a+Math.min(fimMomento(i),T))/2)}" y="${H+14}" fill="#8f877b" font-size="11" text-anchor="middle">${esc(M.nome)}</text>`; });
   for(let i=0;i<V.altars.length;i++){ let seg=[],sel=[]; const linhas=[],selos=[];
     for(const q of R.am){ const v=q.a[i]; if(v){ seg.push(X(q.rt)+','+Y(v[0])); sel.push(X(q.rt)+','+Y(v[1])); } else { if(seg.length) linhas.push(seg), selos.push(sel); seg=[]; sel=[]; } }
     if(seg.length) linhas.push(seg), selos.push(sel);
@@ -2866,6 +2887,25 @@ function perfilScreen(){ const p=perfil(), pct=(a,b)=>b?Math.round(a/b*100)+'%':
     <div class="btnrow"><button class="go ghost" id="bZerar">Apagar perfil</button><button class="go" id="bPerfOk">Voltar</button></div>`,
   ()=>{ $('#bPerfOk').onclick=()=>{ perfilAberto=false; screenKey=''; }; $('#bZerar').onclick=()=>{ if(confirm('Apagar todo o histórico e as conquistas?')){ try{ localStorage.removeItem('rr-perfil'); }catch(e){} screenKey=''; } }; }); }
 const UMA_NOITE=()=>!((V&&V.opts&&V.opts.noites||CFG.noites)>1);
+// Laboratório de playtest: o anfitrião (ou quem joga sozinho) muda uma regra de cada vez para comparar noites.
+const LAB_UI=[['crepusculo','Crepúsculo',[[180,'3:00'],[120,'2:00'],[90,'1:30']]],
+  ['fogo','Selo sob fogo (1 / 2 inimigos)',[['atual','70% / 45%'],['a','80% / 60%'],['b','90% / 70%']]],
+  ['execucao','Executar um caído',[[4.5,'4,5 s'],[6,'6 s'],[7.5,'7,5 s']]],
+  ['economia','Óbolos e mercadores',[[true,'Ligados'],[false,'Desligados']]],
+  ['formato','Fim da noite',[['melhorDeTres','2 rituais encerram'],['placar','Noite inteira']]]];
+function labMudancas(lab){ const L=Sim.labDe(lab), P=Sim.labDe(); return LAB_UI.filter(([k])=>L[k]!==P[k]).map(([k,nome,ops])=>`${nome}: ${ops.find(o=>o[0]===L[k])[1]}`); }
+function labPainel(lab,editavel){ const L=Sim.labDe(lab), mud=labMudancas(lab);
+  return `<details class="lab" ${SET.labAberto?'open':''}><summary>Laboratório de playtest${mud.length?` <b>· ${mud.length} ${mud.length>1?'regras alteradas':'regra alterada'}</b>`:''}</summary>
+    <p class="fine">Para testar com pessoas: mude uma regra por vez e compare as noites no relatório do fim da partida. A primeira opção de cada linha é a regra normal.${editavel?'':' Só o anfitrião muda.'}</p>
+    ${LAB_UI.map(([k,nome,ops])=>`<div class="dif labRow" role="group" aria-label="${nome}"><span>${nome}</span>${ops.map(([v,t])=>editavel?`<button data-lab="${k}" data-v="${v}" class="${L[k]===v?'sel':''}">${t}</button>`:L[k]===v?`<b>${t}</b>`:'').join('')}</div>`).join('')}
+    ${editavel&&mud.length?'<div class="links"><button class="lk" id="bLabPadrao">Voltar tudo ao normal</button></div>':''}</details>`; }
+function ligarLab(muda){ const d=scrBody.querySelector('details.lab'); if(d) d.ontoggle=()=>{ SET.labAberto=d.open; saveSet(); };
+  if(!muda) return; const atual=()=>{ const L=Sim.labDe(MODE==='online'&&NET.lobby?NET.lobby.lab:SET.lab), o={}; LAB_UI.forEach(([k])=>o[k]=L[k]); return o; };
+  scrBody.querySelectorAll('button[data-lab]').forEach(b=>b.onclick=()=>{ const s=b.dataset.v, v=s==='true'?true:s==='false'?false:isNaN(+s)?s:+s; muda(Object.assign(atual(),{[b.dataset.lab]:v})); SFX.click(); });
+  const p=$('#bLabPadrao'); if(p) p.onclick=()=>{ muda({}); SFX.click(); }; }
+// regras do laboratório de playtest desta noite (padrão quando não há partida)
+const LAB=()=>(V&&V.lab)||Sim.labDe();
+const fimMomento=i=>i===0?LAB().crepusculo:CFG.momentos[i].ate;
 function statVal(k,v){ if(v==null) return '—'; if(k==='fracaoSobFogo') return Math.round(v*100)+'%'; if(k==='primeiroContato') return fmt(v); return v; }
 function statsTable(){ const r1=V.stats[1],r2=V.stats[2]; if(!r1) return '';
   return `<table class="res"><tr><th>Registro da partida</th><th class="n">Rodada 1</th>${r2?'<th class="n">Rodada 2</th>':''}</tr>${STAT_ROWS.map(([k,l])=>`<tr><td>${l}</td><td class="n">${statVal(k,r1[k])}</td>${r2?`<td class="n">${statVal(k,r2[k])}</td>`:''}</tr>`).join('')}</table>`; }
@@ -2886,9 +2926,69 @@ function finalScreen(){
   const isHost=MODE==='local'||NET.host===meCid;
   setScreen('final'+(V.matchId||'')+(DES.feito?DES.feito.p:''),`<h2 style="color:${w.win==null?'var(--bone)':mineW?'var(--gold)':'var(--crimson-hi)'}">${title}</h2><p>${w.why[0].toUpperCase()+w.why.slice(1)}.</p>
     <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${blocoDesafio()}${premios(logDaNoite())}${placarJogadores(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
-    <div class="btnrow">${temReplay(1)?'<button class="go ghost" id="bRep1">Rever a noite</button>':''}${!UMA_NOITE()&&temReplay(2)?'<button class="go ghost" id="bRep2">Rever a rodada 2</button>':''}<button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
-  ()=>{ $('#bLog').onclick=downloadLog; [1,2].forEach(r=>{ const b=$('#bRep'+r); if(b) b.onclick=()=>{ REP.aberto=true; REP.r=r; REP.t=0; REP.play=true; screenKey=''; }; }); const a=$('#bAgain'); if(a) a.onclick=()=>{ if(MODE==='local'&&game) game.matchId=DES.ativo?String(game.matchId).split('#')[0]+'#'+Date.now():String(Date.now()); sendAct({type:'restart'}); /* id novo: o perfil conta a revanche e o clima muda (no desafio, o clima do dia fica) */ }; const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
+    <div class="btnrow">${temReplay(1)?'<button class="go ghost" id="bRep1">Rever a noite</button>':''}${!UMA_NOITE()&&temReplay(2)?'<button class="go ghost" id="bRep2">Rever a rodada 2</button>':''}<button class="go ghost" id="bRel">Relatório do playtest</button><button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
+  ()=>{ $('#bLog').onclick=downloadLog; $('#bRel').onclick=()=>{ REL.aberto=true; screenKey=''; SFX.click(); }; [1,2].forEach(r=>{ const b=$('#bRep'+r); if(b) b.onclick=()=>{ REP.aberto=true; REP.r=r; REP.t=0; REP.play=true; screenKey=''; }; }); const a=$('#bAgain'); if(a) a.onclick=()=>{ if(MODE==='local'&&game) game.matchId=DES.ativo?String(game.matchId).split('#')[0]+'#'+Date.now():String(Date.now()); sendAct({type:'restart'}); /* id novo: o perfil conta a revanche e o clima muda (no desafio, o clima do dia fica) */ }; const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
 }
+// ================= RELATÓRIO DO PLAYTEST =================
+// Números da noite que respondem "a investigação funciona?" e as perguntas para quem jogou. Baixa tudo num JSON
+// (com o registro inteiro) ou copia como texto para mandar no grupo. As respostas ficam guardadas neste aparelho.
+const REL={aberto:false};
+const PERGUNTAS_PLAYTEST=['Em que momento você sentiu que estava investigando de verdade?','Em que momento sentiu que estava só correndo de um lugar a outro?',
+  'Qual informação mudou a sua decisão?','Quando você sentiu que não tinha como responder ao adversário?','Qual mecânica você tiraria do jogo?','Você jogaria mais uma partida? Por quê?'];
+const CAUSA_SELO={'caído':'caiu','empurrão':'Empurrão','atordoado':'atordoado','saiu':'saiu do círculo'};
+const COMO_DESCOBRIU={evp:'EVP',sentinela:'sentinela',lanterna:'Lanterna',rastro_lido:'marcas de arrasto',localized:'o coro revelou o ritual'};
+function respostasPlaytest(){ try{ return JSON.parse(localStorage.getItem('rr-resp-'+V.matchId)||'[]'); }catch(e){ return []; } }
+function guardarRespostas(r){ try{ localStorage.setItem('rr-resp-'+V.matchId,JSON.stringify(r)); }catch(e){} }
+function dadosRelatorio(){ const log=logDaNoite()||[], rodadas=UMA_NOITE()?[1]:[1,2];
+  return {jogo:'Ritual Reversal',versao:'5.4',partida:V.matchId,quando:new Date().toISOString(),papel:myRole(),lab:LAB(),mudancas:labMudancas(LAB()),
+    vencedor:Sim.winner(V),jogadores:V.slots.map(s=>({nome:s.name,equipe:s.team,humano:!!s.cid})),
+    metricas:rodadas.map(r=>Sim.relatorio(log,r)),respostas:PERGUNTAS_PLAYTEST.map((p,i)=>({pergunta:p,resposta:respostasPlaytest()[i]||''})),registro:log}; }
+function textoRelatorio(D){ const L=[`Ritual Reversal v5.4 · relatório do playtest · partida ${D.partida}`,`Regras: ${D.mudancas.length?D.mudancas.join(' · '):'normais'}`,`Resultado: ${D.vencedor?D.vencedor.why:'—'}`];
+  for(const M of D.metricas){ const I=M.investigacao, E=M.engano, C=M.combate, S=M.selamento;
+    L.push('',`Rodada ${M.rodada}: ${M.fendas} Fendas, ${M.farois} Faróis, ${fmt(M.duracao)} de noite`,
+      `Investigação: primeira verdade aos ${I.primeiraVerdade!=null?fmt(I.primeiraVerdade):'—'} (${COMO_DESCOBRIU[I.comoDescobriu]||'—'}), ${I.pistasNovas} pistas novas, maior trecho sem pista ${fmt(I.maiorIntervaloSemPista)}`,
+      `Engano: ${E.chamarizes} Chamarizes (${E.chamarizesDesmascarados} desmascarados, ${E.chamarizesQueimados} queimados), ${E.transferencias} Transferências, ${E.purgasDeAltarVerdadeiro} purgas de altar verdadeiro`,
+      ...M.rituais.map(R=>`Ritual em ${R.altar} (${fmt(R.inicio)}): localizado após ${R.localizado!=null?Math.round(R.localizado)+' s':'—'}, caça chegou após ${R.chegada!=null?Math.round(R.chegada)+' s':'—'}, ${R.tentativasSelo} tentativas de selo, ${R.resultado}`),
+      `Selamento: ${S.tentativas} tentativas, ${S.selados} selados, interrupções: ${Object.entries(S.interrupcoes).map(([k,v])=>`${CAUSA_SELO[k]||k} ${v}`).join(', ')||'nenhuma'}`,
+      `Combate: ${C.quedas} quedas, ${C.execucoes} execuções, ${C.sangraram} sangraram, ${C.reanimacoes} reanimações, primeira queda ${C.primeiraQueda!=null?fmt(C.primeiraQueda):'—'}`); }
+  const R=D.respostas.filter(x=>x.resposta.trim()); if(R.length){ L.push('','Respostas:'); R.forEach(x=>L.push(`- ${x.pergunta} ${x.resposta.trim()}`)); }
+  return L.join('\n'); }
+function relatorioScreen(){ const log=logDaNoite();
+  if(!log){ setScreen('rel-carregando',`<h2>Relatório do playtest</h2><p>Buscando o registro da noite no servidor…</p><div class="btnrow"><button class="go ghost" id="bRelV">Voltar</button></div>`,()=>{ $('#bRelV').onclick=()=>{ REL.aberto=false; screenKey=''; }; }); return; }
+  const D=dadosRelatorio(), resp=respostasPlaytest(), tr=(a,b,c)=>`<tr><td>${a}</td><td class="n">${b}</td><td class="fine">${c||''}</td></tr>`, t=v=>v!=null?fmt(v):'—', s=v=>v!=null?Math.round(v)+' s':'—';
+  const blocos=D.metricas.map(M=>{ const I=M.investigacao, E=M.engano, C=M.combate, S=M.selamento, F=M.ferramentas;
+    return `${D.metricas.length>1?`<h3>Rodada ${M.rodada}</h3>`:''}
+    <table class="res rel"><tr><th>Investigação</th><th class="n"></th><th>O que revela</th></tr>
+      ${tr('Primeira verdade descoberta pela caça',t(I.primeiraVerdade),I.comoDescobriu?`por ${COMO_DESCOBRIU[I.comoDescobriu]||I.comoDescobriu}. Se as pistas são úteis e a investigação tem ritmo.`:'A caça nunca descobriu um altar verdadeiro.')}
+      ${tr('Pistas novas para a caça',I.pistasNovas,'sinais, EVP, sentinelas, Lanterna, rastros, Sal, Sensor com sinal')}
+      ${tr('Maior trecho sem pista nova',t(I.maiorIntervaloSemPista),'Muito longo: a caça passou tempo andando sem aprender nada.')}
+      ${tr('Trecho médio sem pista nova',t(I.intervaloMedioSemPista),'')}</table>
+    <table class="res rel"><tr><th>Ritual</th><th class="n">Início</th><th class="n">Localizado</th><th class="n">Caça chegou</th><th class="n">Selos</th><th>Resultado</th></tr>
+      ${M.rituais.map(R=>`<tr><td>${esc(R.altar)}</td><td class="n">${t(R.inicio)}</td><td class="n">${s(R.localizado)}</td><td class="n">${s(R.chegada)}</td><td class="n">${R.tentativasSelo}</td><td>${R.resultado==='farol'?'Farol':R.resultado==='fenda'?'Fenda':'—'}</td></tr>`).join('')||'<tr><td colspan="6">Nenhum ritual começou.</td></tr>'}</table>
+    <p class="fine" style="text-align:left!important">Tempos contados desde o início de cada ritual. Chegar e não selar mostra onde a conversão falha.</p>
+    <table class="res rel"><tr><th>Engano e selamento</th><th class="n"></th><th>O que revela</th></tr>
+      ${tr('Chamarizes plantados',E.chamarizes,`${E.chamarizesDesmascarados} desmascarados pela Lanterna, ${E.chamarizesQueimados} queimados, ${E.evpEmChamariz} EVP enganados`)}
+      ${tr('Purgas de altar verdadeiro',E.purgasDeAltarVerdadeiro,'a caça acertou um altar antes do ritual')}
+      ${tr('Transferências',E.transferencias,`${F.rastrosVistos} marcas de arrasto vistas, ${F.rastrosLidos} lidas`)}
+      ${tr('Tentativas de selo',S.tentativas,`${S.selados} viraram Farol. Interrupções: ${Object.entries(S.interrupcoes).map(([k,v])=>`${CAUSA_SELO[k]||k} ${v}`).join(', ')||'nenhuma'}`)}</table>
+    <table class="res rel"><tr><th>Combate e ferramentas</th><th class="n"></th><th>O que revela</th></tr>
+      ${tr('Quedas',C.quedas,`primeira aos ${t(C.primeiraQueda)}; ${C.execucoes} execuções, ${C.sangraram} sangraram, ${C.reanimacoes} reanimações. Se cair e reanimar é uma escolha tática.`)}
+      ${tr('Ferramentas da caça',F.sinaisLidos+F.sentinelasAcesas+F.sensor+F.evp+F.lanterna+F.sal,`${F.sinaisLidos} sinais, ${F.sentinelasAcesas} sentinelas, ${F.sensor} Sensor (${F.sensorComSinal} com sinal), ${F.evp} EVP, ${F.lanterna} Lanterna, ${F.sal} Sal`)}
+      ${tr('Comunicação',F.pings+F.frases,`${F.pings} pings, ${F.frases} frases rápidas`)}
+      ${tr('Saídas e reconexões',M.sessao.saidas+M.sessao.reconexoes,`${M.sessao.saidas} saíram, ${M.sessao.reconexoes} voltaram`)}</table>`; }).join('');
+  setScreen('rel'+V.matchId+(log.length),`<h2>Relatório do playtest</h2><p class="lede">${esc(D.vencedor?D.vencedor.why[0].toUpperCase()+D.vencedor.why.slice(1):'')}. Regras: ${D.mudancas.length?esc(D.mudancas.join(' · ')):'normais'}.</p>
+    ${blocos}
+    <h3>Perguntas para quem jogou</h3><div class="perguntas">${PERGUNTAS_PLAYTEST.map((p,i)=>`<label>${esc(p)}<textarea data-i="${i}" maxlength="600" rows="2">${esc(resp[i]||'')}</textarea></label>`).join('')}</div>
+    <p class="fine">Cada pessoa responde no próprio aparelho. Mande o relatório para quem organiza o playtest: o arquivo traz o registro inteiro da noite.</p>
+    <div class="btnrow"><button class="go ghost" id="bRelCopia">Copiar como texto</button><button class="go" id="bRelBaixa">Baixar relatório (.json)</button><button class="go ghost" id="bRelV">Voltar</button></div><p class="fine" id="relMsg"></p>`,
+  ()=>{ scrBody.querySelectorAll('.perguntas textarea').forEach(a=>{ a.onkeydown=e=>e.stopPropagation(); a.oninput=()=>{ const r=respostasPlaytest(); r[+a.dataset.i]=a.value; guardarRespostas(r); }; });
+    $('#bRelV').onclick=()=>{ REL.aberto=false; screenKey=''; };
+    $('#bRelCopia').onclick=async()=>{ const txt=textoRelatorio(dadosRelatorio()); try{ await navigator.clipboard.writeText(txt); $('#relMsg').textContent='Texto copiado.'; }catch(e){ $('#relMsg').textContent='Não deu para copiar aqui; use o arquivo.'; } };
+    $('#bRelBaixa').onclick=()=>salvarArquivo(`ritual-reversal-relatorio-${V.matchId}.json`,JSON.stringify(dadosRelatorio(),null,1),$('#relMsg')); }); }
+async function salvarArquivo(name,data,msg){
+  try{ if(window.claude&&window.claude.use){ const d=await window.claude.use('downloads'); if(d){ await d.save({filename:name,data}); msg.textContent='Arquivo salvo.'; return; } } }
+  catch(e){ if(e&&e.code==='declined'){ msg.textContent='Download cancelado.'; return; } }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); msg.textContent='Arquivo salvo.'; }
 async function downloadLog(){
   const msg=$('#logMsg');
   if(MODE==='online'&&NET.logUrl){ const a=document.createElement('a'); a.href=NET.logUrl; a.download=''; document.body.appendChild(a); a.click(); a.remove(); msg.textContent='O servidor também guarda uma cópia na pasta logs.'; return; }
@@ -2899,15 +2999,13 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Sozinho','Escolha caçar, celebrar ou sortear, e a dificuldade dos bots. O bot aliado atende seus pings e fala com você.'],
-  ['Aprender a jogar','Uma noite guiada, passo a passo, como Caçador ou como Cultista.'],
-  ['Desafio da noite','Uma noite por dia, igual para todos, contra bots difíceis, com pontos e recorde.'],
-  ['Equipe','Ping (Z), frases rápidas (V), chat na partida online (Enter) e salas públicas com chat no lobby.'],
-  ['Ler a noite','Legendas dos sons com direção, bússola, caderno dos altares (J) e trilha de tensão.'],
-  ['A noite','Clima sorteado (névoa, chuva, tempestade) e passos que soam diferente em cada chão.'],
-  ['Depois da noite','Rever a noite na planta, linha do tempo, placar por jogador, destaques e um perfil com 18 conquistas.'],
-  ['Ajustes','Controle (gamepad), brilho, mira, música, clarões reduzidos e cores para daltonismo.']];
-function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.3</h2><p class="lede">O que mudou desde a última versão.</p>
+const NOVIDADES=[['Fim da noite','Quem leva dois dos três rituais vence e a noite acaba ali. O placar mostra a regra embaixo do relógio.'],
+  ['Laboratório de playtest','No menu e no lobby: Crepúsculo de 3:00, 2:00 ou 1:30, selo sob fogo mais forte, execução mais lenta e noite sem óbolos e mercadores. Mude uma regra por vez.'],
+  ['Relatório do playtest','No fim da noite: quando a caça descobriu a verdade, quanto tempo andou sem pista, como cada ritual terminou, o custo dos Chamarizes e as perguntas para quem jogou. Baixe em JSON ou copie como texto.'],
+  ['Chat de equipe','Na partida online, Enter fala só com a sua equipe; Tab troca para todos. Os Ajustes silenciam os adversários.'],
+  ['Bots','Caçadores conferem altares despertos com a Lanterna antes de purgar, em vez de adivinhar se é Chamariz.'],
+  ['Na v5.3','Jogo sozinho com papel e dificuldade, tutorial, desafio da noite, ping e frases, legendas dos sons, bússola, caderno (J), Rever a noite, perfil e conquistas.']];
+function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.4</h2><p class="lede">O que mudou desde a última versão.</p>
     <div class="novidades">${NOVIDADES.map(([t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
     <div class="btnrow"><button class="go" id="bNovOk">Voltar</button></div>`,()=>{ $('#bNovOk').onclick=()=>{ novidadesAberto=false; screenKey=''; }; }); }
 // cola das teclas, na pausa
@@ -2918,7 +3016,7 @@ function comoJogarScreen(){
   const passo=(n,t,d)=>`<div class="passo"><b>${n}</b><div><strong>${t}</strong><span>${d}</span></div></div>`;
   setScreen('como',`<h2 style="text-align:center">Como jogar</h2>
     <p class="lede">${UMA_NOITE()?'Uma equipe celebra, a outra caça. Os Cultistas vencem completando dois dos três rituais; os Caçadores, selando dois ou resistindo até o amanhecer.':'Duas rodadas. Na primeira sua equipe caça; na segunda, celebra. Vence quem completar mais rituais como Cultista.'}</p>
-    <p class="lede" style="margin-top:0">Cada partida é uma noite de 18 minutos, em três momentos: o Crepúsculo, a Vigília e a Hora Morta.</p>
+    <p class="lede" style="margin-top:0">Cada partida é uma noite de até 18 minutos, em três momentos: o Crepúsculo, a Vigília e a Hora Morta. Quando uma equipe leva dois rituais, a noite acaba ali.</p>
     <p class="lede" style="margin-top:0">A catedral fica no meio de uma floresta. As trilhas e clareiras pegam luar; a mata fechada é breu. Dois altares ficam lá fora: os Menires e o Carvalho Oco.</p>
     <div class="cols">
       <div><h3 style="color:var(--crimson-hi)">Como Cultista</h3>
@@ -2939,7 +3037,7 @@ function comoJogarScreen(){
 function openSettings(){ settingsOpen=true; backTo=screenKey; screenKey=''; }
 function settingsScreen(){
   const q=(id,v)=>`<button data-q="${v}" class="${SET.qual===v?'sel':''}">${id}</button>`;
-  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor+(SET.suave?1:0)+(SET.dalt?1:0)+(SET.musica!==false?1:0),`<h2>Ajustes</h2>
+  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor+(SET.suave?1:0)+(SET.dalt?1:0)+(SET.musica!==false?1:0)+(SET.mudoAdv?1:0),`<h2>Ajustes</h2>
     <div class="set"><label for="sSens">Sensibilidade do mouse</label><input id="sSens" type="range" min="20" max="300" step="5" value="${Math.round(SET.sens*100)}"><b id="vSens">${SET.sens.toFixed(2)}</b></div>
     <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" step="2" value="${Math.round(SET.vol*100)}"><b id="vVol">${Math.round(SET.vol*100)}</b></div>
     <div class="set"><label for="sFov">Campo de visão</label><input id="sFov" type="range" min="60" max="105" step="1" value="${SET.fov}"><b id="vFov">${SET.fov}</b></div>
@@ -2957,6 +3055,7 @@ function settingsScreen(){
     <p class="fine">Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. Texturas, partículas e árvores de fundo mudam ao recarregar a página. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
     <h3>Acessibilidade</h3>
     <div class="set"><label>Clarões e tremor</label><div class="opts"><button data-sv="0" class="${!SET.suave?'sel':''}">Normais</button><button data-sv="1" class="${SET.suave?'sel':''}">Reduzidos</button></div><b></b></div>
+    <div class="set"><label>Chat dos adversários</label><div class="opts"><button data-ma="0" class="${!SET.mudoAdv?'sel':''}">Mostrar</button><button data-ma="1" class="${SET.mudoAdv?'sel':''}">Silenciar</button></div><b></b></div>
     <div class="set"><label>Cores das equipes</label><div class="opts"><button data-dl="0" class="${!SET.dalt?'sel':''}">Ouro e carmim</button><button data-dl="1" class="${SET.dalt?'sel':''}">Ouro e azul</button></div><b></b></div>
     <p class="fine">Reduzidos: relâmpagos, o clarão do Grande Ritual e a cegueira do Flash ficam mais fracos, e a câmera não treme com a sanidade baixa. Ouro e azul troca o carmim do culto por azul no placar, nos altares do HUD, na planta e no replay (ajuda com daltonismo vermelho-verde).</p>
     <h3>Controles</h3><div class="binds">${Object.keys(BIND_LABEL).map(a=>`<button class="bindrow ${capturing===a?'cap':''}" data-a="${a}"><span>${BIND_LABEL[a]}</span><kbd>${capturing===a?'aperte…':kb(a)}</kbd></button>`).join('')}</div>
@@ -2971,7 +3070,7 @@ function settingsScreen(){
     bind('#sFov','#vFov',v=>SET.fov=v,v=>v);
     bind('#sBri','#vBri',v=>SET.brilho=v/100,v=>v+'%');
     bind('#sMt','#vMt',v=>SET.miraTam=v/100,v=>v+'%');
-    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.mu){ SET.musica=b.dataset.mu==='1'; } else if(b.dataset.sv){ SET.suave=b.dataset.sv==='1'; } else if(b.dataset.dl){ SET.dalt=b.dataset.dl==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
+    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.mu){ SET.musica=b.dataset.mu==='1'; } else if(b.dataset.sv){ SET.suave=b.dataset.sv==='1'; } else if(b.dataset.dl){ SET.dalt=b.dataset.dl==='1'; } else if(b.dataset.ma){ SET.mudoAdv=b.dataset.ma==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.bindrow').forEach(b=>b.onclick=()=>{ capturing=b.dataset.a; screenKey=''; });
     $('#sDef').onclick=()=>{ SET.binds=Object.assign({},DEF_BIND); saveSet(); toolsKey=''; screenKey=''; };
     $('#sBack').onclick=()=>{ settingsOpen=false; screenKey=''; };
@@ -2992,14 +3091,15 @@ function syncScreens(){
   if(ph==='play'){ if(MODE==='local'&&paused){ setScreen('pause'+TQ.ativo,'<h2 style="text-align:center">Pausado</h2><p style="text-align:center;margin:0 auto">'+(TQ.ativo?'Toque':'Clique')+' para voltar ao jogo.</p>'+(TQ.ativo?'':colaTeclas())+'<div class="btnrow"><button class="go" id="bRes">Continuar</button><button class="go ghost" id="bSet2">Ajustes</button><button class="go ghost" id="bSair">Abandonar a noite</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; $('#bSair').onclick=()=>{ if(confirm('Abandonar esta noite e voltar ao menu?')) sairParaMenu(); }; }); }
     else if(MODE==='online'&&!locked){ setScreen('olock','<h2 style="text-align:center">Clique para jogar</h2><p style="text-align:center;margin:0 auto">No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado.</p><div class="btnrow"><button class="go" id="bRes">Jogar</button><button class="go ghost" id="bSet2">Ajustes</button><button class="go ghost" id="bSair">Sair da sala</button></div>',()=>{ $('#bRes').onclick=()=>lock(); $('#bSet2').onclick=openSettings; $('#bSair').onclick=()=>{ if(confirm('Sair da sala? Um bot assume o seu lugar.')) sairParaMenu(); }; }); }
     else hideScreen(); return; }
-  if(ph==='pick') pickScreen(); else if(ph==='intro') introScreen(); else if(ph==='summary') summaryScreen(); else if(ph==='final'){ perfilFim(); desafioFim(); if(REP.aberto) replayScreen(); else finalScreen(); }
+  if(ph!=='final') REL.aberto=false;
+  if(ph==='pick') pickScreen(); else if(ph==='intro') introScreen(); else if(ph==='summary') summaryScreen(); else if(ph==='final'){ perfilFim(); desafioFim(); if(REP.aberto) replayScreen(); else if(REL.aberto) relatorioScreen(); else finalScreen(); }
 }
 
 // ================= LOCAL MODE =================
 function startLocal(opc){ opc=opc||{}; let papel=opc.papel||SET.papelSolo||'H'; if(papel==='?') papel=Math.random()<.5?'H':'C';
   const slots=papel==='C'?[{team:'A',cid:null,name:'Irmã Beatriz'},{team:'A',cid:null,name:'Irmão Tomé'},{team:'B',cid:'local',name:'Você'},{team:'B',cid:null,name:'Madre Vesper'}]
     :[{team:'A',cid:'local',name:'Você'},{team:'A',cid:null,name:'Irmã Beatriz'},{team:'B',cid:null,name:'Irmão Cinza'},{team:'B',cid:null,name:'Madre Vesper'}];
-  MODE='local'; meCid='local'; game=Sim.createGame({timers:false,slots,dificuldade:opc.dificuldade||SET.dificuldade||'normal'}); V=game; screenKey='';
+  MODE='local'; meCid='local'; game=Sim.createGame({timers:false,slots,dificuldade:opc.dificuldade||SET.dificuldade||'normal',lab:opc.tutorial||opc.desafio?null:SET.lab}); V=game; screenKey='';
   TUT.ativo=!!opc.tutorial; TUT.papel=papel; TUT.i=0; TUT.fim=false; DES.ativo=false; DES.feito=null; }
 
 // ================= MAIN LOOP =================
@@ -3097,7 +3197,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 { const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">Esculpindo a catedral…<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);

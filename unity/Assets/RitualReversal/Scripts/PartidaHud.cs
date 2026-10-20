@@ -212,7 +212,7 @@ namespace RitualReversal
             int mi = System.Math.Max(0, g.momento); string prox = mi + 1 < CFG.momentoNome.Length ? CFG.momentoNome[mi + 1] : null;
             var GA = g.altars.FirstOrDefault(A => A.state == "active" && A.grande);
             string nome = GA != null ? "Grande Ritual em " + GA.name + (papel == "C" || GA.localized ? ": " + Mathf.FloorToInt((float)GA.prog * 100) + "%" : "") : prox != null ? CFG.momentoNome[mi] + ", " + prox + " em seguida" : CFG.momentoNome[mi] + ", depois o amanhecer";
-            GUI.Label(new Rect(W / 2 - 200, 10, 400, 40), Relogio(CFG.momentoAte[mi] - g.rt), sRelogio);
+            GUI.Label(new Rect(W / 2 - 200, 10, 400, 40), Relogio(Sim.FimMomento(g, mi) - g.rt), sRelogio);
             GUI.Label(new Rect(W / 2 - 300, 48, 600, 26), Cor(nome, GA != null ? CARMIM_VIVO : OURO), sCentro);
             int fendas = Sim.Fendas(g), farois = Sim.Farois(g);
             GUI.Label(new Rect(W / 2 - 300, 74, 600, 24), Cor("Fendas " + fendas, CARMIM_VIVO) + "   ·   " + Cor("Faróis " + farois, OURO), sCentro);
