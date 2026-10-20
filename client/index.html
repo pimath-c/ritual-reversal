@@ -1315,7 +1315,24 @@ function buildAltars(){
     const em=new THREE.Points(eg,new THREE.PointsMaterial({size:.11,color:0xff4a66,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,map:RT.glow,toneMapped:false})); g.add(em);
     const rm=new THREE.SpriteMaterial({map:RT.rune,color:0xf0d8ff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false});
     for(let k=0;k<9;k++){ const s=new THREE.Sprite(rm),a=rand(0,Math.PI*2),r=rand(2,6.5); s.position.set(Math.cos(a)*r,.08,Math.sin(a)*r); s.scale.set(.5,.5,1); g.add(s); }
-    return {circle,sealRing,beam,L,em,es,rm,bm,au:null};
+    // mostrador no chão: a borda no raio exato do círculo, o progresso do ritual (carmim, com os pontos de controle)
+    // e o selo (dourado, por dentro). Um shader por altar, sem textura; só aparece com o ritual ativo e conhecido.
+    const R=CFG.circleR, lado=2*(R+.6), dial=new THREE.Mesh(new THREE.PlaneGeometry(lado,lado),new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:false,
+      uniforms:{prog:{value:0},selo:{value:0},op:{value:0},R:{value:R},lado:{value:lado},cR:{value:new THREE.Color(0xff3a5a)},cS:{value:new THREE.Color(0xf3d58e)},cB:{value:new THREE.Color(0xe0435e)},cp:{value:new THREE.Vector2(CFG.cps[0],CFG.cps[1])}},
+      vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+      fragmentShader:`varying vec2 vUv; uniform float prog,selo,op,R,lado; uniform vec3 cR,cS,cB; uniform vec2 cp;
+        float banda(float r,float a,float b){ return smoothstep(a-.03,a+.01,r)*(1.0-smoothstep(b-.01,b+.03,r)); }
+        void main(){ vec2 p=(vUv-.5)*lado; float r=length(p); float ang=fract(atan(p.x,-p.y)/6.2831853+1.0);
+          vec4 c=vec4(0.0);
+          float borda=banda(r,R-.07,R+.03); c=mix(c,vec4(cB,.85),borda);
+          float fora=banda(r,R+.14,R+.36); float cheio=step(ang,prog);
+          float tick=(1.0-smoothstep(.0,.006,abs(ang-cp.x)))+(1.0-smoothstep(.0,.006,abs(ang-cp.y)));
+          c=mix(c,vec4(.16,.17,.2,.6),fora*(1.0-cheio)); c=mix(c,vec4(cR,.95),fora*cheio); c=mix(c,vec4(1.0,.93,.85,.95),fora*clamp(tick,0.0,1.0));
+          float dentro=banda(r,R-.42,R-.2); float sv=step(ang,selo)*step(.001,selo);
+          c=mix(c,vec4(.16,.17,.2,.5),dentro*step(.001,selo)*(1.0-sv)); c=mix(c,vec4(cS,.95),dentro*sv);
+          gl_FragColor=vec4(c.rgb,c.a*op); if(gl_FragColor.a<.01) discard; }`}));
+    dial.rotation.x=-Math.PI/2; dial.position.y=.07; dial.renderOrder=3; g.add(dial);
+    return {circle,sealRing,beam,L,em,es,rm,bm,dial,au:null};
   });
 }
 // ---- characters by class ----
@@ -2170,7 +2187,9 @@ function syncActors(dt){
 function hunterSees(A){ const k=V.know[A.i]; return ['desperto','confirmado','chamariz','ativo'].includes(k); }
 function syncAltars(dt){
   const role=myRole(), m=me(), px=camera.position.x, pz=camera.position.z;
-  V.altars.forEach((A,i)=>{ const O=AV[i]; let st=A.state; if(role==='H'&&st==='awake'&&!hunterSees(A)) st='dormant';
+  V.altars.forEach((A,i)=>{ const O=AV[i]; let st=A.state; if(role==='H'&&st==='active'&&!A.localized) st=hunterSees(A)?'awake':'dormant'; // como o servidor mostra à caça
+    if(role==='H'&&st==='awake'&&!hunterSees(A)) st='dormant';
+    { const U=O.dial.material.uniforms, ve=st==='active'; U.op.value=lerp(U.op.value,ve?1:0,.12); U.prog.value=ve?A.prog:0; U.selo.value=ve?A.seal:0; O.dial.visible=U.op.value>.01; }
     let op=.05,col=0x6b3a8a,li=0,lc=0x6b3a8a,beam=0,bcol=0xe0435e,emb=0,spin=.05; const t=performance.now()/1000;
     if(st==='awake'){ op=.18+.06*Math.sin(t*2+i); li=.9+.2*Math.sin(t*3); col=0x8a4ad0; lc=0x7a3ab0; if(role==='C'&&!A.chosen) col=0x555566; }
     if(st==='active'){ const pulse=A.prog>=.25?(.5+.5*Math.sin(t*1.3*Math.PI*2)):.5; op=.9+.1*pulse; col=0xff5577; lc=0xff2040; li=1.4+1.6*A.prog+pulse*.8; spin=.4+A.prog*1.6; emb=.9; if(A.localized) beam=.22+.1*pulse; if(A.grande){ beam=.55+.3*pulse; bcol=0xff2a3a; li*=1.6; spin*=1.8; } }
@@ -3216,7 +3235,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 { const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">Esculpindo a catedral…<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);

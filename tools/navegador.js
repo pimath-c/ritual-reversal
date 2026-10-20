@@ -75,6 +75,14 @@ const VISTAS=[
   if(!gr.bussola) erros.push('bússola vazia'); if(!gr.legendas) erros.push('o Grande Ritual não gerou legenda de som');
   console.log('grande ritual:',JSON.stringify(gr)); if(!gr.corpo) erros.push('Grande Ritual não mudou a interface');
   await page.evaluate(()=>{ Object.assign(__T.game.altars[1],window.__antes); });
+  // mostrador do círculo: ritual localizado na Capela Oeste com 60% e selo em 35%, visto de perto
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), A=g.altars[0]; window.__antes0={...A};
+    Object.assign(A,{state:'active',localized:true,prog:.6,cp:.25,seal:.35,chosen:true}); m.x=A.x; m.z=A.z+4.2; __T.LOOK.yaw=0; __T.LOOK.pitch=-.95; m.inp.yaw=0; m.inp.pitch=-.95;
+    for(const a of g.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=0; } });
+  await page.waitForTimeout(5000); await page.screenshot({path:path.join(OUT,'circulo.png')});
+  const dial=await page.evaluate(()=>{ const O=__T.AV&&__T.AV[0]; return O?{visivel:O.dial.visible,op:+O.dial.material.uniforms.op.value.toFixed(2),prog:O.dial.material.uniforms.prog.value}:null; });
+  console.log('mostrador:',JSON.stringify(dial)); if(!dial||!dial.visivel||dial.prog<.59) erros.push('mostrador do círculo não apareceu');
+  await page.evaluate(()=>{ Object.assign(__T.game.altars[0],window.__antes0); });
   // eco do coro a leste: a faixa marca os dois altares do setor e a legenda diz de onde vem o coro
   await page.evaluate(()=>{ const g=__T.game; g.eco={setor:'leste',t:g.rt}; g.events.push({type:'eco',setor:'leste',altares:[2,5]}); });
   await page.waitForTimeout(1500);

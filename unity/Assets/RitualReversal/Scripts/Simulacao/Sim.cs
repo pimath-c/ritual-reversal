@@ -520,15 +520,15 @@ namespace RitualReversal.Simulacao
                     double d = Dist(a, A);
                     if (A.state == "active" && InCircle(a, A)) { o.info = A.chosen ? "Canalizando o ritual" : ""; return o; }
                     if (d >= 3.4) continue;
-                    if (A.chosen && A.state == "dormant") { if (a.reag > 0) o.e = new Ctx { key = "cons" + A.i, type = "consecrate", A = A.i, label = "Segure E para consagrar", time = CFG.consecrate }; else o.info = "Você precisa de 1 reagente"; return o; }
+                    if (A.chosen && A.state == "dormant") { if (a.reag > 0) o.e = new Ctx { key = "cons" + A.i, type = "consecrate", A = A.i, label = "Segure E para consagrar (gasta 1 reagente)", time = CFG.consecrate }; else o.info = "Você precisa de 1 reagente"; return o; }
                     if (A.chosen && A.state == "awake" && !A.decoy) { string bl = BloqueioRitual(g); if (bl != null) { o.info = bl; return o; } }
-                    if (A.chosen && A.state == "awake" && !A.decoy) { if (a.reag > 0 || CFG.iniciarDeGraca) o.e = new Ctx { key = "start" + A.i, type = "start", A = A.i, label = "Segure E para iniciar o ritual", time = CFG.start }; else o.info = "Você precisa de 1 reagente"; return o; }
+                    if (A.chosen && A.state == "awake" && !A.decoy) { if (a.reag > 0 || CFG.iniciarDeGraca) o.e = new Ctx { key = "start" + A.i, type = "start", A = A.i, label = "Segure E para iniciar o ritual (gasta 1 reagente)", time = CFG.start }; else o.info = "Você precisa de 1 reagente"; return o; }
                     if (!A.chosen && A.state == "dormant")
                     {
-                        if (g.decoys > 0) o.e = new Ctx { key = "dec" + A.i, type = "decoy", A = A.i, label = "Segure E para plantar um Chamariz (" + g.decoys + ")", time = CFG.decoy };
+                        if (g.decoys > 0) o.e = new Ctx { key = "dec" + A.i, type = "decoy", A = A.i, label = "Segure E para plantar um Chamariz (restam " + g.decoys + ")", time = CFG.decoy };
                         var from = TransferSource(g, a);
-                        if (!g.transferUsed && a.reag > 0 && from != null) o.t = new Ctx { key = "tr" + A.i, type = "transfer", A = A.i, from = from.i, label = "Segure T para transferir " + from.name + " para cá", time = CFG.transfer };
-                        if (o.e == null && o.t == null) o.info = "Sem Chamarizes restantes";
+                        if (!g.transferUsed && a.reag > 0 && from != null) o.t = new Ctx { key = "tr" + A.i, type = "transfer", A = A.i, from = from.i, label = "Segure T para transferir " + from.name + " para cá (1 reagente, uma vez por noite)", time = CFG.transfer };
+                        if (o.e == null && o.t == null) o.info = g.transferUsed ? "Sem Chamarizes restantes; a Transferência desta noite já foi usada" : from == null ? "Sem Chamarizes restantes" : "Sem Chamarizes. Para transferir para cá, você precisa de 1 reagente";
                         return o;
                     }
                 }
