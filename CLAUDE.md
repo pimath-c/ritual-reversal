@@ -32,7 +32,7 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.8)
+## Estado atual (v5.8a)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -100,6 +100,12 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   CC BY 3.0, origem em `fontes.json`), `python3 tools/montar-sons.py` gera `assets/sons/jogo/*.mp3`, `client/sons.js`
   (embutido por build.js e build-mobile.js, servido pelo servidor) e `docs/AUDIO.md`; no cliente `tocar(nome,opções)`
   com variação, limite de vozes e reserva sintetizada. Ninguém ouviu os sons ainda (ambiente sem áudio).
+- v5.8a (notas em `notas/v5.8a.md`): a v5.8 no Unity. `montar-sons.py` copia os MP3 para `Resources/Sons`; `Som.cs`
+  (`Amostra`, `Tiro`, `Passo`, laços gravados do ritual), `PrimeiraPessoa.cs` (perfis de arma, `Acerto`, `Golpe`,
+  `Tranco`, `AoPasso`, `camFx` em PlayerPrefs "rr-camfx"), `Personagens.cs` (`Arma.alav/cao/tambor`, `Boneco.reac`),
+  `MundoAtores.cs` (`ImpactoMundo/Corpo`, `AoSom`), `MundoAltares.cs` (runas do ritual, `RitualSelado/Fenda/
+  Interrompido`, `MarcaInvestigacao`, `AoTremor`). Discord: `postar-discord.js` divide em vários cartões; o workflow
+  posta cada `notas/*.md` novo ou `[discord: notas/x.md]` da mensagem do commit (segredo DISCORD_WEBHOOK ou _URL).
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
@@ -121,8 +127,10 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Faltam: contorno a nanquim e névoa rasteira da etapa GRADE e a luz de recorte (RIMLUZ).
 
 ## Pendências
-- Postar `notas/v5.md` no Discord: precisa de `discord.com` liberado na rede do ambiente e da credencial
-  `DISCORD_WEBHOOK`; então `node tools/postar-discord.js notas/v5.md`.
+- Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
+  depois disso o workflow posta sozinho as notas novas. Daqui da sessão: `DISCORD_WEBHOOK=... node tools/postar-discord.js`.
+- Sons: ouvir em fones e acertar volumes; trocar o tiro montado por gravação de arma quando Freesound/OpenGameArt/
+  Kenney/Sonniss estiverem liberados na rede do ambiente.
 - Playtests com 4 pessoas antes de mais conteúdo.
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

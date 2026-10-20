@@ -1,9 +1,11 @@
 // Altares do protótipo (buildAltars / syncAltars): degrau, laje de mármore, encosto com runa, velas, o círculo de
 // runas no chão (gira e muda de cor com o estado), o anel dourado do selamento, o feixe de luz do ritual revelado,
 // brasas subindo, a luz do altar e as runas que a lanterna do Caçador revela num altar consagrado.
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using RitualReversal.Simulacao;
+using Random = UnityEngine.Random;
 
 namespace RitualReversal.Visual
 {
@@ -13,7 +15,11 @@ namespace RitualReversal.Visual
         {
             public Transform g, circulo, selo, feixe; public Material mCirculo, mSelo, mFeixe, mEncosto, mRunas, mBrasas; public Light luz;
             public Mesh brasas; public Vector3[] ep; public float[] es; public List<Vector3> ev = new List<Vector3>(); public float opC = .05f, opF, opE, opR, escF = 1;
+            // v5.8: oito runas em volta do círculo (acendem, pulsam, tremem sob o selo, convergem no Farol, estouram na Fenda)
+            public RunaR[] ru = new RunaR[8]; public string rvSt; public float rvProg, rvSeal, contest; public bool somSelo;
         }
+        public class RunaR { public GameObject go; public Material m; public float bx, bz, flash, choque, op; public float? acende, converge, explode; }
+        public Action<float> AoTremor; Vector3 camRit;   // empurrão de câmera nos grandes momentos, se o jogador está perto
         public readonly List<AltarV> AV = new List<AltarV>();
 
         void BuildAltars()
@@ -46,18 +52,108 @@ namespace RitualReversal.Visual
                 A.mRunas = Mat.Brilho(Mat.Hex(0xf0d8ff, 0), Tex.Runa(), Mat.Mistura.Aditiva, true); var gr = new Geo();
                 for (int k = 0; k < 9; k++) { float a = rand(0, PI * 2), r = rand(2, 6.5f); gr.Juntar(Geo.Sprite(new Vector3(Mathf.Cos(a) * r, .08f, Mathf.Sin(a) * r), .5f, .5f)); }
                 Malha(gr, A.mRunas, A.g, "runas", false);
+                float R = (float)CFG.circleR;
+                for (int k = 0; k < 8; k++)
+                {
+                    float an = k / 8f * PI * 2 + .2f; var mr = Pecas.Aditivo(0xff3a5a, Tex.Runa(), true, 0); var sp = Sprite(A.g, mr, .5f, .5f, "runa do ritual");
+                    var ru = new RunaR { go = sp, m = mr, bx = Mathf.Cos(an) * (R + .25f), bz = Mathf.Sin(an) * (R + .25f) }; sp.transform.localPosition = new Vector3(ru.bx, .4f, ru.bz); sp.SetActive(false); A.ru[k] = ru;
+                }
             }
         }
+
+        // ---------- o ritual como evento (mesmo desenho do navegador; tudo sai do estado que o servidor manda) ----------
+        void Coluna(float x, float z, int cor, float dur, float larg)
+        {
+            GarantirAtores(); var m = Mat.Brilho(Mat.Hex(cor, 0), Tex.Feixe(), Mat.Mistura.Aditiva, false, false); var go = Malha(Geo.Cilindro(.5f, 1.1f, 16, 18, 1, true), m, atoresRaiz, "coluna", false);
+            go.transform.localPosition = new Vector3(x, 8, z);
+            NovoEfeito(go, dur, (o, k) => { float s = larg * (.6f + k * .9f); o.transform.localScale = new Vector3(s, .4f + k * .8f, s); Mat.Opacidade(m, (k < .12f ? k / .12f : 1 - (k - .12f) / .88f) * .85f); }, m);
+        }
+        bool Perto(float x, float z, float r) { return (camRit.x - x) * (camRit.x - x) + (camRit.z - z) * (camRit.z - z) < r * r; }
+        void RitualIniciado(int i)
+        {
+            var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z, R = (float)CFG.circleR; for (int k = 0; k < 8; k++) A.ru[k].acende = .15f + k * .1f; // acendem em volta, uma de cada vez
+            GarantirAtores(); AnelChao(x, z, R + 1.5f, 0xff3a5a, 1.1f, Tex.Runa()); AnelChao(x, z, 7, 0xff6a7a, .7f); Coluna(x, z, 0xff2a4a, 1.4f, .7f);
+            Particulas(x, 1.3f, z, 40, 0xff3a5a, 2.4f, 1.2f, -1.2f, 1.4f); Clarao(x, 2, z, 0xff3050, 5); if (AoSom != null) AoSom("ritual_inicio", x, z); if (AoTremor != null && Perto(x, z, 20)) AoTremor(.6f);
+        }
+        void RitualMarco(int i, float c)
+        {
+            var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z; foreach (var r in A.ru) r.flash = Mathf.Max(r.flash, .9f);
+            AnelChao(x, z, (float)CFG.circleR + .8f + c * 3, 0xff3a5a, .8f, Tex.Runa()); Particulas(x, 1.2f, z, 14 + (int)(c * 30), 0xff4a66, 1.6f, 1.1f, -2, 1.8f); Clarao(x, 1.6f, z, 0xff3050, 2 + c * 4);
+            if (AoSom != null) AoSom("ritual_marco", x, z);
+        }
+        public void RitualSelado(int i)
+        {
+            if (i < 0 || i >= AV.Count) return; var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z;
+            foreach (var r in A.ru) { r.converge = 0; r.flash = 1.2f; r.go.SetActive(true); }   // as runas se fecham no altar
+            GarantirAtores(); Coluna(x, z, 0xf3d58e, 1.8f, 1.2f); AnelChao(x, z, 8, 0xf3d58e, 1); AnelChao(x, z, (float)CFG.circleR + 2, 0xffe6a8, 1.3f, Tex.Runa());
+            Particulas(x, 1.2f, z, 70, 0xf3d58e, 3.2f, 1.5f, -1.5f, 2.4f); Clarao(x, 2.4f, z, 0xffd08a, 8); if (AoTremor != null && Perto(x, z, 25)) AoTremor(1.4f);
+        }
+        public void RitualFenda(int i)
+        {
+            if (i < 0 || i >= AV.Count) return; var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z;
+            foreach (var r in A.ru) { r.explode = 0; r.flash = 1.4f; r.go.SetActive(true); }    // as runas estouram para fora
+            GarantirAtores(); Coluna(x, z, 0xb01830, 2.2f, 1.5f); AnelChao(x, z, 10, 0xff2a40, 1.2f); AnelChao(x, z, (float)CFG.circleR + 3, 0x9a40ff, 1.5f, Tex.Runa());
+            Particulas(x, .6f, z, 80, 0x5a0a14, 2.6f, 2.2f, -1, 2.6f); Particulas(x, 1, z, 40, 0xb050ff, 2, 1.6f, -.8f, 1.6f); Clarao(x, 2, z, 0xff2040, 9); if (AoTremor != null && Perto(x, z, 30)) AoTremor(2);
+        }
+        public void RitualInterrompido(int i, string tipo)
+        {
+            if (i < 0 || i >= AV.Count || AV[i].rvSt != "active") return; var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z;
+            foreach (var r in A.ru) { r.choque = .4f; r.flash = Mathf.Max(r.flash, .6f); }
+            GarantirAtores(); Particulas(x, 1, z, 26, tipo == "selo" ? 0xf3d58e : 0xff3a5a, 4, .5f, 6, 1); AnelChao(x, z, (float)CFG.circleR + .5f, tipo == "selo" ? 0xffe0a0 : 0xff3a5a, .35f);
+        }
+        static readonly Color CARMIM_R = Mat.Hex(0xff3a5a), OURO_R = Mat.Hex(0xf3d58e);
+        void AnimarRitual(int i, Altar Al, AltarV A, string st, string papel, float dt, float t)
+        {
+            float P = (float)Al.prog; bool ativo = st == "active"; float x = A.g.localPosition.x, z = A.g.localPosition.z;
+            if (ativo && A.rvSt != null && A.rvSt != "active") RitualIniciado(i);           // quem entra no meio do ritual não ganha a fanfarra
+            if (ativo && A.rvSt == "active") foreach (float c in new[] { .25f, .5f, .75f }) if (A.rvProg < c && P >= c) RitualMarco(i, c);
+            bool sobe = ativo && Al.seal > A.rvSeal + 1e-5f; A.contest = Mathf.Lerp(A.contest, sobe ? 1 : 0, Mathf.Min(1, dt * (sobe ? 8 : 1.5f)));
+            if (sobe && !A.somSelo && papel == "H") { A.somSelo = true; if (AoSom != null) AoSom("selando_perto", x, z); } if (A.contest < .05f) A.somSelo = false;
+            A.rvSt = st; A.rvProg = ativo ? P : 0; A.rvSeal = ativo ? (float)Al.seal : 0;
+            int acesas = ativo ? 2 + Mathf.FloorToInt(P * 6.01f) : st == "farol" ? 8 : 0; float ouro = Mathf.Min(1, A.contest * .6f + (ativo ? (float)Al.seal : 0) * .8f);
+            for (int k = 0; k < 8; k++)
+            {
+                var u = A.ru[k];
+                if (u.acende.HasValue) { u.acende -= dt; if (u.acende <= 0) { u.acende = null; u.flash = 1.3f; Particulas(x + u.bx, .5f, z + u.bz, 6, 0xff3a5a, 1, .7f, -1.5f, .8f); } }
+                float alvo = k < acesas ? (st == "farol" ? .35f : (.45f + .4f * P) * (.82f + .18f * Mathf.Sin(t * (2.5f + P * 6) + k * 1.7f))) : 0; if (u.acende.HasValue) alvo = 0;
+                u.flash = Mathf.Max(0, u.flash - dt * 2.2f); u.choque = Mathf.Max(0, u.choque - dt * 1.2f);
+                float ox = u.bx, oz = u.bz, y = .4f + Mathf.Sin(t * 1.6f + k) * .06f * (ativo ? 1 + P : 0), esc = .5f + .2f * P;
+                if (u.converge.HasValue) { u.converge += dt; float q = Suave(Mathf.Clamp01(u.converge.Value / .55f)); ox *= 1 - q; oz *= 1 - q; y = .4f + q * .95f; esc = .5f + .4f * q; alvo = 1; if (u.converge > 1.4f) u.converge = null; }
+                if (u.explode.HasValue) { u.explode += dt; float q = Mathf.Clamp01(u.explode.Value / .9f); ox *= 1 + q * 2.5f; oz *= 1 + q * 2.5f; y = .4f + q * 2.2f; alvo = 1 - q; if (q >= 1) u.explode = null; }
+                float j = A.contest * .09f + u.choque * .35f; if (j > 0) { ox += Random.Range(-j, j); oz += Random.Range(-j, j); y += Random.Range(-j, j) * .5f; }
+                u.go.transform.localPosition = new Vector3(ox, y, oz); u.go.transform.localScale = new Vector3(esc, esc, 1);
+                u.op = Mathf.Lerp(u.op, Mathf.Clamp(alvo + u.flash, 0, 1.4f), .25f); u.go.SetActive(u.op > .01f);
+                var cor = Color.Lerp(CARMIM_R, OURO_R, st == "farol" || u.converge.HasValue ? 1 : ouro); cor.a = Mathf.Min(1, u.op); Mat.Cor(u.m, cor); u.m.SetFloat("_Giro", t * (.4f + P) + k);
+            }
+            if (ativo)
+            {
+                float R = (float)CFG.circleR;
+                if (Random.value < dt * (3 + P * 16)) { float a = Random.value * PI * 2, r = R * (.4f + Random.value * .7f); Jato(x + Mathf.Cos(a) * r, .15f, z + Mathf.Sin(a) * r, new Vector3(-Mathf.Cos(a) * .3f, 1, -Mathf.Sin(a) * .3f), 1, 0xff4a66, .9f + P, .05f, 1.4f, -.6f); }
+                if (A.contest > .3f && Random.value < dt * 16) { float a = Random.value * PI * 2; Jato(x + Mathf.Cos(a) * R, .3f, z + Mathf.Sin(a) * R, new Vector3(-Mathf.Cos(a), .6f, -Mathf.Sin(a)), 2, 0xf3d58e, 2.2f, .3f, .45f, 3); }
+            }
+        }
+        static float Suave(float t) { return t * t * (3 - 2 * t); }
+        // EVP (só para quem ouviu): as vozes sobem do altar em espiral
+        // investigação: sinal que descarta (o anel apaga em cinza), resíduo de reagente (brasas carmins) e Chamariz desfeito (cinza)
+        public void MarcaInvestigacao(int i, string k)
+        {
+            if (i < 0 || i >= AV.Count) return; GarantirAtores(); float x = AV[i].g.localPosition.x, z = AV[i].g.localPosition.z, R = (float)CFG.circleR;
+            if (k == "descartado") AnelChao(x, z, R + .6f, 0x8aa0b8, .9f);
+            else if (k == "confirmado") { Particulas(x, 1.3f, z, 30, 0xff3a5a, .9f, 1.6f, -.6f, .8f); AnelChao(x, z, R + 1, 0xff6a7a, .9f); }
+            else if (k == "chamariz") { Particulas(x, 1.6f, z, 40, 0x6a6a72, .8f, 2, 1.2f, .2f); AnelChao(x, z, R + .6f, 0x9a9aa8, .8f); }
+        }
+        public void RevelarEVP(float x, float z) { GarantirAtores(); AnelChao(x, z, 2.4f, 0x9a6aff, 1.1f); for (int k = 0; k < 3; k++) Particulas(x, .4f + k * .5f, z, 12, 0xb08aff, .6f, 1.4f, -1.4f, 1.2f); }
 
         static Color HexA(int hex, float a) { return Mat.Hex(hex, a); }
         // mesma lógica do syncAltars do protótipo; 'eu' é o jogador (para a lanterna), 'cam' a posição da câmera no protótipo
         public void SyncAltars(Jogo g, string papel, Ator eu, Vector3 cam, float lookYaw, float dt)
         {
-            float t = Time.time;
+            float t = Time.time; camRit = cam;
             for (int i = 0; i < g.altars.Count && i < AV.Count; i++)
             {
                 var A = g.altars[i]; var O = AV[i]; string st = A.state;
-                if (papel == "H" && st == "awake") { string k = g.know[A.i]; if (!(k == "desperto" || k == "confirmado" || k == "chamariz" || k == "ativo")) st = "dormant"; }
+                { string k = g.know[A.i]; bool ve = k == "desperto" || k == "confirmado" || k == "chamariz" || k == "ativo";
+                  if (papel == "H" && st == "active" && !A.localized) st = ve ? "awake" : "dormant"; if (papel == "H" && st == "awake" && !ve) st = "dormant"; } // como o servidor mostra à caça
                 float op = .05f, li = 0, beam = 0, emb = 0, spin = .05f; int col = 0x6b3a8a, lc = 0x6b3a8a, bcol = 0xe0435e;
                 if (st == "awake") { op = .18f + .06f * Mathf.Sin(t * 2 + i); li = .9f + .2f * Mathf.Sin(t * 3); col = 0x8a4ad0; lc = 0x7a3ab0; if (papel == "C" && !A.chosen) col = 0x555566; }
                 if (st == "active") { float pulse = A.prog >= .25 ? (.5f + .5f * Mathf.Sin(t * 1.3f * PI * 2)) : .5f; op = .9f + .1f * pulse; col = 0xff5577; lc = 0xff2040; li = 1.4f + 1.6f * (float)A.prog + pulse * .8f; spin = .4f + (float)A.prog * 1.6f; emb = .9f; if (A.localized) beam = .22f + .1f * pulse; if (A.grande) { beam = .55f + .3f * pulse; bcol = 0xff2a3a; li *= 1.6f; spin *= 1.8f; } }
@@ -85,6 +181,7 @@ namespace RitualReversal.Visual
                     if (d < 17) { float fx = -Mathf.Sin(lookYaw), fz = -Mathf.Cos(lookYaw), cos = (((float)A.x - cam.x) * fx + ((float)A.z - cam.z) * fz) / Mathf.Max(d, .1f); rv = Mathf.Clamp01((cos - .8f) * 5) * (1 - d / 17); }
                 }
                 O.opR = Mathf.Lerp(O.opR, rv * .9f, .2f); Mat.Cor(O.mRunas, HexA(0xf0d8ff, O.opR));
+                AnimarRitual(i, A, O, st, papel, dt, t);
             }
         }
     }

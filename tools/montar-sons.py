@@ -9,6 +9,7 @@ import numpy as np
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTES = os.path.join(RAIZ, 'assets', 'sons', 'fontes')
 SAIDA = os.path.join(RAIZ, 'assets', 'sons', 'jogo')
+UNITY = os.path.join(RAIZ, 'unity', 'Assets', 'RitualReversal', 'Resources', 'Sons')   # o Som.cs do Unity carrega daqui
 SR = 44100
 
 def achar_ffmpeg():
@@ -315,6 +316,11 @@ def main():
         o.write('window.SONS_RR_CREDITOS=' + json.dumps(creditos, ensure_ascii=False) + ';\n')
         o.write('window.SONS_RR=' + json.dumps(js, separators=(',', ':')) + ';\n')
     escrever_doc(usos, fontes, autores)
+    os.makedirs(UNITY, exist_ok=True)
+    for a in os.listdir(UNITY):
+        if a.endswith('.mp3') and not os.path.exists(os.path.join(SAIDA, a)): os.unlink(os.path.join(UNITY, a))   # som que saiu do jogo sai do Unity
+    for a in sorted(os.listdir(SAIDA)):
+        if a.endswith('.mp3'): shutil.copyfile(os.path.join(SAIDA, a), os.path.join(UNITY, a))
     tot = sum(s for _, _, s in resumo)
     for a, d, s in resumo: print(f'  {a:28s} {d:5.2f} s {s / 1024:6.1f} KB')
     print(f'{len(R)} sons, {len(resumo)} arquivos, {tot / 1024:.0f} KB em MP3; client/sons.js {os.path.getsize(os.path.join(RAIZ, "client", "sons.js")) / 1024:.0f} KB')

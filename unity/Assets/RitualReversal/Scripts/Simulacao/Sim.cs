@@ -26,6 +26,8 @@ namespace RitualReversal.Simulacao
         static int Idx(int n) { return (int)Math.Floor(Rnd() * n); }
         public static Ponto Pt(double x, double z) { return new Ponto(x, z); }
 
+        // intervalo entre tiros do jogador (Caçador e Cultista); o cliente usa o mesmo número para prever o tiro
+        public const double CADENCIA_HUMANA = .42;
         public static void Ev(Jogo g, string type, params object[] kv)
         {
             var e = new Evento { type = type }; for (int i = 0; i + 1 < kv.Length; i += 2) e.d[(string)kv[i]] = kv[i + 1]; g.events.Add(e);
@@ -384,7 +386,7 @@ namespace RitualReversal.Simulacao
         }
         static void FireHuman(Jogo g, Ator a)
         {
-            a.fireCd = .42; double y = a.inp.yaw, p = a.inp.pitch; double dx = -JS.Sin(y) * JS.Cos(p), dy = JS.Sin(p), dz = -JS.Cos(y) * JS.Cos(p);
+            a.fireCd = CADENCIA_HUMANA; double y = a.inp.yaw, p = a.inp.pitch; double dx = -JS.Sin(y) * JS.Cos(p), dy = JS.Sin(p), dz = -JS.Cos(y) * JS.Cos(p);
             double T = JS.Clamp(a.inp.viewT != 0 ? a.inp.viewT : g.t, g.t - CFG.compensacaoMax, g.t);
             TraceShot(g, a, a.x, 1.62, a.z, dx, dy, dz, T, false);
         }
@@ -395,7 +397,7 @@ namespace RitualReversal.Simulacao
         }
         static void CastSigil(Jogo g, Ator a, double dx, double dy, double dz)
         {
-            a.veuT = 0; a.lastShotT = g.t; a.ataqueT = g.t; a.fireCd = a.human ? .42 : (1 + Rand(0, .3)) * DifDe(g, a).ritmo; a.fervor -= CFG.sigilCusto;
+            a.veuT = 0; a.lastShotT = g.t; a.ataqueT = g.t; a.fireCd = a.human ? CADENCIA_HUMANA : (1 + Rand(0, .3)) * DifDe(g, a).ritmo; a.fervor -= CFG.sigilCusto;
             Ev(g, "sfx", "k", "sigil", "x", R2(a.x), "z", R2(a.z), "a", a.id);
             double rx = JS.Cos(a.yaw), rz = -JS.Sin(a.yaw); double ox = a.x + rx * .3, oy = 1.45, oz = a.z + rz * .3;
             double tx = a.x + dx * 40, ty = 1.62 + dy * 40, tz = a.z + dz * 40; double vx = tx - ox, vy = ty - oy, vz = tz - oz; double l = JS.Hypot(vx, vy, vz); if (l == 0 || double.IsNaN(l)) l = 1; double sp = CFG.sigilVel;

@@ -2,8 +2,11 @@
 // passa-alta ou passa-faixa) ou um oscilador (seno, quadrada, serra, triângulo) com rampa de frequência, envelope
 // de ataque curto e queda exponencial, posição estéreo e abafamento pelas paredes (occlusion). Os laços contínuos
 // também: vento da noite, o canto de cada ritual (sussurro, pulsação grave e coro que entram com o progresso) e o
-// coro, o bordão e o tambor do Grande Ritual. Tudo é misturado em OnAudioFilterRead, sem nenhum arquivo de áudio.
+// coro, o bordão e o tambor do Grande Ritual. Tudo é misturado em OnAudioFilterRead.
+// v5.8: os sons gravados do navegador (Resources/Sons, CC0 e CC BY 3.0, créditos em docs/AUDIO.md) tocam no mesmo
+// misturador, com a mesma variação; a síntese fica de reserva para o que não tiver gravação.
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using RitualReversal.Simulacao;
@@ -36,6 +39,116 @@ namespace RitualReversal.Visual
             src.clip = AudioClip.Create("síntese", sr, 1, sr, false); // silêncio em laço: o som sai do OnAudioFilterRead
             src.Play();
             for (int i = 0; i < AV.Length; i++) AV[i] = new LacoRitual();
+            CarregarGravacoes();
+        }
+
+        // ---------- gravações ----------
+        // Cada clipe é decodificado uma vez para um vetor e tocado no OnAudioFilterRead. Como no navegador: sorteia uma
+        // gravação diferente da última, ±4% de altura e ±8% de volume, no máximo N vozes do mesmo som, repetição em
+        // menos de 25 ms ignorada (evento repetido não vira eco), passa-baixa no que vem de longe.
+        class Gravacao { public float[] d; public int sr; }
+        readonly Dictionary<string, List<Gravacao>> grav = new Dictionary<string, List<Gravacao>>();
+        readonly Dictionary<string, int> ultimaVar = new Dictionary<string, int>();
+        readonly Dictionary<string, double> ultimoInicio = new Dictionary<string, double>();
+        readonly Dictionary<string, List<double>> fimVozes = new Dictionary<string, List<double>>();
+        public int Gravacoes { get { return grav.Values.Sum(l => l.Count); } }
+        void CarregarGravacoes()
+        {
+            AudioClip[] clipes; try { clipes = Resources.LoadAll<AudioClip>("Sons"); } catch (Exception) { return; }
+            // "tiro_carabina", "tiro_carabina_2"...: o nome sem o número final é o som; a ordem segue o número
+            foreach (var c in clipes.OrderBy(c => c.name, StringComparer.Ordinal))
+            {
+                string nome = c.name; int us = nome.LastIndexOf('_'); int num;
+                if (us > 0 && int.TryParse(nome.Substring(us + 1), out num)) nome = nome.Substring(0, us);
+                if (c.loadState != AudioDataLoadState.Loaded) c.LoadAudioData();
+                var buf = new float[c.samples * c.channels]; if (buf.Length == 0 || !c.GetData(buf, 0)) continue;
+                var mono = new float[c.samples]; for (int i = 0; i < c.samples; i++) { float a = 0; for (int k = 0; k < c.channels; k++) a += buf[i * c.channels + k]; mono[i] = a / c.channels; }
+                int ini = 0, lim = Math.Min(mono.Length, c.frequency / 12); while (ini < lim && Math.Abs(mono[ini]) < 1e-3f) ini++; // o atraso do MP3 não pode atrasar o tiro
+                if (ini > 32) mono = mono.Skip(ini).ToArray();
+                List<Gravacao> L; if (!grav.TryGetValue(nome, out L)) grav[nome] = L = new List<Gravacao>(); L.Add(new Gravacao { d = mono, sr = c.frequency });
+            }
+            List<Gravacao> z, co; if (grav.TryGetValue("zumbido_laco", out z) && grav.TryGetValue("coro_laco", out co)) { lacoZ = z[0]; lacoC = co[0]; }
+        }
+        Gravacao lacoZ, lacoC; // sussurros e coro gravados dos rituais em andamento
+        public bool Tem(string nome) { return grav.ContainsKey(nome); }
+        // toca uma gravação; devolve false se ela não existe (quem chamou usa a síntese). indice >= 0 escolhe a variação.
+        public bool Amostra(string nome, float x = N, float z = N, float raio = 40, float vol = 1, float taxa = 1, float varia = .04f, int max = 4, float atraso = 0, int indice = -1)
+        {
+            List<Gravacao> L; if (!grav.TryGetValue(nome, out L) || L.Count == 0) return false;
+            var s = float.IsNaN(x) ? new Espacial { g = 1, p = 0 } : Spatial(x, z, raio); if (s.g < .01f) return true;
+            double agora = agoraPrincipal, ult;
+            if (indice < 0 && ultimoInicio.TryGetValue(nome, out ult) && agora - ult < .025) return true; ultimoInicio[nome] = agora;
+            List<double> fins; if (!fimVozes.TryGetValue(nome, out fins)) fimVozes[nome] = fins = new List<double>(); fins.RemoveAll(f => f < agora); if (fins.Count >= max) return true;
+            int i = indice >= 0 ? Math.Min(indice, L.Count - 1) : Random.Range(0, L.Count); int u;
+            if (indice < 0 && L.Count > 1 && ultimaVar.TryGetValue(nome, out u) && u == i) i = (i + 1) % L.Count; ultimaVar[nome] = i;
+            var gv = L[i]; double passo = taxa * (1 + Random.Range(-varia, varia)) * gv.sr / sr;
+            var v = new Voz { amostra = gv.d, passo = passo, vol = vol * s.g * (1 + Random.Range(-.08f, .08f)), gE = 1, gD = 1, dur = gv.d.Length / passo / sr };
+            if (!float.IsNaN(x)) { float d = Mathf.Sqrt((x - ouvinte.x) * (x - ouvinte.x) + (z - ouvinte.z) * (z - ouvinte.z)); if (d > 8) { v.filtro = new Biquad(); v.filtro.Ajustar(Tipo.PassaBaixa, Mathf.Clamp(16000 * Mathf.Pow(Mathf.Clamp01(1 - d / raio), 1.6f) + 700, 700, 16000), 0, sr); } }
+            Enfileirar(v, atraso, s.p); fins.Add(agora + atraso + v.dur); return true;
+        }
+        // passos por chão, como no navegador: pedra na catedral, terra nas trilhas, folhas na mata; com chuva, barro por cima
+        public float chuva;
+        public static string Superficie(double x, double z)
+        {
+            if (Mapa.NaCatedral(x, z)) return "pedra";
+            foreach (var sg in Mapa.SEG_TRILHA) { double dx = sg.bx - sg.ax, dz = sg.bz - sg.az, L = dx * dx + dz * dz, t = L > 0 ? ((x - sg.ax) * dx + (z - sg.az) * dz) / L : 0; t = Math.Max(0, Math.Min(1, t)); if (JS.Hypot(x - (sg.ax + dx * t), z - (sg.az + dz * t)) < sg.w / 2 + .4) return "terra"; }
+            return "folhas";
+        }
+        bool Passo(float x, float z, float raio, float vol)
+        {
+            bool proprio = float.IsNaN(x); float px = proprio ? ouvinte.x : x, pz = proprio ? ouvinte.z : z; string sup = Superficie(px, pz); float k = sup == "pedra" ? 1.5f : 1.25f;
+            if (!Amostra("passo_" + sup, x, z, raio, vol * k, 1, .06f, proprio ? 3 : 6)) return false;
+            if (chuva > .2f && !(Mapa.NaCatedral(px, pz) && !Mapa.NoClaustro(px, pz))) Amostra("passo_lama", x, z, raio, vol * chuva, 1, .04f, proprio ? 2 : 4);
+            return true;
+        }
+        // tiro com a gravação da arma de quem atirou
+        public void Tiro(bool revolver, float x, float z, bool proprio)
+        {
+            if (Amostra(revolver ? "tiro_revolver" : "tiro_carabina", proprio ? N : x, proprio ? N : z, 55, proprio ? .85f : .95f, 1, .04f, proprio ? 3 : 6)) return;
+            Tocar("shot", x, z);
+        }
+        bool TocarGravado(string k, float x, float z, float v)
+        {
+            switch (k)
+            {
+                case "shot": return Amostra("tiro_carabina", x, z, 55, .95f, 1, .04f, 6);
+                case "sigil": return Amostra("sigilo", x, z, 35, .85f, 1, .04f, 5);
+                case "step": return Passo(x, z, 16, .55f);
+                case "passoForte": return Passo(x, z, 24, .75f);
+                case "mystep": return Passo(N, N, 1, .12f);
+                case "hit": if (!Amostra("impacto_corpo", N, N, 1, .5f, 1, .04f, 2)) return false; Tom(N, N, 1, 1900, 1500, .045f, Onda.Seno, .07f); return true;
+                case "cabeca": Amostra("impacto_corpo", N, N, 1, .6f, 1.15f, .04f, 2); return false;   // e o tique sintetizado por cima
+                case "derrubou": if (!Amostra("derrubou", N, N, 1, .85f, 1, .04f, 1)) return false; Tom(N, N, 1, 660, 660, .5f, Onda.Triangulo, .1f, .06f); return true;
+                case "bloqueio": if (!Amostra("impacto_pedra", N, N, 1, .6f, 1.3f, .04f, 2)) Tom(N, N, 1, 2600, 2300, .06f, Onda.Quadrada, .08f); Tom(N, N, 1, 3100, 2900, .09f, Onda.Seno, .05f); return true;
+                case "hurt": return Amostra("dor", N, N, 1, .75f, 1, .04f, 2);
+                case "sealed": return Amostra("farol", N, N, 1, .9f, 1, .04f, 1);
+                case "doom": return Amostra("fenda", N, N, 1, 1, 1, .04f, 1);
+                case "corvo": return Amostra("corvo", x, z, 40, .8f, 1, .06f, 3);
+                case "bell": return Amostra("sino", N, N, 1, .5f, 1, .01f, 1);
+                case "sinoGrande": return Amostra("sino_grande", N, N, 1, .85f, 1, .01f, 2);
+                case "collect": return Amostra("coleta", x, z, 26, .8f);
+                case "flare": return Amostra("flare", x, z, 30, .7f);
+                case "arrasto": return Amostra("transferencia", x, z, 45, .8f, 1, .04f, 2);
+                case "push": return Amostra("empurrao", x, z, 28, .9f);
+                case "estouro": return Amostra("estouro", x, z, 24, .85f, 1, .04f, 5);
+                case "selando": return Amostra("selando", x, z, 400, .9f, 1, .04f, 1);
+                case "selando_perto": return Amostra("selando", x, z, 50, .45f, 1, .04f, 1);
+                case "evp": return Amostra("evp", x, z, 30, .8f);
+                case "reload":
+                    {
+                        List<Gravacao> L; if (!grav.TryGetValue("recarga", out L) || L.Count < 3) return false;   // abrir, cartuchos, fechar: no ritmo da recarga (1,6 s)
+                        Amostra("recarga", x, z, 18, .7f, 1, .03f, 6, 0, 0); foreach (float t in new[] { .42f, .62f, .82f }) Amostra("recarga", x, z, 18, .7f, 1, .03f, 6, t, 1); Amostra("recarga", x, z, 18, .7f, 1, .03f, 6, 1.15f, 2);
+                        if (v > 0) Amostra("cao", x, z, 18, .7f, 1, .04f, 2, 1.38f); return true;
+                    }
+                case "lance": return Amostra("descoberta", N, N, 1, .55f, .9f, .01f, 1);
+                case "descoberta": return Amostra("descoberta", N, N, 1, v > 0 ? .6f : .35f, v > 0 ? 1 : 1.25f, .01f, 1);
+                case "ritual_inicio": return Amostra(k, x, z, 140, 1, 1, .01f, 1);
+                case "ritual_marco": return Amostra(k, x, z, 120, .8f, 1, .01f, 1);
+                case "gota": return Amostra(k, x, z, 14, .35f, 1, .08f, 2);
+                case "alavanca": case "cao": return Amostra(k, N, N, 1, .5f, 1, .05f, 2);
+                case "impacto_pedra": case "impacto_madeira": case "impacto_terra": return Amostra(k, x, z, 30, .75f, 1, .07f, 6);
+                default: return grav.ContainsKey(k) && Amostra(k, x, z, 40, .8f);
+            }
         }
 
         // ---------- filtros e vozes ----------
@@ -68,6 +181,7 @@ namespace RitualReversal.Visual
             public Biquad filtro; public Tipo ftipo; public double ff0, ff1, fq; // filtro com rampa exponencial opcional (presságio)
             public double subida = -1, pico, queda; // envelope especial: sobe linear até 'subida', cai linear até 'queda'
             public float hs; // chiado de 4200 Hz das vozes "secas" (alucinação)
+            public float[] amostra; public double passo; // gravação: amostras por amostra de saída (altura e taxa do clipe)
         }
         readonly List<Voz> fila = new List<Voz>(), vozes = new List<Voz>();
         struct Espacial { public float g, p; }
@@ -106,6 +220,7 @@ namespace RitualReversal.Visual
         // ---------- receitas (SFX do protótipo) ----------
         public void Tocar(string k, float x = N, float z = N, float v = 0)
         {
+            if (TocarGravado(k, x, z, v)) return;
             switch (k)
             {
                 case "shot": Ruido(x, z, 55, .28f, Tipo.PassaBaixa, 1600, .7f, .9f); Tom(x, z, 55, 160, 50, .18f, Onda.Seno, .6f); break;
@@ -166,7 +281,7 @@ namespace RitualReversal.Visual
         // ---------- laços ----------
         class LacoRitual
         {
-            public volatile bool ligado; public volatile float alvoOut, alvoPan, alvoW, alvoP, alvoC;
+            public volatile bool ligado; public volatile float alvoOut, alvoPan, alvoW, alvoP, alvoC, alvoTr; public float tr, selAnt; public double pz, pc, fTrem;
             public float out_, pan, gW, gP, gC; public Biquad bp = new Biquad(), lp = new Biquad(); public double fW, fP, fL, fS0, fS1, fS2, fS3; public float[] det = new float[4];
         }
         readonly LacoRitual[] AV = new LacoRitual[8];
@@ -184,6 +299,7 @@ namespace RitualReversal.Visual
                 {
                     if (!O.ligado) { for (int k = 0; k < 4; k++) O.det[k] = 1 + Random.value * .008f; O.out_ = 0; O.ligado = true; }
                     float p = (float)A.prog; O.alvoW = p < .25f ? .55f : .18f; O.alvoP = p >= .25f ? .9f : 0; O.alvoC = p >= .75f ? .32f : 0;
+                    O.alvoTr = A.seal > O.selAnt + 1e-5 ? 1 : 0; O.selAnt = (float)A.seal; // a caça selando: o coro treme
                     var s = Spatial((float)A.x, (float)A.z, (float)CFG.ritRad[Math.Max(1, A.lastN)] * 1.6f); float gg = s.g;
                     if (A.localized) gg = Mathf.Max(gg, .18f * Oclusao(ouvinte.x, ouvinte.z, A.x, A.z) + .06f);
                     O.alvoOut = gg * .7f; O.alvoPan = s.p;
@@ -215,6 +331,7 @@ namespace RitualReversal.Visual
                 if (!O.ligado) continue;
                 O.bp.Ajustar(Tipo.PassaFaixa, 1500 + 800 * Math.Sin(2 * Math.PI * 5.3 * tb), 5, sr); O.lp.Ajustar(Tipo.PassaBaixa, 820, 1, sr);
                 O.out_ += (O.alvoOut - O.out_) * (1 - Mathf.Exp(-kBloco / .12f)); O.pan += (O.alvoPan - O.pan) * (1 - Mathf.Exp(-kBloco / .1f));
+                O.tr += (O.alvoTr - O.tr) * (1 - Mathf.Exp(-kBloco / (O.alvoTr > O.tr ? .12f : .6f)));
                 O.gW += (O.alvoW - O.gW) * (1 - Mathf.Exp(-kBloco / .2f)); O.gP += (O.alvoP - O.gP) * (1 - Mathf.Exp(-kBloco / .3f)); O.gC += (O.alvoC - O.gC) * (1 - Mathf.Exp(-kBloco / .3f));
                 if (O.alvoOut == 0 && O.out_ < .0005f) O.ligado = false;
             }
@@ -230,11 +347,22 @@ namespace RitualReversal.Visual
                 foreach (var O in AV)
                 {
                     if (!O.ligado) continue;
-                    double w = O.bp.Passo(rnd.NextDouble() * 2 - 1) * O.gW;
+                    double w, coro;
                     O.fP += 46 * dtS; O.fW += 1.3 * dtS; double pu = Math.Sin(2 * Math.PI * O.fP) * (.5 + .5 * Math.Sin(2 * Math.PI * O.fW)) * O.gP;
-                    O.fS0 += 110 * O.det[0] * dtS; O.fS1 += 130.8 * O.det[1] * dtS; O.fS2 += 164.8 * O.det[2] * dtS; O.fS3 += 220.4 * O.det[3] * dtS;
-                    double coro = O.lp.Passo(Osc(Onda.Serra, O.fS0) + Osc(Onda.Serra, O.fS1) + Osc(Onda.Serra, O.fS2) + Osc(Onda.Serra, O.fS3)) * O.gC;
-                    double m = (w + pu + coro) * O.out_; float ang = (O.pan + 1) * .25f * Mathf.PI; L += m * Math.Cos(ang); R += m * Math.Sin(ang);
+                    if (lacoZ != null && lacoC != null)
+                    {   // gravações em laço (a pulsação grave continua sintetizada)
+                        O.pz += (double)lacoZ.sr / sr * O.det[0]; if (O.pz >= lacoZ.d.Length - 1) O.pz -= lacoZ.d.Length - 1;
+                        O.pc += (double)lacoC.sr / sr * O.det[1]; if (O.pc >= lacoC.d.Length - 1) O.pc -= lacoC.d.Length - 1;
+                        w = lacoZ.d[(int)O.pz] * O.gW; coro = lacoC.d[(int)O.pc] * 1.6 * O.gC;
+                    }
+                    else
+                    {
+                        w = O.bp.Passo(rnd.NextDouble() * 2 - 1) * O.gW;
+                        O.fS0 += 110 * O.det[0] * dtS; O.fS1 += 130.8 * O.det[1] * dtS; O.fS2 += 164.8 * O.det[2] * dtS; O.fS3 += 220.4 * O.det[3] * dtS;
+                        coro = O.lp.Passo(Osc(Onda.Serra, O.fS0) + Osc(Onda.Serra, O.fS1) + Osc(Onda.Serra, O.fS2) + Osc(Onda.Serra, O.fS3)) * O.gC;
+                    }
+                    O.fTrem += 7 * dtS; double trem = 1 + O.tr * .35 * Math.Sin(2 * Math.PI * O.fTrem);
+                    double m = (w + pu + coro) * O.out_ * trem; float ang = (O.pan + 1) * .25f * Mathf.PI; L += m * Math.Cos(ang); R += m * Math.Sin(ang);
                 }
                 // Grande Ritual: coro com formante de "ah", bordão grave com tremor
                 if (grande > .0005f)
@@ -248,6 +376,12 @@ namespace RitualReversal.Visual
                 for (int vi = 0; vi < vozes.Count; vi++)
                 {
                     var v = vozes[vi]; double tv = t - v.ini; if (tv < 0) continue;
+                    if (v.amostra != null)
+                    {
+                        double ps = tv * sr * v.passo; int i0 = (int)ps; if (i0 >= v.amostra.Length - 1) continue;
+                        double xa = v.amostra[i0] + (v.amostra[i0 + 1] - v.amostra[i0]) * (ps - i0); if (v.filtro != null) xa = v.filtro.Passo(xa);
+                        xa *= v.vol; L += xa * v.gE; R += xa * v.gD; continue;
+                    }
                     double env;
                     if (v.subida > 0) env = tv < v.subida ? v.pico * tv / v.subida : tv < v.queda ? v.pico * (1 - (tv - v.subida) / (v.queda - v.subida)) : 0;
                     else env = tv < v.ataque ? v.vol * tv / v.ataque : v.vol * Math.Pow(.0001 / Math.Max(v.vol, 1e-5), (tv - v.ataque) / Math.Max(v.dur - v.ataque, 1e-3));

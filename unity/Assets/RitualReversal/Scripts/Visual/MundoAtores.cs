@@ -53,6 +53,41 @@ namespace RitualReversal.Visual
                 vida[i] = vmax[i] = vid * (.6f + Random.value * .6f); grav[i] = gr; pbase[i] = c;
             }
         }
+        // jato numa direção: sangue saindo pelo lado oposto ao tiro, lascas e poeira voltando da parede (v5.8)
+        public void Jato(float x, float y, float z, Vector3 dir, int n, int hex, float vel, float abre, float vid, float gr)
+        {
+            if (pMalha == null) return; var c = Mat.Hex(hex);
+            for (int k = 0; k < n; k++)
+            {
+                int i = pi0; pi0 = (pi0 + 1) % PN; pp[i] = new Vector3(x, y, z); float sp = vel * (.5f + Random.value * .8f);
+                pv[i] = new Vector3(dir.x * sp + Random.Range(-abre, abre), dir.y * sp + Random.Range(-abre, abre) + abre * .4f, dir.z * sp + Random.Range(-abre, abre));
+                vida[i] = vmax[i] = vid * (.6f + Random.value * .6f); grav[i] = gr; pbase[i] = c;
+            }
+        }
+        public Action<string, float, float> AoSom;   // a partida liga ao Som (impactos, ritual)
+        public Jogo ultimoJogo;                       // último estado visto (para saber se o alvo tinha escudo)
+        // onde a bala bateu: chão de pedra ou de terra, paredes da catedral, troncos e madeira lá fora
+        public static string SuperficieImpacto(float x, float y, float z) { if (y < .1f) return Som.Superficie(x, z) == "pedra" ? "pedra" : "terra"; return Mapa.NaCatedral(x, z) ? "pedra" : "madeira"; }
+        void ImpactoMundo(Vector3 p, Vector3 u)
+        {
+            string sup = SuperficieImpacto(p.x, p.y, p.z); int c0 = sup == "pedra" ? 0x8a8478 : sup == "madeira" ? 0x6a4628 : 0x4a3a28, c1 = sup == "pedra" ? 0xffc070 : sup == "madeira" ? 0xb08050 : 0x7a6040;
+            Jato(p.x, p.y, p.z, new Vector3(-u.x, -u.y + .3f, -u.z), sup == "terra" ? 14 : 9, c0, sup == "terra" ? 2.2f : 1.6f, .5f, .7f, sup == "terra" ? 7 : 3);
+            if (sup == "pedra") { Jato(p.x, p.y, p.z, -u, 7, c1, 5, 1.6f, .22f, 12); Clarao(p.x, p.y, p.z, 0xffb070, 1.1f); } else Particulas(p.x, p.y, p.z, 4, c1, 1.2f, .6f, 6, .6f);
+            if (AoSom != null) AoSom("impacto_" + sup, p.x, p.z);
+        }
+        void ImpactoCorpo(Evento e, Vector3 p, Vector3 u, bool cab)
+        {
+            Ator alvo = ultimoJogo != null ? ultimoJogo.actors.Find(a => a.id == e.Int("alvo")) : null; bool osso = alvo != null && alvo.shield > 0;
+            if (osso) { Jato(p.x, p.y, p.z, new Vector3(-u.x, .2f, -u.z), 10, 0xd8caa6, 2.5f, .8f, .4f, 8); Clarao(p.x, p.y, p.z, 0xffe0a0, 1.4f); } // a armadura de osso segura: lascas, sem sangue
+            else
+            {
+                Jato(p.x, p.y, p.z, new Vector3(u.x, u.y + .15f, u.z), cab ? 20 : 12, 0x8a0f20, 2.6f, .6f, .5f, 9); Particulas(p.x, p.y, p.z, cab ? 10 : 5, 0xb01830, 1.4f, .35f, 6, .4f);
+                if (alvo != null && alvo.team == "C") Particulas(p.x, p.y, p.z, 4, 0xb050ff, .8f, .6f, -1, .5f); if (cab) Particulas(p.x, p.y, p.z, 8, 0xffd070, 3, .25f, 4, 1);
+            }
+            Boneco b; if (bonecos.TryGetValue(e.Int("alvo"), out b)) { b.flinch = 1; b.golpe = new Vector2((float)e.Num("x0"), (float)e.Num("z0")); b.reac = new Boneco.Reacao { forte = cab ? 1.35f : 1, cab = cab, de = new Vector2((float)e.Num("x0"), (float)e.Num("z0")) }; }
+        }
+        // acerto confirmado pelo servidor: o alvo segura o golpe por um instante
+        public void PausaImpacto(int id, float s) { Boneco b; if (bonecos.TryGetValue(id, out b)) b.pausa = s; }
         public void Clarao(float x, float y, float z, int hex, float forca) { if (luzImpacto == null) return; luzImpacto.transform.localPosition = new Vector3(x, y, z); luzImpacto.color = Mat.Hex(hex); iImpacto = forca; }
         float iImpacto;
         void AtualizarParticulas(float dt)
@@ -138,7 +173,7 @@ namespace RitualReversal.Visual
                 Particulas(x, .5f, z, meu ? 14 : 30, 0xf3d58e, 3.5f, .9f, -1, 1.5f); Clarao(x, 2, z, 0xf3d58e, meu ? 2 : 6);
             }
             var alvos = e["alvos"] as System.Collections.IEnumerable;
-            if (alvos != null) foreach (var o in alvos) { Boneco b; if (o != null && bonecos.TryGetValue(Convert.ToInt32(o), out b)) b.flinch = 1; }
+            if (alvos != null) foreach (var o in alvos) { Boneco b; if (o != null && bonecos.TryGetValue(Convert.ToInt32(o), out b)) { b.flinch = 1; b.reac = new Boneco.Reacao { forte = F == "empurrao" ? 1.6f : .7f, de = new Vector2(x, z) }; b.pausa = .05f; } }
         }
         static System.Collections.IEnumerator Depois(float s, Action f) { yield return new WaitForSeconds(s); f(); }
 
@@ -163,17 +198,19 @@ namespace RitualReversal.Visual
                         bool own = e.Int("a") == eu; var p1 = new Vector3((float)e.Num("x1"), (float)e.Num("y1"), (float)e.Num("z1"));
                         var p0 = own ? bocaPropria : new Vector3((float)e.Num("x0"), (float)e.Num("y0") + .1f, (float)e.Num("z0"));
                         Tracer(p0, p1);
-                        if (e["alvo"] != null)
-                        {
-                            bool cab = e["cab"] is bool && (bool)e["cab"];
-                            Particulas(p1.x, p1.y, p1.z, cab ? 22 : 12, 0xb01830, 2.2f, .45f, 6, .6f); if (cab) Particulas(p1.x, p1.y, p1.z, 8, 0xffd070, 3, .25f, 4, 1);
-                            if (bonecos.TryGetValue(e.Int("alvo"), out b)) { b.flinch = 1; b.golpe = new Vector2((float)e.Num("x0"), (float)e.Num("z0")); }
-                        }
-                        else { Particulas(p1.x, p1.y, p1.z, 9, 0xffc070, 4.5f, .3f, 12, 1.2f); Particulas(p1.x, p1.y, p1.z, 5, 0x5a5248, 1.2f, .8f, 1, .4f); Clarao(p1.x, p1.y, p1.z, 0xffb070, 1.2f); }
+                        var u = (p1 - new Vector3((float)e.Num("x0"), (float)e.Num("y0"), (float)e.Num("z0"))).normalized;
+                        if (e["alvo"] != null) ImpactoCorpo(e, p1, u, e["cab"] is bool && (bool)e["cab"]);
+                        else ImpactoMundo(p1, u);
                         if (!own && bonecos.TryGetValue(e.Int("a"), out b)) b.kick = 1;
                         break;
                     }
-                case "hurt": if (e.Int("a") != eu && bonecos.TryGetValue(e.Int("a"), out b)) { b.flinch = 1; if (e["sx"] != null) b.golpe = new Vector2((float)e.Num("sx"), (float)e.Num("sz")); } break;
+                case "hurt":
+                    if (e.Int("a") != eu && bonecos.TryGetValue(e.Int("a"), out b))
+                    {
+                        b.flinch = 1; Vector2? de = null; if (e["sx"] != null) { b.golpe = new Vector2((float)e.Num("sx"), (float)e.Num("sz")); de = b.golpe; }
+                        if (b.reac == null || b.reac.t > .12f) b.reac = new Boneco.Reacao { forte = .8f, de = de };
+                    }
+                    break;
                 case "burst": { float x = (float)e.Num("x"), y = (float)e.Num("y"), z = (float)e.Num("z"); Particulas(x, y, z, 18, 0xb050ff, 3, .5f, 3, .8f); Particulas(x, y, z, 8, 0xff4a70, 1.5f, .7f, 1, .3f); Clarao(x, y, z, 0xb050ff, 2.2f); break; }
                 case "hab": EfeitoHabilidade(e, e.Int("a") == eu); break;
             }
@@ -182,7 +219,7 @@ namespace RitualReversal.Visual
         // ---------- bonecos, sigilos, coletáveis, rastros, sal ----------
         public void SyncActors(Jogo g, string papel, Ator eu, Vector3 cam, float lookYaw, float dt)
         {
-            GarantirAtores(); float t = Time.time; var vistos = new HashSet<int>();
+            GarantirAtores(); ultimoJogo = g; float t = Time.time; var vistos = new HashSet<int>();
             foreach (var a in g.actors)
             {
                 if (a == eu) continue; vistos.Add(a.id); Boneco b;

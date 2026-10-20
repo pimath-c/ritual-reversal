@@ -62,7 +62,7 @@ namespace RitualReversal.Visual
         public static Geo CilZ(float r1, float r2, float len, int segs = 20) { return Geo.Cilindro(r1, r2, len, segs).GirarX(PI / 2); }
         static float[] P(params float[] v) { return v; }
 
-        public class Arma { public Transform g; public Vector3 boca; }
+        public class Arma { public Transform g, alav, cao, tambor; public Vector3 boca, janela; } // alav/cao/tambor: peças que se mexem no tiro (v5.8)
         // Soldado: carabina de alavanca, nogueira e aço escurecido
         public static Arma Carabina(Kit k, Transform pai)
         {
@@ -73,12 +73,15 @@ namespace RitualReversal.Visual
             k.Por(g, mad, Lateral(new[] { P(.1f, -.028f), P(.38f, -.022f), P(.4f, -.008f, .39f, .014f), P(.1f, .018f) }, .04f, .007f), M4.I);
             k.Por(g, mad, Lateral(new[] { P(-.06f, .04f), P(-.2f, .026f), P(-.43f, .034f), P(-.46f, .03f, -.465f, 0), P(-.46f, -.105f), P(-.43f, -.125f, -.39f, -.12f), P(-.2f, -.068f), P(-.06f, -.034f) }, .044f, .009f), M4.I);
             foreach (float z in new[] { -.3f, -.62f }) k.Por(g, latao, Geo.Toro(.021f, .005f, 8, 20), 0, .02f, z);
-            k.Por(g, aco, Geo.Toro(.036f, .0065f, 8, 24, PI * 1.35f), 0, -.062f, .015f, PI * .55f, PI / 2, 0);
+            // a alavanca gira presa na frente do guarda-mato; o cão tem eixo próprio (cada um vira uma malha à parte)
+            var piv = Mundo.Grupo(g, "alavanca"); piv.localPosition = new Vector3(0, -.034f, -.02f);
+            k.Por(piv, aco, Geo.Toro(.036f, .0065f, 8, 24, PI * 1.35f), 0, -.028f, .035f, PI * .55f, PI / 2, 0);
             k.Por(g, latao, Geo.Caixa(.006f, .028f, .008f), 0, -.045f, 0, .3f);
-            k.Por(g, aco, Geo.Caixa(.012f, .03f, .018f), 0, .07f, .045f, -.5f);
+            var cao = Mundo.Grupo(g, "cão"); cao.localPosition = new Vector3(0, .07f, .045f);
+            k.Por(cao, aco, Geo.Caixa(.012f, .03f, .018f), 0, 0, 0, -.5f);
             k.Por(g, latao, Geo.Caixa(.006f, .018f, .012f), 0, .058f, -.73f);
             k.Por(g, aco, Geo.Caixa(.03f, .014f, .01f), 0, .06f, -.13f);
-            return new Arma { g = g, boca = new Vector3(0, .036f, -.755f) };
+            return new Arma { g = g, boca = new Vector3(0, .036f, -.755f), alav = piv, cao = cao, janela = new Vector3(.02f, .045f, .03f) };
         }
         // Exorcista: revólver de prata gravada, cabo escuro com cruz
         public static Arma Revolver(Kit k, Transform pai)
@@ -87,14 +90,17 @@ namespace RitualReversal.Visual
             k.Por(g, prata, Lateral(new[] { P(-.05f, -.022f), P(.075f, -.022f), P(.085f, .042f), P(-.02f, .05f), P(-.05f, .03f) }, .03f, .005f), M4.I);
             k.Por(g, prata, CilZ(.013f, .014f, .2f, 20), 0, .03f, -.17f);
             k.Por(g, prata, Geo.Caixa(.012f, .012f, .2f), 0, .045f, -.17f);
-            k.Por(g, prata, CilZ(.036f, .036f, .066f, 28), 0, .014f, -.035f);
-            for (int i = 0; i < 6; i++) { float a = i / 6f * PI * 2; k.Por(g, escuro, CilZ(.006f, .006f, .068f, 8), Mathf.Cos(a) * .034f, .014f + Mathf.Sin(a) * .034f, -.035f); }
+            // o tambor gira 1/6 de volta a cada tiro: cilindro e estrias num grupo no eixo do cano
+            var tamb = Mundo.Grupo(g, "tambor"); tamb.localPosition = new Vector3(0, .014f, -.035f);
+            k.Por(tamb, prata, CilZ(.036f, .036f, .066f, 28), 0, 0, 0);
+            for (int i = 0; i < 6; i++) { float a = i / 6f * PI * 2; k.Por(tamb, escuro, CilZ(.006f, .006f, .068f, 8), Mathf.Cos(a) * .034f, Mathf.Sin(a) * .034f, 0); }
             k.Por(g, mad, Lateral(new[] { P(-.05f, .012f), P(.012f, -.015f), P(0, -.1f), P(-.012f, -.14f, -.05f, -.135f), P(-.075f, -.07f), P(-.07f, -.005f) }, .034f, .007f), M4.I);
             foreach (float sx in new[] { -1f, 1f }) { k.Por(g, prata, Geo.Caixa(.002f, .05f, .009f), sx * .021f, -.07f, .04f); k.Por(g, prata, Geo.Caixa(.002f, .009f, .03f), sx * .021f, -.058f, .04f); }
             k.Por(g, prata, Geo.Toro(.025f, .005f, 8, 20, PI * 1.2f), 0, -.036f, 0, PI * .6f, PI / 2, 0);
-            k.Por(g, escuro, Geo.Caixa(.01f, .03f, .016f), 0, .058f, .035f, -.6f);
+            var caoR = Mundo.Grupo(g, "cão"); caoR.localPosition = new Vector3(0, .058f, .035f);
+            k.Por(caoR, escuro, Geo.Caixa(.01f, .03f, .016f), 0, 0, 0, -.6f);
             k.Por(g, prata, Geo.Caixa(.004f, .014f, .01f), 0, .05f, -.265f);
-            return new Arma { g = g, boca = new Vector3(0, .03f, -.28f) };
+            return new Arma { g = g, boca = new Vector3(0, .03f, -.28f), tambor = tamb, cao = caoR };
         }
 
         public class Cetro { public Transform g, cab; public GameObject brasa, halo, runa; public Material mHalo, mRuna; }
@@ -142,6 +148,9 @@ namespace RitualReversal.Visual
         // estado da animação
         public float phase = Random.value * 6, spd, kick, cast, flinch, dieT = -1, bodyY; public float? px, pz; public string prevSt = "alive"; public Vector2? golpe;
         bool deitado; string eixo; float sinal, torcao;
+        // v5.8: reação ao golpe (direção, força, tiro na cabeça), pausa de impacto e transições de queda e de levantar
+        public class Reacao { public float t, forte; public Vector2? de; public bool cab; }
+        public Reacao reac; public float pausa; float? quedaT, levantaT; bool semSuave; Vector2 desloc;
         // marcas de estado e runas em órbita
         GameObject atord, cego, runaM, orbita; Material mAtord, mCego, mRunaM; readonly List<GameObject> orb = new List<GameObject>(); readonly List<Material> mOrb = new List<Material>();
         Material mVeu; bool veuOn; float fadeAtual = 1;
@@ -305,7 +314,10 @@ namespace RitualReversal.Visual
             string st = a.st;
             if (st == "dead" && prevSt != "dead") { dieT = 0; deitado = prevSt == "down"; }
             if (st != "dead" && dieT >= 0) { dieT = -1; Fade(1); }
+            if (st == "down" && prevSt == "alive") { quedaT = 0; reac = null; } else if (st == "alive" && prevSt == "down") levantaT = 0;
+            if (st != "alive" && st != "down") { quedaT = levantaT = null; reac = null; }
             prevSt = st;
+            pausa = Mathf.Max(0, pausa - dt); float dtA = pausa > 0 ? 0 : dt; desloc = Vector2.zero; // pausa de impacto: o passo congela por um instante no golpe
             kick = Mathf.Max(0, kick - dt * 6); cast = Mathf.Max(0, cast - dt * 3); flinch = Mathf.Max(0, flinch - dt * 5);
             var fe = flinch > 0 ? Mat.Hex(0x6a0a18) * (flinch * .75f) : Color.black; foreach (var m in pisca) m.SetColor("_EmissionColor", fe);
             g.localPosition = new Vector3(x, 0, z); g.localRotation = Mundo.Q(0, yaw, 0); g.gameObject.SetActive(true);
@@ -364,13 +376,18 @@ namespace RitualReversal.Visual
             {
                 B.r.x = -1.42f; bodyY = .08f; float c = Mathf.Sin(t * 2.2f + a.id);
                 armL.r = new Vector3(2.4f + c * .35f, 0, .15f); armR.r = new Vector3(2.4f - c * .35f, 0, -.15f); legL.r.x = c * .2f; legR.r.x = -c * .2f; head.r.x = .5f;
+                if (quedaT.HasValue && quedaT < .75f) // joelhos cedem, o corpo tomba e quica
+                {
+                    quedaT += dt; float kq = Queda(Mathf.Clamp01(quedaT.Value / .6f));
+                    B.r.x = -1.42f * kq; bodyY = .08f * kq - .22f * Mathf.Sin(Mathf.Min(1, quedaT.Value / .25f) * PI * .5f) * (1 - kq); legL.r.x = -.9f * (1 - kq); legR.r.x = -.5f * (1 - kq); semSuave = true;
+                }
                 if (mFlash != null) Mat.Opacidade(mFlash, 0);
                 if (orbita != null) orbita.SetActive(false);
             }
             else
             {
                 bool moving = spd > .5f; float pitch = (float)a.pitch;
-                if (moving) phase += dt * (3.2f + spd * 1.35f);
+                if (moving) phase += dtA * (3.2f + spd * 1.35f);
                 float amp = moving ? Mathf.Min(.75f, spd * .12f) : 0, sw = Mathf.Sin(phase) * amp;
                 legL.r.x = sw; legR.r.x = -sw;
                 gy = moving ? Mathf.Abs(Mathf.Sin(phase)) * .05f : 0;
@@ -400,8 +417,28 @@ namespace RitualReversal.Visual
                     if (mRune != null) Mat.Cor(mRune, Mat.Hex(a.runeT > 0 ? 0xffd0ff : 0x9a4ad0));
                 }
                 if (a.stunT > 0) { torso.r.z = Mathf.Sin(t * 14) * .12f; head.r.z = Mathf.Sin(t * 11) * .2f; }
+                // reação: o tronco cede na direção do tiro, meio passo para trás, a cabeça estala no tiro na cabeça, os braços
+                // abrem; sobe em 35 ms e assenta em ~0,3 s. Só visual: a colisão é a da simulação.
+                desloc = Vector2.zero;
+                if (reac != null)
+                {
+                    reac.t += dt; if (reac.t > .65f) reac = null;
+                    else
+                    {
+                        float e = reac.t < .035f ? reac.t / .035f : Mathf.Exp(-(reac.t - .035f) * 7.5f), f = reac.forte * e, px_ = 0, pz_ = 1;
+                        if (reac.de.HasValue) { float dx = x - reac.de.Value.x, dz = z - reac.de.Value.y, L = Mathf.Max(1e-3f, Mathf.Sqrt(dx * dx + dz * dz)), c = Mathf.Cos(yaw), sn = Mathf.Sin(yaw); px_ = (dx * c - dz * sn) / L; pz_ = (dx * sn + dz * c) / L; }
+                        torso.r.x += pz_ * .42f * f; torso.r.z += -px_ * .32f * f; desloc = new Vector2(px_ * .07f * f, pz_ * .07f * f);
+                        head.r.x += (reac.cab ? .75f : .25f) * pz_ * f; head.r.z += -px_ * (reac.cab ? .4f : .15f) * f;
+                        armL.r.z += .3f * f; armR.r.z -= .3f * f; armL.r.x -= .25f * f; armR.r.x -= .15f * f;
+                    }
+                }
+                if (levantaT.HasValue && levantaT < .5f) // reanimado: levanta apoiando nos joelhos
+                {
+                    levantaT += dt; float kl = Suave(Mathf.Clamp01(levantaT.Value / .45f));
+                    B.r.x = -1.42f * (1 - kl); bodyY = -.18f * Mathf.Sin(kl * PI); legL.r.x -= 1.1f * Mathf.Sin(kl * PI); semSuave = true;
+                }
             }
-            float kR = 1 - Mathf.Exp(-dt * 16), kB = 1 - Mathf.Exp(-dt * 9);
+            float kR = 1 - Mathf.Exp(-dt * (reac != null ? 38 : 16)), kB = semSuave ? 1 : 1 - Mathf.Exp(-dt * 9); semSuave = false;
             foreach (var j in juntas) { float kk = j == body ? kB : kR; j.r = j.p + (j.r - j.p) * kk; }
             bodyY = pb + (bodyY - pb) * kB;
             g.localPosition = new Vector3(x, gy, z);
@@ -409,7 +446,7 @@ namespace RitualReversal.Visual
         }
         void Aplicar()
         {
-            foreach (var j in juntas) j.Aplicar(); bodyT.localPosition = new Vector3(0, bodyY, 0);
+            foreach (var j in juntas) j.Aplicar(); bodyT.localPosition = new Vector3(desloc.x, bodyY, desloc.y);
             if (robe != null) robe.localRotation = Mundo.Q(0, 0, robeZ); if (aba != null) aba.localRotation = Mundo.Q(abaX, 0, 0);
         }
     }

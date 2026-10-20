@@ -15,7 +15,7 @@ namespace RitualReversal
             ROXO = new Color(.42f, .25f, .56f), ROXO_VIVO = new Color(.75f, .55f, .95f), CINZA = new Color(.35f, .36f, .38f), OSSO = new Color(.91f, .88f, .82f);
 
         Mundo mundo; PrimeiraPessoa fp; Pos pos; Som som;
-        Entrada ultimaEntrada; float localCd, passoT, alucT = 8, coracaoT, sinoT = 45; bool ultimoTiroCab;
+        Entrada ultimaEntrada; float localCd, alucT = 8, coracaoT, sinoT = 45; bool ultimoTiroCab;
 
         void CriarVisual()
         {
@@ -26,6 +26,9 @@ namespace RitualReversal
             mundo = Mundo.Construir(); fp = new PrimeiraPessoa(cam);
             try { pos = new Pos(cam); } catch (System.Exception e) { Debug.LogWarning("Ritual Reversal: sem pós-processamento (" + e.Message + ")"); }
             som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => som.Tocar("corvo", x, z);
+            // v5.8: impactos e momentos do ritual tocam pelo Som; a arma avisa o meio do ciclo (alavanca, cão) e o passo
+            mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
+            fp.AoSomArma = k => som.Tocar(k); fp.AoPasso = () => som.Tocar("mystep"); fp.camFx = PlayerPrefs.GetFloat("rr-camfx", 1);
         }
 
         void LimparVisual() { if (mundo != null) mundo.Limpar(); if (som != null) som.Silenciar(); }
@@ -40,7 +43,7 @@ namespace RitualReversal
             if (jogando)
             {
                 bool correndo = ultimaEntrada != null && ultimaEntrada.sp && ultimaEntrada.mz < 0 && m.moving && m.st == "alive";
-                fp.Atualizar(m, (float)m.x, (float)m.z, m.moving, ultimaEntrada != null ? (float)ultimaEntrada.mx : 0, correndo, (float)lookYaw, (float)lookPitch, dt, agora);
+                fp.Atualizar(m, (float)m.x, (float)m.z, m.moving, ultimaEntrada != null ? (float)ultimaEntrada.mx : 0, ultimaEntrada != null ? (float)ultimaEntrada.mz : 0, correndo, (float)lookYaw, (float)lookPitch, dt, agora);
             }
             else
             {
@@ -58,7 +61,8 @@ namespace RitualReversal
             if (jogando)
             {
                 float s = (float)m.sanity;
-                if (m.moving && m.st == "alive") { passoT -= dt; if (passoT <= 0) { passoT = .45f; som.Tocar("mystep"); } }
+                // (o passo do jogador toca no ciclo do balanço da câmera: fp.AoPasso)
+                ProgressoInvestigacao(papel);
                 if (s < 40) { alucT -= dt; if (alucT <= 0) { alucT = Random.Range(6f, 12f); float an = Random.Range(0, Mathf.PI * 2); if (Random.value < .5f) som.Tocar("whisper", (float)m.x + Mathf.Cos(an) * 6, (float)m.z + Mathf.Sin(an) * 6, 1); else som.Tocar("alucinacao"); } }
                 if (s < 15) { coracaoT -= dt; if (coracaoT <= 0) { coracaoT = .85f; som.Tocar("heart"); } }
                 sinoT -= dt; if (sinoT <= 0) { sinoT = Random.Range(45f, 80f); som.Tocar("bell"); }
@@ -77,9 +81,10 @@ namespace RitualReversal
             {
                 if (m.reloadT > 0 || m.sealing >= 0) return;
                 if (m.ammo <= 0) { localCd = .35f; som.Tocar("vazio"); if (m.reserve > 0) botoes.r++; return; }
-                localCd = .3f; som.Tocar("shot", c.x, c.z); fp.Tiro();
+                // a cadência é a do servidor (antes o Unity previa um tiro a cada 0,3 s, e um em cada quatro não existia)
+                bool exo = m.cls == "exorcista"; localCd = (float)Sim.CADENCIA_HUMANA; som.Tiro(exo, c.x, c.z, true); fp.Tiro(exo);
             }
-            else { if (m.fervor < CFG.sigilCusto) { localCd = .35f; som.Tocar("vazio"); return; } localCd = .42f; som.Tocar("sigil", c.x, c.z); fp.Sigilo(); }
+            else { if (m.fervor < CFG.sigilCusto) { localCd = .35f; som.Tocar("vazio"); return; } localCd = (float)Sim.CADENCIA_HUMANA; som.Tocar("sigil", c.x, c.z); fp.Sigilo(); }
         }
 
         // eventos da simulação que viram efeito e som (handleEvents do protótipo)
@@ -95,22 +100,38 @@ namespace RitualReversal
                 case "sfx":
                     {
                         string k = e.Str("k"); if (e.Int("a") == eu && (k == "shot" || k == "sigil" || k == "step" || k == "passoForte")) break;
+                        if (k == "shot") { var at = g.actors.Find(a => a.id == e.Int("a")); som.Tiro(at != null && at.cls == "exorcista", x, z, false); break; }
                         som.Tocar(k, x, z); break;
                     }
                 case "tracer": if (e.Int("a") == eu) ultimoTiroCab = e["cab"] is bool && (bool)e["cab"]; break;
                 case "hit":
                     if (e.Int("a") == eu)
                     {
-                        bool derrubou = e["derrubou"] is bool && (bool)e["derrubou"]; marcaAcerto = derrubou ? "kill" : ultimoTiroCab ? "head" : "";
-                        hitT = derrubou ? .45f : ultimoTiroCab ? .3f : .15f; som.Tocar(derrubou ? "derrubou" : ultimoTiroCab ? "cabeca" : "hit"); ultimoTiroCab = false;
+                        // acerto confirmado pelo servidor: marca, som e pausa de impacto (o tiro previsto não mostra nada disso)
+                        bool derrubou = e["derrubou"] is bool && (bool)e["derrubou"], escudo = e["escudo"] is bool && (bool)e["escudo"];
+                        marcaAcerto = escudo ? "escudo" : derrubou ? "kill" : ultimoTiroCab ? "head" : "";
+                        hitT = derrubou ? .45f : ultimoTiroCab ? .3f : .15f; som.Tocar(escudo ? "bloqueio" : derrubou ? "derrubou" : ultimoTiroCab ? "cabeca" : "hit");
+                        fp.Acerto(escudo, derrubou, ultimoTiroCab); mundo.PausaImpacto(e.Int("alvo"), derrubou ? .09f : .05f); ultimoTiroCab = false;
                     }
                     break;
-                case "hurt": if (e.Int("a") == eu) { som.Tocar("hurt"); if (e["sx"] != null) DirecaoDano((float)e.Num("sx"), (float)e.Num("sz")); fp.kickP += Random.Range(-.02f, .02f); } break;
+                case "hurt":
+                    if (e.Int("a") == eu)
+                    {
+                        som.Tocar("hurt"); float lado = 0;
+                        if (e["sx"] != null) { float sx = (float)e.Num("sx"), sz = (float)e.Num("sz"); DirecaoDano(sx, sz); var cp = CamP(); lado = Mathf.Sign((sx - cp.x) * Mathf.Cos((float)lookYaw) - (sz - cp.z) * Mathf.Sin((float)lookYaw)); }
+                        fp.Golpe(lado);
+                    }
+                    break;
                 case "burst": som.Tocar("estouro", (float)e.Num("x"), (float)e.Num("z")); break;
-                case "reload": if (e.Int("a") == eu) som.Tocar("reload"); else som.Tocar("reload", x, z); break;
+                case "reload":
+                    {
+                        // o revólver do Exorcista arma o cão no fim da recarga
+                        var at = g.actors.Find(a => a.id == e.Int("a")); float v = at != null && at.cls == "exorcista" ? 1 : 0;
+                        if (e.Int("a") == eu) som.Tocar("reload", float.NaN, float.NaN, v); else som.Tocar("reload", x, z, v); break;
+                    }
                 case "presage": som.Tocar("presage"); break;
                 case "sensor": som.Tocar("ping", float.NaN, float.NaN, (float)e.Num("v")); break;
-                case "evp": som.Tocar("whisper", x, z); break;
+                case "evp": som.Tocar("whisper", x, z); som.Tocar("evp", x, z); mundo.RevelarEVP(x, z); break;
                 case "blind": NotaHab("Você foi cegado", new Color(1, .96f, .82f)); break;
                 case "stun": atordT = 1; NotaHab("Você foi atordoado", OURO); fp.kickP += .03f; break;
                 case "momento": som.Tocar("bell"); break;
@@ -138,6 +159,7 @@ namespace RitualReversal
                     {
                         // v5.7: o fim do ritual com nomes
                         som.Tocar(e.type); var por = Nomes(e["por"]); int ai = e.Int("altar"); string alt = ai >= 0 && ai < g.altars.Count ? g.altars[ai].name : "";
+                        if (ai >= 0 && ai < g.altars.Count) { if (e.type == "doom") mundo.RitualFenda(ai); else mundo.RitualSelado(ai); }
                         var m = g.actors.Find(a => a.id == eu); bool meu = m != null && por.Contains(m.name), fenda = e.type == "doom";
                         string tit = fenda ? (meu ? "Você abriu uma Fenda" : "Uma Fenda se abriu") : (meu ? "Você selou o ritual" : "Um Farol se acendeu");
                         string sub = por.Count == 0 ? alt : ListaNomes(por) + (fenda ? (por.Count > 1 ? " completaram o ritual" : " completou o ritual") + (alt != "" ? " em " + alt : "") : (por.Count > 1 ? " selaram " : " selou ") + alt);
@@ -148,7 +170,8 @@ namespace RitualReversal
                         // v5.7: interrupção que se sente (quem fez, quem sofreu, a equipe)
                         if (e.Str("team") != null && e.Str("team") != papel) break;
                         bool selo = e.Str("tipo") == "selo"; var aut = g.actors.Find(a => a.id == e.Int("a")); var vit = g.actors.Find(a => a.id == e.Int("alvo"));
-                        if (e.Int("a") == eu) { NotaHab(selo ? "Selo interrompido!" : "Canalização interrompida!", selo ? CARMIM_VIVO : OURO); som.Tocar("derrubou"); marcaAcerto = "kill"; hitT = .45f; fp.kickP += .025f; }
+                        { int ai = e.Int("altar"); if (ai >= 0 && ai < g.altars.Count) mundo.RitualInterrompido(ai, e.Str("tipo")); }
+                        if (e.Int("a") == eu) { NotaHab(selo ? "Selo interrompido!" : "Canalização interrompida!", selo ? CARMIM_VIVO : OURO); som.Tocar("derrubou"); marcaAcerto = "kill"; hitT = .45f; fp.Tranco(.025f, .8f); }
                         else if (e.Int("alvo") == eu) { NotaHab((aut != null ? aut.name : "Alguém") + " interrompeu " + (selo ? "seu selo" : "sua canalização"), Color.white); som.Tocar("hurt"); }
                         else if (aut != null && vit != null) Feed(aut.name + " interrompeu " + (selo ? "o selo" : "a canalização") + " de " + vit.name + ".", aut.team == "H" ? "h" : "c");
                         break;
@@ -160,6 +183,28 @@ namespace RitualReversal
                         break;
                     }
             }
+        }
+        // investigação com progresso: quando um sinal descarta um altar, a caça vê quantos ainda podem ser do culto;
+        // resíduo de reagente toca a descoberta; o Chamariz desmascarado se desfaz em cinza
+        string[] knowAnt; string knowPartida;
+        void ProgressoInvestigacao(string papel)
+        {
+            if (papel != "H" || g.know == null) { knowAnt = null; return; }
+            string chave = g.matchId + ":" + g.round; if (chave != knowPartida) { knowPartida = chave; knowAnt = null; }
+            if (knowAnt != null && knowAnt.Length == g.know.Length)
+                for (int i = 0; i < g.know.Length; i++)
+                {
+                    string k = g.know[i]; if (k == knowAnt[i]) continue; var A = g.altars[i];
+                    if (k == "descartado")
+                    {
+                        int n = 0; for (int j = 0; j < g.altars.Count; j++) { string kj = g.know[j], sj = g.altars[j].state; if (kj != "descartado" && kj != "chamariz" && sj != "fenda" && sj != "farol") n++; }
+                        NotaHab(A.name + " descartado · " + n + (n == 1 ? " altar ainda pode" : " altares ainda podem") + " ser do culto", new Color(.81f, .89f, 1)); som.Tocar("descoberta");
+                        mundo.MarcaInvestigacao(i, k);
+                    }
+                    else if (k == "confirmado") { som.Tocar("descoberta", float.NaN, float.NaN, 1); mundo.MarcaInvestigacao(i, k); }
+                    else if (k == "chamariz") { som.Tocar("chamariz_desfeito", (float)A.x, (float)A.z); mundo.MarcaInvestigacao(i, k); }
+                }
+            knowAnt = (string[])g.know.Clone();
         }
         static List<string> Nomes(object v) { var L = new List<string>(); var en = v as System.Collections.IEnumerable; if (en != null && !(v is string)) foreach (var x in en) if (x != null) L.Add(x.ToString()); return L; }
         static string ListaNomes(List<string> L) { return L.Count < 2 ? (L.Count == 1 ? L[0] : "") : string.Join(", ", L.GetRange(0, L.Count - 1)) + " e " + L[L.Count - 1]; }

@@ -124,6 +124,12 @@ namespace RitualReversal
             float fov = fp != null ? fp.fovBase : 72;
             GUILayout.BeginHorizontal(); GUILayout.Label("Campo de visão " + Mathf.RoundToInt(fov) + "°", sPequeno, GUILayout.Width(230)); fov = Mathf.Round(GUILayout.HorizontalSlider(fov, 60, 100, GUILayout.Width(380))); GUILayout.EndHorizontal();
             if (fp != null) fp.fovBase = fov;
+            // v5.8: impacto na câmera (coice, empurrões e tremores): Normal, Reduzido ou Desligado
+            GUILayout.BeginHorizontal(); GUILayout.Label("Impacto na câmera", sPequeno, GUILayout.Width(230));
+            float cf = fp != null ? fp.camFx : PlayerPrefs.GetFloat("rr-camfx", 1);
+            foreach (var o in new[] { new KeyValuePair<float, string>(1, "Normal"), new KeyValuePair<float, string>(.5f, "Reduzido"), new KeyValuePair<float, string>(0, "Desligado") })
+                if (GUILayout.Button((Mathf.Approximately(cf, o.Key) ? "● " : "") + o.Value, sBotao, GUILayout.Width(125))) { if (fp != null) fp.camFx = o.Key; PlayerPrefs.SetFloat("rr-camfx", o.Key); }
+            GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal(); GUILayout.Label("Qualidade (vale no próximo Play)", sPequeno, GUILayout.Width(230));
             int q = PlayerPrefs.GetInt("rr-qualidade", Qualidade.nivel);
             for (int i = 3; i >= 0; i--) if (GUILayout.Button((q == i ? "● " : "") + NIVEIS[i], sBotao, GUILayout.Width(110))) PlayerPrefs.SetInt("rr-qualidade", i);
@@ -275,8 +281,9 @@ namespace RitualReversal
             if (hitT > 0)
             {
                 hitT -= dtG; float hs = marcaAcerto == "kill" ? 1.15f : marcaAcerto == "head" ? .9f : .6f;
-                var hc = marcaAcerto == "kill" ? CARMIM_VIVO : marcaAcerto == "head" ? OURO : OSSO; hc.a = Mathf.Clamp01(hitT / .15f);
-                GUI.Label(new Rect(W / 2 - 40, H / 2 - 40, 80, 80), "<size=" + Mathf.RoundToInt(44 * hs) + ">" + Cor("✕", hc) + "</size>", sCentro);
+                var hc = marcaAcerto == "kill" ? CARMIM_VIVO : marcaAcerto == "head" ? OURO : marcaAcerto == "escudo" ? CINZA * 2.2f : OSSO; hc.a = Mathf.Clamp01(hitT / .15f);
+                // bloqueio (o escudo do Ritualista absorveu o golpe inteiro): marca vazada em cinza, em vez do ✕
+                GUI.Label(new Rect(W / 2 - 40, H / 2 - 40, 80, 80), "<size=" + Mathf.RoundToInt(44 * hs) + ">" + Cor(marcaAcerto == "escudo" ? "◇" : "✕", hc) + "</size>", sCentro);
             }
             Marcadores(m, papel);
             // direção do dano: arcos vermelhos ao redor da mira

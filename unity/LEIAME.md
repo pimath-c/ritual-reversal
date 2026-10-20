@@ -70,7 +70,9 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
   ruído e desenho), `Materiais.cs` e `Resources/RitualReversalBrilho.shader` (brilhos, sprites, céu),
   `Mundo.cs` + `MundoFloresta/MundoCatedral/MundoAltares/MundoVida/MundoAtores.cs` (cenário, luzes, névoa, altares,
   bonecos, partículas e efeitos), `Personagens.cs` (Cultistas, Caçadores, armas, cetro), `PrimeiraPessoa.cs`
-  (armas na mão, lanterna, câmera), `Pos.cs` (pós-processamento) e `Som.cs` (som sintetizado).
+  (armas na mão com o perfil de cada uma, lanterna, câmera), `Pos.cs` (pós-processamento) e `Som.cs` (sons gravados
+  de `Resources/Sons`, com o som sintetizado de reserva).
+- `Resources/Sons/` — os 67 MP3 do jogo (licenças em `docs/AUDIO.md`), copiados por `python3 tools/montar-sons.py`.
 - `Scripts/Rede.cs`, `PartidaOnline.cs` — o online: conexão, leitura do snapshot, lobby, previsão e interpolação.
 - `Scripts/EntradaUnity.cs` — teclado e mouse (Input System novo ou antigo).
 - `Editor/ImportarMapa.cs` — os menus (cena do jogo e importador do blockout); `Resources/mapa.json` é a planta visual.
@@ -88,6 +90,8 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
   mande o erro dele (clique no arquivo, aparece no Inspector).
 - **Sem bloom nem vinheta**: na câmera, marque **Post Processing** (o jogo tenta ligar sozinho).
 - **O mouse não gira**: clique em Continuar na tela de pausa (ou clique dentro da janela Game).
+- **Sem som gravado** (só bipes sintetizados): confira se `Resources/Sons` tem os MP3; no Inspector de cada um,
+  Load Type tem de ser Decompress On Load (o padrão).
 - **Lento**: baixe a qualidade nos ajustes (Esc) e aperte Play de novo.
 - **Online não conecta**: confira se o servidor está rodando (abra o endereço no navegador: o protótipo deve abrir) e
   se o firewall do Windows deixou o Node aceitar conexões.
@@ -95,3 +99,4 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
 ## Ainda falta
 
 - Contorno a nanquim e névoa rasteira da etapa final de imagem do protótipo, e a luz de recorte nas silhuetas.
+- O HUD do Unity mostra os lances e a investigação em texto: falta a faixa dos lances e a onda do mostrador do círculo.
