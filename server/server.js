@@ -86,7 +86,7 @@ wss.on('connection',ws=>{
       if(typeof m.seq==='number') c.lastSeq=m.seq;
       if(a){ let dt=Math.min(Math.max(+m.dt||0,0),.05); if(c.budget<dt) dt=Math.max(0,c.budget); c.budget-=dt; Sim.moveHuman(r.game,a,m,dt); }
     }
-    if(m.t==='act'&&r.game) Sim.act(r.game,c.cid,m.a);
+    if(m.t==='act'&&r.game){ if(m.a&&m.a.type==='restart'&&c.cid!==r.host) return; Sim.act(r.game,c.cid,m.a); } // jogar de novo é do anfitrião, como voltar ao lobby
   }
   ws.on('close',()=>{ const r=c.room; if(!r) return; r.clients.delete(c.cid);
     if(r.game){ const i=r.game.slots.findIndex(s=>s.cid===c.cid);
@@ -106,15 +106,7 @@ function routeEvents(r){
   const g=r.game; if(!g.events.length) return;
   for(const c of r.clients.values()){
     const me=g.actors.find(a=>a.cid===c.cid); const slot=g.slots.find(s=>s.cid===c.cid); const role=slot?Sim.roleOf(g,slot.team):null;
-    for(const e of g.events){
-      if(e.type==='feed'&&e.team&&e.team!==role) continue;
-      if(e.to!=null&&(!me||e.to!==me.id)) continue;
-      if((e.type==='sensor'||e.type==='evp'||e.type==='blind'||e.type==='stun')&&(!me||e.a!==me.id)) continue;
-      if(e.type==='presage'&&role!=='H') continue;
-      if(e.type==='selando'&&role!=='C') continue; // só o culto sente o selo
-      if((e.type==='ping'||e.type==='fala')&&e.team!==role) continue; // ping e frases só para a própria equipe
-      c.ev.push(e);
-    }
+    for(const e of g.events){ const x=role?Sim.eventoPara(g,e,me,role):null; if(x) c.ev.push(x); } // quem não tem vaga não recebe nada da partida
   }
   g.events.length=0;
 }

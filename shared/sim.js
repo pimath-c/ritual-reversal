@@ -485,7 +485,7 @@ function makeActor(g,slot,si,role,cls,feit){
   const C=CLASSES[cls];
   return {id:g.nid++,slot:si,cid:slot.cid||null,human:!!slot.cid,name:slot.name,team:role,cls,maxHp:C.hp,hp:C.hp,speed:C.speed,
     x:0,z:0,yaw:0,pitch:0,st:'alive',downT:0,respawnT:0,deaths:0,dc:0,revUsed:false,reag:0,hitT:-9,att:{},fireCd:0,ammo:8,reserve:48,reloadT:0,
-    fervor:100,sanity:100,invuln:0,sealing:-1,hold:{key:'',t:0,max:0},lantern:false,carga:100,flares:2,sensorCd:0,abilCd:0,lastShotT:-9,moving:false,
+    fervor:100,sanity:100,invuln:0,sealing:-1,hold:{key:'',t:0,max:0},lantern:false,carga:100,flares:2,sensorCd:0,abilCd:0,lastShotT:-9,ataqueT:-9,moving:false,
     panicT:-9,blindT:0,stunT:0,runeT:0,shield:0,shieldT:0,pushedT:-9,pingT:-9,hist:[],feitico:feit,obolos:g.lab.economia?CFG.obolosInicio:0,veuT:0,slowT:0,revelT:0,curaT:0,amuleto:false,
     inp:{mx:0,mz:0,sp:false,yaw:0,pitch:0,fire:false,use:false,use2:false,viewT:0,c:{q:0,f:0,g:0,r:0,ab:0}},lc:{q:0,f:0,g:0,r:0,ab:0},
     ai:{path:[],goal:null,goalKey:'',repath:0,stuckT:0,lx:0,lz:0,alert:null,target:null,wait:0,decoyUsed:false,strafe:1,strafeT:0,patrol:null,patrolT:0}};
@@ -722,7 +722,7 @@ function fireBotAt(g,a,tx,ty,tz,miss){
 }
 let PID=1;
 function castSigil(g,a,dx,dy,dz){ a.veuT=0;
-  a.lastShotT=g.t; a.fireCd=a.human?.42:(1+rand(0,.3))*difDe(g,a).ritmo; a.fervor-=CFG.sigilCusto;
+  a.lastShotT=g.t; a.ataqueT=g.t; a.fireCd=a.human?.42:(1+rand(0,.3))*difDe(g,a).ritmo; a.fervor-=CFG.sigilCusto;
   ev(g,{type:'sfx',k:'sigil',x:r2(a.x),z:r2(a.z),a:a.id});
   const rx=Math.cos(a.yaw), rz=-Math.sin(a.yaw); const ox=a.x+rx*.3, oy=1.45, oz=a.z+rz*.3;
   const tx=a.x+dx*40, ty=1.62+dy*40, tz=a.z+dz*40; let vx=tx-ox,vy=ty-oy,vz=tz-oz; const l=Math.hypot(vx,vy,vz)||1; const sp=CFG.sigilVel;
@@ -766,7 +766,7 @@ function useAbility(g,a){
   else if(F==='veu'){ a.veuT=5; ev(g,{type:'sfx',k:'rune',x:r2(a.x),z:r2(a.z),a:a.id}); }
   else if(F==='sal'){ const meus=g.sal.filter(q=>q.dono===a.id); if(meus.length>=2) g.sal.splice(g.sal.indexOf(meus[0]),1);
     g.sal.push({id:PID++,x:r2(a.x+fx*1.2),z:r2(a.z+fz*1.2),dono:a.id,t:60}); ev(g,{type:'sfx',k:'collect',x:r2(a.x),z:r2(a.z),a:a.id}); }
-  else if(F==='empurrao'){
+  else if(F==='empurrao'){ a.ataqueT=g.t; // empurrar é atacar: pausa a canalização de quem empurra
     let n=0; for(const e of enemiesOf(g,a)){ if(e.st!=='alive') continue; const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz); if(d>3.8||d<.01) continue; if((dx*fx+dz*fz)/d<.34) continue;
       const ux=dx/d,uz=dz/d; for(let s=0;s<8;s++) moverSeguro(e,e.x+ux*.5,e.z+uz*.5,.4);
       const was=e.sealing>=0; e.sealing=-1; e.hold={key:'',t:0,max:0}; e.pushedT=g.t; e.stunT=Math.max(e.stunT,.45); damage(g,e,10,a); n++; alvos.push(e.id);
@@ -930,8 +930,8 @@ function resolveAltar(g,A,kind){
 function updateAltars(g,dt){
   for(const A of g.altars){
     if(A.state!=='active') continue;
-    // quem acabou de lançar um sigilo não canaliza (CFG.ataqueCanal): defender e celebrar são escolhas separadas
-    const ch=g.actors.filter(c=>c.team==='C'&&c.st==='alive'&&inCircle(c,A)&&!(CFG.ataqueCanal>0&&g.t-c.lastShotT<CFG.ataqueCanal)).slice(0,2), n=ch.length;
+    // quem acabou de atacar (sigilo ou Empurrão) não canaliza (CFG.ataqueCanal): defender e celebrar são escolhas separadas
+    const ch=g.actors.filter(c=>c.team==='C'&&c.st==='alive'&&inCircle(c,A)&&!(CFG.ataqueCanal>0&&g.t-c.ataqueT<CFG.ataqueCanal)).slice(0,2), n=ch.length;
     let rune=false;
     if(n>0){ let f=0; ch.forEach(c=>{ let k=(g.t-c.hitT<1||c.blindT>0||c.stunT>0)?.5:1; if(c.runeT>0){ k*=1.2; rune=true; } f+=k; }); f/=n;
       A.prog+=dt*f*mareFactor(g)*A.selo*(A.tardio?1.25:1)*(A.grande?.6:1)/CFG.rit[n].dur; A.lastN=n; A.maxN=Math.max(A.maxN||0,n); }
@@ -941,7 +941,8 @@ function updateAltars(g,dt){
     A.maxProg=Math.max(A.maxProg,A.prog);
     const nn=Math.max(1,A.lastN), rad=CFG.rit[nn].rad*(rune?1.5:1)*(A.tardio?1.4:1);
     if(!A.localized&&!A.eco&&CFG.ecoProg>0&&A.prog>=CFG.ecoProg) ecoDoCoro(g,A);
-    if(!A.localized){ if(A.prog>=CFG.rit[nn].loc) localize(g,A,'coro'); else if(n>0&&g.actors.some(h=>h.team==='H'&&h.st==='alive'&&dist(h,A)<rad)) localize(g,A,'ouvido'); }
+    if(!A.localized){ if(A.prog>=CFG.rit[nn].loc) localize(g,A,'coro'); else if(n>0&&g.actors.some(h=>h.team==='H'&&h.st==='alive'&&dist(h,A)<rad)) localize(g,A,'ouvido');
+      else if(g.actors.some(h=>h.team==='H'&&h.st==='alive'&&inCircle(h,A))) localize(g,A,'circulo'); } // quem pisa no círculo vê o ritual, mesmo sem ninguém canalizando
     if(!A.arrived&&g.actors.some(h=>h.team==='H'&&h.st==='alive'&&inCircle(h,A))){ A.arrived=true; logE(g,'hunter_arrive',{altar:A.name,prog:r2(A.prog),channelers:nn,remaining:r2((1-A.prog)*CFG.rit[nn].dur)}); }
     const sealers=g.actors.filter(h=>h.team==='H'&&h.st==='alive'&&h.sealing===A.i&&inCircle(h,A));
     if(sealers.length){
@@ -1339,15 +1340,45 @@ function winner(g){
   return {win:null,why:'empate exato; na versão completa, isso levaria ao Ritual Final'};
 }
 
+// ============ QUEM RECEBE CADA EVENTO (servidor) ============
+// O servidor passa cada evento por aqui antes de mandar a um cliente. Esconder no HUD não basta: o que chega no
+// cliente pode ser lido por quem modificar o jogo. Sons e efeitos com posição só chegam a quem estaria perto o
+// bastante para ouvir ou ver (ou se o emissor está à vista da equipe); informação de equipe só chega à equipe.
+const ALCANCE_SOM={shot:55,sigil:35,step:16,passoForte:24,collect:26,flare:20,rune:30,arrasto:45,push:28,flash:30,purify:30};
+const visivelPara=(g,a,role)=>!!(a._visto&&a._visto[role]>g.t);
+function eventoPara(g,e,me,role){
+  const t=e.type;
+  if(e.to!=null&&(!me||e.to!==me.id)) return null;
+  if(t==='feed') return e.team&&e.team!==role?null:e;
+  if(t==='sensor'||t==='evp'||t==='blind'||t==='stun'||t==='hit') return me&&e.a===me.id?e:null;
+  if(t==='presage'||t==='eco') return role==='H'?e:null;
+  if(t==='selando') return role==='C'?e:null;
+  if(t==='ping'||t==='fala'||t==='tarefa') return e.team===role?e:null;
+  if(t==='hurt'){ if(me&&e.a===me.id) return e; const v=g.actors.find(a=>a.id===e.a); // os outros veem o golpe, sem saber de onde veio
+    return v&&(v.team===role||visivelPara(g,v,role))?Object.assign({},e,{sx:null,sz:null}):null; }
+  let x=e.x, z=e.z, raio=null;
+  if(t==='sfx') raio=ALCANCE_SOM[e.k]||40; else if(t==='reload') raio=18; else if(t==='hab') raio=34; else if(t==='burst') raio=CFG.visaoRede;
+  else if(t==='tracer'){ x=e.x0; z=e.z0; raio=ALCANCE_SOM.shot; }
+  if(raio==null) return e; // eventos da noite toda: sinos, Fendas, Faróis, Grande Ritual, renascimentos
+  const em=e.a!=null?g.actors.find(a=>a.id===e.a):null;
+  if(em&&(em.team===role||visivelPara(g,em,role))) return e;
+  const ouvintes=me&&me.st!=='dead'?[me]:g.actors.filter(a=>a.team===role&&a.st!=='dead'); // morto: ouve pelo aliado que acompanha
+  return ouvintes.some(o=>Math.hypot(o.x-x,o.z-z)<=raio*1.2+2)?e:null;
+}
+
 // ============ SNAPSHOT (servidor → cliente) ============
 const ACT_FIELDS=['feitico','amuleto','id','cid','human','name','team','cls','maxHp','st','reag','sealing','ammo','reserve','fervor','lantern','flares','moving','deaths','revUsed'];
-const ACT_NUM=['obolos','veuT','slowT','revelT','curaT','x','z','yaw','pitch','hp','downT','respawnT','reloadT','sanity','carga','sensorCd','abilCd','lastShotT','blindT','stunT','runeT','shield','invuln','speed'];
+const ACT_NUM=['ataqueT','obolos','veuT','slowT','revelT','curaT','x','z','yaw','pitch','hp','downT','respawnT','reloadT','sanity','carga','sensorCd','abilCd','lastShotT','blindT','stunT','runeT','shield','invuln','speed'];
 function snapshot(g,role){
   const hide=role==='H';
   return {t:r2(g.t),rt:r2(g.rt),phase:g.phase,phaseT:r2(g.phaseT),round:g.round,timers:g.timers,matchId:g.matchId,
     slots:g.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),
-    altars:g.altars.map(A=>{ const masked=hide&&A.state==='awake'&&(g.know[A.i]==='?'||g.know[A.i]==='limpo');
-      return {i:A.i,name:A.name,x:A.x,z:A.z,state:masked?'dormant':A.state,chosen:hide?false:A.chosen,decoy:hide?false:A.decoy,prog:r2(A.prog),cp:A.cp,seal:r2(A.seal),localized:A.localized,grande:!!A.grande,lastN:A.lastN,maxProg:r2(A.maxProg),doneT:A.doneT}; }),
+    altars:g.altars.map(A=>{
+      // a caça só vê o que sabe: um ritual ainda não localizado aparece como o altar que ela conhecia (desperto ou não)
+      const oculto=hide&&A.state==='active'&&!A.localized, sabe=!(g.know[A.i]==='?'||g.know[A.i]==='limpo');
+      const masked=hide&&A.state==='awake'&&!sabe, st=oculto?(sabe?'awake':'dormant'):masked?'dormant':A.state;
+      if(oculto) return {i:A.i,name:A.name,x:A.x,z:A.z,state:st,chosen:false,decoy:false,prog:0,cp:0,seal:0,localized:false,grande:false,lastN:1,maxProg:0,doneT:A.doneT};
+      return {i:A.i,name:A.name,x:A.x,z:A.z,state:st,chosen:hide?false:A.chosen,decoy:hide?false:A.decoy,prog:r2(A.prog),cp:A.cp,seal:r2(A.seal),localized:A.localized,grande:!!A.grande,lastN:A.lastN,maxProg:r2(A.maxProg),doneT:A.doneT}; }),
     reagents:g.reagents.map(R=>({i:R.i,x:R.x,z:R.z,has:R.has})),
     actors:g.actors.map(a=>{
       const o={}; ACT_FIELDS.forEach(k=>o[k]=a[k]); ACT_NUM.forEach(k=>o[k]=r2(a[k])); o.hold={key:a.hold.key,t:r2(a.hold.t),max:a.hold.max};
@@ -1359,7 +1390,8 @@ function snapshot(g,role){
         const obs=g.actors.filter(h=>h.team===role&&h.human&&h.st!=='dead');
         const agora=a.revelT>0||obs.some(h=>dist(h,a)<=CFG.visaoRede&&losClear(h,a));
         const V=a._visto||(a._visto={}); if(agora) V[role]=g.t+.6;
-        if(!(V[role]>g.t)){ o.hidden=true; o.x=0; o.z=0; o.yaw=0; o.pitch=0; }
+        if(!(V[role]>g.t)){ o.hidden=true; o.x=0; o.z=0; o.yaw=0; o.pitch=0; // nem o que ele está fazendo: a contagem do E diria em qual altar
+          o.hold={key:'',t:0,max:0}; o.sealing=-1; o.reag=0; o.moving=false; o.lantern=false; o.lastShotT=-9; o.ataqueT=-9; }
       }
       return o;
     }),
@@ -1367,11 +1399,11 @@ function snapshot(g,role){
     pickups:g.pickups.map(p=>({id:p.id,kind:p.kind,x:p.x,z:p.z})),
     flares:g.flares.map(f=>({x:f.x,z:f.z,t:r2(f.t)})),
     know:hide?g.know.slice():g.know.map(()=>'?'),
-    momento:g.momento,tarefas:g.tarefas,pontos:(g.pontos||[]).map(p=>({i:p.i,tipo:p.tipo,x:p.x,z:p.z,ativo:p.ativo,acesa:p.acesa})),sal:(g.sal||[]).map(q=>({id:q.id,x:q.x,z:q.z})),feit:Object.assign({},g.feit),
-    decoys:g.decoys,transferUsed:g.transferUsed,pegadas:hide?(g.pegadas||[]):[],rastros:hide?(g.rastros||[]).filter(R=>g.rt-R.t<180).map(R=>({x:R.x,z:R.z,t:R.t})):[],picks:hide?[]:g.picks.slice(),ready:Object.assign({},g.ready),cls:Object.assign({},g.cls),
+    momento:g.momento,tarefas:{[role]:(g.tarefas&&g.tarefas[role])||[]},pontos:(g.pontos||[]).map(p=>({i:p.i,tipo:p.tipo,x:p.x,z:p.z,ativo:p.ativo,acesa:p.acesa})),sal:(g.sal||[]).map(q=>({id:q.id,x:q.x,z:q.z})),feit:Object.assign({},g.feit),
+    decoys:hide?0:g.decoys,transferUsed:hide?false:g.transferUsed,pegadas:hide?(g.pegadas||[]):[],rastros:hide?(g.rastros||[]).filter(R=>g.rt-R.t<180).map(R=>({x:R.x,z:R.z,t:R.t})):[],picks:hide?[]:g.picks.slice(),ready:Object.assign({},g.ready),cls:Object.assign({},g.cls),
     scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT,lab:g.lab,eco:g.eco};
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,eventoPara,ALCANCE_SOM,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

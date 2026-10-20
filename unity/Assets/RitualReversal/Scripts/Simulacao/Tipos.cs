@@ -117,7 +117,7 @@ namespace RitualReversal.Simulacao
         public double yaw, pitch; public string st = "alive"; public double downT, respawnT; public int deaths, dc; public bool revUsed; public int reag;
         public double hitT = -9; public Dictionary<int, double> att = new Dictionary<int, double>(); public double fireCd; public int ammo = 8, reserve = 48; public double reloadT;
         public double fervor = 100, sanity = 100, invuln; public int sealing = -1; public Hold hold = new Hold(); public bool lantern; public double carga = 100; public int flares = 2;
-        public double sensorCd, abilCd, lastShotT = -9; public bool moving; public double panicT = -9, blindT, stunT, runeT, shield, shieldT, pushedT = -9;
+        public double sensorCd, abilCd, lastShotT = -9, ataqueT = -9; public bool moving; public double panicT = -9, blindT, stunT, runeT, shield, shieldT, pushedT = -9;
         public List<double[]> hist = new List<double[]>(); public string feitico; public int obolos; public double veuT, slowT, revelT, curaT; public bool amuleto; public double pingT = -9;
         public Entrada inp = new Entrada(); public Controles lc = new Controles(); public bool lcIni;
         public IA ai = new IA();

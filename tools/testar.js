@@ -70,7 +70,7 @@ console.log('4. Regras do círculo e bots');
     Object.assign(c,{st:'alive',x:A.x,z:A.z,lastShotT:-99,hp:c.maxHp,human:true}); for(let i=0;i<30*15&&!g.eco;i++) Sim.step(g,1/30); // jogador parado no círculo
     if(!g.eco||g.eco.setor!=='leste') falha('o eco não anunciou o setor leste: '+JSON.stringify(g.eco)); else if(A.localized) falha('o eco não deveria revelar o altar');
   // quem ataca não canaliza: com o único Cultista atacando, o ritual não avança
-    const p0=A.prog; for(let i=0;i<30;i++){ c.lastShotT=g.t; c.x=A.x; c.z=A.z; Sim.step(g,1/30); }
+    const p0=A.prog; for(let i=0;i<30;i++){ c.ataqueT=g.t; c.x=A.x; c.z=A.z; Sim.step(g,1/30); }
     if(A.prog>p0+1e-9) falha(`ritual avançou com o Cultista atacando (${p0} → ${A.prog})`);
     for(let i=0;i<60;i++){ c.x=A.x; c.z=A.z; Sim.step(g,1/30); } if(!(A.prog>p0)) falha('ritual não voltou a avançar depois de parar de atacar'); }
   // levar dano recomeça a execução
@@ -86,7 +86,47 @@ console.log('4. Regras do círculo e bots');
     let atirou=false; for(let i=0;i<30*3&&!atirou;i++){ Sim.step(g,1/30); atirou=g.events.some(e=>e.type==='tracer'&&e.a===h.id); g.events.length=0; }
     if(!atirou) falha('Caçador com a contagem de purga pendurada não atirou no Cultista a 4 m'); }
   console.log('   eco do setor, ataque pausa a canalização, dano recomeça a execução, bot chega ao mercador, bot que larga o E atira'); }
-console.log(`5. ${N} partidas só de bots com invariantes`);
+// 5. Informação por equipe: o que o servidor manda a cada cliente (esconder no HUD não basta)
+console.log('5. Informação por equipe no snapshot e nos eventos');
+{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'info'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+  const h=g.actors.find(a=>a.team==='H'), h2=g.actors.find(a=>a.team==='H'&&a!==h), c=g.actors.find(a=>a.team==='C'), c2=g.actors.find(a=>a.team==='C'&&a!==c);
+  h.human=true; h2.st='dead'; c2.x=140; c2.z=90; h.x=-140; h.z=0; c.x=60; c.z=-46;
+  const A=g.altars[2]; Object.assign(A,{state:'active',chosen:true,prog:.4,localized:false}); g.know[2]='?';
+  const sH=Sim.snapshot(g,'H'), aH=sH.altars[2];
+  if(aH.state==='active'||aH.prog>0||aH.chosen) falha('a caça vê o ritual não localizado: '+JSON.stringify(aH));
+  g.know[2]='desperto'; if(Sim.snapshot(g,'H').altars[2].state!=='awake') falha('altar desperto conhecido deveria aparecer desperto enquanto o ritual não é localizado');
+  if(Sim.snapshot(g,'C').altars[2].state!=='active') falha('o culto deveria ver o próprio ritual');
+  A.localized=true; if(Sim.snapshot(g,'H').altars[2].state!=='active') falha('ritual localizado deveria aparecer para a caça');
+  c.hold={key:'cons3',t:1,max:3}; c.sealing=-1; c.reag=2; const cs=Sim.snapshot(g,'H').actors.find(a=>a.id===c.id);
+  if(!cs.hidden||cs.hold.key||cs.reag) falha('inimigo escondido revela o que está fazendo: '+JSON.stringify({h:cs.hold,r:cs.reag}));
+  if(Object.keys(Sim.snapshot(g,'H').tarefas).join()!=='H'||Object.keys(Sim.snapshot(g,'C').tarefas).join()!=='C') falha('tarefas da outra equipe no snapshot');
+  if(Sim.snapshot(g,'H').decoys!==0) falha('a caça não deveria saber quantos Chamarizes o culto tem');
+  const para=(e,me,role)=>Sim.eventoPara(g,e,me,role);
+  if(para({type:'sfx',k:'step',x:c.x,z:c.z,a:c.id},h,'H')) falha('passos de um Cultista a 200 m chegaram à caça');
+  const perto={type:'sfx',k:'step',x:h.x+8,z:h.z,a:c.id}; if(!para(perto,h,'H')) falha('passos a 8 m deveriam chegar');
+  if(!para({type:'sfx',k:'step',x:c.x,z:c.z,a:c.id},c,'C')) falha('os próprios sons deveriam chegar à equipe');
+  if(para({type:'selando',altar:2,x:A.x,z:A.z},h,'H')) falha('aviso de selo chegou à caça');
+  if(!para({type:'selando',altar:2,x:A.x,z:A.z},c,'C')) falha('aviso de selo não chegou ao culto');
+  if(para({type:'eco',setor:'leste',altares:[2,5]},c,'C')||!para({type:'eco',setor:'leste',altares:[2,5]},h,'H')) falha('eco do coro com destinatário errado');
+  if(para({type:'hit',a:c.id,alvo:h.id},h,'H')) falha('confirmação de acerto chegou a quem levou o tiro');
+  const hu=para({type:'hurt',a:c2.id,s:h.id,sx:h.x,sz:h.z},c,'C'); if(!hu||hu.sx!=null) falha('o aliado de quem levou dano não deveria saber de onde veio o tiro');
+  if(para({type:'tracer',a:c.id,x0:c.x,z0:c.z,x1:c.x+5,z1:c.z},h,'H')) falha('tiro de inimigo escondido a 200 m chegou');
+  if(para({type:'ping',team:'C',a:c.id,x:0,z:0},h,'H')||para({type:'feed',msg:'x',team:'C'},h,'H')) falha('ping ou aviso do culto chegou à caça');
+  if(!para({type:'doom'},h,'H')) falha('eventos da noite toda deveriam chegar a todos');
+  console.log('   ritual não localizado, inimigo escondido, tarefas, Chamarizes, sons, selo, eco, acertos e pings por equipe'); }
+// 6. Regras da v5.6: Empurrão também pausa a canalização; quem pisa no círculo localiza o ritual
+console.log('6. Empurrão pausa a canalização, pisar no círculo localiza');
+{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'v56'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+  g.rt=300; for(const a of g.actors){ a.st='dead'; a.respawnT=999; }
+  const A=g.altars[1], c=g.actors.find(a=>a.team==='C'), h=g.actors.find(a=>a.team==='H'); Object.assign(A,{state:'active',chosen:true,prog:.1,cp:0,localized:false,eco:false});
+  Object.assign(c,{st:'alive',hp:c.maxHp,x:A.x,z:A.z,human:true,feitico:'empurrao',abilCd:0}); const p0=A.prog;
+  Object.assign(h,{st:'alive',hp:h.maxHp,x:A.x+2.5,z:A.z,human:true,invuln:0}); c.yaw=Math.atan2(-(h.x-c.x),-(h.z-c.z));
+  if(!A.localized){ Sim.step(g,1/30); if(A.localized&&g.log.some(e=>e.ev==='localized'&&e.how==='circulo')) {} }
+  const L=g.log.find(e=>e.ev==='localized'); if(!L) falha('Caçador dentro do círculo não localizou o ritual');
+  const p1=A.prog; c.inp.c={q:0,f:0,g:0,r:0,ab:1}; for(let i=0;i<12;i++){ c.x=A.x; c.z=A.z; Sim.step(g,1/30); }
+  if(!g.log.some(e=>e.ev==='ability'&&e.feitico==='empurrao')) falha('o Empurrão não saiu no teste'); else if(A.prog>p1+1e-9) falha(`ritual avançou logo depois do Empurrão (${p1} → ${A.prog})`);
+  console.log('   ok'); }
+console.log(`7. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};
 for(let m=0;m<N;m++){

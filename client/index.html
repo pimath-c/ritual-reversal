@@ -1817,6 +1817,7 @@ const mySlot=()=>V&&V.slots?V.slots.find(s=>s.cid===meCid):null;
 const myRole=()=>{ const s=mySlot(); return s?Sim.roleOf(V,s.team):null; };
 function sendAct(a){ if(MODE==='local') Sim.act(game,'local',a); else if(ws) ws.send(JSON.stringify({t:'act',a})); SFX.click(); }
 function evVisible(e,role,meId){
+  if(MODE==='local'&&game){ const m=game.actors.find(a=>a.id===meId); return !!Sim.eventoPara(game,e,m,role); } // o mesmo filtro do servidor
   if(e.type==='feed'&&e.team&&e.team!==role) return false;
   if((e.type==='ping'||e.type==='fala')&&e.team!==role) return false;
   if(e.to!=null&&e.to!==meId) return false;
@@ -2580,7 +2581,7 @@ function updateHUD(dt,m){
   let R=null,bd=1e9; for(const A of V.altars){ if(A.state!=='active') continue; if(role==='H'&&!A.localized&&dist(mv,A)>CFG.rit[Math.max(1,A.lastN)].rad) continue; const d=dist(mv,A); if(d<bd&&(d<30||role==='C')){ bd=d; R=A; } }
   const race=$('#race');
   if(R){ race.style.display='block'; $('#raceName').textContent=R.name; $('#ritFill').style.width=(R.prog*100)+'%'; $('#ritPct').textContent=Math.floor(R.prog*100)+'%'; $('#selFill').style.width=(R.seal*100)+'%'; $('#selPct').textContent=Math.floor(R.seal*100)+'%';
-    const noCirculo=V.actors.filter(c=>c.team==='C'&&c.st==='alive'&&Sim.inCircle(c,R)), atacando=c=>CFG.ataqueCanal>0&&V.t-c.lastShotT<CFG.ataqueCanal;
+    const noCirculo=V.actors.filter(c=>c.team==='C'&&c.st==='alive'&&Sim.inCircle(c,R)), atacando=c=>CFG.ataqueCanal>0&&V.t-(c.ataqueT==null?-9:c.ataqueT)<CFG.ataqueCanal;
     const n=noCirculo.filter(c=>!atacando(c)).length, s=V.actors.filter(h=>h.team==='H'&&h.sealing===R.i).length; let note='';
     if(role==='C'&&m.team==='C'&&Sim.inCircle(m,R)&&atacando(m)) note='Você atacou: a sua canalização parou por um instante';
     else if(s) note=s>=2?'Selando em dupla':'Selando';

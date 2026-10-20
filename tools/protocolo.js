@@ -5,6 +5,7 @@
 'use strict';
 const path=require('path'), {spawn}=require('child_process');
 const WebSocket=require(path.join(__dirname,'..','server','node_modules','ws'));
+const Sim=require(path.join(__dirname,'..','shared','sim.js'));
 const PORT=18000+Math.floor(Math.random()*1000);
 const srv=spawn(process.execPath,[path.join(__dirname,'..','server','server.js')],{env:{...process.env,PORT:String(PORT)},stdio:['ignore','pipe','pipe']});
 let saida=''; srv.stdout.on('data',d=>saida+=d); srv.stderr.on('data',d=>saida+=d);
@@ -51,6 +52,15 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
   const taxa=(A.snaps-s0)/6; console.log(`  snapshots: ${taxa.toFixed(1)}/s (meta 20)`); if(taxa<15) falha('poucos snapshots');
   const eu=A.ultimo.s.actors.find(a=>a.id===A.ultimo.you); if(!eu) falha('snapshot sem o próprio personagem');
   else { console.log(`  Ana andou até (${eu.x.toFixed(1)}, ${eu.z.toFixed(1)}) no papel ${eu.team}`); if(Math.hypot(eu.x-(eu.team==='H'?-132:132),eu.z)<3) falha('personagem não se moveu'); }
+  // integridade: o que chegou a cada cliente durante a partida respeita a equipe e o alcance dos sons
+  { for(const C of [A,B]){ const S=C.msgs.filter(m=>m.t==='snap'); if(!S.length) continue; const meuId=C.ultimo.you, papel=C.ultimo.s.actors.find(a=>a.id===meuId).team;
+      let ruins=0, vistos=0;
+      for(const m of S){ const eu=m.s.actors.find(a=>a.id===meuId);
+        if(papel==='H'&&m.s.altars.some(A=>A.state==='active'&&!A.localized)) ruins++;
+        for(const e of m.ev||[]){ if(papel==='H'&&e.type==='selando') ruins++; if(papel==='C'&&(e.type==='eco'||e.type==='presage')) ruins++;
+          if(e.type==='sfx'&&e.a!==meuId){ const em=m.s.actors.find(a=>a.id===e.a); if(em&&em.team!==papel&&em.hidden&&eu){ vistos++; const r=(Sim.ALCANCE_SOM[e.k]||40)*1.2+4; if(Math.hypot(e.x-eu.x,e.z-eu.z)>r) ruins++; } } } }
+      if(ruins) falha(`${C.nome} (${papel}) recebeu ${ruins} informações que não deveria`); else C.sonsConferidos=vistos; }
+    console.log(`  integridade: snapshots e eventos por equipe; sons de inimigos escondidos conferidos: ${(A.sonsConferidos||0)+(B.sonsConferidos||0)}`); }
   // ping: volta para a própria equipe e não vaza para a outra; lixo no ping é ignorado
   if(eu){ A.envia({t:'act',a:{type:'ping',x:eu.x+5,z:eu.z,k:'ponto'}}); A.envia({t:'act',a:{type:'ping',x:'lixo',z:null,k:'<b>'}}); await espera(900);
     const tem=C=>C.msgs.some(m=>m.t==='snap'&&(m.ev||[]).some(e=>e.type==='ping'));

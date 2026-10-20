@@ -392,7 +392,7 @@ namespace RitualReversal.Simulacao
         }
         static void CastSigil(Jogo g, Ator a, double dx, double dy, double dz)
         {
-            a.veuT = 0; a.lastShotT = g.t; a.fireCd = a.human ? .42 : (1 + Rand(0, .3)) * DifDe(g, a).ritmo; a.fervor -= CFG.sigilCusto;
+            a.veuT = 0; a.lastShotT = g.t; a.ataqueT = g.t; a.fireCd = a.human ? .42 : (1 + Rand(0, .3)) * DifDe(g, a).ritmo; a.fervor -= CFG.sigilCusto;
             Ev(g, "sfx", "k", "sigil", "x", R2(a.x), "z", R2(a.z), "a", a.id);
             double rx = JS.Cos(a.yaw), rz = -JS.Sin(a.yaw); double ox = a.x + rx * .3, oy = 1.45, oz = a.z + rz * .3;
             double tx = a.x + dx * 40, ty = 1.62 + dy * 40, tz = a.z + dz * 40; double vx = tx - ox, vy = ty - oy, vz = tz - oz; double l = JS.Hypot(vx, vy, vz); if (l == 0 || double.IsNaN(l)) l = 1; double sp = CFG.sigilVel;
@@ -445,6 +445,7 @@ namespace RitualReversal.Simulacao
             }
             else if (F == "empurrao")
             {
+                a.ataqueT = g.t; // empurrar é atacar: pausa a canalização de quem empurra
                 foreach (var e in EnemiesOf(g, a))
                 {
                     if (e.st != "alive") continue; double dx = e.x - a.x, dz = e.z - a.z, d = JS.Hypot(dx, dz); if (d > 3.8 || d < .01) continue; if ((dx * fx + dz * fz) / d < .34) continue;
@@ -677,7 +678,7 @@ namespace RitualReversal.Simulacao
             {
                 if (A.state != "active") continue;
                 // quem acabou de lançar um sigilo não canaliza: defender e celebrar são escolhas separadas
-                var ch = g.actors.Where(c => c.team == "C" && c.st == "alive" && InCircle(c, A) && !(CFG.ataqueCanal > 0 && g.t - c.lastShotT < CFG.ataqueCanal)).Take(2).ToList(); int n = ch.Count;
+                var ch = g.actors.Where(c => c.team == "C" && c.st == "alive" && InCircle(c, A) && !(CFG.ataqueCanal > 0 && g.t - c.ataqueT < CFG.ataqueCanal)).Take(2).ToList(); int n = ch.Count;
                 bool rune = false;
                 if (n > 0)
                 {
@@ -693,7 +694,8 @@ namespace RitualReversal.Simulacao
                 A.maxProg = Math.Max(A.maxProg, A.prog);
                 int nn = Math.Max(1, A.lastN); double rad = CFG.ritRad[nn] * (rune ? 1.5 : 1) * (A.tardio ? 1.4 : 1);
                 if (!A.localized && !A.eco && CFG.ecoProg > 0 && A.prog >= CFG.ecoProg) EcoDoCoro(g, A);
-                if (!A.localized) { if (A.prog >= CFG.ritLoc[nn]) Localize(g, A, "coro"); else if (n > 0 && g.actors.Any(h => h.team == "H" && h.st == "alive" && Dist(h, A) < rad)) Localize(g, A, "ouvido"); }
+                if (!A.localized) { if (A.prog >= CFG.ritLoc[nn]) Localize(g, A, "coro"); else if (n > 0 && g.actors.Any(h => h.team == "H" && h.st == "alive" && Dist(h, A) < rad)) Localize(g, A, "ouvido");
+                    else if (g.actors.Any(h => h.team == "H" && h.st == "alive" && InCircle(h, A))) Localize(g, A, "circulo"); } // quem pisa no círculo vê o ritual
                 if (!A.arrived && g.actors.Any(h => h.team == "H" && h.st == "alive" && InCircle(h, A))) { A.arrived = true; LogE(g, "hunter_arrive", "altar", A.name, "prog", R2(A.prog), "channelers", nn, "remaining", R2((1 - A.prog) * CFG.ritDur[nn])); }
                 var sealers = g.actors.Where(h => h.team == "H" && h.st == "alive" && h.sealing == A.i && InCircle(h, A)).ToList();
                 if (sealers.Count > 0)
