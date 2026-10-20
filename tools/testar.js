@@ -61,7 +61,27 @@ console.log('3. Visibilidade no snapshot');
   if(Sim.snapshot(g,'C').actors.find(a=>a.id===c.id).hidden) falha('aliado nunca deveria ser escondido');
   c.revelT=3; h.x=0; h.z=0; c.x=0; c.z=100; if(Sim.snapshot(g,'H').actors.find(a=>a.id===c.id).hidden) falha('Sal deveria revelar a posição');
   console.log('   inimigos só aparecem com linha de visão até 75 m (ou revelados pelo Sal)'); }
-console.log(`4. ${N} partidas só de bots com invariantes`);
+// 4. Regras do círculo (v5.5) e bots que não podem empacar
+console.log('4. Regras do círculo e bots');
+{ const nova=()=>{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'reg'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+    g.rt=300; for(const a of g.actors){ a.st='dead'; a.respawnT=999; } return g; };
+  // eco: aos 25% a caça ouve o setor do ritual (Capela Leste fica a leste, com o Carvalho Oco)
+  { const g=nova(), A=g.altars[2], c=g.actors.find(a=>a.team==='C'); Object.assign(A,{state:'active',chosen:true,prog:.2,cp:0,localized:false,eco:false});
+    Object.assign(c,{st:'alive',x:A.x,z:A.z,lastShotT:-99,hp:c.maxHp,human:true}); for(let i=0;i<30*15&&!g.eco;i++) Sim.step(g,1/30); // jogador parado no círculo
+    if(!g.eco||g.eco.setor!=='leste') falha('o eco não anunciou o setor leste: '+JSON.stringify(g.eco)); else if(A.localized) falha('o eco não deveria revelar o altar');
+  // quem ataca não canaliza: com o único Cultista atacando, o ritual não avança
+    const p0=A.prog; for(let i=0;i<30;i++){ c.lastShotT=g.t; c.x=A.x; c.z=A.z; Sim.step(g,1/30); }
+    if(A.prog>p0+1e-9) falha(`ritual avançou com o Cultista atacando (${p0} → ${A.prog})`);
+    for(let i=0;i<60;i++){ c.x=A.x; c.z=A.z; Sim.step(g,1/30); } if(!(A.prog>p0)) falha('ritual não voltou a avançar depois de parar de atacar'); }
+  // levar dano recomeça a execução
+  { const g=nova(), c=g.actors.find(a=>a.team==='C'), h=g.actors.find(a=>a.team==='H'); Object.assign(c,{st:'alive',hp:c.maxHp,invuln:0}); c.hold={key:'exe'+h.id,t:3,max:4.5};
+    Sim.damage(g,c,5,h); if(c.hold.t!==0||c.hold.key!=='') falha('dano não interrompeu a execução'); if(!g.log.some(e=>e.ev==='execucao_interrompida')) falha('execução interrompida fora do registro'); }
+  // o Caçador que decidiu ir ao Ermitão chega lá (antes empacava a 55 m em linha reta, onde o caminho se afasta)
+  { const g=nova(), h=g.actors.find(a=>a.team==='H'); Object.assign(h,{st:'alive',hp:h.maxHp,x:-99,z:-15,reserve:8,obolos:5}); h.ai.goal=null; h.ai.goalKey='';
+    for(let i=0;i<30*60&&!g.log.some(e=>e.ev==='compra');i++){ h.reserve=Math.min(h.reserve,8); Sim.step(g,1/30); }
+    if(!g.log.some(e=>e.ev==='compra')) falha(`Caçador não chegou ao Ermitão (parou em ${h.x.toFixed(1)}, ${h.z.toFixed(1)})`); }
+  console.log('   eco do setor, ataque pausa a canalização, dano recomeça a execução, bot chega ao mercador'); }
+console.log(`5. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};
 for(let m=0;m<N;m++){

@@ -149,11 +149,14 @@ namespace RitualReversal.Simulacao
         {
             var ai = b.ai; string role = b.team;
             // compras: Cultista sem reagente compra; Caçador com pouca munição compra
-            string quer = !g.lab.economia ? null : role == "C" ? (b.reag == 0 && b.obolos >= Regras.ITENS["reagente"].preco ? "reagente" : null) : (b.reserve < 16 && b.obolos >= Regras.ITENS["municao"].preco ? "municao" : null);
+            // com ritual em andamento (o seu, ou um que a caça já ouviu), ninguém sai para fazer compras
+            bool urgente = g.altars.Any(A => A.state == "active" && (role == "C" ? A.chosen : A.localized)) || (role == "H" && g.eco != null);
+            string quer = urgente || !g.lab.economia ? null : role == "C" ? (b.reag == 0 && b.obolos >= Regras.ITENS["reagente"].preco ? "reagente" : null) : (b.reserve < 16 && b.obolos >= Regras.ITENS["municao"].preco ? "municao" : null);
             if (quer != null)
             {
                 var n = JS.Primeiro(Mapa.NPCS.Where(x => (x.time == null || x.time == role) && x.vende.Contains(quer)).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
-                if (n != null && Dist(b, n) < 55)
+                bool comprometido = n != null && ai.goalKey == "npc" + n.id; // já decidiu ir: não desiste ao cruzar o limite em linha reta (o caminho dá voltas)
+                if (n != null && (Dist(b, n) < 55 || (comprometido && Dist(b, n) < 90)))
                 {
                     if (Dist(b, n) < 2.4) { b.moving = false; if (b.cid == null) ComprarBot(g, b, n, quer); return true; }
                     SetGoal(g, b, n.x, n.z, "npc" + n.id); BotMove(g, b, dt, 1); return true;

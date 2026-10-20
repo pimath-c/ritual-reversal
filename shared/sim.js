@@ -1082,9 +1082,12 @@ function botRasteja(g,b,dt){ b.moving=false; if(b.st!=='down') return;
   if(!al||dist(b,al)<1.2) return; setGoal(g,b,al.x,al.z,'rasteja'+al.id); botMove(g,b,dt,1); }
 function botNoite(g,b,dt){ const ai=b.ai, role=b.team;
   // compras: Cultista sem reagente compra; Caçador com pouca munição compra
-  const quer=g.lab.economia&&(role==='C'?(b.reag===0&&b.obolos>=ITENS.reagente.preco&&'reagente'):(b.reserve<16&&b.obolos>=ITENS.municao.preco&&'municao'));
+  // com ritual em andamento (o seu, ou um que a caça já ouviu), ninguém sai para fazer compras
+  const urgente=g.altars.some(A=>A.state==='active'&&(role==='C'?A.chosen:A.localized))||(role==='H'&&!!g.eco);
+  const quer=!urgente&&g.lab.economia&&(role==='C'?(b.reag===0&&b.obolos>=ITENS.reagente.preco&&'reagente'):(b.reserve<16&&b.obolos>=ITENS.municao.preco&&'municao'));
   if(quer){ const n=NPCS.filter(n=>(!n.time||n.time===role)&&n.vende.includes(quer)).sort((x,y)=>dist(b,x)-dist(b,y))[0];
-    if(n&&dist(b,n)<55){ if(dist(b,n)<2.4){ b.moving=false; if(b.cid==null) comprarBot(g,b,n,quer); return true; } setGoal(g,b,n.x,n.z,'npc'+n.id); botMove(g,b,dt,1); return true; } }
+    const comprometido=n&&ai.goalKey==='npc'+n.id; // já decidiu ir: não desiste ao cruzar o limite em linha reta (o caminho dá voltas)
+    if(n&&(dist(b,n)<55||(comprometido&&dist(b,n)<90))){ if(dist(b,n)<2.4){ b.moving=false; if(b.cid==null) comprarBot(g,b,n,quer); return true; } setGoal(g,b,n.x,n.z,'npc'+n.id); botMove(g,b,dt,1); return true; } }
   // tarefas do Crepúsculo
   if(g.momento!==0) return false;
   const pend=(g.tarefas[role]||[]).filter(t=>!t.feita).map(t=>t.id);
@@ -1362,5 +1365,5 @@ function snapshot(g,role){
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,SETORES,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });
