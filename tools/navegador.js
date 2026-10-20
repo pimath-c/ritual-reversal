@@ -97,6 +97,66 @@ const VISTAS=[
   if(!/selou o ritual/.test(lan.anuncio)||!/Irmã Vela/.test(lan.anuncio)) erros.push('o Farol não anunciou quem selou: '+lan.anuncio);
   if(!lan.on||!/último instante/.test(lan.lance)||!/93%/.test(lan.lance)) erros.push('o lance da noite não apareceu: '+lan.lance);
   await page.screenshot({path:path.join(OUT,'lance.png')});
+  // v5.8: as gravações carregaram (nenhuma falhou ao decodificar)
+  const total=await page.evaluate(()=>Object.values(window.SONS_RR||{}).reduce((n,l)=>n+l.length,0));
+  await page.waitForFunction(t=>__T.AMOS.prontos+__T.AMOS.falhas>=t,total,{timeout:30000}).catch(()=>{});
+  const som=await page.evaluate(()=>({prontos:__T.AMOS.prontos,falhas:__T.AMOS.falhas}));
+  console.log('sons gravados:',JSON.stringify(som),'de',total); if(som.falhas||som.prontos!==total) erros.push('sons gravados não carregaram: '+JSON.stringify(som));
+  // v5.8: combate. Um Cultista a 6 m; tiro na cabeça confirmado pelo servidor, depois um golpe no escudo, depois tiro na parede
+  const cb=await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), c=g.actors.find(a=>a.team!==m.team);
+    m.x=-20; m.z=0; c.x=-26; c.z=0; c.st='alive'; c.hp=c.maxHp; c.invuln=99; c.shield=0; __T.LOOK.yaw=Math.PI/2; __T.LOOK.pitch=0; m.inp.yaw=__T.LOOK.yaw; m.inp.pitch=0; return {m:m.id,c:c.id}; });
+  await page.waitForTimeout(1500);
+  await page.evaluate(o=>{ const g=__T.game, m=g.actors.find(a=>a.id===o.m), c=g.actors.find(a=>a.id===o.c);
+    g.events.push({type:'tracer',a:m.id,x0:m.x,y0:1.42,z0:m.z,x1:c.x+.3,y1:1.7,z1:c.z,alvo:c.id,cab:true},{type:'hit',a:m.id,alvo:c.id,derrubou:false}); },cb);
+  await page.waitForFunction(id=>{ const mm=__T.actorMeshes.get(id); return mm&&mm.userData.anim.reac; },cb.c,{timeout:8000}).catch(()=>{});
+  await page.screenshot({path:path.join(OUT,'combate-acerto.png')});
+  const ac=await page.evaluate(id=>({marca:document.querySelector('#hitmark').className,reacao:!!(__T.actorMeshes.get(id)&&__T.actorMeshes.get(id).userData.anim.reac)}),cb.c);
+  await page.evaluate(o=>{ __T.game.events.push({type:'hit',a:o.m,alvo:o.c,derrubou:false,escudo:true}); },cb);
+  await page.waitForFunction(()=>document.querySelector('#hitmark').className==='escudo',null,{timeout:8000}).catch(()=>{});
+  const esc=await page.evaluate(()=>document.querySelector('#hitmark').className);
+  await page.evaluate(o=>{ const g=__T.game, m=g.actors.find(a=>a.id===o.m); g.events.push({type:'tracer',a:m.id,x0:m.x,y0:1.42,z0:m.z,x1:m.x-9,y1:1.4,z1:m.z+.5,alvo:null,cab:false}); },cb);
+  await page.waitForTimeout(300); await page.screenshot({path:path.join(OUT,'combate-parede.png')});
+  console.log('combate:',JSON.stringify(ac),'escudo:',esc);
+  if(ac.marca!=='head') erros.push('tiro na cabeça confirmado sem a marca: '+ac.marca); if(!ac.reacao) erros.push('o alvo atingido não reagiu'); if(esc!=='escudo') erros.push('golpe no escudo sem a marca de bloqueio');
+  // v5.8: confronto carregado por 10 s (tiros que acertam e que erram, sigilos estourando, ritual em disputa): mede o
+  // tempo de CPU por quadro e confere que efeitos, traçadores e geometrias voltam ao normal depois (nada acumula)
+  await page.evaluate(()=>__T.zerarQuadros()); await page.waitForTimeout(5000);
+  const antes=await page.evaluate(()=>({q:__T.quadros(),geo:__T.info().geometrias,ef:__T.efeitos,tr:__T.tracers})); await page.evaluate(()=>__T.zerarQuadros());
+  const A0=await page.evaluate(()=>{ const A=__T.game.altars[0]; return {state:A.state,localized:A.localized,prog:A.prog,seal:A.seal}; });
+  await page.evaluate(o=>{ const g=__T.game, m=g.actors.find(a=>a.id===o.m), c=g.actors.find(a=>a.id===o.c), A=g.altars[0]; A.state='active'; A.localized=true; A.prog=.5;
+    let k=0; window.__carga=setInterval(()=>{ k++; const y=1.2+Math.random()*.6;
+      g.events.push({type:'tracer',a:m.id,x0:m.x,y0:1.42,z0:m.z,x1:c.x+.2,y1:y,z1:c.z+Math.random()*.4-.2,alvo:c.id,cab:y>1.6},{type:'hit',a:m.id,alvo:c.id,derrubou:k%15===0});
+      g.events.push({type:'tracer',a:m.id,x0:m.x,y0:1.42,z0:m.z,x1:m.x-6-Math.random()*4,y1:.02,z1:m.z+Math.random()*6-3,alvo:null,cab:false});
+      if(k%2) g.events.push({type:'burst',x:m.x-3+Math.random()*2,y:1+Math.random(),z:m.z+Math.random()*4-2});
+      if(k%5===0) g.events.push({type:'sfx',k:'shot',x:c.x,z:c.z,a:c.id},{type:'sfx',k:'sigil',x:c.x,z:c.z,a:c.id});
+      A.seal=(A.seal+.01)%1; },100); },cb);
+  await page.waitForTimeout(10000);
+  const durante=await page.evaluate(()=>({q:__T.quadros(),fps:__T.perfil().fps,ef:__T.efeitos,tr:__T.tracers,geo:__T.info().geometrias}));
+  await page.screenshot({path:path.join(OUT,'combate-carga.png')});
+  await page.evaluate(A0=>{ clearInterval(window.__carga); Object.assign(__T.game.altars[0],A0); },A0);
+  await page.waitForTimeout(4000); await page.evaluate(()=>__T.zerarQuadros()); await page.waitForTimeout(5000);
+  const depois=await page.evaluate(()=>({q:__T.quadros(),geo:__T.info().geometrias,ef:__T.efeitos,tr:__T.tracers}));
+  if(durante.q.logicaP95>Math.max(30,antes.q.logicaP95*3)) erros.push('a lógica do quadro pesou demais no confronto: '+JSON.stringify(durante.q));
+  console.log('carga:',JSON.stringify({antes,durante,depois}));
+  if(depois.ef>antes.ef+2||depois.tr>antes.tr+2) erros.push('efeitos ou traçadores acumularam depois do confronto: '+JSON.stringify({antes,depois}));
+  if(depois.geo>antes.geo+6) erros.push('geometrias acumularam depois do confronto (vazamento): '+antes.geo+' -> '+depois.geo);
+  await page.evaluate(o=>{ const c=__T.game.actors.find(a=>a.id===o.c); c.x=125; c.z=8; },cb);
+  // v5.8: o ritual como evento. A vista do mostrador começou o ritual (dormente -> ativo): as runas acenderam.
+  const rit=await page.evaluate(()=>{ const O=__T.AV[0]; return {st:O.rv.st,runas:O.runas.filter(r=>r.visible).length}; });
+  if(rit.st!=='active'||rit.runas<3) erros.push('ritual sem runas acesas: '+JSON.stringify(rit));
+  // selo em andamento: o selo sobe por 1,5 s e as runas tremem e douram (a câmera volta para perto do altar)
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), A=g.altars[0]; m.x=A.x+1; m.z=A.z+6.5; __T.LOOK.yaw=.15; __T.LOOK.pitch=-.45; m.inp.yaw=.15; m.inp.pitch=-.45;
+    for(const a of g.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=0; } });
+  await page.waitForTimeout(1200);
+  await page.evaluate(()=>{ const A=__T.game.altars[0]; window.__selo=setInterval(()=>{ A.seal=Math.min(.9,A.seal+.012); },50); });
+  await page.waitForFunction(()=>__T.AV[0].rv.contest>.3,null,{timeout:8000}).catch(()=>{});
+  const cont=await page.evaluate(()=>+__T.AV[0].rv.contest.toFixed(2)); await page.screenshot({path:path.join(OUT,'ritual-contestado.png')});
+  await page.evaluate(()=>clearInterval(window.__selo)); if(!(cont>.3)) erros.push('selo subindo não marcou a disputa no altar: '+cont);
+  // Farol: as runas convergem e a coluna dourada sobe
+  await page.evaluate(()=>{ __T.game.events.push({type:'sealed',altar:0,por:['Teste']}); });
+  await page.waitForFunction(()=>__T.AV[0].runas.some(r=>r.userData.converge!=null),null,{timeout:8000}).catch(()=>{});
+  const conv=await page.evaluate(()=>__T.AV[0].runas.filter(r=>r.userData.converge!=null).length); await page.waitForTimeout(500); await page.screenshot({path:path.join(OUT,'ritual-selado.png')});
+  console.log('ritual:',JSON.stringify(rit),'disputa',cont,'convergindo',conv); if(conv<8) erros.push('o Farol não fechou as runas no altar');
   await page.evaluate(()=>{ Object.assign(__T.game.altars[0],window.__antes0); });
   // eco do coro a leste: a faixa marca os dois altares do setor e a legenda diz de onde vem o coro
   await page.evaluate(()=>{ const g=__T.game; g.eco={setor:'leste',t:g.rt}; g.events.push({type:'eco',setor:'leste',altares:[2,5]}); });
@@ -107,7 +167,7 @@ const VISTAS=[
   await page.evaluate(()=>{ __T.game.eco=null; });
   // faixa do topo: descartado, visitado e purgado são marcas diferentes, cada uma com a sua explicação
   await page.evaluate(()=>{ const g=__T.game; window.__know=g.know.slice(); g.know=['descartado','visto','purgado','desperto','?','chamariz']; });
-  await page.waitForTimeout(1200);
+  await page.waitForFunction(()=>/clean/.test((document.querySelector('#strip .pip')||{}).className||''),null,{timeout:15000}).catch(()=>{});
   const pips=await page.evaluate(()=>[...document.querySelectorAll('#strip .pip')].map(p=>({c:p.className,i:p.querySelector('i').textContent,t:p.title})));
   console.log('faixa:',pips.map(p=>p.i+' '+p.t).join(' | '));
   if(!/clean/.test(pips[0].c)||!/seen/.test(pips[1].c)||!/purged/.test(pips[2].c)||pips[0].i===pips[1].i) erros.push('faixa não separa descartado, visitado e purgado: '+JSON.stringify(pips.slice(0,3)));

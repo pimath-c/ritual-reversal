@@ -410,9 +410,9 @@ namespace RitualReversal.Simulacao
             // executar exige calma: quem leva dano recomeça a execução
             if (CFG.danoInterrompeExecucao && t.hold.key.StartsWith("exe", StringComparison.Ordinal)) { if (t.hold.t > 0) { LogE(g, "execucao_interrompida", "who", t.name, "by", src.name); if (t.human) Ev(g, "feed", "msg", "Você levou dano: a execução recomeçou.", "cls", "", "to", t.id);
                     var B = g.actors.FirstOrDefault(x => "exe" + x.id == t.hold.key); if (B != null && B.st == "down") B.salvoPor = src.name; } t.hold = new Hold(); }
-            if (t.shield > 0) { double s = Math.Min(t.shield, amt); t.shield -= s; amt -= s; }
+            double absorvido = 0; if (t.shield > 0) { absorvido = Math.Min(t.shield, amt); t.shield -= absorvido; amt -= absorvido; }
             t.hp -= amt; t.hitT = g.t; t.att[src.id] = g.t; t.veuT = 0; DisputaDano(g, t, src, amt);
-            Ev(g, "hurt", "a", t.id, "s", src.id, "sx", R2(src.x), "sz", R2(src.z)); Ev(g, "hit", "a", src.id, "alvo", t.id, "derrubou", t.hp <= 0);
+            Ev(g, "hurt", "a", t.id, "s", src.id, "sx", R2(src.x), "sz", R2(src.z)); Ev(g, "hit", "a", src.id, "alvo", t.id, "derrubou", t.hp <= 0, "escudo", absorvido > 0 && amt <= 0); // escudo: o cliente mostra como bloqueio
             if (!t.human) t.ai.alert = new Alerta { x = src.x, z = src.z, t = g.t };
             if (t.hp <= 0) GoDown(g, t, src);
         }

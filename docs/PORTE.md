@@ -45,6 +45,8 @@ esforço da engine nova no que o navegador não faz bem: modelos, animação, lu
   Empurrão em quem sela) e 'lance' (jogadas decisivas, com `team` quando só uma equipe recebe ao vivo); 'doom' e
   'sealed' levam os nomes (`por`). O registro guarda a disputa de cada um no círculo e quanto o Chamariz prendeu a
   caça. Numa engine nova, gere esses eventos na simulação e filtre no servidor como os outros.
+- **v5.8** (apresentação): o evento 'hit' traz `escudo` (o escudo absorveu tudo: mostre como bloqueio). Os sons do
+  jogo estão em `assets/sons/jogo/*.mp3` (licenças em `docs/AUDIO.md`), prontos para importar em outra engine.
 - **Laboratório de playtest** (`opts.lab`, validado por `labDe` em `g.lab`): `crepusculo` 180/120/90 s,
   `fogo` 'atual' (70%/45%), 'a' (80%/60%) ou 'b' (90%/70%), `execucao` 4,5/6/7,5 s, `economia` (sem ela não há
   óbolos, as tarefas não pagam e os mercadores não negociam) e `formato`. Valores fora da lista voltam ao padrão.

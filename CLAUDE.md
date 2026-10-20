@@ -23,6 +23,7 @@ commits em português.
 ## Testes (rode antes de cada commit que mexe no jogo)
     node tools/testar.js 6          # grafo, caminhadas até todos os alvos, partidas de bots com invariantes
     node tools/protocolo.js         # servidor + clientes falsos
+    python3 tools/montar-sons.py    # só se mudar uma gravação ou receita (precisa de ffmpeg ou pip install imageio-ffmpeg numpy)
     node tools/build.js             # gera dist/ritual-reversal.html
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador.js   # Chromium, 13 vistas, sem erros
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/celular.js     # celular emulado com toque
@@ -31,7 +32,7 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.7)
+## Estado atual (v5.8)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -90,6 +91,15 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `interrupcoes`, `lances` e `engano.segundosPresosEmChamariz`; `analisar.js` compara a disputa dos rituais selados
   com os perdidos. Cliente: faixa `#lance`, `piscarMostrador` (uniform `fl`), `progressoInvestigacao`, dedução no eco,
   "Lances da noite" no resultado. Bots, sementes 1000–1199: culto 42% (a queda de 50% veio da v5.6a).
+- v5.8 (notas em `notas/v5.8.md`): sensação de jogo, sem regra nova. Cliente prevê o tiro com `Sim.CADENCIA_HUMANA`
+  (antes 0,3 s contra 0,42 s do servidor); evento 'hit' leva `escudo` (porte no C#). Viewmodel por `PERFIL_ARMA`
+  (coice/mola/ciclo: alavanca `vmCarabina.alav`, tambor `vmRevolver.tambor`, runas do cetro), `VM.pausa` (pausa de
+  impacto), `camFx()`/`SET.camFx`; impacto por superfície (`impactoMundo`, `impactoCorpo`, `jato`); reação do alvo
+  (`A.reac`, `A.pausa`, `A.quedaT`, `A.levantaT` em `animateActor`); ritual como evento (`animarRitual`,
+  `ritualIniciado/Marco/Selado/Fenda/Interrompido`, `O.runas`, `O.rv`). Sons gravados: `assets/sons/fontes` (CC0 e
+  CC BY 3.0, origem em `fontes.json`), `python3 tools/montar-sons.py` gera `assets/sons/jogo/*.mp3`, `client/sons.js`
+  (embutido por build.js e build-mobile.js, servido pelo servidor) e `docs/AUDIO.md`; no cliente `tocar(nome,opções)`
+  com variação, limite de vozes e reserva sintetizada. Ninguém ouviu os sons ainda (ambiente sem áudio).
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

@@ -551,7 +551,7 @@ function reclaimHuman(g,slotIdx,cid,name){
 
 
 // versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
-const VERSAO='5.7', REGISTRO=3;
+const VERSAO='5.8', REGISTRO=3;
 
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.
@@ -718,8 +718,10 @@ function traceShot(g,a,ox,oy,oz,dx,dy,dz,T,forceMiss){ a.veuT=0;
   if(best){ const d=bt, k=clamp(1-(d-CFG.quedaPerto)/(CFG.quedaLonge-CFG.quedaPerto)*(1-CFG.quedaMin),CFG.quedaMin,1);
     damage(g,best,Math.round((head?26:CFG.quedaDano)*k),a); }
 }
+// intervalo entre tiros do jogador (Caçador e Cultista); o cliente usa o mesmo número para prever o tiro
+const CADENCIA_HUMANA=.42;
 function fireHuman(g,a){
-  a.fireCd=.42; const y=a.inp.yaw,p=a.inp.pitch; const dx=-Math.sin(y)*Math.cos(p),dy=Math.sin(p),dz=-Math.cos(y)*Math.cos(p);
+  a.fireCd=CADENCIA_HUMANA; const y=a.inp.yaw,p=a.inp.pitch; const dx=-Math.sin(y)*Math.cos(p),dy=Math.sin(p),dz=-Math.cos(y)*Math.cos(p);
   const T=clamp(a.inp.viewT||g.t,g.t-CFG.compensacaoMax,g.t);
   traceShot(g,a,a.x,1.62,a.z,dx,dy,dz,T,false);
 }
@@ -733,7 +735,7 @@ function fireBotAt(g,a,tx,ty,tz,miss){
 }
 let PID=1;
 function castSigil(g,a,dx,dy,dz){ a.veuT=0;
-  a.lastShotT=g.t; a.ataqueT=g.t; a.fireCd=a.human?.42:(1+rand(0,.3))*difDe(g,a).ritmo; a.fervor-=CFG.sigilCusto;
+  a.lastShotT=g.t; a.ataqueT=g.t; a.fireCd=a.human?CADENCIA_HUMANA:(1+rand(0,.3))*difDe(g,a).ritmo; a.fervor-=CFG.sigilCusto;
   ev(g,{type:'sfx',k:'sigil',x:r2(a.x),z:r2(a.z),a:a.id});
   const rx=Math.cos(a.yaw), rz=-Math.sin(a.yaw); const ox=a.x+rx*.3, oy=1.45, oz=a.z+rz*.3;
   const tx=a.x+dx*40, ty=1.62+dy*40, tz=a.z+dz*40; let vx=tx-ox,vy=ty-oy,vz=tz-oz; const l=Math.hypot(vx,vy,vz)||1; const sp=CFG.sigilVel;
@@ -747,9 +749,10 @@ function damage(g,t,amt,src){
   // executar exige calma: quem leva dano recomeça a execução
   if(CFG.danoInterrompeExecucao&&t.hold.key.startsWith('exe')){ if(t.hold.t>0){ logE(g,'execucao_interrompida',{who:t.name,by:src.name}); if(t.human) ev(g,{type:'feed',msg:'Você levou dano: a execução recomeçou.',cls:'',to:t.id});
       const B=g.actors.find(x=>'exe'+x.id===t.hold.key); if(B&&B.st==='down') B.salvoPor=src.name; } t.hold={key:'',t:0,max:0}; }
-  if(t.shield>0){ const s=Math.min(t.shield,amt); t.shield-=s; amt-=s; }
+  let absorvido=0; if(t.shield>0){ absorvido=Math.min(t.shield,amt); t.shield-=absorvido; amt-=absorvido; }
   t.hp-=amt; t.hitT=g.t; t.att[src.id]=g.t; t.veuT=0; disputaDano(g,t,src,amt);
-  ev(g,{type:'hurt',a:t.id,s:src.id,sx:r2(src.x),sz:r2(src.z)}); ev(g,{type:'hit',a:src.id,alvo:t.id,derrubou:t.hp<=0});
+  // escudo: o golpe foi (todo ou em parte) absorvido pela armadura de osso; o cliente mostra como bloqueio
+  ev(g,{type:'hurt',a:t.id,s:src.id,sx:r2(src.x),sz:r2(src.z)}); ev(g,{type:'hit',a:src.id,alvo:t.id,derrubou:t.hp<=0,escudo:absorvido>0&&amt<=0});
   if(!t.human) t.ai.alert={x:src.x,z:src.z,t:g.t};
   if(t.hp<=0) goDown(g,t,src);
 }
@@ -1505,5 +1508,5 @@ function snapshot(g,role){
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,_botHold:botHold,_doAction:doAction,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,CADENCIA_HUMANA,SETORES,damage,_botHold:botHold,_doAction:doAction,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

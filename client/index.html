@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ritual Reversal — Protótipo v5.7</title>
+<title>Ritual Reversal — Protótipo v5.8</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -125,6 +125,8 @@ body.toque #dica{ top:auto; bottom:14px; right:auto; left:calc(50% - 150px); wid
 @media (prefers-reduced-motion: reduce){ .tool.pulso{ animation:none; } }
 #ammoHint{ position:absolute; left:50%; top:calc(50% + 30px); transform:translateX(-50%); font-size:15px; color:var(--gold-hi); text-shadow:0 1px 2px #000; }
 #hitmark.head{ border-color:var(--gold-hi); } #hitmark.kill{ border-color:var(--crimson-hi); border-width:3px; }
+#hitmark.escudo{ border-color:#a8d4ff; border-style:dashed; } /* bloqueado pela armadura de osso: o golpe não passou */
+#abate{ position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, transparent 55%, rgba(200,20,40,.5) 100%); }
 #hitmark{ position:absolute; left:50%; top:50%; width:30px; height:30px; margin:-15px 0 0 -15px; opacity:0; border:2px solid #fff; transform:rotate(45deg) scale(.6); }
 #interact{ position:absolute; left:50%; top:calc(50% + 46px); transform:translateX(-50%); text-align:center; display:none; }
 #interact svg{ width:46px; height:46px; display:block; margin:0 auto 4px; }
@@ -380,7 +382,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
   <div id="feed"></div><div id="chatJogo"><input id="iChatJogo" maxlength="140" autocomplete="off" placeholder="Mensagem para a sala · Enter envia, Esc cancela" aria-label="Mensagem para a sala"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div><div id="lance" role="status"></div>
-  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="caderno"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div>
+  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="caderno"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div><div id="abate"></div>
   <div id="interact"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/><circle id="ring" cx="23" cy="23" r="19" fill="none" stroke="#f3d58e" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" transform="rotate(-90 23 23)"/></svg><div class="lbl" id="interactLbl"></div><div class="lbl" id="interactLbl2"></div></div>
   <div id="race" class="plate">
     <div class="t" id="raceName">Abside</div>
@@ -426,6 +428,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="sim.js"></script>
+<script src="sons.js"></script>
 <script>
 (function(){
 'use strict';
@@ -591,26 +594,30 @@ function armaCarabina(){ // Soldado: carabina de alavanca, nogueira e aço escur
   const fuste=lateral([[.1,-.028],[.38,-.022],[.4,-.008,.39,.014],[.1,.018]],.04,.007,mad); g.add(fuste);
   const coronha=lateral([[-.06,.04],[-.2,.026],[-.43,.034],[-.46,.03,-.465,.0],[-.46,-.105],[-.43,-.125,-.39,-.12],[-.2,-.068],[-.06,-.034]],.044,.009,mad); g.add(coronha);
   for(const z of [-.3,-.62]){ const b=new THREE.Mesh(new THREE.TorusGeometry(.021,.005,8,20),latao); b.position.set(0,.02,z); g.add(b); }
-  const alav=new THREE.Mesh(new THREE.TorusGeometry(.036,.0065,8,24,Math.PI*1.35),aco); alav.rotation.y=Math.PI/2; alav.rotation.x=Math.PI*.55; alav.position.set(0,-.062,.015); g.add(alav);
+  // a alavanca gira presa na frente do guarda-mato: abre para baixo e volta a cada tiro
+  const alav=new THREE.Mesh(new THREE.TorusGeometry(.036,.0065,8,24,Math.PI*1.35),aco); alav.rotation.y=Math.PI/2; alav.rotation.x=Math.PI*.55;
+  const pivo=new THREE.Group(); pivo.position.set(0,-.034,-.02); g.add(pivo); alav.position.set(0,-.028,.035); pivo.add(alav);
   const gat=new THREE.Mesh(new THREE.BoxGeometry(.006,.028,.008),latao); gat.position.set(0,-.045,.0); gat.rotation.x=.3; g.add(gat);
   const cao=new THREE.Mesh(new THREE.BoxGeometry(.012,.03,.018),aco); cao.position.set(0,.07,.045); cao.rotation.x=-.5; g.add(cao);
   const mira=new THREE.Mesh(new THREE.BoxGeometry(.006,.018,.012),latao); mira.position.set(0,.058,-.73); g.add(mira);
   const alca=new THREE.Mesh(new THREE.BoxGeometry(.03,.014,.01),aco); alca.position.set(0,.06,-.13); g.add(alca);
-  return {g,boca:V3(0,.036,-.755)};
+  return {g,boca:V3(0,.036,-.755),alav:pivo,cao,janela:V3(.02,.045,.03)};
 }
 function armaRevolver(){ // Exorcista: revólver de prata gravada, cabo escuro com cruz
   const g=new THREE.Group(), prata=matMetal(0xc8ccd2,.22,1), escuro=matMetal(0x1c1d20,.45), mad=new THREE.MeshStandardMaterial({color:0x2e1a12,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:.45,emissive:0});
   const arm=lateral([[-.05,-.022],[.075,-.022],[.085,.042],[-.02,.05],[-.05,.03]],.03,.005,prata); g.add(arm);
   const cano=cilZ(.013,.014,.2,prata,20); cano.position.set(0,.03,-.17); g.add(cano);
   const nerv=new THREE.Mesh(new THREE.BoxGeometry(.012,.012,.2),prata); nerv.position.set(0,.045,-.17); g.add(nerv);
-  const tambor=cilZ(.036,.036,.066,prata,28); tambor.position.set(0,.014,-.035); g.add(tambor);
-  for(let k=0;k<6;k++){ const a=k/6*Math.PI*2; const f=cilZ(.006,.006,.068,escuro,8); f.position.set(Math.cos(a)*.034,.014+Math.sin(a)*.034,-.035); g.add(f); }
+  // o tambor gira 1/6 de volta a cada tiro (cilindro e estrias num grupo só, no eixo do cano)
+  const tamborG=new THREE.Group(); tamborG.position.set(0,.014,-.035); g.add(tamborG);
+  const tambor=cilZ(.036,.036,.066,prata,28); tamborG.add(tambor);
+  for(let k=0;k<6;k++){ const a=k/6*Math.PI*2; const f=cilZ(.006,.006,.068,escuro,8); f.position.set(Math.cos(a)*.034,Math.sin(a)*.034,0); tamborG.add(f); }
   const cabo=lateral([[-.05,.012],[.012,-.015],[.0,-.1],[-.012,-.14,-.05,-.135],[-.075,-.07],[-.07,-.005]],.034,.007,mad); g.add(cabo);
   for(const sx of [-1,1]){ const v=new THREE.Mesh(new THREE.BoxGeometry(.002,.05,.009),prata); v.position.set(sx*.021,-.07,.04); g.add(v); const h=new THREE.Mesh(new THREE.BoxGeometry(.002,.009,.03),prata); h.position.set(sx*.021,-.058,.04); g.add(h); }
   const guarda=new THREE.Mesh(new THREE.TorusGeometry(.025,.005,8,20,Math.PI*1.2),prata); guarda.rotation.y=Math.PI/2; guarda.rotation.x=Math.PI*.6; guarda.position.set(0,-.036,.0); g.add(guarda);
   const cao=new THREE.Mesh(new THREE.BoxGeometry(.01,.03,.016),escuro); cao.position.set(0,.058,.035); cao.rotation.x=-.6; g.add(cao);
   const mira=new THREE.Mesh(new THREE.BoxGeometry(.004,.014,.01),prata); mira.position.set(0,.05,-.265); g.add(mira);
-  return {g,boca:V3(0,.03,-.28)};
+  return {g,boca:V3(0,.03,-.28),tambor:tamborG,cao};
 }
 function cetroOsso(cor){ // Cultistas: cetro de vértebras com uma brasa presa em garras de osso
   const g=new THREE.Group(), osso=new THREE.MeshStandardMaterial({color:0xd8caa6,roughness:.62,normalMap:TEX.wall.normalMap,emissive:0}), ferro=matMetal(0x2a2226,.5,.8);
@@ -1346,7 +1353,11 @@ function buildAltars(){
           float onda=fl*banda(r,R-.2+(1.0-fl)*.5,R+.12+(1.0-fl)*.5); c=mix(c,vec4(cF,.9),clamp(onda,0.0,1.0)*.6);
           gl_FragColor=vec4(c.rgb,c.a*op); if(gl_FragColor.a<.01) discard; }`}));
     dial.rotation.x=-Math.PI/2; dial.position.y=.07; dial.renderOrder=3; g.add(dial);
-    return {circle,sealRing,beam,L,em,es,rm,bm,dial,au:null};
+    // runas do ritual: oito em volta do círculo, cada uma com material próprio (acendem uma a uma, tremem sob o selo,
+    // convergem no Farol e explodem na Fenda). Só aparecem com o ritual que este jogador pode ver.
+    const runas=[]; for(let k=0;k<8;k++){ const sm=new THREE.SpriteMaterial({map:RT.rune,color:0xff3a5a,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false,fog:false});
+      const sp=new THREE.Sprite(sm), a=k/8*Math.PI*2+.2; sp.position.set(Math.cos(a)*(R+.25),.4,Math.sin(a)*(R+.25)); sp.scale.set(.5,.5,1); sp.userData={a,bx:sp.position.x,bz:sp.position.z,flash:0,choque:0}; sp.visible=false; g.add(sp); runas.push(sp); }
+    return {circle,sealRing,beam,L,em,es,rm,bm,dial,runas,rv:{st:null,prog:0,seal:0,contest:0},au:null};
   });
 }
 // ---- characters by class ----
@@ -1439,7 +1450,10 @@ function animateActor(m,a,x,z,yaw,dt,now){
   A.spd=lerp(A.spd,Math.min(v,8),.18);
   const st=a.st;
   if(st==='dead'&&A.prevSt!=='dead'){ A.dieT=0; A.deitado=A.prevSt==='down'; } if(st!=='dead'&&A.dieT>=0){ A.dieT=-1; desvanecer(U,1); }
+  if(st==='down'&&A.prevSt==='alive'){ A.quedaT=0; A.reac=null; } else if(st==='alive'&&A.prevSt==='down'){ A.levantaT=0; } // transições: cair e levantar têm movimento, não estalam
+  if(st!=='alive'&&st!=='down'){ A.quedaT=A.levantaT=null; A.reac=null; }
   A.prevSt=st;
+  A.pausa=Math.max(0,(A.pausa||0)-dt); const dtA=A.pausa>0?0:dt;   // pausa de impacto: o passo congela por 50 ms no golpe
   A.kick=Math.max(0,A.kick-dt*6); A.cast=Math.max(0,A.cast-dt*3); A.flinch=Math.max(0,A.flinch-dt*5);
   for(const f of U.mats){ if(A.flinch>0){ f.m.emissive.setHex(0x6a0a18); f.m.emissiveIntensity=A.flinch*.75; } else { f.m.emissive.setHex(f.e); f.m.emissiveIntensity=f.i; } }
   m.position.set(x,0,z); m.rotation.y=yaw; m.visible=true;
@@ -1485,15 +1499,17 @@ function animateActor(m,a,x,z,yaw,dt,now){
   // ---------- vivo ou caído: calcula a pose alvo e chega nela suavemente ----------
   for(const n of JUNTAS){ const o=U[n]; if(o) (o._p||(o._p=new THREE.Vector3())).set(o.rotation.x,o.rotation.y,o.rotation.z); }
   const pb=B.position.y;
-  B.rotation.set(0,0,0); B.position.y=0; U.torso.rotation.set(0,0,0); U.head.rotation.set(0,0,0); U.legL.rotation.set(0,0,0); U.legR.rotation.set(0,0,0);
+  B.rotation.set(0,0,0); B.position.set(0,0,0); U.torso.rotation.set(0,0,0); U.head.rotation.set(0,0,0); U.legL.rotation.set(0,0,0); U.legR.rotation.set(0,0,0);
   if(U.gun) U.gun.rotation.set(U.cetro?0:-Math.PI/2,0,0);
   if(st==='down'){
     B.rotation.x=-1.42; B.position.y=.08; const c=Math.sin(t*2.2+a.id);
+    if(A.quedaT!=null&&A.quedaT<.75){ A.quedaT+=dt; const k=queda(clamp(A.quedaT/.6,0,1)); // joelhos cedem, o corpo tomba e quica
+      B.rotation.x=-1.42*k; B.position.y=.08*k-.22*Math.sin(Math.min(1,A.quedaT/.25)*Math.PI*.5)*(1-k); U.legL.rotation.x=-.9*(1-k); U.legR.rotation.x=-.5*(1-k); A.semSuave=true; }
     U.armL.rotation.set(2.4+c*.35,0,.15); U.armR.rotation.set(2.4-c*.35,0,-.15); U.legL.rotation.x=c*.2; U.legR.rotation.x=-c*.2; U.head.rotation.x=.5;
     if(U.flash) U.flash.material.opacity=0;
   } else {
     const moving=A.spd>.5, pitch=a.pitch||0;
-    if(moving) A.phase+=dt*(3.2+A.spd*1.35);
+    if(moving) A.phase+=dtA*(3.2+A.spd*1.35);
     const amp=moving?Math.min(.75,A.spd*.12):0, sw=Math.sin(A.phase)*amp;
     U.legL.rotation.x=sw; U.legR.rotation.x=-sw;
     m.position.y=moving?Math.abs(Math.sin(A.phase))*.05:0;
@@ -1518,8 +1534,19 @@ function animateActor(m,a,x,z,yaw,dt,now){
       if(U.rune) U.rune.material.color.setHex(a.runeT>0?0xffd0ff:0x9a4ad0);
     }
     if(a.stunT>0){ U.torso.rotation.z=Math.sin(t*14)*.12; U.head.rotation.z=Math.sin(t*11)*.2; }
+    // reação ao golpe: o tronco cede na direção do tiro, o corpo dá meio passo para trás, a cabeça estala no tiro na
+    // cabeça e os braços abrem; sobe em 35 ms e assenta em ~0,3 s. Só visual: a caixa de colisão é a do servidor.
+    B.position.x=0; B.position.z=0;
+    if(A.reac){ const r=A.reac; r.t+=dt; if(r.t>.65) A.reac=null; else {
+      const e=r.t<.035?r.t/.035:Math.exp(-(r.t-.035)*7.5), f=r.forte*e; let px=0,pz=1;
+      if(r.x0!=null){ const dx=x-r.x0, dz=z-r.z0, L=Math.hypot(dx,dz)||1, c=Math.cos(yaw), sn=Math.sin(yaw); px=(dx*c-dz*sn)/L; pz=(dx*sn+dz*c)/L; }
+      U.torso.rotation.x+=pz*.42*f; U.torso.rotation.z+=-px*.32*f; B.position.x=px*.07*f; B.position.z=pz*.07*f;
+      U.head.rotation.x+=(r.cab?.75:.25)*pz*f; U.head.rotation.z+=-px*(r.cab?.4:.15)*f;
+      U.armL.rotation.z+=.3*f; U.armR.rotation.z-=.3*f; U.armL.rotation.x-=.25*f; U.armR.rotation.x-=.15*f; } }
+    if(A.levantaT!=null&&A.levantaT<.5){ A.levantaT+=dt; const k=suave(clamp(A.levantaT/.45,0,1)); // reanimado: levanta apoiando nos joelhos
+      B.rotation.x=-1.42*(1-k); B.position.y=-.3*Math.sin(k*Math.PI)*.6; U.legL.rotation.x-=1.1*Math.sin(k*Math.PI); A.semSuave=true; }
   }
-  const kR=1-Math.exp(-dt*16), kB=1-Math.exp(-dt*9);
+  const kR=1-Math.exp(-dt*(A.reac?38:16)), kB=A.semSuave?1:1-Math.exp(-dt*9); A.semSuave=false;
   for(const n of JUNTAS){ const o=U[n]; if(!o||!o._p) continue; const k=n==='body'?kB:kR;
     o.rotation.set(o._p.x+(o.rotation.x-o._p.x)*k,o._p.y+(o.rotation.y-o._p.y)*k,o._p.z+(o.rotation.z-o._p.z)*k); }
   B.position.y=pb+(B.position.y-pb)*kB;
@@ -1578,13 +1605,41 @@ function efeitoHabilidade(e,meu){
     const col=new THREE.Mesh(new THREE.CylinderGeometry(.6,1.4,9,20,1,true),new THREE.MeshBasicMaterial({map:RT.beam,color:0xf3d58e,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));
     if(!meu){ col.position.set(x,4.5,z); efeito(col,.8,(o,k)=>{ o.material.opacity=(1-k)*.8; o.scale.set(1+k,1,1+k); }); }
     particulas(x,.5,z,meu?14:30,0xf3d58e,3.5,.9,-1,1.5); clarao(x,2,z,0xf3d58e,meu?2:6); }
-  for(const id of e.alvos||[]){ const mm=actorMeshes.get(id); if(mm) mm.userData.anim.flinch=1; }
+  for(const id of e.alvos||[]){ const mm=actorMeshes.get(id); if(mm){ const A=mm.userData.anim; A.flinch=1; A.reac={t:0,x0:x,z0:z,forte:F==='empurrao'?1.6:.7}; A.pausa=.05; } }
 }
+// ---------- impactos ----------
+// Jato de partículas numa direção (sangue saindo pelo lado oposto ao tiro, lascas voltando da parede)
+function jato(x,y,z,dx,dy,dz,n,hex,vel,abre,vida,grav){ const c=new THREE.Color(hex);
+  for(let k=0;k<n;k++){ const i=PART.i; PART.i=(PART.i+1)%PART.N; PART.pos[i*3]=x; PART.pos[i*3+1]=y; PART.pos[i*3+2]=z;
+    const sp=vel*(.5+Math.random()*.8); PART.vel[i*3]=dx*sp+rand(-abre,abre); PART.vel[i*3+1]=dy*sp+rand(-abre,abre)+abre*.4; PART.vel[i*3+2]=dz*sp+rand(-abre,abre);
+    PART.life[i]=PART.max[i]=vida*(.6+Math.random()*.6); PART.grav[i]=grav; PART.base[i*3]=c.r; PART.base[i*3+1]=c.g; PART.base[i*3+2]=c.b; } }
+// onde a bala bateu: chão de pedra ou de terra, paredes de pedra da catedral, troncos e madeira lá fora
+function superficieImpacto(x,y,z){ if(y<.1){ const s=superficie(x,z); return s==='pedra'?'pedra':'terra'; } return Sim.naCatedral(x,z)?'pedra':'madeira'; }
+const COR_IMPACTO={pedra:[0x8a8478,0xffc070],madeira:[0x6a4628,0xb08050],terra:[0x4a3a28,0x7a6040]};
+function impactoMundo(x,y,z,ux,uy,uz){ const sup=superficieImpacto(x,y,z), C=COR_IMPACTO[sup];
+  jato(x,y,z,-ux,-uy+.3,-uz,sup==='terra'?14:9,C[0],sup==='terra'?2.2:1.6,.5,.7,sup==='terra'?7:3);   // poeira e lascas voltam na direção de quem atirou
+  if(sup==='pedra'){ jato(x,y,z,-ux,-uy,-uz,7,C[1],5,1.6,.22,12); clarao(x,y,z,0xffb070,1.1); }        // faísca só na pedra
+  else particulas(x,y,z,4,C[1],1.2,.6,6,.6);
+  SFX.impacto(sup,x,z); }
+function impactoCorpo(e,ux,uy,uz){ const alvo=V.actors.find(b=>b.id===e.alvo), osso=alvo&&alvo.shield>0;
+  if(osso){ jato(e.x1,e.y1,e.z1,-ux,.2,-uz,10,0xd8caa6,2.5,.8,.4,8); jato(e.x1,e.y1,e.z1,-ux,0,-uz,5,0xfff0c0,4,1.2,.15,6); clarao(e.x1,e.y1,e.z1,0xffe0a0,1.4); } // a armadura de osso segura: lascas, sem sangue
+  else { jato(e.x1,e.y1,e.z1,ux,uy+.15,uz,e.cab?20:12,0x8a0f20,2.6,.6,.5,9); particulas(e.x1,e.y1,e.z1,e.cab?10:5,0xb01830,1.4,.35,6,.4);   // sangue sai pelo outro lado
+    if(alvo&&alvo.team==='C') particulas(e.x1,e.y1,e.z1,4,0xb050ff,.8,.6,-1,.5); if(e.cab) particulas(e.x1,e.y1,e.z1,8,0xffd070,3,.25,4,1); }
+  const mm=actorMeshes.get(e.alvo); if(mm){ const A=mm.userData.anim; A.flinch=1; A.golpe={x:e.x0,z:e.z0}; A.reac={t:0,x0:e.x0,z0:e.z0,forte:e.cab?1.35:1,cab:!!e.cab}; } }
+// esfera que incha e some (estouro de sigilo, pulso de ritual): uma malha, um material, descartados no fim
+const ESFERA_GEO=new THREE.SphereGeometry(1,20,14); COMPARTILHADAS.add(ESFERA_GEO);
+// de perto ela fica quase transparente e só por dentro (BackSide): marca o estouro sem tapar a tela nem esconder ninguém
+function esferaChoque(x,y,z,cor,raio,dur){ const m=new THREE.Mesh(ESFERA_GEO,new THREE.MeshBasicMaterial({color:cor,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false,side:THREE.BackSide}));
+  const d=Math.hypot(x-camera.position.x,y-camera.position.y,z-camera.position.z); if(d<raio*1.3+.5){ m.material.dispose(); return; } // por dentro ela pintaria a tela inteira
+  const perto=clamp((d-raio)/5,.15,1);
+  m.position.set(x,y,z); efeito(m,dur,(o,k)=>{ const r=.15+raio*(1-Math.pow(1-k,3)); o.scale.setScalar(r); o.material.opacity=(1-k)*(1-k)*.32*perto; }); }
+// queda confirmada: as bordas da tela pulsam uma vez em carmim
+let abateT=0; function flashAbate(){ abateT=SET.suave?.12:.22; }
 const HAB_TXT={runa:()=>'Runa: canalização +20% por 8 s', veu:()=>'Véu: você é só uma silhueta por 5 s', sal:()=>'Círculo de Sal deixado no chão por 60 s',
   empurrao:n=>n?`Empurrão: ${n} ${n>1?'atingidos':'atingido'}`:'Empurrão: ninguém no alcance (4 m à frente)',
   flash:n=>n?`Flash: ${n} ${n>1?'cegados':'cegado'} por 1,5 s`:'Flash: ninguém no cone (14 m à frente)',
   purificacao:n=>n?`Purificação: ${n} ${n>1?'atordoados':'atordoado'} por 1 s`:'Purificação: ninguém a 6 m'};
-let habNotaT=0;
+let habNotaT=0, gotaT=4;
 function notaHab(txt,cor){ const el=$('#habNota'); el.textContent=txt; el.style.color=cor; el.classList.add('on'); habNotaT=1.8; }
 function clarao(x,y,z,hex,forca){ if(!luzImpacto) return; luzImpacto.position.set(x,y,z); luzImpacto.color.setHex(hex); luzImpacto.intensity=forca; }
 function updateParticles(dt){
@@ -1624,11 +1679,38 @@ function buildViewmodels(){
 // ================= AUDIO =================
 const AU={ctx:null,ok:false};
 function audioInit(){ if(AU.ctx){ if(AU.ctx.state==='suspended') AU.ctx.resume(); return; }
-  try{ const C=window.AudioContext||window.webkitAudioContext; AU.ctx=new C(); AU.master=AU.ctx.createGain(); AU.master.gain.value=.8; AU.master.connect(AU.ctx.destination);
+  try{ const C=window.AudioContext||window.webkitAudioContext; AU.ctx=new C(); AU.master=AU.ctx.createGain(); AU.master.gain.value=SET.vol;
+    // limitador no fim da cadeia: vários tiros, o ritual e o sino juntos não estouram
+    AU.comp=AU.ctx.createDynamicsCompressor(); AU.comp.threshold.value=-9; AU.comp.knee.value=8; AU.comp.ratio.value=5; AU.comp.attack.value=.003; AU.comp.release.value=.22;
+    AU.master.connect(AU.comp); AU.comp.connect(AU.ctx.destination);
     const b=AU.ctx.createBuffer(1,AU.ctx.sampleRate*2,AU.ctx.sampleRate),d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; AU.noise=b; AU.ok=true;
     const src=AU.ctx.createBufferSource(); src.buffer=AU.noise; src.loop=true; const lp=AU.ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=260; const g=AU.ctx.createGain(); g.gain.value=.09; AU.amb=g;
     const lfo=AU.ctx.createOscillator(); lfo.frequency.value=.07; const lg=AU.ctx.createGain(); lg.gain.value=120; lfo.connect(lg); lg.connect(lp.frequency); lfo.start(); src.connect(lp); lp.connect(g); g.connect(AU.master); src.start();
+    carregarAmostras();
   }catch(e){ AU.ok=false; } }
+// ================= SONS GRAVADOS =================
+// Gravações reais (CC0 e CC BY 3.0, ver docs/AUDIO.md), montadas por tools/montar-sons.py e embutidas em sons.js.
+// Cada som tem variações; o jogo sorteia uma diferente da última, com ±4% de altura e ±8% de volume, limita quantas
+// vozes do mesmo som tocam juntas e ignora repetições em menos de 25 ms (evento repetido não vira eco). Sem a gravação
+// (arquivo faltando ou decodificação falhou), o som sintetizado antigo toca no lugar.
+const AMOS={buf:{},idx:{},vozes:{},ult:{},carregando:false,prontos:0,falhas:0};
+function decodificar(ab){ return new Promise((ok,erro)=>{ try{ const p=AU.ctx.decodeAudioData(ab,ok,erro); if(p&&p.catch) p.catch(erro); }catch(e){ erro(e); } }); }
+function semSilencioInicial(b){ const d=b.getChannelData(0), lim=1e-3; let i=0; const max=Math.min(d.length,Math.floor(b.sampleRate*.08)); while(i<max&&Math.abs(d[i])<lim) i++;
+  if(i<32) return b; const n=b.length-i, nb=AU.ctx.createBuffer(1,n,b.sampleRate); nb.getChannelData(0).set(d.subarray(i)); return nb; } // o atraso do MP3 não pode atrasar o tiro
+function carregarAmostras(){ if(AMOS.carregando||!AU.ok||!window.SONS_RR) return; AMOS.carregando=true;
+  for(const [nome,lista] of Object.entries(window.SONS_RR)){ AMOS.buf[nome]=[]; lista.forEach((b64,i)=>{ const bin=atob(b64), u=new Uint8Array(bin.length); for(let k=0;k<bin.length;k++) u[k]=bin.charCodeAt(k);
+    decodificar(u.buffer).then(b=>{ AMOS.buf[nome][i]=semSilencioInicial(b); AMOS.prontos++; }).catch(()=>{ AMOS.falhas++; }); }); } }
+// tocar(nome,{x,z,raio,vol,taxa,varia,max,atraso,destino}): devolve false se a gravação não existe (o chamador usa o som antigo)
+function tocar(nome,o){ o=o||{}; const L=AMOS.buf[nome]; if(!AU.ok||!L||!L.some(Boolean)) return false;
+  const c=AU.ctx, agora=c.currentTime, s=o.x==null?{g:1,p:0,d:0}:spatial(o.x,o.z,o.raio||40); if(s.g<.01) return true;
+  if(agora-(AMOS.ult[nome]||-9)<.025&&!o.repetir) return true; AMOS.ult[nome]=agora;
+  const vz=AMOS.vozes[nome]||(AMOS.vozes[nome]=[]); for(let i=vz.length-1;i>=0;i--) if(vz[i].fim<agora) vz.splice(i,1);
+  if(vz.length>=(o.max||4)){ const v=vz.shift(); try{ v.g.gain.setTargetAtTime(0,agora,.015); v.src.stop(agora+.06); }catch(e){} }
+  const disp=L.map((b,i)=>b?i:-1).filter(i=>i>=0); let i=disp[Math.floor(Math.random()*disp.length)]; if(disp.length>1&&i===AMOS.idx[nome]) i=disp[(disp.indexOf(i)+1)%disp.length]; AMOS.idx[nome]=i;
+  const b=L[i], src=c.createBufferSource(); src.buffer=b; const va=o.varia==null?.04:o.varia; src.playbackRate.value=(o.taxa||1)*(1+(Math.random()*2-1)*va);
+  const g=outNode((o.vol==null?1:o.vol)*s.g*(1+(Math.random()*2-1)*.08),s.p);
+  let ent=g; if(o.x!=null&&s.d>8){ const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=clamp(16000*Math.pow(1-s.d/(o.raio||40),1.6)+700,700,16000); lp.connect(g); ent=lp; } // o ar abafa o que vem de longe
+  src.connect(ent); const t0=agora+(o.atraso||0); src.start(t0); const fim=t0+b.duration/src.playbackRate.value; vz.push({src,g,fim}); return true; }
 // ================= MÚSICA DA TELA INICIAL =================
 // Órgão em ré menor (Rém, Si♭, Solm, Lá), coro em "ah" e um sino a cada volta, tudo sintetizado, com eco de nave.
 // Toca só fora da partida; o primeiro clique ou tecla da página libera o áudio.
@@ -1657,7 +1739,7 @@ function atualizarMusica(dt){ if(!AU.ok) return; const alvo=!MODE&&SET.musica!==
   const agora=AU.ctx.currentTime; if(alvo&&agora>MUS.prox-.4){ if(MUS.prox<agora) MUS.prox=agora+.1; musicaAcorde(MUS.prox); MUS.prox+=6.4; } }
 ['pointerdown','keydown'].forEach(t=>document.addEventListener(t,function liberaAudio(){ audioInit(); document.removeEventListener(t,liberaAudio); },{once:true}));
 function spatial(x,z,radius){ const dx=x-camera.position.x,dz=z-camera.position.z,d=Math.hypot(dx,dz),yaw=camera.rotation.y,rx=Math.cos(yaw),rz=-Math.sin(yaw);
-  const p=d>.5?clamp((dx*rx+dz*rz)/d,-1,1):0; let g=clamp(1-d/radius,0,1); g*=g; if(g>0) g*=Sim.occlusion(camera.position.x,camera.position.z,x,z); return {g,p}; }
+  const p=d>.5?clamp((dx*rx+dz*rz)/d,-1,1):0; let g=clamp(1-d/radius,0,1); g*=g; if(g>0) g*=Sim.occlusion(camera.position.x,camera.position.z,x,z); return {g,p,d}; }
 function outNode(gain,pan){ const g=AU.ctx.createGain(); g.gain.value=gain; const p=AU.ctx.createStereoPanner(); p.pan.value=pan; g.connect(p); p.connect(AU.master); return g; }
 function sfxNoise(x,z,radius,dur,type,freq,q,vol,dry){ if(!AU.ok) return; const s=dry?{g:1,p:(Math.random()<.5?-1:1)*rand(.6,1)}:(x==null?{g:1,p:0}:spatial(x,z,radius)); if(s.g<.01) return;
   const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(); src.buffer=AU.noise; const f=c.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q||1;
@@ -1666,44 +1748,61 @@ function sfxNoise(x,z,radius,dur,type,freq,q,vol,dry){ if(!AU.ok) return; const 
 function sfxTone(x,z,radius,f0,f1,dur,type,vol){ if(!AU.ok) return; const s=x==null?{g:1,p:0}:spatial(x,z,radius); if(s.g<.01) return;
   const c=AU.ctx,t=c.currentTime,o=c.createOscillator(); o.type=type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
   const g=outNode(0,s.p); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol*s.g,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); o.start(t); o.stop(t+dur+.05); }
+const armaDe=a=>{ const at=a!=null&&V?V.actors.find(b=>b.id===a):null; return at&&at.cls==='exorcista'?'revolver':'carabina'; };
 const SFX={
-  shot:(x,z)=>{ sfxNoise(x,z,55,.28,'lowpass',1600,.7,.9); sfxTone(x,z,55,160,50,.18,'sine',.6); },
-  sigil:(x,z)=>{ sfxTone(x,z,35,720,160,.35,'triangle',.35); sfxNoise(x,z,35,.3,'bandpass',2400,3,.25); },
+  shot:(x,z,a,meu)=>{ const arma=meu?(me()&&me().cls==='exorcista'?'revolver':'carabina'):armaDe(a);
+    if(tocar('tiro_'+arma,meu?{vol:.85,max:3}:{x,z,raio:55,vol:.95,max:6})) return;
+    sfxNoise(x,z,55,.28,'lowpass',1600,.7,.9); sfxTone(x,z,55,160,50,.18,'sine',.6); },
+  sigil:(x,z,a,meu)=>{ if(tocar('sigilo',meu?{vol:.7,max:3}:{x,z,raio:35,vol:.85,max:5})) return; sfxTone(x,z,35,720,160,.35,'triangle',.35); sfxNoise(x,z,35,.3,'bandpass',2400,3,.25); },
   step:(x,z)=>passo(x,z,16,.55),
   passoForte:(x,z)=>passo(x,z,24,.75,true),
   mystep:()=>passo(null,null,1,.12),
-  hit:()=>sfxTone(null,null,1,1400,900,.07,'square',.12), hurt:()=>sfxTone(null,null,1,220,90,.25,'sawtooth',.2),
+  hit:()=>{ tocar('impacto_corpo',{vol:.5,max:2}); sfxTone(null,null,1,1900,1500,.045,'sine',.07); }, // a confirmação de acerto leva o golpe gravado e um tique curto
+  hurt:()=>{ if(!tocar('dor',{vol:.75,max:2})) sfxTone(null,null,1,220,90,.25,'sawtooth',.2); },
+  bloqueio:()=>{ if(!tocar('impacto_pedra',{vol:.6,taxa:1.3,max:2})) sfxTone(null,null,1,2600,2300,.06,'square',.08); sfxTone(null,null,1,3100,2900,.09,'sine',.05); },
   presage:()=>{ sfxTone(null,null,1,78,26,3.2,'sine',.9); if(AU.ok){ const c=AU.ctx,t=c.currentTime,src=c.createBufferSource(); src.buffer=AU.noise; const f=c.createBiquadFilter(); f.type='bandpass'; f.Q.value=5; f.frequency.setValueAtTime(3200,t); f.frequency.exponentialRampToValueAtTime(400,t+2.2); const g=outNode(0,0); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35,t+2); g.gain.linearRampToValueAtTime(0,t+2.3); src.connect(f); f.connect(g); src.start(t); src.stop(t+2.4);} },
+  evp:(x,z)=>tocar('evp',{x,z,raio:30,vol:.8}),
   whisper:(x,z,dry)=>{ for(let i=0;i<4;i++) setTimeout(()=>sfxNoise(x,z,26,.35,'bandpass',rand(900,2600),6,.5,dry),i*170); },
   ping:v=>sfxTone(null,null,1,400+v*900,300+v*700,.35,'sine',.25),
-  sealed:()=>[523,659,784].forEach((f,i)=>setTimeout(()=>sfxTone(null,null,1,f,f,1.4,'sine',.22),i*90)),
-  doom:()=>{ [98,116,138].forEach(f=>sfxTone(null,null,1,f,f*.97,2.6,'sawtooth',.14)); sfxTone(null,null,1,60,30,2.5,'sine',.7); },
+  sealed:()=>{ if(tocar('farol',{vol:.9,max:1})) return; [523,659,784].forEach((f,i)=>setTimeout(()=>sfxTone(null,null,1,f,f,1.4,'sine',.22),i*90)); },
+  doom:()=>{ if(tocar('fenda',{vol:1,max:1})) return; [98,116,138].forEach(f=>sfxTone(null,null,1,f,f*.97,2.6,'sawtooth',.14)); sfxTone(null,null,1,60,30,2.5,'sine',.7); },
   heart:()=>{ sfxTone(null,null,1,70,40,.14,'sine',.8); setTimeout(()=>sfxTone(null,null,1,62,38,.14,'sine',.6),190); },
-  corvo:(x,z)=>{ for(let k=0;k<2;k++) setTimeout(()=>{ sfxTone(x,z,40,560,380,.22,'sawtooth',.16); sfxNoise(x,z,40,.2,'bandpass',1400,3,.25); },k*260); for(let k=0;k<6;k++) setTimeout(()=>sfxNoise(x,z,26,.06,'lowpass',500,1,.3),k*90); },
-  bell:()=>[180,362,544].forEach((f,i)=>sfxTone(null,null,1,f,f,5,'sine',.08/(i+1))),
-  sinoGrande:()=>{ [.5,1,1.19,1.56,2,2.51].forEach((r,i)=>sfxTone(null,null,1,98*r,98*r*.995,7-i*.8,'sine',[.22,.18,.1,.08,.06,.04][i])); sfxNoise(null,null,1,.15,'bandpass',900,2,.15); }, // sino grave com parciais de bronze
+  corvo:(x,z)=>{ if(tocar('corvo',{x,z,raio:40,vol:.8,max:3,varia:.06})) return; for(let k=0;k<2;k++) setTimeout(()=>{ sfxTone(x,z,40,560,380,.22,'sawtooth',.16); sfxNoise(x,z,40,.2,'bandpass',1400,3,.25); },k*260); for(let k=0;k<6;k++) setTimeout(()=>sfxNoise(x,z,26,.06,'lowpass',500,1,.3),k*90); },
+  bell:()=>{ if(tocar('sino',{vol:.5,max:1,varia:.01})) return; [180,362,544].forEach((f,i)=>sfxTone(null,null,1,f,f,5,'sine',.08/(i+1))); },
+  sinoGrande:()=>{ if(tocar('sino_grande',{vol:.85,max:2,varia:.01})) return; [.5,1,1.19,1.56,2,2.51].forEach((r,i)=>sfxTone(null,null,1,98*r,98*r*.995,7-i*.8,'sine',[.22,.18,.1,.08,.06,.04][i])); sfxNoise(null,null,1,.15,'bandpass',900,2,.15); }, // sino grave com parciais de bronze
   batida:p=>{ sfxTone(null,null,1,70,32,.35,'sine',.35+p*.3); sfxNoise(null,null,1,.12,'lowpass',180,1,.25); },
   click:()=>sfxTone(null,null,1,900,700,.05,'square',.08),
-  collect:(x,z)=>sfxNoise(x,z,26,.5,'bandpass',700,2,.5),
-  flare:(x,z)=>sfxNoise(x,z,20,.6,'highpass',2000,1,.3),
+  collect:(x,z)=>{ if(!tocar('coleta',{x,z,raio:26,vol:.8})) sfxNoise(x,z,26,.5,'bandpass',700,2,.5); },
+  flare:(x,z)=>{ if(!tocar('flare',{x,z,raio:30,vol:.7})) sfxNoise(x,z,20,.6,'highpass',2000,1,.3); },
   rune:(x,z)=>sfxTone(x,z,30,300,900,.6,'triangle',.3),
   // selo começando no ritual do culto: dois toques dissonantes, vindos do altar
-  selando:(x,z)=>{ [[466,440],[311,294]].forEach(([a,b],i)=>setTimeout(()=>sfxTone(x,z,400,a,b,.9,'sawtooth',.06),i*260)); },
+  selando:(x,z)=>{ if(tocar('selando',{x,z,raio:400,vol:.9,max:1})) return; [[466,440],[311,294]].forEach(([a,b],i)=>setTimeout(()=>sfxTone(x,z,400,a,b,.9,'sawtooth',.06),i*260)); },
   // eco do coro: três vozes graves vindas do setor do ritual, audíveis de longe
   eco:(x,z)=>[196,247,294].forEach((f,i)=>setTimeout(()=>sfxTone(x,z,320,f,f*.985,2.6,'triangle',.11),i*140)),
-  arrasto:(x,z)=>{ sfxTone(x,z,45,70,40,1.8,'sawtooth',.25); setTimeout(()=>sfxTone(x,z,45,520,180,1.2,'triangle',.12),300); },
-  push:(x,z)=>{ sfxNoise(x,z,28,.35,'lowpass',300,1,.9); sfxTone(x,z,28,90,40,.3,'sine',.6); },
+  arrasto:(x,z)=>{ if(tocar('transferencia',{x,z,raio:45,vol:.8,max:2})) return; sfxTone(x,z,45,70,40,1.8,'sawtooth',.25); setTimeout(()=>sfxTone(x,z,45,520,180,1.2,'triangle',.12),300); },
+  push:(x,z)=>{ if(tocar('empurrao',{x,z,raio:28,vol:.9})) return; sfxNoise(x,z,28,.35,'lowpass',300,1,.9); sfxTone(x,z,28,90,40,.3,'sine',.6); },
   flash:(x,z)=>{ sfxNoise(x,z,30,.4,'highpass',3000,1,.7); sfxTone(x,z,30,2400,1800,.25,'sine',.2); },
   purify:(x,z)=>[392,523].forEach(f=>sfxTone(x,z,30,f,f*1.5,.7,'sine',.25)),
-  reload:(x,z)=>{ sfxNoise(x,z,18,.05,'highpass',2400,1,.35); setTimeout(()=>sfxNoise(x,z,18,.06,'bandpass',1400,4,.45),420); setTimeout(()=>{ sfxNoise(x,z,18,.05,'highpass',2800,1,.4); sfxTone(x,z,18,900,700,.05,'square',.06); },1150); },
+  reload:(x,z,a,meu)=>{ const o=x==null?{vol:.7}:{x,z,raio:18,vol:.7}; const L=AMOS.buf.recarga;
+    if(L&&L.length===3&&L.every(Boolean)&&AU.ok){ // abrir, cartuchos, fechar: no ritmo da animação da recarga (1,6 s)
+      const tocaParte=(i,at)=>{ const src=AU.ctx.createBufferSource(); src.buffer=L[i]; src.playbackRate.value=1+(Math.random()-.5)*.06; const s=x==null?{g:1,p:0}:spatial(x,z,18); if(s.g<.01) return; const g=outNode((o.vol)*s.g,s.p); src.connect(g); src.start(AU.ctx.currentTime+at); };
+      tocaParte(0,0); [.42,.62,.82].forEach(t=>tocaParte(1,t)); tocaParte(2,1.15); if(armaDe(a)==='revolver'||(meu&&me()&&me().cls==='exorcista')) tocar('cao',Object.assign({atraso:1.38},o)); return; }
+    sfxNoise(x,z,18,.05,'highpass',2400,1,.35); setTimeout(()=>sfxNoise(x,z,18,.06,'bandpass',1400,4,.45),420); setTimeout(()=>{ sfxNoise(x,z,18,.05,'highpass',2800,1,.4); sfxTone(x,z,18,900,700,.05,'square',.06); },1150); },
   vazio:()=>sfxTone(null,null,1,1800,1600,.03,'square',.07),
-  cabeca:()=>{ sfxTone(null,null,1,2400,2400,.12,'sine',.18); sfxTone(null,null,1,3600,3600,.08,'sine',.08); },
-  derrubou:()=>{ sfxTone(null,null,1,180,60,.35,'sine',.5); setTimeout(()=>sfxTone(null,null,1,660,660,.5,'triangle',.12),60); },
-  quebra:()=>{ sfxTone(null,null,1,980,120,.32,'sawtooth',.16); setTimeout(()=>sfxTone(null,null,1,1480,1400,.45,'triangle',.11),70); setTimeout(()=>sfxTone(null,null,1,740,700,.6,'triangle',.08),160); },
-  interrompido:()=>{ sfxTone(null,null,1,320,90,.5,'sawtooth',.14); },
-  lance:()=>{ sfxTone(null,null,1,523,523,.45,'triangle',.1); setTimeout(()=>sfxTone(null,null,1,784,784,.8,'triangle',.11),150); },
+  cabeca:()=>{ tocar('impacto_corpo',{vol:.6,taxa:1.15,max:2}); sfxTone(null,null,1,2400,2400,.12,'sine',.18); sfxTone(null,null,1,3600,3600,.08,'sine',.08); },
+  derrubou:()=>{ if(!tocar('derrubou',{vol:.85,max:1})) sfxTone(null,null,1,180,60,.35,'sine',.5); setTimeout(()=>sfxTone(null,null,1,660,660,.5,'triangle',.1),60); },
+  quebra:(tipo,x,z)=>{ if(tocar(tipo==='canal'?'canal_quebra':'selo_quebra',{vol:.9,max:2})) return; sfxTone(null,null,1,980,120,.32,'sawtooth',.16); setTimeout(()=>sfxTone(null,null,1,1480,1400,.45,'triangle',.11),70); setTimeout(()=>sfxTone(null,null,1,740,700,.6,'triangle',.08),160); },
+  interrompido:tipo=>{ if(tocar(tipo==='canal'?'canal_quebra':'selo_quebra',{vol:.6,taxa:.85,max:1})) return; sfxTone(null,null,1,320,90,.5,'sawtooth',.14); },
+  lance:()=>{ if(tocar('descoberta',{vol:.55,taxa:.9,max:1,varia:.01})) return; sfxTone(null,null,1,523,523,.45,'triangle',.1); setTimeout(()=>sfxTone(null,null,1,784,784,.8,'triangle',.11),150); },
+  descoberta:(forte)=>tocar('descoberta',{vol:forte?.6:.35,taxa:forte?1:1.25,max:1,varia:.01}),
+  chamarizDesfeito:(x,z)=>tocar('chamariz_desfeito',{x,z,raio:40,vol:.8}),
+  impacto:(sup,x,z)=>tocar('impacto_'+sup,{x,z,raio:30,vol:.75,max:6,varia:.07}),
+  ritualInicio:(x,z)=>tocar('ritual_inicio',{x,z,raio:140,vol:1,max:1,varia:.01}),
+  ritualMarco:(x,z)=>tocar('ritual_marco',{x,z,raio:120,vol:.8,max:1,varia:.01}),
+  gota:(x,z)=>tocar('gota',{x,z,raio:14,vol:.35,max:2,varia:.08}),
+  assombro:(x,z)=>tocar('assombro',{x,z,raio:30,vol:.6,max:1}),
   hab:(cls,x,z)=>{ if(cls==='soldado'){ sfxTone(x,z,40,5200,3000,.12,'square',.12); } else if(cls==='exorcista'){ [784,1046,1318].forEach((f,i)=>setTimeout(()=>sfxTone(x,z,34,f,f,.9,'sine',.12),i*70)); } else if(cls==='guardiao'){ sfxTone(x,z,34,60,30,.5,'sine',.9); } else { sfxTone(x,z,34,220,660,.9,'sawtooth',.08); } },
-  estouro:(x,z)=>{ sfxNoise(x,z,22,.25,'bandpass',900,2,.5); sfxTone(x,z,22,420,90,.25,'triangle',.25); },
+  estouro:(x,z)=>{ if(tocar('estouro',{x,z,raio:24,vol:.85,max:5})) return; sfxNoise(x,z,22,.25,'bandpass',900,2,.5); sfxTone(x,z,22,420,90,.25,'triangle',.25); },
 };
 // Passos pelo chão de cada lugar: pedra na catedral e no Claustro, terra batida nas trilhas, folhas secas na mata
 // fechada; com chuva, todo passo fora do teto espirra.
@@ -1711,6 +1810,9 @@ function superficie(x,z){ if(Sim.naCatedral(x,z)) return 'pedra';
   for(const sg of Sim.SEG_TRILHA){ const dx=sg.bx-sg.ax,dz=sg.bz-sg.az,L=dx*dx+dz*dz; let t=L?((x-sg.ax)*dx+(z-sg.az)*dz)/L:0; t=clamp(t,0,1); if(Math.hypot(x-(sg.ax+dx*t),z-(sg.az+dz*t))<sg.w/2+.4) return 'terra'; }
   return 'folhas'; }
 function passo(x,z,raio,vol,forte){ const P=x==null?camera.position:{x,z}, sup=superficie(P.x,P.z), v=vol*(forte?1.1:1);
+  const molhado=CL.chuva>.2&&!(Sim.naCatedral(P.x,P.z)&&!naClaustro(P.x,P.z));
+  if(tocar('passo_'+sup,x==null?{vol:v*(sup==='pedra'?1.5:1.25),max:3,varia:.06}:{x,z,raio,vol:v*(sup==='pedra'?1.6:1.35),max:6,varia:.06})){ // gravações de passo; na chuva, o barro por cima
+    if(molhado) tocar('passo_lama',x==null?{vol:v*.9*CL.chuva,max:2}:{x,z,raio,vol:v*CL.chuva,max:4}); return; }
   if(sup==='pedra'){ sfxNoise(x,z,raio,.06,'bandpass',1900+rand(-200,200),2.2,v*.55); sfxNoise(x,z,raio,.08,'lowpass',300,.8,v*.6); }
   else if(sup==='terra') sfxNoise(x,z,raio,.09,'lowpass',520+rand(-60,60),.8,v);
   else { sfxNoise(x,z,raio,.11,'bandpass',2600+rand(-400,400),1.2,v*.5); setTimeout(()=>sfxNoise(x,z,raio,.07,'highpass',3200,1,v*.3),35); sfxNoise(x,z,raio,.08,'lowpass',380,.8,v*.5); }
@@ -1798,8 +1900,15 @@ function ritualLoopStart(i){ const A=AV[i]; if(!AU.ok||A.au) return; const c=AU.
   const lfo=c.createOscillator(); lfo.frequency.value=5.3; const lg=c.createGain(); lg.gain.value=800; lfo.connect(lg); lg.connect(bp.frequency);
   const po=c.createOscillator(); po.frequency.value=46; const pm=c.createGain(); pm.gain.value=.5; const pl=c.createOscillator(); pl.frequency.value=1.3; const plg=c.createGain(); plg.gain.value=.5; pl.connect(plg); plg.connect(pm.gain); po.connect(pm); const gP=c.createGain(); gP.gain.value=0; pm.connect(gP); gP.connect(out);
   const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=820; const gC=c.createGain(); gC.gain.value=0; lp.connect(gC); gC.connect(out);
-  [110,130.8,164.8,220.4].forEach(f=>{ const o=c.createOscillator(); o.type='sawtooth'; o.frequency.value=f*(1+Math.random()*.008); o.connect(lp); nodes.push(o); });
-  nodes.push(wn,lfo,po,pl); nodes.forEach(n=>n.start()); A.au={out,pan,gW,gP,gC,nodes}; }
+  const Zb=AMOS.buf.zumbido_laco&&AMOS.buf.zumbido_laco[0], Cb=AMOS.buf.coro_laco&&AMOS.buf.coro_laco[0];
+  if(Zb&&Cb){ // gravações: sussurros e zumbido no começo, o coro gravado no fim; a pulsação grave continua sintetizada
+    const z=c.createBufferSource(); z.buffer=Zb; z.loop=true; z.playbackRate.value=.97+Math.random()*.06; z.connect(gW);
+    const co=c.createBufferSource(); co.buffer=Cb; co.loop=true; co.playbackRate.value=.98+Math.random()*.04; const cg=c.createGain(); cg.gain.value=1.6; co.connect(cg); cg.connect(gC);
+    nodes.push(z,co); wn.disconnect(); }
+  else [110,130.8,164.8,220.4].forEach(f=>{ const o=c.createOscillator(); o.type='sawtooth'; o.frequency.value=f*(1+Math.random()*.008); o.connect(lp); nodes.push(o); });
+  // tremor do selo: quando a caça sela, o coro treme (o ganho oscila 7 vezes por segundo)
+  const tr=c.createOscillator(); tr.frequency.value=7; const tg=c.createGain(); tg.gain.value=0; tr.connect(tg); tg.connect(out.gain);
+  nodes.push(wn,lfo,po,pl,tr); nodes.forEach(n=>n.start()); A.au={out,pan,gW,gP,gC,tg,nodes}; }
 function ritualLoopStop(i){ const A=AV[i]; if(!A||!A.au) return; const au=A.au; A.au=null; au.out.gain.setTargetAtTime(0,AU.ctx.currentTime,.15); setTimeout(()=>au.nodes.forEach(n=>{ try{n.stop();}catch(e){} }),900); }
 
 // ================= STATE / MODES =================
@@ -1873,7 +1982,23 @@ const down=new Set();
 const held=a=>down.has(SET.binds[a]);
 let capturing=null; // ação sendo reconfigurada na tela de ajustes
 const LOOK={yaw:0,pitch:0};
-const VM={k:0,cast:0,sx:0,sy:0,mdx:0,mdy:0,spr:0}, FX={fov:72,roll:0,kickP:0,spread:0}; let ULT_INP=null, ultimoTiroCab=false;
+const VM={k:0,cast:0,sx:0,sy:0,mdx:0,mdy:0,spr:0,tT:9,pausa:0,som:true,tiros:0,fase:0,ix:0,iz:0,passoLado:0}, FX={fov:72,roll:0,kickP:0,spread:0,fovPunch:0,rollImp:0};
+// impacto na câmera: Ajustes (Normal / Reduzido / Desligado) e "Clarões e tremor reduzidos" escalam tudo junto
+const camFx=()=>(SET.camFx==null?1:SET.camFx)*(SET.suave?.5:1);
+// Perfil de cada arma na mão: coice (quanto vai para trás e sobe), mola de volta (frequência e amortecimento) e o ciclo
+// mecânico depois do tiro (alavanca, cão e tambor, ou as runas do cetro). Tudo cosmético: o tiro de verdade é o do servidor.
+const PERFIL_ARMA={
+  carabina:{ataque:.02,recuoZ:.075,sobe:.17,giro:.04,mola:17,amort:.55,ciclo:[.11,.35],som:'alavanca',somT:.12,capsula:true},
+  revolver:{ataque:.018,recuoZ:.05,sobe:.44,giro:.1,mola:12,amort:.36,ciclo:[.2,.38],som:'cao',somT:.26},
+  cetro:{ataque:.05,recuoZ:-.15,sobe:-.55,giro:-.06,mola:10,amort:.5,ciclo:[.04,.3]}};
+const mola=(t,w,z)=>Math.exp(-z*w*t)*Math.cos(w*Math.sqrt(1-z*z)*t);   // 1 no início, passa um pouco do ponto e assenta
+const coice=(t,P)=>t<0?0:t<P.ataque?t/P.ataque:mola(t-P.ataque,P.mola,P.amort);
+const cicloDe=(t,P)=>t<P.ciclo[0]||t>P.ciclo[1]?0:Math.sin(Math.PI*(t-P.ciclo[0])/(P.ciclo[1]-P.ciclo[0]));
+// cápsula ejetada pela janela da carabina quando a alavanca abre: latão girando, cai e some
+const CAPS={geo:null,mat:null};
+function ejetarCapsula(){ if(!vmCarabina||!vmCarabina.g.visible) return; if(!CAPS.geo){ CAPS.geo=new THREE.CylinderGeometry(.006,.006,.03,8); COMPARTILHADAS.add(CAPS.geo); CAPS.mat=matMetal(0xc8a050,.25,1); CAPS.mat.userData.compartilhado=true; }
+  const p=vmCarabina.g.localToWorld(vmCarabina.janela.clone()), d=new THREE.Vector3(1,.9,.25).applyQuaternion(camera.quaternion), c=new THREE.Mesh(CAPS.geo,CAPS.mat);
+  c.position.copy(p); const v=d.multiplyScalar(1.6+Math.random()*.6), w=rand(14,22); efeito(c,.9,(o,k)=>{ const dt=(k-(o.userData.k||0))*.9; o.userData.k=k; v.y-=9.8*dt; o.position.addScaledVector(v,dt); o.rotation.x+=w*dt; o.rotation.z+=w*.6*dt; if(o.position.y<.02){ o.position.y=.02; v.multiplyScalar(.3); v.y=Math.abs(v.y)*.4; } }); } let ULT_INP=null, ultimoTiroCab=false;
 let ignoreMoveUntil=0, lastMoveT=0;
 
 function lock(){
@@ -2098,18 +2223,25 @@ function handleEvents(list,online){
     switch(e.type){
       case 'feed': feed(e.msg,e.cls); anotarCaderno(e.msg); break;
       case 'sfx': if(e.k==='sigil'&&e.a!==id){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.cast=1; }
-        if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
+        if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z,e.a); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
       case 'tracer': { const own=e.a===id; const p0=own?camera.localToWorld(new THREE.Vector3(.27,-.2,-.9)):new THREE.Vector3(e.x0,e.y0+.1,e.z0);
         const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0,new THREE.Vector3(e.x1,e.y1,e.z1)]),new THREE.LineBasicMaterial({color:0xffd9a0,transparent:true,opacity:.8,toneMapped:false})); world.add(l); tracers.push({l,t:.07});
-        if(e.alvo!=null){ particulas(e.x1,e.y1,e.z1,e.cab?22:12,0xb01830,2.2,.45,6,.6); if(e.cab) particulas(e.x1,e.y1,e.z1,8,0xffd070,3,.25,4,1); const mm=actorMeshes.get(e.alvo); if(mm){ mm.userData.anim.flinch=1; mm.userData.anim.golpe={x:e.x0,z:e.z0}; } }
-        else { particulas(e.x1,e.y1,e.z1,9,0xffc070,4.5,.3,12,1.2); particulas(e.x1,e.y1,e.z1,5,0x5a5248,1.2,.8,1,.4); clarao(e.x1,e.y1,e.z1,0xffb070,1.2); }
+        { const dx=e.x1-e.x0, dy=e.y1-e.y0, dz=e.z1-e.z0, L=Math.hypot(dx,dy,dz)||1, ux=dx/L, uy=dy/L, uz=dz/L;
+          if(e.alvo!=null){ impactoCorpo(e,ux,uy,uz); }
+          else impactoMundo(e.x1,e.y1,e.z1,ux,uy,uz); }
         if(!own){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.kick=1; }
         if(own) ultimoTiroCab=!!e.cab; break; }
-      case 'hit': if(e.a===id){ const cls=e.derrubou?'kill':ultimoTiroCab?'head':''; marcaAcerto(cls); if(e.derrubou) SFX.derrubou(); else if(ultimoTiroCab) SFX.cabeca(); else SFX.hit(); ultimoTiroCab=false; } break;
-      case 'hurt': if(e.a===id){ hurtT=.35; SFX.hurt(); if(e.sx!=null) direcaoDano(e.sx,e.sz); FX.kickP+=rand(-.02,.02); ESP.golpe={s:e.s,x:e.sx,z:e.sz,t:performance.now()}; }
-        else { const mm=actorMeshes.get(e.a); if(mm){ mm.userData.anim.flinch=1; if(e.sx!=null) mm.userData.anim.golpe={x:e.sx,z:e.sz}; } } break;
-      case 'burst': particulas(e.x,e.y,e.z,18,0xb050ff,3,.5,3,.8); particulas(e.x,e.y,e.z,8,0xff4a70,1.5,.7,1,.3); clarao(e.x,e.y,e.z,0xb050ff,2.2); SFX.estouro(e.x,e.z); legenda('estouro',e.x,e.z); break;
-      case 'reload': if(e.a===id) SFX.reload(null,null); else { SFX.reload(e.x,e.z); const em=V.actors.find(b=>b.id===e.a); if(!(em&&m&&em.team===m.team)) legenda('reload',e.x,e.z); } break;
+      // acerto confirmado pelo servidor (só quem atirou recebe): marca, som e pausa de impacto. O tiro previsto não mostra nada disso
+      case 'hit': if(e.a===id){ const cls=e.escudo?'escudo':e.derrubou?'kill':ultimoTiroCab?'head':''; marcaAcerto(cls);
+          if(e.escudo) SFX.bloqueio(); else if(e.derrubou) SFX.derrubou(); else if(ultimoTiroCab) SFX.cabeca(); else SFX.hit();
+          VM.pausa=e.escudo?.02:e.derrubou?.075:ultimoTiroCab?.055:.04; FX.fovPunch-=(e.derrubou?1.5:e.escudo?.2:.55)*camFx(); if(e.derrubou) flashAbate();
+          const mm=actorMeshes.get(e.alvo); if(mm) mm.userData.anim.pausa=e.derrubou?.09:.05; ultimoTiroCab=false; } break;
+      case 'hurt': if(e.a===id){ hurtT=.35; SFX.hurt(); if(e.sx!=null){ direcaoDano(e.sx,e.sz); const lado=Math.sign((e.sx-camera.position.x)*Math.cos(LOOK.yaw)-(e.sz-camera.position.z)*Math.sin(LOOK.yaw))||1; FX.rollImp+=lado*.025*camFx(); }
+          FX.kickP+=rand(-.02,.02)*camFx(); ESP.golpe={s:e.s,x:e.sx,z:e.sz,t:performance.now()}; }
+        else { const mm=actorMeshes.get(e.a); if(mm){ const A=mm.userData.anim; A.flinch=1; if(e.sx!=null) A.golpe={x:e.sx,z:e.sz}; if(!A.reac||A.reac.t>.12) A.reac={t:0,x0:e.sx,z0:e.sz,forte:.8}; } } break;
+      case 'burst': particulas(e.x,e.y,e.z,18,0xb050ff,3,.5,3,.8); particulas(e.x,e.y,e.z,8,0xff4a70,1.5,.7,1,.3); clarao(e.x,e.y,e.z,0xb050ff,2.2); SFX.estouro(e.x,e.z); legenda('estouro',e.x,e.z);
+        esferaChoque(e.x,e.y,e.z,0xc070ff,1.4,.28); if(e.y<.6) anelChao(e.x,e.z,1.6,0x9a40ff,.45); break;
+      case 'reload': if(e.a===id) SFX.reload(null,null,e.a,true); else { SFX.reload(e.x,e.z,e.a); const em=V.actors.find(b=>b.id===e.a); if(!(em&&m&&em.team===m.team)) legenda('reload',e.x,e.z); } break;
       case 'ping': receberPing(e); break;
       case 'fala': receberFala(e); break;
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
@@ -2121,7 +2253,7 @@ function handleEvents(list,online){
         if(poss.length===1&&L.length===2){ const fora=L.find(A=>A!==poss[0]); anunciar('Dedução',`${fora.name} foi descartado: o ritual deve estar em ${poss[0].name}`); SFX.lance(); feed(`Dedução: ${fora.name} foi descartado, então o eco aponta ${poss[0].name}.`,'h'); }
         else anunciar('O coro ecoa',L.map(A=>A.name).join(' ou ')); if(myRole()==='H') dica('h_eco'); marcoLT('eco','Eco do coro'); break; }
       case 'sensor': sensorV=e.v; sensorShowT=5; SFX.ping(e.v); break;
-      case 'evp': SFX.whisper(e.x,e.z); legenda('evp',e.x,e.z); break;
+      case 'evp': SFX.whisper(e.x,e.z); SFX.evp(e.x,e.z); legenda('evp',e.x,e.z); revelarEVP(e.x,e.z); break;
       case 'blind': blindT=1.5; notaHab('Você foi cegado','#fff4d0'); break;
       case 'stun': atordT=1; notaHab('Você foi atordoado','var(--gold-hi)'); FX.kickP+=.03; break;
       case 'momento': anunciar(e.nome,e.i===1?'Os altares despertam':'Os rituais aceleram e a névoa se fecha'); SFX.bell(); marcoLT('momento',e.nome); legenda('bell',null,null,'O sino da catedral'); break;
@@ -2129,14 +2261,15 @@ function handleEvents(list,online){
       case 'hab': efeitoHabilidade(e,e.a===id); SFX.hab&&SFX.hab(e.cls,e.x,e.z); if(e.a!==id) legenda('hab',e.x,e.z,FEITICOS[e.f]?FEITICOS[e.f].nome:'Feitiço',FEIT_BY_TEAM.C.includes(e.f)?'cult':'');
         if(e.a===id){ const n=(e.alvos||[]).length; notaHab(HAB_TXT[e.f](n),n||['runa','veu','sal'].includes(e.f)?'var(--gold-hi)':'var(--muted)'); const t=$('#tAb'); if(t){ t.classList.remove('pulso'); void t.offsetWidth; t.classList.add('pulso'); } if(e.f==='empurrao') FX.kickP+=.02; }
         break;
-      case 'doom': { SFX.doom(); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
+      case 'doom': { SFX.doom(); ritualFenda(e.altar); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
         anunciar(eu?'Você abriu uma Fenda':'Uma Fenda se abriu',por.length?`${listaNomes(por)} ${por.length>1?'completaram':'completou'} o ritual${A?' em '+A.name:''}`:(A?A.name:'')); if(A) piscarMostrador(e.altar,'#ff3a5a'); break; }
-      case 'sealed': { SFX.sealed(); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
+      case 'sealed': { SFX.sealed(); ritualSelado(e.altar); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
         anunciar(eu?'Você selou o ritual':'Um Farol se acendeu',por.length?`${listaNomes(por)} ${por.length>1?'selaram':'selou'}${A?' '+A.name:' o ritual'}`:(A?A.name:'')); if(A) piscarMostrador(e.altar,'#f3d58e'); break; }
       case 'interrupcao': { const A=V.altars[e.altar], aut=V.actors.find(b=>b.id===e.a), vit=V.actors.find(b=>b.id===e.alvo), oQue=e.tipo==='selo'?'o selo':'a canalização';
         piscarMostrador(e.altar,e.tipo==='selo'?'#ff3a5a':'#f3d58e');
-        if(e.a===id){ notaHab(e.tipo==='selo'?'Selo interrompido!':'Canalização interrompida!',e.tipo==='selo'?'var(--crimson-hi)':'var(--gold-hi)'); SFX.quebra(); FX.kickP+=.025; marcaAcerto('kill'); }
-        else if(e.alvo===id){ notaHab(`${aut?aut.name:'Alguém'} interrompeu ${e.tipo==='selo'?'seu selo':'sua canalização'}`,'#fff'); SFX.interrompido(); }
+        ritualInterrompido(e.altar,e.tipo);
+        if(e.a===id){ notaHab(e.tipo==='selo'?'Selo interrompido!':'Canalização interrompida!',e.tipo==='selo'?'var(--crimson-hi)':'var(--gold-hi)'); SFX.quebra(e.tipo); FX.kickP+=.025*camFx(); FX.fovPunch-=.8*camFx(); marcaAcerto('kill'); }
+        else if(e.alvo===id){ notaHab(`${aut?aut.name:'Alguém'} interrompeu ${e.tipo==='selo'?'seu selo':'sua canalização'}`,'#fff'); SFX.interrompido(e.tipo); }
         else if(m&&aut&&vit) feed(`${aut.name} interrompeu ${oQue} de ${vit.name}${A?' em '+A.name:''}.`,aut.team===m.team?(m.team==='H'?'h':'c'):'');
         break; }
       case 'lance': mostrarLance(e,m); break;
@@ -2152,8 +2285,11 @@ function predictFire(dt,m){
   if(m.team==='H'){
     if(m.reloadT>0||m.sealing>=0) return;
     if(m.ammo<=0){ localCd=.35; SFX.vazio(); if(m.reserve>0) C.r++; return; } // recarrega sozinho ao puxar o gatilho vazio
-    localCd=.3; SFX.shot(camera.position.x,camera.position.z); muzzle.intensity=3; vmFlash.material.opacity=1; VM.k=1; FX.kickP+=.018; FX.spread=Math.min(1,FX.spread+.35);
-  } else { if(m.fervor<CFG.sigilCusto){ localCd=.35; SFX.vazio(); return; } localCd=.42; SFX.sigil(camera.position.x,camera.position.z); VM.cast=1; FX.spread=Math.min(1,FX.spread+.2); }
+    // a cadência é a do servidor (Sim.CADENCIA_HUMANA): antes o cliente previa um tiro a cada 0,3 s e o servidor só
+    // atirava a cada 0,42 s, e segurando o gatilho um em cada quatro tiros vistos e ouvidos não existia
+    const exo=m.cls==='exorcista'; localCd=Sim.CADENCIA_HUMANA; SFX.shot(null,null,null,true); muzzle.intensity=exo?3.6:3; vmFlash.material.opacity=1; VM.k=1; VM.tT=0; VM.som=false; VM.tiros++;
+    FX.kickP+=(exo?.03:.018)*Math.max(.35,camFx()); FX.spread=Math.min(1,FX.spread+(exo?.45:.35));
+  } else { if(m.fervor<CFG.sigilCusto){ localCd=.35; SFX.vazio(); return; } localCd=Sim.CADENCIA_HUMANA; SFX.sigil(null,null,null,true); VM.cast=1; VM.tT=0; VM.som=false; FX.spread=Math.min(1,FX.spread+.2); }
 }
 
 // ================= VIEW SYNC =================
@@ -2202,11 +2338,16 @@ function syncActors(dt){
     if(!m){ m=new THREE.Mesh(sigilGeo,new THREE.MeshBasicMaterial({color:0xf0c0ff,toneMapped:false})); m.scale.setScalar(.6);
       const h=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xb040ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); h.scale.set(1.5,1.5,1); m.add(h);
       const r=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.rune,color:0xffb0e0,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); r.scale.set(1.1,1.1,1); m.add(r); m.userData.runa=r;
+      // rastro: as últimas posições numa linha que esmaece, para ler direção e velocidade do sigilo
+      const N=14, tg=new THREE.BufferGeometry(); tg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3)); const cc=new Float32Array(N*3); for(let k=0;k<N;k++){ const f=1-k/N; cc[k*3]=.8*f; cc[k*3+1]=.3*f; cc[k*3+2]=1*f; } tg.setAttribute('color',new THREE.BufferAttribute(cc,3));
+      const tl=new THREE.Line(tg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})); tl.frustumCulled=false; world.add(tl); m.userData.rastro={l:tl,n:0};
       world.add(m); projMeshes.set(p.id,m); }
     const ex=MODE==='online'&&last?clamp(serverNow()-last.t,0,.2):0; m.position.set(p.x+p.vx*ex,p.y+p.vy*ex,p.z+p.vz*ex);
     m.userData.runa.material.rotation+=(dt||.016)*9;
+    { const T=m.userData.rastro, pa=T.l.geometry.attributes.position, arr=pa.array; if(!T.n){ for(let k=0;k<arr.length;k+=3){ arr[k]=m.position.x; arr[k+1]=m.position.y; arr[k+2]=m.position.z; } T.n=1; }
+      arr.copyWithin(3,0,arr.length-3); arr[0]=m.position.x; arr[1]=m.position.y; arr[2]=m.position.z; pa.needsUpdate=true; }
     particulas(m.position.x,m.position.y,m.position.z,2,Math.random()<.5?0xb050ff:0xff4a80,.35,.4,-.4,0); }
-  for(const [id,m] of projMeshes) if(!sp.has(id)){ world.remove(m); descartar(m); projMeshes.delete(id); }
+  for(const [id,m] of projMeshes) if(!sp.has(id)){ world.remove(m); descartar(m); if(m.userData.rastro){ world.remove(m.userData.rastro.l); descartar(m.userData.rastro.l); } projMeshes.delete(id); }
   const pk=new Set();
   for(const p of V.pickups){ pk.add(p.id); let m=pickMeshes.get(p.id);
     if(!m){ const col=p.kind==='reag'?0xff3355:p.kind==='ess'?0xb35cff:0xffd98a; m=new THREE.Mesh(new THREE.OctahedronGeometry(p.kind==='reag'?.18:.24),new THREE.MeshBasicMaterial({color:col,toneMapped:false})); world.add(m); pickMeshes.set(p.id,m); }
@@ -2221,10 +2362,61 @@ const INV={prev:null,partida:null};
 const altarPossivel=i=>{ const k=V.know[i], st=V.altars[i].state; return k!=='descartado'&&k!=='chamariz'&&st!=='fenda'&&st!=='farol'; };
 function progressoInvestigacao(role){ if(role!=='H'||!V.know||V.phase!=='play'){ INV.prev=null; return; }
   if(INV.partida!==V.matchId+':'+V.round){ INV.partida=V.matchId+':'+V.round; INV.prev=null; }
-  if(INV.prev) V.know.forEach((k,i)=>{ if(k==='descartado'&&INV.prev[i]!=='descartado'){ const n=V.altars.filter((A,j)=>altarPossivel(j)).length;
-      notaHab(`${V.altars[i].name} descartado · ${n} ${n===1?'altar ainda pode':'altares ainda podem'} ser do culto`,'#cfe3ff'); SFX.ping(.35); } });
+  if(INV.prev) V.know.forEach((k,i)=>{ const A=V.altars[i], antes=INV.prev[i]; if(k===antes) return;
+    if(k==='descartado'){ const n=V.altars.filter((B,j)=>altarPossivel(j)).length;
+      notaHab(`${A.name} descartado · ${n} ${n===1?'altar ainda pode':'altares ainda podem'} ser do culto`,'#cfe3ff'); if(!SFX.descoberta(false)) SFX.ping(.35); anelChao(A.x,A.z,CFG.circleR+.6,0x8aa0b8,.9); }
+    else if(k==='confirmado'){ SFX.descoberta(true); particulas(A.x,1.3,A.z,30,0xff3a5a,.9,1.6,-.6,.8); anelChao(A.x,A.z,CFG.circleR+1,0xff6a7a,.9); }   // resíduo de reagente: um altar do culto
+    else if(k==='chamariz'){ SFX.chamarizDesfeito(A.x,A.z); particulas(A.x,1.6,A.z,40,0x6a6a72,.8,2,1.2,.2); anelChao(A.x,A.z,CFG.circleR+.6,0x9a9aa8,.8); } }); // o Chamariz se desfaz em cinza
   INV.prev=V.know.slice(); }
 function piscarMostrador(i,cor){ const O=AV[i]; if(!O) return; const U=O.dial.material.uniforms; U.fl.value=1; U.cF.value.set(cor); }
+// ================= O RITUAL COMO EVENTO =================
+// Tudo sai do estado que o snapshot já traz (st mascarado para a caça, prog, seal) e dos eventos 'sealed', 'doom' e
+// 'interrupcao': nada aqui muda regra, e nada mostra à caça um ritual que ela ainda não localizou.
+const COR_R={carmim:new THREE.Color(0xff3a5a),ouro:new THREE.Color(0xf3d58e)};
+const BEAM_GEO=new THREE.CylinderGeometry(.5,1.1,16,18,1,true); COMPARTILHADAS.add(BEAM_GEO);
+function coluna(x,z,cor,dur,larg){ const m=new THREE.Mesh(BEAM_GEO,new THREE.MeshBasicMaterial({map:RT.beam,color:cor,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false,fog:false}));
+  m.position.set(x,8,z); efeito(m,dur,(o,k)=>{ const s=(larg||1)*(.6+k*.9); o.scale.set(s,.4+k*.8,s); o.material.opacity=(k<.12?k/.12:1-(k-.12)/.88)*.85; }); }
+function pertoDaCamera(x,z,r){ return Math.hypot(x-camera.position.x,z-camera.position.z)<r; }
+function ritualIniciado(i,A,O){ O.runas.forEach((sp,k)=>{ sp.userData.acende=.15+k*.1; });   // acendem em volta, uma de cada vez
+  anelChao(A.x,A.z,CFG.circleR+1.5,0xff3a5a,1.1,RT.rune); anelChao(A.x,A.z,7,0xff6a7a,.7); coluna(A.x,A.z,0xff2a4a,1.4,.7);
+  particulas(A.x,1.3,A.z,40,0xff3a5a,2.4,1.2,-1.2,1.4); clarao(A.x,2,A.z,0xff3050,5); SFX.ritualInicio(A.x,A.z);
+  if(pertoDaCamera(A.x,A.z,20)){ FX.kickP+=.012*camFx(); FX.fovPunch-=.6*camFx(); } }
+function ritualMarco(i,A,O,c){ O.runas.forEach(sp=>sp.userData.flash=Math.max(sp.userData.flash,.9));
+  anelChao(A.x,A.z,CFG.circleR+.8+c*3,0xff3a5a,.8,RT.rune); particulas(A.x,1.2,A.z,14+c*30,0xff4a66,1.6,1.1,-2,1.8); clarao(A.x,1.6,A.z,0xff3050,2+c*4); SFX.ritualMarco(A.x,A.z); }
+function ritualSelado(i){ const O=AV[i], A=V.altars[i]; if(!O||!A) return;
+  O.runas.forEach(sp=>{ sp.userData.converge=0; sp.userData.flash=1.2; sp.visible=true; });   // as runas se fecham no altar
+  coluna(A.x,A.z,0xf3d58e,1.8,1.2); anelChao(A.x,A.z,8,0xf3d58e,1.0); anelChao(A.x,A.z,CFG.circleR+2,0xffe6a8,1.3,RT.rune); esferaChoque(A.x,1.3,A.z,0xffe0a0,2.4,.6);
+  particulas(A.x,1.2,A.z,70,0xf3d58e,3.2,1.5,-1.5,2.4); clarao(A.x,2.4,A.z,0xffd08a,8); if(pertoDaCamera(A.x,A.z,25)){ FX.fovPunch-=1.4*camFx(); FX.kickP+=.01*camFx(); } }
+function ritualFenda(i){ const O=AV[i], A=V.altars[i]; if(!O||!A) return;
+  O.runas.forEach(sp=>{ sp.userData.explode=0; sp.userData.flash=1.4; sp.visible=true; });   // as runas estouram para fora
+  coluna(A.x,A.z,0xb01830,2.2,1.5); anelChao(A.x,A.z,10,0xff2a40,1.2); anelChao(A.x,A.z,CFG.circleR+3,0x9a40ff,1.5,RT.rune); esferaChoque(A.x,1,A.z,0xff2a40,3,.7);
+  particulas(A.x,.6,A.z,80,0x5a0a14,2.6,2.2,-1,2.6); particulas(A.x,1,A.z,40,0xb050ff,2,1.6,-.8,1.6); clarao(A.x,2,A.z,0xff2040,9);
+  if(pertoDaCamera(A.x,A.z,30)){ FX.fovPunch-=2*camFx(); FX.kickP+=.02*camFx(); } }
+function ritualInterrompido(i,tipo){ const O=AV[i], A=V.altars[i]; if(!O||!A||!O.rv||O.rv.st!=='active') return;
+  O.runas.forEach(sp=>{ sp.userData.choque=.4; sp.userData.flash=Math.max(sp.userData.flash,.6); });
+  particulas(A.x,1,A.z,26,tipo==='selo'?0xf3d58e:0xff3a5a,4,.5,6,1); anelChao(A.x,A.z,CFG.circleR+.5,tipo==='selo'?0xffe0a0:0xff3a5a,.35); }
+function animarRitual(i,A,O,st,dt,t){ const Rv=O.rv, P=A.prog||0, ativo=st==='active';
+  if(ativo&&Rv.st!==null&&Rv.st!=='active') ritualIniciado(i,A,O);           // quem entra no meio do ritual não ganha a fanfarra
+  if(ativo&&Rv.st==='active') for(const c of [.25,.5,.75]) if(Rv.prog<c&&P>=c) ritualMarco(i,A,O,c);
+  const sobe=ativo&&A.seal>Rv.seal+1e-5; Rv.contest=lerp(Rv.contest,sobe?1:0,Math.min(1,dt*(sobe?8:1.5)));
+  if(sobe&&!Rv.somSelo&&myRole()==='H'){ Rv.somSelo=true; tocar('selando',{x:A.x,z:A.z,raio:50,vol:.45,max:1}); } if(Rv.contest<.05) Rv.somSelo=false;
+  Rv.st=st; Rv.prog=ativo?P:0; Rv.seal=ativo?A.seal:0;
+  const acesas=ativo?2+Math.floor(P*6.01):st==='farol'?8:0, ouro=Math.min(1,Rv.contest*.6+(ativo?A.seal:0)*.8);
+  O.runas.forEach((sp,k)=>{ const u=sp.userData;
+    if(u.acende!=null){ u.acende-=dt; if(u.acende<=0){ u.acende=null; u.flash=1.3; particulas(A.x+u.bx,.5,A.z+u.bz,6,0xff3a5a,1,.7,-1.5,.8); } }
+    let alvo=k<acesas?(st==='farol'?.35:(.45+.4*P)*(.82+.18*Math.sin(t*(2.5+P*6)+k*1.7))):0; if(u.acende!=null) alvo=0;
+    u.flash=Math.max(0,u.flash-dt*2.2); u.choque=Math.max(0,u.choque-dt*1.2);
+    let ox=u.bx, oz=u.bz, y=.4+Math.sin(t*1.6+k)*.06*(ativo?1+P:0), esc=.5+.2*P;
+    if(u.converge!=null){ u.converge+=dt; const q=suave(clamp(u.converge/.55,0,1)); ox*=1-q; oz*=1-q; y=.4+q*.95; esc=.5+.4*q; alvo=1; if(u.converge>1.4){ u.converge=null; } }
+    if(u.explode!=null){ u.explode+=dt; const q=clamp(u.explode/.9,0,1); ox*=1+q*2.5; oz*=1+q*2.5; y=.4+q*2.2; alvo=1-q; if(q>=1) u.explode=null; }
+    const j=Rv.contest*.09+u.choque*.35; if(j>0){ ox+=rand(-j,j); oz+=rand(-j,j); y+=rand(-j,j)*.5; }
+    sp.position.set(ox,y,oz); sp.scale.set(esc,esc,1);
+    const op=clamp(alvo+u.flash,0,1.4); sp.material.opacity=lerp(sp.material.opacity,op,.25); sp.visible=sp.material.opacity>.01;
+    sp.material.color.copy(COR_R.carmim).lerp(COR_R.ouro,st==='farol'||u.converge!=null?1:ouro); sp.material.rotation=t*(.4+P)+k; });
+  if(ativo){ if(Math.random()<dt*(3+P*16)){ const a=Math.random()*6.283, r=CFG.circleR*(.4+Math.random()*.7); jato(A.x+Math.cos(a)*r,.15,A.z+Math.sin(a)*r,-Math.cos(a)*.3,1,-Math.sin(a)*.3,1,0xff4a66,.9+P,.05,1.4,-.6); }   // brasas sobem para o altar, mais depressa no fim
+    if(Rv.contest>.3&&Math.random()<dt*16){ const a=Math.random()*6.283; jato(A.x+Math.cos(a)*CFG.circleR,.3,A.z+Math.sin(a)*CFG.circleR,-Math.cos(a),.6,-Math.sin(a),2,0xf3d58e,2.2,.3,.45,3); } } } // faíscas douradas do selo
+// revelação do EVP (só para quem ouviu): vozes sobem do altar em espiral
+function revelarEVP(x,z){ anelChao(x,z,2.4,0x9a6aff,1.1); for(let k=0;k<3;k++) setTimeout(()=>particulas(x,.4+k*.5,z,12,0xb08aff,.6,1.4,-1.4,1.2),k*160); }
 function syncAltars(dt){
   const role=myRole(), m=me(), px=camera.position.x, pz=camera.position.z; progressoInvestigacao(role);
   V.altars.forEach((A,i)=>{ const O=AV[i]; let st=A.state; if(role==='H'&&st==='active'&&!A.localized) st=hunterSees(A)?'awake':'dormant'; // como o servidor mostra à caça
@@ -2235,6 +2427,7 @@ function syncAltars(dt){
     if(st==='active'){ const pulse=A.prog>=.25?(.5+.5*Math.sin(t*1.3*Math.PI*2)):.5; op=.9+.1*pulse; col=0xff5577; lc=0xff2040; li=1.4+1.6*A.prog+pulse*.8; spin=.4+A.prog*1.6; emb=.9; if(A.localized) beam=.22+.1*pulse; if(A.grande){ beam=.55+.3*pulse; bcol=0xff2a3a; li*=1.6; spin*=1.8; } }
     if(st==='fenda'){ op=.35; col=0x6a1a8a; li=.8+.4*Math.sin(t*7)*Math.random(); lc=0x5a1080; beam=.1; bcol=0x7a2aa0; emb=.4; spin=-.2; }
     if(st==='farol'){ op=.7; col=0xf3d58e; li=3.2; lc=0xffd08a; beam=.28; bcol=0xf3d58e; spin=.08; }
+    animarRitual(i,A,O,st,dt||.016,t);
     O.circle.material.opacity=lerp(O.circle.material.opacity,op,.1); O.circle.material.color.setHex(col); O.L.intensity=lerp(O.L.intensity,li,.12); O.L.color.setHex(lc);
     O.circle.rotation.z+=spin*dt; O.beam.material.opacity=lerp(O.beam.material.opacity,beam,.08); O.beam.material.color.setHex(bcol); { const lg=A.grande&&st==='active'?2.4:1; O.beam.scale.x=O.beam.scale.z=lerp(O.beam.scale.x,lg,.05); }
     O.bm.color.setHex(st==='active'?0xff3050:st==='farol'?0xf3d58e:st==='awake'?0x8a4ad0:0x2a2030);
@@ -2246,7 +2439,8 @@ function syncAltars(dt){
     // audio
     if(A.state==='active'&&(role==='C'||st==='active')){ if(!O.au) ritualLoopStart(i);
       { const s0=spatial(A.x,A.z,CFG.rit[Math.max(1,A.lastN)].rad*1.6); const g0=A.localized?Math.max(s0.g,.2):s0.g; if(g0>.03) legenda('rit'+i,A.x,A.z,(A.grande?'Grande Ritual: '+(A.prog>=.75?'coro':A.prog>=.25?'pulsação':'sussurros'):(A.prog>=.75?'Coro do ritual':A.prog>=.25?'Pulsação do ritual':'Sussurros do ritual')),'rit',1e9); } if(O.au){ const tt=AU.ctx.currentTime,p=A.prog; O.au.gW.gain.setTargetAtTime(p<.25?.55:.18,tt,.2); O.au.gP.gain.setTargetAtTime(p>=.25?.9:0,tt,.3); O.au.gC.gain.setTargetAtTime(p>=.75?.32:0,tt,.3);
-        const s=spatial(A.x,A.z,CFG.rit[Math.max(1,A.lastN)].rad*1.6); let g=s.g; if(A.localized) g=Math.max(g,.18*Sim.occlusion(px,pz,A.x,A.z)+.06); O.au.out.gain.setTargetAtTime(g*.7,tt,.12); O.au.pan.pan.setTargetAtTime(s.p,tt,.1); } }
+        const s=spatial(A.x,A.z,CFG.rit[Math.max(1,A.lastN)].rad*1.6); let g=s.g; if(A.localized) g=Math.max(g,.18*Sim.occlusion(px,pz,A.x,A.z)+.06); O.au.out.gain.setTargetAtTime(g*.7,tt,.12); O.au.pan.pan.setTargetAtTime(s.p,tt,.1);
+        if(O.au.tg) O.au.tg.gain.setTargetAtTime(g*.7*.35*(O.rv?O.rv.contest:0),tt,.1); } }
     else if(O.au) ritualLoopStop(i);
   });
 }
@@ -2571,7 +2765,7 @@ function syncNoite(dt,t){
   for(const q of V.sal||[]){ sv.add(q.id); if(!NOITE.sal.has(q.id)){ const m=new THREE.Mesh(new THREE.RingGeometry(1.9,2.2,40),new THREE.MeshBasicMaterial({color:0xf2eee4,transparent:true,opacity:.75,depthWrite:false})); m.rotation.x=-Math.PI/2; m.position.set(q.x,.03,q.z); world.add(m); NOITE.sal.set(q.id,m); } }
   for(const [id,m] of NOITE.sal) if(!sv.has(id)){ world.remove(m); descartar(m); NOITE.sal.delete(id); }
 }
-function marcaAcerto(cls){ hitT=cls==='kill'?.45:cls==='head'?.3:.15; const h=$('#hitmark'); h.className=cls||''; h.style.transform=`rotate(45deg) scale(${cls==='kill'?1.15:cls==='head'?.9:.6})`; }
+function marcaAcerto(cls){ hitT=cls==='kill'?.45:cls==='head'?.3:cls==='escudo'?.25:.15; const h=$('#hitmark'); h.className=cls||''; h.style.transform=`rotate(${cls==='escudo'?0:45}deg) scale(${cls==='kill'?1.15:cls==='head'?.9:cls==='escudo'?.7:.6})`; }
 function direcaoDano(sx,sz){
   const px=camera.position.x, pz=camera.position.z, dx=sx-px, dz=sz-pz, yaw=LOOK.yaw;
   const frente=dx*(-Math.sin(yaw))+dz*(-Math.cos(yaw)), direita=dx*Math.cos(yaw)+dz*(-Math.sin(yaw));
@@ -3113,14 +3307,15 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Interrupções que se sentem','Derrubar quem sela ou canaliza, ou empurrar quem sela, dá um aviso claro a quem fez e a quem sofreu, com som próprio, e o círculo pisca.'],
-  ['Fenda e Farol com nomes','O fim de cada ritual diz quem completou ou quem selou.'],
-  ['Lances da noite','Jogadas decisivas aparecem na hora e no fim da noite: selo no último instante, ritual achado antes do coro, defesa até a Fenda, resgate depois de impedir a execução, Transferência que deu certo e Chamariz que prendeu a caça.'],
-  ['Investigação com progresso','Cada sinal que descarta um altar diz quantos ainda podem ser do culto. Quando o eco aponta dois altares e um já foi descartado, o jogo faz a dedução.'],
-  ['O engano conta','Quando um Chamariz é queimado, o culto fica sabendo por quanto tempo ele prendeu a caça.'],
-  ['Relatório do playtest','Cada ritual disputado mostra o que cada lado fez no círculo: tempo selando e sob fogo, canalizando e atacando, dano e quedas.'],
-  ['Na v5.6','Mostrador do círculo, online mais justo e altares visitados que não aparecem mais como descartados.']];
-function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.7</h2><p class="lede">O que mudou desde a última versão.</p>
+const NOVIDADES=[['Sons gravados','Tiros, impactos, passos por chão, sino, corvos, coro e o ritual inteiro agora usam gravações reais de bibliotecas abertas, com variação a cada vez. Créditos em Ajustes.'],
+  ['Cada arma tem seu peso','A carabina coiceia curto e abre a alavanca a cada tiro; o revólver sobe mais e gira o tambor; o cetro recolhe as runas e as solta.'],
+  ['Acerto que se sente','O acerto confirmado pelo servidor tem marca, som, uma pausa curta no coice e um empurrão leve na câmera. Golpe no escudo de osso aparece como bloqueio.'],
+  ['Quem leva o tiro reage','O alvo cede na direção do golpe, a cabeça estala no tiro na cabeça, e a queda e a reanimação têm movimento.'],
+  ['O ritual como evento','As runas acendem uma a uma no início, pulsam a cada etapa, tremem e douram quando a caça sela, se fecham no Farol e explodem na Fenda.'],
+  ['Investigação','EVP, resíduo na Lanterna e Chamariz desmascarado têm som e efeito próprios no altar.'],
+  ['Ajuste','Impacto na câmera: Normal, Reduzido ou Desligado.'],
+  ['Na v5.7','Interrupções, Fenda e Farol com nomes, lances da noite e o registro da disputa no círculo.']];
+function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.8</h2><p class="lede">O que mudou desde a última versão.</p>
     <div class="novidades">${NOVIDADES.map(([t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
     <div class="btnrow"><button class="go" id="bNovOk">Voltar</button></div>`,()=>{ $('#bNovOk').onclick=()=>{ novidadesAberto=false; screenKey=''; }; }); }
 // cola das teclas, na pausa
@@ -3152,7 +3347,7 @@ function comoJogarScreen(){
 function openSettings(){ settingsOpen=true; backTo=screenKey; screenKey=''; }
 function settingsScreen(){
   const q=(id,v)=>`<button data-q="${v}" class="${SET.qual===v?'sel':''}">${id}</button>`;
-  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor+(SET.suave?1:0)+(SET.dalt?1:0)+(SET.musica!==false?1:0)+(SET.mudoAdv?1:0),`<h2>Ajustes</h2>
+  setScreen('settings'+capturing+JSON.stringify(SET.binds)+SET.qual+(SET.rawMouse!==false)+(SET.legendas!==false)+(SET.dicas!==false)+SET.mira+SET.miraCor+(SET.suave?1:0)+'c'+SET.camFx+(SET.dalt?1:0)+(SET.musica!==false?1:0)+(SET.mudoAdv?1:0),`<h2>Ajustes</h2>
     <div class="set"><label for="sSens">Sensibilidade do mouse</label><input id="sSens" type="range" min="20" max="300" step="5" value="${Math.round(SET.sens*100)}"><b id="vSens">${SET.sens.toFixed(2)}</b></div>
     <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" step="2" value="${Math.round(SET.vol*100)}"><b id="vVol">${Math.round(SET.vol*100)}</b></div>
     <div class="set"><label for="sFov">Campo de visão</label><input id="sFov" type="range" min="60" max="105" step="1" value="${SET.fov}"><b id="vFov">${SET.fov}</b></div>
@@ -3169,6 +3364,7 @@ function settingsScreen(){
     <div class="set"><label>Movimento bruto do mouse</label><div class="opts"><button data-r="1" class="${SET.rawMouse!==false?'sel':''}">Ligado</button><button data-r="0" class="${SET.rawMouse===false?'sel':''}">Desligado</button></div><b></b></div>
     <p class="fine">Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. Texturas, partículas e árvores de fundo mudam ao recarregar a página. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo. O movimento bruto ignora a aceleração do mouse do Windows: deixe ligado se a câmera dá saltos. Vale ao voltar para o jogo.</p>
     <h3>Acessibilidade</h3>
+    <div class="set"><label>Impacto na câmera</label><div class="opts"><button data-cf="1" class="${SET.camFx==null||SET.camFx===1?'sel':''}">Normal</button><button data-cf=".5" class="${SET.camFx===.5?'sel':''}">Reduzido</button><button data-cf="0" class="${SET.camFx===0?'sel':''}">Desligado</button></div><b></b></div>
     <div class="set"><label>Clarões e tremor</label><div class="opts"><button data-sv="0" class="${!SET.suave?'sel':''}">Normais</button><button data-sv="1" class="${SET.suave?'sel':''}">Reduzidos</button></div><b></b></div>
     <div class="set"><label>Chat dos adversários</label><div class="opts"><button data-ma="0" class="${!SET.mudoAdv?'sel':''}">Mostrar</button><button data-ma="1" class="${SET.mudoAdv?'sel':''}">Silenciar</button></div><b></b></div>
     <div class="set"><label>Cores das equipes</label><div class="opts"><button data-dl="0" class="${!SET.dalt?'sel':''}">Ouro e carmim</button><button data-dl="1" class="${SET.dalt?'sel':''}">Ouro e azul</button></div><b></b></div>
@@ -3176,6 +3372,8 @@ function settingsScreen(){
     <h3>Controles</h3><div class="binds">${Object.keys(BIND_LABEL).map(a=>`<button class="bindrow ${capturing===a?'cap':''}" data-a="${a}"><span>${BIND_LABEL[a]}</span><kbd>${capturing===a?'aperte…':kb(a)}</kbd></button>`).join('')}</div>
     <p class="fine">Clique numa linha e aperte a tecla ou o botão do mouse. Esc cancela. Se a tecla já estiver em uso, as duas ações trocam de lugar.</p>
     <h3>Com controle</h3><p class="fine" style="text-align:left!important">Analógico esquerdo anda, direito olha (a sensibilidade é a mesma do mouse). RT ataca, RB feitiço, LT ou clique no analógico esquerdo corre. A interage, B transfere, X recarrega, Y lanterna, LB sensor, clique no analógico direito marca (ping), direcional para cima abre as frases (cima/baixo escolhe, A envia), para baixo sinalizador. Select mostra a planta, Start pausa. Nos menus: cima/baixo escolhe, A confirma, B volta.</p>
+    <details class="creditos"><summary>Créditos de áudio</summary><p class="fine" style="text-align:left!important">Gravações reais de bibliotecas abertas, cortadas e mixadas para o jogo. Detalhes em docs/AUDIO.md.</p>
+      <ul class="fine" style="text-align:left!important">${(window.SONS_RR_CREDITOS||[]).map(c=>`<li>${esc(c.autor)} · ${esc(c.licenca)} · ${esc(c.fonte)}</li>`).join('')}</ul></details>
     <div class="btnrow"><button class="go ghost" id="sDef">Restaurar padrão</button><button class="go" id="sBack">Voltar</button></div>`,
   ()=>{
     const bind=(id,lab,fn,fmt)=>{ const el=$(id); el.oninput=()=>{ fn(+el.value); $(lab).textContent=fmt(+el.value); applySet(); saveSet(); }; };
@@ -3185,7 +3383,7 @@ function settingsScreen(){
     bind('#sFov','#vFov',v=>SET.fov=v,v=>v);
     bind('#sBri','#vBri',v=>SET.brilho=v/100,v=>v+'%');
     bind('#sMt','#vMt',v=>SET.miraTam=v/100,v=>v+'%');
-    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.mu){ SET.musica=b.dataset.mu==='1'; } else if(b.dataset.sv){ SET.suave=b.dataset.sv==='1'; } else if(b.dataset.dl){ SET.dalt=b.dataset.dl==='1'; } else if(b.dataset.ma){ SET.mudoAdv=b.dataset.ma==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
+    scrBody.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{ if(b.dataset.q) SET.qual=b.dataset.q; else if(b.dataset.ar) SET.autoRes=b.dataset.ar==='1'; else if(b.dataset.mira){ SET.mira=b.dataset.mira; } else if(b.dataset.mcor){ SET.miraCor=b.dataset.mcor; } else if(b.dataset.dc){ if(b.dataset.dc==='r'){ DC.vistas={}; try{ localStorage.removeItem('rr-dicas'); }catch(e){} SET.dicas=true; } else SET.dicas=b.dataset.dc==='1'; } else if(b.dataset.mu){ SET.musica=b.dataset.mu==='1'; } else if(b.dataset.sv){ SET.suave=b.dataset.sv==='1'; } else if(b.dataset.cf){ SET.camFx=+b.dataset.cf; } else if(b.dataset.dl){ SET.dalt=b.dataset.dl==='1'; } else if(b.dataset.ma){ SET.mudoAdv=b.dataset.ma==='1'; } else if(b.dataset.lg){ SET.legendas=b.dataset.lg==='1'; if(!SET.legendas) limparLegendas(); } else if(b.dataset.t){ SET.toque=b.dataset.t==='1'; ligarToque(); } else SET.rawMouse=b.dataset.r==='1'; applySet(); saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.bindrow').forEach(b=>b.onclick=()=>{ capturing=b.dataset.a; screenKey=''; });
     $('#sDef').onclick=()=>{ SET.binds=Object.assign({},DEF_BIND); saveSet(); toolsKey=''; screenKey=''; };
     $('#sBack').onclick=()=>{ settingsOpen=false; screenKey=''; };
@@ -3220,8 +3418,26 @@ function startLocal(opc){ opc=opc||{}; let papel=opc.papel||SET.papelSolo||'H'; 
 // ================= MAIN LOOP =================
 let fpsEMA=60;
 let last=performance.now(), lastPhase='', bellT=45, hallT=8, heartT=0, stepT=0, wasLocked=false;
+let cpuMs=0; // tempo de CPU de cada quadro (simulação local, lógica, efeitos e envio para a placa), média móvel
+// amostras por quadro para o teste de desempenho: lógica (tudo antes do render) e render, separados
+const QUADROS={log:[],ren:[],max:600}; function amostraQuadro(l,r){ QUADROS.log.push(l); QUADROS.ren.push(r); if(QUADROS.log.length>QUADROS.max){ QUADROS.log.shift(); QUADROS.ren.shift(); } }
+function estatQuadros(){ const q=(a,p)=>{ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y); return +s[Math.min(s.length-1,Math.floor(p*s.length))].toFixed(2); };
+  return {n:QUADROS.log.length,logicaMed:q(QUADROS.log,.5),logicaP95:q(QUADROS.log,.95),renderMed:q(QUADROS.ren,.5),renderP95:q(QUADROS.ren,.95)}; }
+// Pré-aquecimento: compila na carga os shaders dos efeitos (esfera de choque, coluna, anel, runa, rastro, cápsula), para o
+// primeiro impacto ou o primeiro ritual não travar o quadro compilando material novo
+function preaquecerEfeitos(){ const g=new THREE.Group(); camera.add(g); g.position.set(0,0,-3);
+  const mats=[new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}),
+    new THREE.MeshBasicMaterial({map:RT.beam,color:0xffffff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false,fog:false}),
+    new THREE.MeshBasicMaterial({color:0xffffff,map:RT.rune,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}),
+    new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false})];
+  mats.forEach(m=>g.add(new THREE.Mesh(ESFERA_GEO,m)));
+  g.add(new THREE.Sprite(new THREE.SpriteMaterial({map:RT.rune,color:0xffffff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false,fog:false})));
+  const lg=new THREE.BufferGeometry(); lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3)); lg.setAttribute('color',new THREE.BufferAttribute(new Float32Array(6),3));
+  g.add(new THREE.Line(lg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})));
+  g.add(new THREE.Mesh(ESFERA_GEO,matMetal(0xc8a050,.25,1)));
+  try{ renderer.compile(scene,camera); }catch(e){} camera.remove(g); g.traverse(o=>{ if(o.material) o.material.dispose(); }); lg.dispose(); }
 function tick(now){
-  requestAnimationFrame(tick);
+  requestAnimationFrame(tick); const t0q=performance.now();
   const raw=Math.max(.001,(now-last)/1000), dt=Math.min(.05,raw); last=now; fpsEMA=fpsEMA*.92+(1/raw)*.08; medirRes(raw);
   try{ lerControle(dt); }catch(e){ PAD.ativo=false; }
   if(MODE==='local'&&game){
@@ -3249,44 +3465,63 @@ function tick(now){
   anuncioT=Math.max(0,anuncioT-dt); if(anuncioT<=0) $('#anuncio').classList.remove('on'); atualizarLance(dt);
   habNotaT=Math.max(0,habNotaT-dt); if(habNotaT<=0) $('#habNota').classList.remove('on');
   atordT=Math.max(0,atordT-dt); $('#atordoado').style.opacity=(atordT*.9).toFixed(2);
+  abateT=Math.max(0,abateT-dt); $('#abate').style.opacity=(abateT*4).toFixed(2);
   for(let i=tracers.length-1;i>=0;i--){ const tr=tracers[i]; tr.t-=dt; tr.l.material.opacity=Math.max(0,tr.t/.07); if(tr.t<=0){ world.remove(tr.l); descartar(tr.l); tracers.splice(i,1); } }
   const m=V?me():null;
   if(V&&V.phase==='play'&&m){
     syncActors(dt); syncAltars(dt); syncNoite(dt,now/1000); amostrarNoite(); if(DES.feito) DES.feito=null;
     const pos=MODE==='online'&&NET.pred?NET.pred:m;
     const s=m.sanity, shake=s<40&&!SET.suave?(40-s)/40*.012:0, down=m.st==='down';
-    const bob=pos.moving?Math.sin(now*.011)*.045:0;
-    const suav=MODE==='online'?Math.exp(-dt*14):0; NET.erro.x*=suav; NET.erro.z*=suav;
-    camera.position.set(pos.x+NET.erro.x,down?.45:1.65+bob,pos.z+NET.erro.z); // sensação: campo de visão abre na corrida, câmera inclina ao andar de lado, coice volta sozinho
     const I=ULT_INP||{mx:0,mz:0,sp:false}, correndo=I.sp&&I.mz<0&&pos.moving&&m.st==='alive';
-    FX.fov=lerp(FX.fov,SET.fov+(correndo?7:0),.1); if(Math.abs(camera.fov-FX.fov)>.05){ camera.fov=FX.fov; camera.updateProjectionMatrix(); }
+    // passos e balanço no mesmo ciclo: dois passos por ciclo (andando 0,45 s, correndo 0,3 s, como os passos que os
+    // outros ouvem); o passo toca no ponto mais baixo do balanço, e o balanço some suave ao parar
+    const andando=pos.moving&&m.st==='alive'; VM.bobK=lerp(VM.bobK||0,andando?1:0,Math.min(1,dt*8));
+    if(andando){ const f0=VM.fase; VM.fase+=dt*Math.PI/(correndo?.3:.45); if(Math.floor(f0/Math.PI+.5)!==Math.floor(VM.fase/Math.PI+.5)){ SFX.mystep(); VM.passoLado=-VM.passoLado||1; } }
+    const bob=-Math.abs(Math.sin(VM.fase))*(correndo?.05:.034)*VM.bobK*(SET.suave?.5:1);
+    const suav=MODE==='online'?Math.exp(-dt*14):0; NET.erro.x*=suav; NET.erro.z*=suav;
+    camera.position.set(pos.x+NET.erro.x,down?.45:1.67+bob,pos.z+NET.erro.z); // sensação: campo de visão abre na corrida, câmera inclina ao andar de lado, coice volta sozinho
+    FX.fovPunch=lerp(FX.fovPunch,0,Math.min(1,dt*10)); FX.rollImp=lerp(FX.rollImp,0,Math.min(1,dt*7));
+    FX.fov=lerp(FX.fov,SET.fov+(correndo?7:0),.1); const fovAlvo=FX.fov+FX.fovPunch; if(Math.abs(camera.fov-fovAlvo)>.05){ camera.fov=fovAlvo; camera.updateProjectionMatrix(); }
     FX.roll=lerp(FX.roll,pos.moving&&!down?-I.mx*.022:0,.1); FX.kickP=lerp(FX.kickP,0,.14);
-    viraParaGolpe(m,dt); camera.rotation.set(LOOK.pitch+FX.kickP+rand(-shake,shake),LOOK.yaw+rand(-shake,shake),FX.roll);
+    viraParaGolpe(m,dt); camera.rotation.set(LOOK.pitch+FX.kickP+rand(-shake,shake),LOOK.yaw+rand(-shake,shake),FX.roll+FX.rollImp);
     if(m.st==='dead') espectar(m,dt); else ESP.alvo=null;
     camera.updateMatrixWorld(); $('#cross').style.visibility=m.st==='dead'?'hidden':'';
     lantern.intensity=m.team==='H'&&m.lantern&&m.st==='alive'?3.2:0;
     muzzle.intensity=Math.max(0,muzzle.intensity-dt*30); vmFlash.material.opacity=Math.max(0,vmFlash.material.opacity-dt*14); 
     VM.k=Math.max(0,VM.k-dt*7); VM.cast=Math.max(0,VM.cast-dt*4);
     VM.sx=lerp(VM.sx,clamp(VM.mdx*.0009,-.05,.05),.2); VM.sy=lerp(VM.sy,clamp(VM.mdy*.0009,-.05,.05),.2); VM.mdx*=.7; VM.mdy*=.7;
-    const bt=now*.0105, bx=pos.moving?Math.cos(bt*.5)*.012:0, by=pos.moving?Math.abs(Math.sin(bt*.5))*.014:Math.sin(now*.002)*.003;
+    VM.ix=lerp(VM.ix,andando?I.mx:0,Math.min(1,dt*6)); VM.iz=lerp(VM.iz,andando?I.mz:0,Math.min(1,dt*5)); // a arma atrasa um pouco quando você começa a andar ou muda de lado
+    const fb=VM.fase, bk=VM.bobK, bx=Math.cos(fb)*.011*bk, by=Math.abs(Math.sin(fb))*.013*bk+(1-bk)*Math.sin(now*.002)*.003;
     const rl=m.reloadT>0?Math.sin((1-m.reloadT/1.6)*Math.PI):0; VM.spr=lerp(VM.spr,correndo?1:0,.12);
-    vmH.position.set(.2-VM.sx+bx+VM.spr*.03,-.17-VM.sy-by-rl*.12-VM.spr*.05,-.42+VM.k*.06);
-    vmH.rotation.set(VM.k*.22+rl*.25-VM.spr*.25,VM.spr*.6+VM.sx*2,rl*.9);
-    const exo=m.cls==='exorcista', arma=exo?vmRevolver:vmCarabina; vmCarabina.g.visible=!exo; vmRevolver.g.visible=exo;
+    const exo=m.cls==='exorcista', arma=exo?vmRevolver:vmCarabina, P=PERFIL_ARMA[m.team==='C'?'cetro':exo?'revolver':'carabina'];
+    if(VM.pausa>0) VM.pausa=Math.max(0,VM.pausa-dt); else VM.tT+=dt;     // pausa de impacto: quando o tiro acerta, o coice segura no auge por um instante
+    const kc=coice(VM.tT,P), cy=cicloDe(VM.tT,P);
+    if(!VM.som&&VM.tT>=(P.somT||0)){ VM.som=true; if(P.som&&m.team==='H') tocar(P.som,{vol:.5,max:2,varia:.05}); if(P.capsula&&m.team==='H') ejetarCapsula(); }
+    vmH.position.set(.2-VM.sx+bx+VM.spr*.03-VM.ix*.012+cy*.008,-.17-VM.sy-by-rl*.12-VM.spr*.05-cy*.022,-.42+kc*P.recuoZ+VM.iz*-.008);
+    vmH.rotation.set(kc*P.sobe+rl*.25-VM.spr*.25+VM.iz*-.03,VM.spr*.6+VM.sx*2,rl*.9+kc*P.giro-cy*(exo?.06:.2)-VM.ix*.05);
+    vmCarabina.g.visible=!exo; vmRevolver.g.visible=exo;
+    if(vmCarabina.alav) vmCarabina.alav.rotation.x=exo?0:cy*.95;                                         // a alavanca abre e fecha
+    if(vmCarabina.cao) vmCarabina.cao.rotation.x=VM.tT<.03?-.15:-.5-cy*.35;                              // o cão cai no tiro e é armado pela alavanca
+    if(vmRevolver.tambor){ const a=clamp((VM.tT-P.ciclo[0])/(P.ciclo[1]-P.ciclo[0]),0,1); vmRevolver.tambor.rotation.z=(VM.tiros-1+(exo?suave(a):1))*Math.PI/3; }
+    if(vmRevolver.cao) vmRevolver.cao.rotation.x=exo?(VM.tT<.04?-.15:-.6-cy*.45):-.6;
     vmFlash.position.copy(arma.boca).add(arma.g.position);
-    vmC.position.set(.26-VM.sx+bx+VM.spr*.02,-.12-VM.sy-by-VM.spr*.08,-.5-VM.cast*.14); vmC.rotation.set(-.3-VM.cast*.55-VM.spr*.3,VM.sx*1.5,.18+VM.spr*.25);
+    const kC=m.team==='C'?kc:0;
+    vmC.position.set(.26-VM.sx+bx+VM.spr*.02-VM.ix*.012,-.12-VM.sy-by-VM.spr*.08,-.5+kC*P.recuoZ); vmC.rotation.set(-.3+kC*P.sobe-VM.spr*.3,VM.sx*1.5,.18+VM.spr*.25+kC*P.giro-VM.ix*.05);
     const cargas=Math.floor(m.fervor/CFG.sigilCusto), giro=now*.0015*(1+VM.cast*6);
-    vmRunas.forEach((r,k)=>{ const on=k<cargas; r.visible=on; const a=giro+k/7*Math.PI*2; r.position.set(Math.cos(a)*.085,.1+Math.sin(a*2+k)*.012,Math.sin(a)*.085); r.material.rotation=a*2; });
-    vmOrb.material.opacity=.3+.5*(m.fervor/100)+VM.cast*.5; vmCetro.brasa.scale.setScalar(1+VM.cast*.5+Math.sin(now*.006)*.05); vmCetro.runa.material.rotation+=dt*(1.5+VM.cast*12);
+    // as runas em órbita se recolhem para a brasa no lançamento e voltam abrindo
+    const recolhe=m.team==='C'?(VM.tT<.06?VM.tT/.06:Math.max(0,1-(VM.tT-.06)/.22)):0, raioR=.085*(1-.8*recolhe)+.03*cy;
+    vmRunas.forEach((r,k)=>{ const on=k<cargas; r.visible=on; const a=giro+k/7*Math.PI*2; r.position.set(Math.cos(a)*raioR,.1+Math.sin(a*2+k)*.012,Math.sin(a)*raioR); r.material.rotation=a*2; });
+    vmOrb.material.opacity=.3+.5*(m.fervor/100)+VM.cast*.5; vmCetro.brasa.scale.setScalar(1+VM.cast*.5+recolhe*.6+Math.sin(now*.006)*.05); vmCetro.runa.material.rotation+=dt*(1.5+VM.cast*12);
     vmH.visible=m.team==='H'&&m.st==='alive'; vmC.visible=m.team==='C'&&m.st==='alive';
-    if(pos.moving&&m.st==='alive'){ stepT-=dt; if(stepT<=0){ stepT=.45; SFX.mystep(); } }
+    // (o passo do jogador toca no ciclo do balanço, acima)
     // sanity fx (client side)
     const k=clamp((70-s)/70,0,1); $('#vignette').style.opacity=k.toFixed(2);
     const blur=s<40?(40-s)/40*1.1:0; // filtro CSS sobre o canvas custa caro em GPU fraca: só nos níveis médio e alto
     renderer.domElement.style.filter=PERF.nivelAtual>=2&&k>.01?`saturate(${(1-k*.55).toFixed(2)}) contrast(${(1+k*.25).toFixed(2)})${blur>.05?` blur(${blur.toFixed(2)}px)`:''}`:'';
-    if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
+    if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.25&&SFX.assombro(pos.x+Math.cos(a)*9,pos.z+Math.sin(a)*9)){} else if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
+    gotaT-=dt; if(gotaT<=0){ gotaT=rand(2.5,8); if(Sim.naCatedral(pos.x,pos.z)){ const a=rand(0,6.283), r=rand(2,7); SFX.gota(pos.x+Math.cos(a)*r,pos.z+Math.sin(a)*r); } } // pingos de água na nave
     updateHUD(dt,m); atualizarPings(dt); atualizarCaderno(); atualizarFalasBots(); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
@@ -3298,13 +3533,15 @@ function tick(now){
   if(GRADE&&composer){ GRADE.uniforms.tDepth.value=composer.readBuffer.depthTexture; GRADE.uniforms.uTexel.value.set(1/innerWidth,1/innerHeight);
     camera.updateMatrixWorld(); GRADE.uniforms.uCamMundo.value.copy(camera.matrixWorld); const tv=Math.tan(camera.fov*Math.PI/360); GRADE.uniforms.uTan.value.set(tv*camera.aspect,tv); GRADE.uniforms.uT.value=now*.001; }
   seguirLua(); // depois de a câmera andar neste quadro: céu, lua e sombra ficam centrados nela
+  const tRq=performance.now();
   renderer.info.reset(); if(composer&&USAR_POS) composer.render(); else renderer.render(scene,camera); INFO_QUADRO={chamadas:renderer.info.render.calls,triangulos:renderer.info.render.triangles};
+  const t1q=performance.now(); cpuMs=cpuMs*.9+(t1q-t0q)*.1; if(AUTOTEST) amostraQuadro(tRq-t0q,t1q-tRq);
 }
 function show(id,on){ document.getElementById(id).classList.toggle('on',on); }
 
 // ================= BOOT =================
 function boot(){
-  buildTextures(); buildTexturasExtras(); buildWorld(); buildFloresta(); buildCatedralViva(); const fusao=fundirEstaticos(); buildMarcas(); if(AUTOTEST){ window.__fusao=fusao; window.__VEG=VEG; } buildAltars(); buildViewmodels(); buildParticles(); buildStrip();
+  buildTextures(); buildTexturasExtras(); buildWorld(); buildFloresta(); buildCatedralViva(); const fusao=fundirEstaticos(); buildMarcas(); if(AUTOTEST){ window.__fusao=fusao; window.__VEG=VEG; } buildAltars(); buildViewmodels(); buildParticles(); buildStrip(); preaquecerEfeitos();
   if(PERF.leve){ const vistos=new Set(); scene.traverse(o=>{ const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[]; for(const m of ms){ if(vistos.has(m)) continue; vistos.add(m);
       if(m.normalMap){ m.normalMap=null; m.needsUpdate=true; } } }); } // relevo por normal map pesa em GPU fraca e quase não aparece na névoa
   applySet(); $('#loading').style.display='none';
@@ -3312,7 +3549,7 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 { const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">Esculpindo a catedral…<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);

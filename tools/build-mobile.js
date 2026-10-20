@@ -18,6 +18,7 @@ for(const rel of usados){ const de=path.join(THREE,rel), para=path.join(WWW,'ven
   if(!fs.existsSync(de)) throw new Error('three.js não tem '+rel); fs.mkdirSync(path.dirname(para),{recursive:true}); fs.copyFileSync(de,para); }
 html=html.split(CDN).join('vendor/three/')
   .replace(tag,()=>'<script>\n'+sim+'\n</script>')
+  .replace('<script src="sons.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','sons.js'),'utf8')+'</script>') // as gravações vão dentro do app
   .replace('<head>','<head>\n<script>window.RR_APP=true;</script>');
 if(!html.includes('window.RR_APP=true')) throw new Error('não achei <head> para marcar o app');
 fs.writeFileSync(path.join(WWW,'index.html'),html);

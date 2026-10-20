@@ -1,0 +1,391 @@
+{
+ "_leia": "Origem e licença de cada gravação em assets/sons/fontes. Só entram CC0 1.0 e CC BY 3.0 (atribuição em docs/AUDIO.md e nos créditos do jogo). Nada de CC BY-SA, GPL ou licença não declarada. Obtidos em 2026-10-20 dos repositórios abaixo (clone do GitHub), que registram autor e link do Freesound/OpenGameArt de cada arquivo.",
+ "_repos": {
+  "sonic-pi": {
+   "url": "https://github.com/sonic-pi-net/sonic-pi",
+   "commit": "df6f17e4625b0451fa2af8accf2e1e641c7ad458",
+   "caminho": "etc/samples",
+   "licenca_doc": "etc/samples/README.md: todas as amostras CC0 1.0, vindas do Freesound (algumas aparadas pelo Sonic Pi)"
+  },
+  "minetest_game": {
+   "url": "https://github.com/minetest/minetest_game",
+   "commit": "c42e4d0c0ff9d27ff7b9b308c3cfc14098dd3a0f",
+   "caminho": "mods/*/sounds",
+   "licenca_doc": "mods/default/README.md, mods/tnt/README.md e license.txt de cada mod"
+  },
+  "voxelibre": {
+   "url": "https://github.com/VoxeLibre/VoxeLibre",
+   "commit": "4492ce6ff8d856daa4567abe2ea689f4e7a39842",
+   "caminho": "mods/**/sounds",
+   "licenca_doc": "README de cada mod (mcl_bells, mcl_portals, mcl_mobs, mcl_throwing, mcl_potions, mcl_armor, mcl_mud, mcl_dripping, vl_cavesounds)"
+  }
+ },
+ "arquivos": {
+  "ambi_choir.flac": {
+   "repo": "sonic-pi",
+   "autor": "Exsomniel",
+   "fonte": "http://freesound.org/people/Exsomniel/sounds/207809/",
+   "licenca": "CC0 1.0"
+  },
+  "ambi_haunted_hum.flac": {
+   "repo": "sonic-pi",
+   "autor": "kaligari",
+   "fonte": "http://freesound.org/people/kaligari/sounds/35392/",
+   "licenca": "CC0 1.0"
+  },
+  "ambi_glass_hum.flac": {
+   "repo": "sonic-pi",
+   "autor": "kaligari",
+   "fonte": "http://freesound.org/people/kaligari/sounds/35391/",
+   "licenca": "CC0 1.0"
+  },
+  "ambi_glass_rub.flac": {
+   "repo": "sonic-pi",
+   "autor": "ani_music",
+   "fonte": "http://freesound.org/people/ani_music/sounds/198403/",
+   "licenca": "CC0 1.0"
+  },
+  "ambi_dark_woosh.flac": {
+   "repo": "sonic-pi",
+   "autor": "EcoDTR",
+   "fonte": "http://freesound.org/people/EcoDTR/sounds/27281/",
+   "licenca": "CC0 1.0"
+  },
+  "ambi_swoosh.flac": {
+   "repo": "sonic-pi",
+   "autor": "Halgrimm",
+   "fonte": "http://freesound.org/people/Halgrimm/sounds/169867/",
+   "licenca": "CC0 1.0"
+  },
+  "misc_crow.flac": {
+   "repo": "sonic-pi",
+   "autor": "davidworksonline",
+   "fonte": "http://freesound.org/people/davidworksonline/sounds/54973/",
+   "licenca": "CC0 1.0"
+  },
+  "misc_cineboom.flac": {
+   "repo": "sonic-pi",
+   "autor": "Northern_Monkey",
+   "fonte": "http://freesound.org/people/Northern_Monkey/sounds/177242/ (link marcado como desativado pelo Sonic Pi)",
+   "licenca": "CC0 1.0"
+  },
+  "perc_bell.flac": {
+   "repo": "sonic-pi",
+   "autor": "AlaskaRobotics",
+   "fonte": "http://freesound.org/people/AlaskaRobotics/sounds/221515/",
+   "licenca": "CC0 1.0"
+  },
+  "perc_bell2.flac": {
+   "repo": "sonic-pi",
+   "autor": "hullum",
+   "fonte": "https://freesound.org/people/hullum/sounds/415559/",
+   "licenca": "CC0 1.0"
+  },
+  "perc_impact1.flac": {
+   "repo": "sonic-pi",
+   "autor": "hullum",
+   "fonte": "https://freesound.org/people/hullum/sounds/415578/",
+   "licenca": "CC0 1.0"
+  },
+  "perc_impact2.flac": {
+   "repo": "sonic-pi",
+   "autor": "hullum",
+   "fonte": "https://freesound.org/people/hullum/sounds/415581/",
+   "licenca": "CC0 1.0"
+  },
+  "perc_door.flac": {
+   "repo": "sonic-pi",
+   "autor": "hullum",
+   "fonte": "https://freesound.org/people/hullum/sounds/415579/",
+   "licenca": "CC0 1.0"
+  },
+  "perc_swash.flac": {
+   "repo": "sonic-pi",
+   "autor": "qubodup",
+   "fonte": "http://freesound.org/people/qubodup/sounds/60009/",
+   "licenca": "CC0 1.0"
+  },
+  "perc_snap.flac": {
+   "repo": "sonic-pi",
+   "autor": "SoundCollectah",
+   "fonte": "http://www.freesound.org/people/SoundCollectah/sounds/109400/",
+   "licenca": "CC0 1.0"
+  },
+  "drum_heavy_kick.flac": {
+   "repo": "sonic-pi",
+   "autor": "Zajo",
+   "fonte": "http://freesound.org/people/Zajo/sounds/4832/",
+   "licenca": "CC0 1.0"
+  },
+  "drum_tom_lo_hard.flac": {
+   "repo": "sonic-pi",
+   "autor": "menegass",
+   "fonte": "http://www.freesound.org/people/menegass/sounds/100064/",
+   "licenca": "CC0 1.0"
+  },
+  "default_hard_footstep.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "Erdie",
+   "fonte": "https://freesound.org/people/Erdie/sounds/41579/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_hard_footstep.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "Erdie",
+   "fonte": "https://freesound.org/people/Erdie/sounds/41579/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_hard_footstep.3.ogg": {
+   "repo": "minetest_game",
+   "autor": "Erdie",
+   "fonte": "https://freesound.org/people/Erdie/sounds/41579/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_sand_footstep.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "worthahep88",
+   "fonte": "https://freesound.org/people/worthahep88/sounds/319224/",
+   "licenca": "CC0 1.0"
+  },
+  "default_sand_footstep.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "worthahep88",
+   "fonte": "https://freesound.org/people/worthahep88/sounds/319224/",
+   "licenca": "CC0 1.0"
+  },
+  "default_sand_footstep.3.ogg": {
+   "repo": "minetest_game",
+   "autor": "worthahep88",
+   "fonte": "https://freesound.org/people/worthahep88/sounds/319224/",
+   "licenca": "CC0 1.0"
+  },
+  "default_snow_footstep.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "Ryding",
+   "fonte": "http://freesound.org/people/Ryding/sounds/94337/",
+   "licenca": "CC0 1.0"
+  },
+  "default_snow_footstep.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "Ryding",
+   "fonte": "http://freesound.org/people/Ryding/sounds/94337/",
+   "licenca": "CC0 1.0"
+  },
+  "default_snow_footstep.3.ogg": {
+   "repo": "minetest_game",
+   "autor": "Ryding",
+   "fonte": "http://freesound.org/people/Ryding/sounds/94337/",
+   "licenca": "CC0 1.0"
+  },
+  "default_snow_footstep.4.ogg": {
+   "repo": "minetest_game",
+   "autor": "Ryding",
+   "fonte": "http://freesound.org/people/Ryding/sounds/94337/",
+   "licenca": "CC0 1.0"
+  },
+  "default_snow_footstep.5.ogg": {
+   "repo": "minetest_game",
+   "autor": "Ryding",
+   "fonte": "http://freesound.org/people/Ryding/sounds/94337/",
+   "licenca": "CC0 1.0"
+  },
+  "default_gravel_dig.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "lolamadeus",
+   "fonte": "https://freesound.org/people/lolamadeus/sounds/179341/",
+   "licenca": "CC0 1.0"
+  },
+  "default_gravel_dig.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "lolamadeus",
+   "fonte": "https://freesound.org/people/lolamadeus/sounds/179341/",
+   "licenca": "CC0 1.0"
+  },
+  "default_dig_cracky.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "Benboncan",
+   "fonte": "https://freesound.org/people/Benboncan/sounds/71823/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_dig_cracky.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "Benboncan",
+   "fonte": "https://freesound.org/people/Benboncan/sounds/71823/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_dig_cracky.3.ogg": {
+   "repo": "minetest_game",
+   "autor": "Benboncan",
+   "fonte": "https://freesound.org/people/Benboncan/sounds/71823/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_dig_choppy.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "Sheyvan",
+   "fonte": "https://freesound.org/people/Sheyvan/sounds/476113/",
+   "licenca": "CC0 1.0"
+  },
+  "default_dig_choppy.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "Sheyvan",
+   "fonte": "https://freesound.org/people/Sheyvan/sounds/476113/",
+   "licenca": "CC0 1.0"
+  },
+  "default_dig_choppy.3.ogg": {
+   "repo": "minetest_game",
+   "autor": "Sheyvan",
+   "fonte": "https://freesound.org/people/Sheyvan/sounds/476113/",
+   "licenca": "CC0 1.0"
+  },
+  "default_dug_metal.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "Iwan Gabovitch (qubodup)",
+   "fonte": "http://opengameart.org/users/qubodup",
+   "licenca": "CC0 1.0"
+  },
+  "default_dug_metal.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "Iwan Gabovitch (qubodup)",
+   "fonte": "http://opengameart.org/users/qubodup",
+   "licenca": "CC0 1.0"
+  },
+  "default_place_node_metal.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "Ogrebane",
+   "fonte": "http://opengameart.org/content/wood-and-metal-sound-effects-volume-2",
+   "licenca": "CC0 1.0"
+  },
+  "default_dig_metal.ogg": {
+   "repo": "minetest_game",
+   "autor": "yadronoff",
+   "fonte": "https://www.freesound.org/people/yadronoff/sounds/320397/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_break_glass.1.ogg": {
+   "repo": "minetest_game",
+   "autor": "cmusounddesign",
+   "fonte": "http://www.freesound.org/people/cmusounddesign/sounds/71947/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_break_glass.2.ogg": {
+   "repo": "minetest_game",
+   "autor": "Tomlija",
+   "fonte": "http://www.freesound.org/people/Tomlija/sounds/97669/",
+   "licenca": "CC BY 3.0"
+  },
+  "default_break_glass.3.ogg": {
+   "repo": "minetest_game",
+   "autor": "lsprice",
+   "fonte": "http://www.freesound.org/people/lsprice/sounds/88808/",
+   "licenca": "CC BY 3.0"
+  },
+  "player_damage.ogg": {
+   "repo": "minetest_game",
+   "autor": "sonictechtonic",
+   "fonte": "https://www.freesound.org/people/sonictechtonic/sounds/241872/",
+   "licenca": "CC BY 3.0"
+  },
+  "tnt_explode.ogg": {
+   "repo": "minetest_game",
+   "autor": "steveygos93 (editado por TumeniNodes)",
+   "fonte": "https://freesound.org/s/80401/",
+   "licenca": "CC0 1.0"
+  },
+  "tnt_ignite.ogg": {
+   "repo": "minetest_game",
+   "autor": "theneedle.tv (editado por TumeniNodes)",
+   "fonte": "https://freesound.org/s/316682/",
+   "licenca": "CC0 1.0"
+  },
+  "drippingwater_drip.1.ogg": {
+   "repo": "voxelibre",
+   "autor": "mcl_dripping (VoxeLibre)",
+   "fonte": "mods/ENTITIES/mcl_dripping/README.md",
+   "licenca": "CC0 1.0"
+  },
+  "drippingwater_drip.2.ogg": {
+   "repo": "voxelibre",
+   "autor": "mcl_dripping (VoxeLibre)",
+   "fonte": "mods/ENTITIES/mcl_dripping/README.md",
+   "licenca": "CC0 1.0"
+  },
+  "drippingwater_drip.3.ogg": {
+   "repo": "voxelibre",
+   "autor": "mcl_dripping (VoxeLibre)",
+   "fonte": "mods/ENTITIES/mcl_dripping/README.md",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_bells_bell_stroke.ogg": {
+   "repo": "voxelibre",
+   "autor": "edsward (modificado por sorcerykid)",
+   "fonte": "https://freesound.org/people/edsward/sounds/341866/",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_portals_open_end_portal.ogg": {
+   "repo": "voxelibre",
+   "autor": "Johnnie_Holiday",
+   "fonte": "https://freesound.org/people/Johnnie_Holiday/sounds/546571/",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_portals_teleport.ogg": {
+   "repo": "voxelibre",
+   "autor": "FreqMan e Wuzzy",
+   "fonte": "https://freesound.org/people/FreqMan/sounds/32541/",
+   "licenca": "CC BY 3.0"
+  },
+  "mcl_mobs_mob_poof.ogg": {
+   "repo": "voxelibre",
+   "autor": "Planman",
+   "fonte": "https://freesound.org/people/Planman/sounds/208111/",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_throwing_throw.ogg": {
+   "repo": "voxelibre",
+   "autor": "kretopi",
+   "fonte": "https://freesound.org/people/kretopi/sounds/406405/",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_throwing_egg_impact.ogg": {
+   "repo": "voxelibre",
+   "autor": "dav0r",
+   "fonte": "https://freesound.org/people/dav0r/sounds/176760/",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_potions_bottle_fill.ogg": {
+   "repo": "voxelibre",
+   "autor": "mcl_potions (VoxeLibre)",
+   "fonte": "mods/ITEMS/mcl_potions/README.txt (Sounds: CC0)",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_armor_equip_iron.ogg": {
+   "repo": "voxelibre",
+   "autor": "mitchanary",
+   "fonte": "https://freesound.org/people/mitchanary/sounds/506148/",
+   "licenca": "CC0 1.0"
+  },
+  "mcl_armor_equip_chainmail.ogg": {
+   "repo": "voxelibre",
+   "autor": "artisticdude",
+   "fonte": "https://opengameart.org/content/rpg-sound-pack",
+   "licenca": "CC0 1.0"
+  },
+  "mud_footsteps.ogg": {
+   "repo": "voxelibre",
+   "autor": "TheRandomLegoBrick",
+   "fonte": "mods/ITEMS/mcl_mud/README.txt",
+   "licenca": "CC0 1.0"
+  },
+  "cave4.ogg": {
+   "repo": "voxelibre",
+   "autor": "rubberduck (gong_01)",
+   "fonte": "https://opengameart.org/content/100-cc0-sfx",
+   "licenca": "CC0 1.0"
+  },
+  "cave1.ogg": {
+   "repo": "voxelibre",
+   "autor": "Paolo D'Emilio",
+   "fonte": "https://opengameart.org/content/scary-monster",
+   "licenca": "CC BY 3.0"
+  }
+ }
+}
