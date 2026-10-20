@@ -546,6 +546,9 @@ function reclaimHuman(g,slotIdx,cid,name){
 }
 
 
+// versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
+const VERSAO='5.6', REGISTRO=2;
+
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.
 const pontoNav=(x,z)=>{ let m=null,md=1e9; for(let i=0;i<WP.length;i++){ if(NAV.comp[i]!==NAV.principal) continue; const w=WP[i], d=Math.hypot(w.x-x,w.z-z); if(d<md){ md=d; m=w; } } return {x:m.x,z:m.z}; };
@@ -900,7 +903,7 @@ function humanActions(g,a,dt){
 // ============ ALTARES ============
 function mareFactor(g){ return 1+Math.min(.2,Math.floor((g.rt-g.lastResolveT)/60)*.05); }
 function startRitual(g,A,by){
-  A.state='active'; A.startT=g.rt; A.localized=false; A.selo=1; A.arrived=false; A.maxN=0; A.tardio=g.momento>=2; A.grande=fendas(g)+farois(g)>=2; A.eco=false;
+  A.state='active'; A.startT=g.rt; A.localized=false; A.selo=1; A.arrived=false; A.maxN=0; A.tardio=g.momento>=2; A.grande=fendas(g)+farois(g)>=2; A.eco=false; A.obs={perto:{},errado:{},dentro:{}};
   if(g.buff.selo>g.t){ A.selo=1.1; g.buff.selo=0; feed(g,'Selo de Luz corrompido: este ritual corre 10% mais rápido.','c','C'); }
   const n=g.actors.filter(c=>c.team==='C'&&c.st==='alive'&&inCircle(c,A)).length;
   sentinelaAvisa(g,A,'um ritual começou');
@@ -927,9 +930,23 @@ function resolveAltar(g,A,kind){
   const F=fendas(g), P=farois(g);
   if(F+P>=3||(g.lab.formato!=='placar'&&(F>=2||P>=2))) g.endAt=g.rt+3;
 }
+// Observação para o relatório (não muda regra nenhuma): onde a caça esteve durante o ritual e por que o culto saiu do
+// círculo. Separa "nunca chegou", "foi ao altar errado", "chegou perto e não entrou", "chegou tarde" e "perdeu a disputa".
+const MOTIVO_BOT=[['npc','comprar'],['tr','transferir'],['dg','chamariz'],['rv','reanimar'],['ex','executar'],['r','reagente'],['pedido','ping'],['desvio','desvio'],['ch','voltar ao círculo']];
+function observarRitual(g,A){ const O=A.obs||(A.obs={perto:{},errado:{},dentro:{}});
+  for(const h of g.actors){ if(h.team!=='H'||h.st!=='alive') continue;
+    if(!O.perto[h.id]&&dist(h,A)<25){ O.perto[h.id]=1; logE(g,'caca_perto',{altar:A.name,who:h.name,prog:r2(A.prog)}); }
+    for(const B of g.altars){ if(B===A||B.state==='fenda'||B.state==='farol'||dist(h,B)>=8) continue; const k=h.id+':'+B.i; if(O.errado[k]) continue; O.errado[k]=1;
+      const S=g.eco&&SETORES.find(x=>x.id===g.eco.setor); logE(g,'altar_errado',{ritual:A.name,altar:B.name,who:h.name,prog:r2(A.prog),comEco:!!g.eco,doSetor:!!(S&&S.altares.includes(B.i))}); } }
+  for(const c of g.actors){ if(c.team!=='C') continue; const dentro=c.st==='alive'&&inCircle(c,A);
+    if(O.dentro[c.id]&&!dentro){ let motivo='jogador';
+      if(c.st!=='alive') motivo='caiu'; else if(!c.human){ const k=c.ai.goalKey||''; const M=MOTIVO_BOT.find(([p])=>k.startsWith(p)); motivo=c.ai.target?'lutar':M?M[1]:k||'nenhum'; }
+      logE(g,'canal_saiu',{altar:A.name,who:c.name,prog:r2(A.prog),motivo}); }
+    O.dentro[c.id]=dentro?1:0; } }
 function updateAltars(g,dt){
   for(const A of g.altars){
     if(A.state!=='active') continue;
+    observarRitual(g,A);
     // quem acabou de atacar (sigilo ou Empurrão) não canaliza (CFG.ataqueCanal): defender e celebrar são escolhas separadas
     const ch=g.actors.filter(c=>c.team==='C'&&c.st==='alive'&&inCircle(c,A)&&!(CFG.ataqueCanal>0&&g.t-c.ataqueT<CFG.ataqueCanal)).slice(0,2), n=ch.length;
     let rune=false;
@@ -957,7 +974,9 @@ function updateAltars(g,dt){
       A.seal+=rate*dt; A.sealIdle=0; A.fireT=(A.fireT||0)+(at?dt:0); A.sealT=(A.sealT||0)+dt;
     } else {
       if(A.sealers.length){ const who=A.sealers.map(id=>g.actors.find(x=>x.id===id)).filter(Boolean);
-        const cause=who.some(x=>x.st!=='alive')?'caído':who.some(x=>g.t-x.pushedT<.6)?'empurrão':who.some(x=>x.stunT>0)?'atordoado':'saiu';
+        // 'soltou': continuou no círculo e parou de selar (bot que trocou o selo pela luta: 'lutar'); 'saiu': deixou o círculo
+        const cause=who.some(x=>x.st!=='alive')?'caído':who.some(x=>g.t-x.pushedT<.6)?'empurrão':who.some(x=>x.stunT>0)?'atordoado':
+          who.some(x=>inCircle(x,A))?(who.some(x=>!x.human&&x.ai.target)?'lutar':'soltou'):'saiu';
         logE(g,'seal_stop',{altar:A.name,seal:r2(A.seal),cause}); }
       A.sealIdle+=dt; if(A.sealIdle>3) A.seal=Math.max(0,A.seal-dt/CFG.seal);
     }
@@ -1296,7 +1315,7 @@ function roundStats(g,round){
   const starts=c('ritual_start'), arrive=c('hunter_arrive'), sStart=c('seal_start'), sStop=c('seal_stop'), sealed=c('sealed');
   const fireT=g.altars.reduce((s,A)=>s+(A.fireT||0),0), sealT=g.altars.reduce((s,A)=>s+(A.sealT||0),0);
   return {rituais:starts.length,completos:c('ritual_complete').length,selados:sealed.length,chegadas:arrive.length,
-    tentativasSelo:sStart.length,cancelados:sStop.filter(e=>e.cause!=='saiu').length,
+    tentativasSelo:sStart.length,cancelados:sStop.filter(e=>e.cause==='caído'||e.cause==='empurrão'||e.cause==='atordoado').length, // interrompidos pelo culto
     fracaoSobFogo:sealT>0?r2(fireT/sealT):null,primeiroContato:L.find(e=>e.ev==='first_contact')?.t??null,
     quedas:c('down').length,mortes:c('death').length,reanimacoes:c('revive').length,purgas:c('purge').length,chamarizes:c('decoy').length,transferencias:c('transfer').length};
 }
@@ -1312,8 +1331,14 @@ function relatorio(log,r){ r=r||1;
   const rituais=c('ritual_start').map(s=>{ const fimR=L.find(e=>(e.ev==='sealed'||e.ev==='ritual_complete')&&e.altar===s.altar&&e.t>=s.t);
     const loc=L.find(e=>e.ev==='localized'&&e.altar===s.altar&&e.t>=s.t), cheg=L.find(e=>e.ev==='hunter_arrive'&&e.altar===s.altar&&e.t>=s.t);
     const sel=L.filter(e=>e.ev==='seal_start'&&e.altar===s.altar&&e.t>=s.t&&(!fimR||e.t<=fimR.t)).length;
-    return {altar:s.altar,inicio:s.t,localizado:loc?r2(loc.t-s.t):null,chegada:cheg?r2(cheg.t-s.t):null,tentativasSelo:sel,
-      resultado:fimR?(fimR.ev==='sealed'?'farol':'fenda'):'aberto',duracao:fimR?r2(fimR.t-s.t):null,localizarAoFim:loc&&fimR?r2(fimR.t-loc.t):null}; });
+    const no=L.filter(e=>e.t>=s.t&&(!fimR||e.t<=fimR.t)), resultado=fimR?(fimR.ev==='sealed'?'farol':'fenda'):'aberto';
+    const perto=no.some(e=>e.ev==='caca_perto'&&e.altar===s.altar), errados=no.filter(e=>e.ev==='altar_errado'&&e.ritual===s.altar);
+    // o que aconteceu com a caça neste ritual (na ordem: o resultado, depois o quanto ela chegou perto)
+    const caca=resultado==='farol'?'selou':resultado==='aberto'?'aberto':cheg?(cheg.remaining<CFG.sealMin?'chegou_tarde':'perdeu_disputa'):perto?'perto_sem_entrar':errados.length?'altar_errado':'nunca_chegou';
+    return {altar:s.altar,inicio:s.t,localizado:loc?r2(loc.t-s.t):null,comoLocalizou:loc?loc.how:null,chegada:cheg?r2(cheg.t-s.t):null,restanteNaChegada:cheg?cheg.remaining:null,tentativasSelo:sel,
+      resultado,caca,altaresErrados:errados.map(e=>e.altar),interrupcoesSelo:no.filter(e=>e.ev==='seal_stop'&&e.altar===s.altar).map(e=>e.cause),
+      cultoSaiu:no.filter(e=>e.ev==='canal_saiu'&&e.altar===s.altar).map(e=>e.motivo),duracao:fimR?r2(fimR.t-s.t):null,localizarAoFim:loc&&fimR?r2(fimR.t-loc.t):null}; });
+  const conversao={}; rituais.forEach(R=>conversao[R.caca]=(conversao[R.caca]||0)+1);
   const causas={}; c('seal_stop').forEach(e=>causas[e.cause]=(causas[e.cause]||0)+1);
   const feiticos={}; c('ability').forEach(e=>feiticos[e.feitico]=(feiticos[e.feitico]||0)+1);
   const mortes=c('death'), purgas=c('purge');
@@ -1325,7 +1350,7 @@ function relatorio(log,r){ r=r||1;
       sal:c('sal').length,rastrosVistos:c('rastro_visto').length,rastrosLidos:c('rastro_lido').length,pings:c('ping').length,frases:c('fala').length,feiticos},
     engano:{chamarizes:c('decoy').length,chamarizesDesmascarados:c('decoy_spotted').length,chamarizesQueimados:purgas.filter(e=>e.decoy).length,
       purgasDeAltarVerdadeiro:purgas.filter(e=>!e.decoy).length,evpEmChamariz:c('evp').filter(e=>!e.real).length,transferencias:c('transfer').length},
-    rituais,
+    rituais, conversao,
     selamento:{tentativas:c('seal_start').length,interrupcoes:causas,selados:c('sealed').length},
     combate:{primeiraQueda:c('down').length?c('down')[0].t:null,quedas:c('down').length,execucoes:mortes.filter(e=>e.how==='exec').length,
       sangraram:mortes.filter(e=>e.how==='bleed').length,reanimacoes:c('revive').length},
@@ -1405,5 +1430,5 @@ function snapshot(g,role){
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,eventoPara,ALCANCE_SOM,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

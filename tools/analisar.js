@@ -9,6 +9,8 @@ const args=process.argv.slice(2);
 const dir=args.find(a=>!a.startsWith('--'))||path.join(__dirname,'..','logs');
 const csvOut=args.includes('--csv')?args[args.indexOf('--csv')+1]:null;
 const Sim=require('../shared/sim.js');
+const CACA_NOME={selou:'selou (Farol)',perdeu_disputa:'chegou a tempo e perdeu o círculo',chegou_tarde:'chegou tarde demais',perto_sem_entrar:'chegou perto e não entrou',altar_errado:'foi a outro altar e não chegou',nunca_chegou:'nunca chegou perto',aberto:'noite acabou antes'};
+const CONV={}, SAIDA={}, VERSOES={};
 const NOITE={n:0,culto:0,fendas:0,farois:0,duracao:[],verdade:[],semVerdade:0,maiorSemPista:[],pistas:[],lanterna:0,desmasc:0,localizarFim:[],labs:{}};
 
 const METAS={
@@ -67,7 +69,8 @@ for(const f of files){
     NOITE.fendas+=M.fendas; NOITE.farois+=M.farois; NOITE.duracao.push(M.duracao); NOITE.pistas.push(I.pistasNovas); NOITE.maiorSemPista.push(I.maiorIntervaloSemPista);
     if(I.primeiraVerdade!=null) NOITE.verdade.push(I.primeiraVerdade); else NOITE.semVerdade++;
     NOITE.lanterna+=M.ferramentas.lanterna; NOITE.desmasc+=M.engano.chamarizesDesmascarados;
-    M.rituais.forEach(R=>{ if(R.localizarAoFim!=null) NOITE.localizarFim.push(R.localizarAoFim); });
+    M.rituais.forEach(R=>{ if(R.localizarAoFim!=null) NOITE.localizarFim.push(R.localizarAoFim); CONV[R.caca]=(CONV[R.caca]||0)+1; (R.cultoSaiu||[]).forEach(m=>SAIDA[m]=(SAIDA[m]||0)+1); });
+    const v=J.versao?`v${J.versao} (registro ${J.registro})`:'anterior à v5.6'; VERSOES[v]=(VERSOES[v]||0)+1;
     const lab=Sim.labDe(J.lab), mud=Object.keys(Sim.LAB_OPCOES).filter(k=>lab[k]!==Sim.labDe()[k]).map(k=>`${k}=${lab[k]}`).join(',')||'padrão'; NOITE.labs[mud]=(NOITE.labs[mud]||0)+1; }
   const S=J.scores||{};
   if(S.A&&S.B){ A.vitorias.total++; if(S.A.done===S.B.done){ if(S.A.lastT!==S.B.lastT||Math.abs(S.A.maxP-S.B.maxP)>.005) A.desempates++; else A.empates++; } }
@@ -137,7 +140,14 @@ if(NOITE.n){ L.push('\nNOITE ÚNICA (relatório de playtest)'); L.push('-'.repea
   linha('Pistas novas por noite', num(avg(NOITE.pistas)), '', '');
   linha('Maior trecho sem pista (mediana)', seg(med(NOITE.maiorSemPista)), '', '');
   linha('Da localização ao fim do ritual', num(med(NOITE.localizarFim),0)+' s', 'mediana', '');
-  linha('Lanterna em altar desperto', NOITE.lanterna, `${NOITE.desmasc} Chamarizes desmascarados`, ''); }
+  linha('Lanterna em altar desperto', NOITE.lanterna, `${NOITE.desmasc} Chamarizes desmascarados`, '');
+  linha('Versões dos registros', Object.entries(VERSOES).map(([k,v])=>`${k}: ${v}`).join('; '), '', '');
+  const totR=Object.values(CONV).reduce((a,b)=>a+b,0);
+  if(totR&&!CONV.undefined){ L.push('\nO QUE A CAÇA FEZ EM CADA RITUAL'); L.push('-'.repeat(78));
+    for(const k of ['selou','perdeu_disputa','chegou_tarde','perto_sem_entrar','altar_errado','nunca_chegou','aberto']) if(CONV[k]) linha(CACA_NOME[k], CONV[k], pct(CONV[k]/totR), ''); }
+  const totS=Object.values(SAIDA).reduce((a,b)=>a+b,0);
+  if(totS){ L.push('\nPOR QUE UM CULTISTA SAIU DO CÍRCULO COM O RITUAL EM ANDAMENTO'); L.push('-'.repeat(78));
+    for(const [k,v] of Object.entries(SAIDA).sort((a,b)=>b[1]-a[1])) linha(k, v, pct(v/totS), ''); } }
 
 const fora=Object.keys(METAS).filter(k=>medido[k]!=null&&status(k,medido[k])!=='na meta');
 L.push('\n'+(fora.length?`Fora da meta: ${fora.map(k=>METAS[k][2]).join('; ')}.`:'Todas as métricas principais estão dentro da meta.'));

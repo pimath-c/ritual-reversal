@@ -636,7 +636,7 @@ namespace RitualReversal.Simulacao
         public static double MareFactor(Jogo g) { return 1 + Math.Min(.2, Math.Floor((g.rt - g.lastResolveT) / 60) * .05); }
         static void StartRitual(Jogo g, Altar A, Ator by)
         {
-            A.state = "active"; A.startT = g.rt; A.localized = false; A.selo = 1; A.arrived = false; A.maxN = 0; A.tardio = g.momento >= 2; A.grande = Fendas(g) + Farois(g) >= 2; A.eco = false;
+            A.state = "active"; A.startT = g.rt; A.localized = false; A.selo = 1; A.arrived = false; A.maxN = 0; A.tardio = g.momento >= 2; A.grande = Fendas(g) + Farois(g) >= 2; A.eco = false; A.obs = new ObsRitual();
             if (g.buff.selo > g.t) { A.selo = 1.1; g.buff.selo = 0; Feed(g, "Selo de Luz corrompido: este ritual corre 10% mais rápido.", "c", "C"); }
             int n = g.actors.Count(c => c.team == "C" && c.st == "alive" && InCircle(c, A));
             SentinelaAvisa(g, A, "um ritual começou");
@@ -672,12 +672,42 @@ namespace RitualReversal.Simulacao
             int F = Fendas(g), P = Farois(g);
             if (F + P >= 3 || (g.lab.formato != "placar" && (F >= 2 || P >= 2))) g.endAt = g.rt + 3;
         }
+        // observação para o relatório (não muda regra): onde a caça esteve durante o ritual e por que o culto saiu do círculo
+        static readonly string[][] MOTIVO_BOT = { new[] { "npc", "comprar" }, new[] { "tr", "transferir" }, new[] { "dg", "chamariz" }, new[] { "rv", "reanimar" }, new[] { "ex", "executar" }, new[] { "r", "reagente" }, new[] { "pedido", "ping" }, new[] { "desvio", "desvio" }, new[] { "ch", "voltar ao círculo" } };
+        static void ObservarRitual(Jogo g, Altar A)
+        {
+            var O = A.obs ?? (A.obs = new ObsRitual());
+            foreach (var h in g.actors)
+            {
+                if (h.team != "H" || h.st != "alive") continue;
+                if (!O.perto.Contains(h.id) && Dist(h, A) < 25) { O.perto.Add(h.id); LogE(g, "caca_perto", "altar", A.name, "who", h.name, "prog", R2(A.prog)); }
+                foreach (var B in g.altars)
+                {
+                    if (B == A || B.state == "fenda" || B.state == "farol" || Dist(h, B) >= 8) continue; string k = h.id + ":" + B.i; if (O.errado.Contains(k)) continue; O.errado.Add(k);
+                    var S = g.eco != null ? SETORES.FirstOrDefault(x => x.id == g.eco.setor) : null;
+                    LogE(g, "altar_errado", "ritual", A.name, "altar", B.name, "who", h.name, "prog", R2(A.prog), "comEco", g.eco != null, "doSetor", S != null && S.altares.Contains(B.i));
+                }
+            }
+            foreach (var c in g.actors)
+            {
+                if (c.team != "C") continue; bool dentro = c.st == "alive" && InCircle(c, A); bool antes; O.dentro.TryGetValue(c.id, out antes);
+                if (antes && !dentro)
+                {
+                    string motivo = "jogador";
+                    if (c.st != "alive") motivo = "caiu";
+                    else if (!c.human) { string k = c.ai.goalKey ?? ""; var M = MOTIVO_BOT.FirstOrDefault(p => k.StartsWith(p[0], StringComparison.Ordinal)); motivo = c.ai.target != null ? "lutar" : M != null ? M[1] : (k != "" ? k : "nenhum"); }
+                    LogE(g, "canal_saiu", "altar", A.name, "who", c.name, "prog", R2(A.prog), "motivo", motivo);
+                }
+                O.dentro[c.id] = dentro;
+            }
+        }
         static void UpdateAltars(Jogo g, double dt)
         {
             foreach (var A in g.altars)
             {
                 if (A.state != "active") continue;
-                // quem acabou de lançar um sigilo não canaliza: defender e celebrar são escolhas separadas
+                ObservarRitual(g, A);
+                // quem acabou de atacar (sigilo ou Empurrão) não canaliza: defender e celebrar são escolhas separadas
                 var ch = g.actors.Where(c => c.team == "C" && c.st == "alive" && InCircle(c, A) && !(CFG.ataqueCanal > 0 && g.t - c.ataqueT < CFG.ataqueCanal)).Take(2).ToList(); int n = ch.Count;
                 bool rune = false;
                 if (n > 0)
@@ -715,7 +745,9 @@ namespace RitualReversal.Simulacao
                     if (A.sealers.Count > 0)
                     {
                         var who = A.sealers.Select(id => g.actors.FirstOrDefault(x => x.id == id)).Where(x => x != null).ToList();
-                        string cause = who.Any(x => x.st != "alive") ? "caído" : who.Any(x => g.t - x.pushedT < .6) ? "empurrão" : who.Any(x => x.stunT > 0) ? "atordoado" : "saiu";
+                        // "soltou": continuou no círculo e parou de selar (bot que trocou o selo pela luta: "lutar"); "saiu": deixou o círculo
+                        string cause = who.Any(x => x.st != "alive") ? "caído" : who.Any(x => g.t - x.pushedT < .6) ? "empurrão" : who.Any(x => x.stunT > 0) ? "atordoado" :
+                            who.Any(x => InCircle(x, A)) ? (who.Any(x => !x.human && x.ai.target != null) ? "lutar" : "soltou") : "saiu";
                         LogE(g, "seal_stop", "altar", A.name, "seal", R2(A.seal), "cause", cause);
                     }
                     A.sealIdle += dt; if (A.sealIdle > 3) A.seal = Math.Max(0, A.seal - dt / CFG.seal);
@@ -864,7 +896,7 @@ namespace RitualReversal.Simulacao
             return new Estatisticas
             {
                 rituais = c("ritual_start").Count, completos = c("ritual_complete").Count, selados = c("sealed").Count, chegadas = c("hunter_arrive").Count,
-                tentativasSelo = c("seal_start").Count, cancelados = c("seal_stop").Count(e => (string)e["cause"] != "saiu"),
+                tentativasSelo = c("seal_start").Count, cancelados = c("seal_stop").Count(e => (string)e["cause"] == "caído" || (string)e["cause"] == "empurrão" || (string)e["cause"] == "atordoado"), // interrompidos pelo culto
                 fracaoSobFogo = sealT > 0 ? R2(fireT / sealT) : (double?)null, primeiroContato = fc != null ? fc.t : (double?)null,
                 quedas = c("down").Count, mortes = c("death").Count, reanimacoes = c("revive").Count, purgas = c("purge").Count, chamarizes = c("decoy").Count, transferencias = c("transfer").Count
             };

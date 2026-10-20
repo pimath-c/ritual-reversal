@@ -2952,15 +2952,16 @@ function finalScreen(){
 const REL={aberto:false};
 const PERGUNTAS_PLAYTEST=['Em que momento você sentiu que estava investigando de verdade?','Em que momento sentiu que estava só correndo de um lugar a outro?',
   'Qual informação mudou a sua decisão?','Quando você sentiu que não tinha como responder ao adversário?','Qual mecânica você tiraria do jogo?','Você jogaria mais uma partida? Por quê?'];
-const CAUSA_SELO={'caído':'caiu','empurrão':'Empurrão','atordoado':'atordoado','saiu':'saiu do círculo'};
+const CAUSA_SELO={'caído':'caiu','empurrão':'Empurrão','atordoado':'atordoado','saiu':'saiu do círculo','soltou':'soltou o E','lutar':'parou para lutar'};
+const CACA_TXT={selou:'Selou',perdeu_disputa:'Chegou a tempo e perdeu o círculo',chegou_tarde:'Chegou tarde demais',perto_sem_entrar:'Chegou perto e não entrou',altar_errado:'Foi a outro altar e não chegou',nunca_chegou:'Nunca chegou perto',aberto:'A noite acabou antes'};
 const COMO_DESCOBRIU={evp:'EVP',sentinela:'sentinela',lanterna:'Lanterna',rastro_lido:'marcas de arrasto',localized:'o coro revelou o ritual'};
 function respostasPlaytest(){ try{ return JSON.parse(localStorage.getItem('rr-resp-'+V.matchId)||'[]'); }catch(e){ return []; } }
 function guardarRespostas(r){ try{ localStorage.setItem('rr-resp-'+V.matchId,JSON.stringify(r)); }catch(e){} }
 function dadosRelatorio(){ const log=logDaNoite()||[], rodadas=UMA_NOITE()?[1]:[1,2];
-  return {jogo:'Ritual Reversal',versao:'5.5',partida:V.matchId,quando:new Date().toISOString(),papel:myRole(),lab:LAB(),mudancas:labMudancas(LAB()),
+  return {jogo:'Ritual Reversal',versao:Sim.VERSAO,registroVersao:Sim.REGISTRO,partida:V.matchId,quando:new Date().toISOString(),papel:myRole(),lab:LAB(),mudancas:labMudancas(LAB()),
     vencedor:Sim.winner(V),jogadores:V.slots.map(s=>({nome:s.name,equipe:s.team,humano:!!s.cid})),
     metricas:rodadas.map(r=>Sim.relatorio(log,r)),respostas:PERGUNTAS_PLAYTEST.map((p,i)=>({pergunta:p,resposta:respostasPlaytest()[i]||''})),registro:log}; }
-function textoRelatorio(D){ const L=[`Ritual Reversal v5.5 · relatório do playtest · partida ${D.partida}`,`Regras: ${D.mudancas.length?D.mudancas.join(' · '):'normais'}`,`Resultado: ${D.vencedor?D.vencedor.why:'—'}`];
+function textoRelatorio(D){ const L=[`Ritual Reversal v${Sim.VERSAO} · relatório do playtest · partida ${D.partida}`,`Regras: ${D.mudancas.length?D.mudancas.join(' · '):'normais'}`,`Resultado: ${D.vencedor?D.vencedor.why:'—'}`];
   for(const M of D.metricas){ const I=M.investigacao, E=M.engano, C=M.combate, S=M.selamento;
     L.push('',`Rodada ${M.rodada}: ${M.fendas} Fendas, ${M.farois} Faróis, ${fmt(M.duracao)} de noite`,
       `Investigação: primeira verdade aos ${I.primeiraVerdade!=null?fmt(I.primeiraVerdade):'—'} (${COMO_DESCOBRIU[I.comoDescobriu]||'—'}), ${I.pistasNovas} pistas novas, maior trecho sem pista ${fmt(I.maiorIntervaloSemPista)}`,
@@ -2980,9 +2981,9 @@ function relatorioScreen(){ const log=logDaNoite();
       ${tr('Pistas novas para a caça',I.pistasNovas,'sinais, EVP, sentinelas, Lanterna, rastros, Sal, Sensor com sinal')}
       ${tr('Maior trecho sem pista nova',t(I.maiorIntervaloSemPista),'Muito longo: a caça passou tempo andando sem aprender nada.')}
       ${tr('Trecho médio sem pista nova',t(I.intervaloMedioSemPista),'')}</table>
-    <table class="res rel"><tr><th>Ritual</th><th class="n">Início</th><th class="n">Localizado</th><th class="n">Caça chegou</th><th class="n">Selos</th><th>Resultado</th></tr>
-      ${M.rituais.map(R=>`<tr><td>${esc(R.altar)}</td><td class="n">${t(R.inicio)}</td><td class="n">${s(R.localizado)}</td><td class="n">${s(R.chegada)}</td><td class="n">${R.tentativasSelo}</td><td>${R.resultado==='farol'?'Farol':R.resultado==='fenda'?'Fenda':'—'}</td></tr>`).join('')||'<tr><td colspan="6">Nenhum ritual começou.</td></tr>'}</table>
-    <p class="fine" style="text-align:left!important">Tempos contados desde o início de cada ritual. Chegar e não selar mostra onde a conversão falha.</p>
+    <table class="res rel"><tr><th>Ritual</th><th class="n">Início</th><th class="n">Localizado</th><th class="n">Caça chegou</th><th class="n">Selos</th><th>Resultado</th><th>A caça</th></tr>
+      ${M.rituais.map(R=>`<tr><td>${esc(R.altar)}</td><td class="n">${t(R.inicio)}</td><td class="n">${s(R.localizado)}</td><td class="n">${s(R.chegada)}</td><td class="n">${R.tentativasSelo}</td><td>${R.resultado==='farol'?'Farol':R.resultado==='fenda'?'Fenda':'—'}</td><td class="fine">${esc(CACA_TXT[R.caca]||'')}${R.altaresErrados&&R.altaresErrados.length?` (passou por ${esc([...new Set(R.altaresErrados)].join(', '))})`:''}${R.cultoSaiu&&R.cultoSaiu.length?`; culto saiu do círculo: ${esc(R.cultoSaiu.join(', '))}`:''}</td></tr>`).join('')||'<tr><td colspan="7">Nenhum ritual começou.</td></tr>'}</table>
+    <p class="fine" style="text-align:left!important">Tempos contados desde o início de cada ritual. A última coluna separa "nunca chegou", "foi a outro altar", "chegou perto e não entrou", "chegou tarde" e "chegou a tempo e perdeu o círculo".</p>
     <table class="res rel"><tr><th>Engano e selamento</th><th class="n"></th><th>O que revela</th></tr>
       ${tr('Chamarizes plantados',E.chamarizes,`${E.chamarizesDesmascarados} desmascarados pela Lanterna, ${E.chamarizesQueimados} queimados, ${E.evpEmChamariz} EVP enganados`)}
       ${tr('Purgas de altar verdadeiro',E.purgasDeAltarVerdadeiro,'a caça acertou um altar antes do ritual')}
@@ -3009,7 +3010,7 @@ async function salvarArquivo(name,data,msg){
 async function downloadLog(){
   const msg=$('#logMsg');
   if(MODE==='online'&&NET.logUrl){ const a=document.createElement('a'); a.href=NET.logUrl; a.download=''; document.body.appendChild(a); a.click(); a.remove(); msg.textContent='O servidor também guarda uma cópia na pasta logs.'; return; }
-  const data=JSON.stringify({match:game.matchId,slots:game.slots,scores:game.scores,stats:game.stats,events:game.log},null,1), name=`ritual-reversal-${game.matchId}.json`;
+  const data=JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,match:game.matchId,slots:game.slots,scores:game.scores,stats:game.stats,events:game.log},null,1), name=`ritual-reversal-${game.matchId}.json`;
   try{ if(window.claude&&window.claude.use){ const d=await window.claude.use('downloads'); if(d){ await d.save({filename:name,data}); msg.textContent='Registro salvo.'; return; } } }
   catch(e){ if(e&&e.code==='declined'){ msg.textContent='Download cancelado.'; return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); msg.textContent='Registro salvo.';

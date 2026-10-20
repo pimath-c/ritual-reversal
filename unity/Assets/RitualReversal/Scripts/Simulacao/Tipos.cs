@@ -129,6 +129,7 @@ namespace RitualReversal.Simulacao
     public class Altar : Ponto
     {
         public int i; public string name, state = "dormant"; public bool chosen, decoy, localized, arrived, tardio, grande, eco;
+        public ObsRitual obs; // só para o relatório: onde a caça esteve e quem saiu do círculo durante o ritual
         public double prog, cp, seal, sealIdle, startT, maxProg, selo = 1, fireT, sealT, avisoSeloT = -99; public int lastN = 1, maxN; public double? doneT;
         public List<int> sealers = new List<int>();
     }
@@ -143,6 +144,7 @@ namespace RitualReversal.Simulacao
     public class Placar { public int done, @sealed; public double? lastT; public double maxP; }
     public class Buff { public double ess, selo; }
     public class Eco { public string setor; public double t; }
+    public class ObsRitual { public HashSet<int> perto = new HashSet<int>(); public HashSet<string> errado = new HashSet<string>(); public Dictionary<int, bool> dentro = new Dictionary<int, bool>(); }
     // setores do eco: cada setor tem dois altares (um dentro da catedral e um perto dela)
     public class Setor { public string id, nome; public int[] altares; }
 
