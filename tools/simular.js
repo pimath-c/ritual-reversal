@@ -2,6 +2,7 @@
 // Gera partidas só de bots e grava os registros, para testar mudanças de balanceamento sem jogar.
 // Uso: node tools/simular.js [quantidade] [pasta]      (padrão: 20 partidas em ./logs)
 // Com LAB=fogo=a,execucao=6 (mesmo formato de tools/comparar-cs.js), as partidas usam o laboratório de playtest.
+// Com CFG=ecoProg=0,ataqueCanal=0 muda números do CFG (só nesta execução), para medir uma regra de cada vez.
 'use strict';
 const fs=require('fs'), path=require('path');
 const Sim=require('../shared/sim.js');
@@ -12,6 +13,8 @@ function labDoAmbiente(){ const s=process.env.LAB; if(!s) return undefined; cons
   for(const par of s.split(',')){ const [k,v]=par.split('=').map(x=>x&&x.trim()); if(!k||v==null) continue;
     o[k]=k==='crepusculo'||k==='execucao'?+v:k==='economia'?(v!=='0'&&v!=='false'):v; }
   return o; }
+for(const par of (process.env.CFG||'').split(',').filter(Boolean)){ const [k,v]=par.split('='); if(!(k in Sim.CFG)) throw new Error('CFG desconhecido: '+k);
+  Sim.CFG[k]=v==='true'?true:v==='false'?false:isNaN(+v)?v:+v; }
 const lab=labDoAmbiente(), t0=Date.now();
 for(let i=0;i<N;i++){
   const g=Sim.createGame({timers:true,slots,matchId:`sim-${t0}-${String(i+1).padStart(3,'0')}`,lab});

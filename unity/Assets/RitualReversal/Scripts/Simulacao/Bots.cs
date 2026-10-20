@@ -90,7 +90,10 @@ namespace RitualReversal.Simulacao
                 }
                 else
                 {
-                    if (b.fervor < CFG.sigilCusto) return true; double lead = d / CFG.sigilVel;
+                    if (b.fervor < CFG.sigilCusto) return true;
+                    // canalizando, só ataca quem sela, quem chega perto demais ou quando a vida aperta (atacar para a canalização)
+                    if (CFG.ataqueCanal > 0) { var Ac = g.altars.FirstOrDefault(A => A.state == "active" && A.chosen && InCircle(b, A)); if (Ac != null && !(t.sealing == Ac.i || d < 8 || b.hp < b.maxHp * .5)) return true; }
+                    double lead = d / CFG.sigilVel;
                     double sd = .7 * DifDe(g, b).disp; CastSigilAt(g, b, t.x + Rand(-sd, sd) + t._vx * lead * .6, 1.2, t.z + Rand(-sd, sd) + t._vz * lead * .6);
                 }
             }
@@ -126,7 +129,7 @@ namespace RitualReversal.Simulacao
                 if (Dist(b, ally) < 1.5) { b.moving = false; BotHold(g, b, "rev" + ally.id, CFG.revive, dt, new Ctx { type = "revive", b = ally.id }); return true; }
                 SetGoal(g, b, ally.x, ally.z, "rv" + ally.id); BotMove(g, b, dt, 1.05); return true;
             }
-            var foe = g.actors.FirstOrDefault(o => o.team != b.team && o.st == "down" && Dist(o, b) < 10);
+            var foe = g.actors.FirstOrDefault(o => o.team != b.team && o.st == "down" && Dist(o, b) < 10 && Mapa.LosClear(b, o)); // só executa quem enxerga
             if (foe != null && !fighting)
             {
                 if (Dist(b, foe) < 1.5) { b.moving = false; BotHold(g, b, "exe" + foe.id, g.lab.execucao, dt, new Ctx { type = "execute", b = foe.id }); return true; }
@@ -197,7 +200,21 @@ namespace RitualReversal.Simulacao
                     ai.strafeT -= dt; if (ai.strafeT <= 0) { ai.strafe *= -1; ai.strafeT = Rand(.6, 1.4); }
                     var s1 = CircleSpot(act, b); SetGoal(g, b, s1.x + ai.strafe * .8, s1.z, "fight" + act.i + JS.Num(ai.strafe)); BotMove(g, b, dt, .7); return;
                 }
-                var s = CircleSpot(act, b); SetGoal(g, b, s.x, s.z, "go" + act.i); BotMove(g, b, dt, fighting ? .8 : 1.05); return;
+                var s = CircleSpot(act, b); SetGoal(g, b, s.x, s.z, "go" + act.i); BotMove(g, b, dt, fighting ? .8 : CORRIDA_BOT); return;
+            }
+            // eco do coro: vai aos altares do setor que a equipe ainda não descartou (primeiro os despertos); a dupla se divide
+            if (g.eco != null && !fighting)
+            {
+                var S = SETORES.First(x => x.id == g.eco.setor);
+                var cands = S.altares.Select(i => g.altars[i]).Where(A => A.state != "fenda" && A.state != "farol" && g.know[A.i] != "limpo" && g.know[A.i] != "chamariz").ToList();
+                if (cands.Count > 0)
+                {
+                    Func<Altar, int> pri = A => g.know[A.i] == "confirmado" || g.know[A.i] == "desperto" ? 0 : 1;
+                    JS.Sort(cands, (x, y) => (pri(x) - pri(y)) != 0 ? pri(x) - pri(y) : Dist(b, x) - Dist(b, y));
+                    var mate = g.actors.FirstOrDefault(h => h != b && h.team == "H" && h.st == "alive"); int mateAlvo = mate != null && mate.ai.ecoT == g.eco.t ? mate.ai.ecoAlvo : -1;
+                    var T = cands[0]; if (cands.Count > 1 && mateAlvo == T.i && mate.id < b.id) T = cands[1];
+                    ai.ecoAlvo = T.i; ai.ecoT = g.eco.t; var se = CircleSpot(T, b); SetGoal(g, b, se.x, se.z, "eco" + T.i); BotMove(g, b, dt, CORRIDA_BOT); return;
+                }
             }
             var known = JS.Primeiro(g.altars.Where(A => A.state == "awake" && CONHECIDO.Contains(g.know[A.i])).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
             if (known != null && !(g.know[known.i] == "chamariz" && Dist(b, known) > 12))
@@ -253,9 +270,21 @@ namespace RitualReversal.Simulacao
                 SetGoal(g, b, ai.vigiaPt.x, ai.vigiaPt.z, "pt" + A.i); BotMove(g, b, dt, fighting ? .8 : 1);
             }
         }
+        // com pressa (ritual em andamento), o bot corre como um jogador: a corrida do jogador é CFG.sprint/CFG.speed
+        const double CORRIDA_BOT = 1.3;
         static void AiCult(Jogo g, Ator b, double dt)
         {
             bool fighting = BotCombat(g, b, dt); var ai = b.ai;
+            // o que o culto vê: um Caçador rondando um altar escolhido torna o altar suspeito para a equipe
+            if (g.t >= ai.olharT)
+            {
+                ai.olharT = g.t + .5;
+                foreach (var A in g.altars)
+                {
+                    if (!A.chosen || g.suspeitaC.Contains(A.i) || Dist(b, A) > 40) continue;
+                    if (g.actors.Any(h => h.team == "H" && h.st == "alive" && Dist(h, A) < 12 && CanSee(g, b, h, 40))) g.suspeitaC.Add(A.i);
+                }
+            }
             if (b.feitico == "veu" && b.abilCd <= 0 && ai.target != null && Dist(b, ai.target) < 22 && b.hp < b.maxHp * .7) UseAbility(g, b);
             if (b.feitico == "empurrao" && b.abilCd <= 0)
             {
@@ -270,7 +299,7 @@ namespace RitualReversal.Simulacao
             {
                 if (b.feitico == "runa" && b.abilCd <= 0 && InCircle(b, act)) UseAbility(g, b);
                 var s = CircleSpot(act, b); if (InCircle(b, act) && Dist(b, s) < 1.2) { b.moving = false; return; }
-                SetGoal(g, b, s.x, s.z, "ch" + act.i); BotMove(g, b, dt, 1.05); return;
+                SetGoal(g, b, s.x, s.z, "ch" + act.i); BotMove(g, b, dt, fighting ? 1.05 : CORRIDA_BOT); return;
             }
             var rem = g.altars.Where(A => A.chosen && (A.state == "dormant" || A.state == "awake")).ToList();
             if (rem.Count == 0)
@@ -315,7 +344,7 @@ namespace RitualReversal.Simulacao
             {
                 var F = g.altars.FirstOrDefault(A => A.chosen && A.state == "dormant");
                 var D = JS.Primeiro(g.altars.Where(A => !A.chosen && A.state == "dormant").ToList(), (x, y) => Dist(b, x) - Dist(b, y));
-                bool descoberta = F != null && (g.know[F.i] == "desperto" || g.know[F.i] == "confirmado" || g.know[F.i] == "chamariz");
+                bool descoberta = F != null && g.suspeitaC.Contains(F.i); // o culto só sabe o que viu: um Caçador perto do altar ou o aviso de purga
                 bool emergencia = F != null && g.rt > 420;
                 if (F != null && D != null && (descoberta || emergencia))
                 {

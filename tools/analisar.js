@@ -57,7 +57,7 @@ for(const f of files){
       case 'decoy_spotted': A.chamarizVisto++; break;
       case 'purge': A.purgas++; if(e.decoy) A.chamarizPurgado++; break;
       case 'transfer': A.transfer++; break;
-      case 'ability': A.habilidades[e.cls]=(A.habilidades[e.cls]||0)+1; break;
+      case 'ability': A.habilidades[e.feitico]=(A.habilidades[e.feitico]||0)+1; break;
       case 'pickup': A.drops[e.kind]=(A.drops[e.kind]||0)+1; break;
     }
   }
@@ -120,8 +120,8 @@ linha('Altares purgados', A.purgas, `${A.chamarizPurgado} eram chamariz`, '');
 linha('Transferências', A.transfer, '', '');
 linha('Essência Profana / Selo de Luz', `${A.drops.ess||0} / ${A.drops.selo||0}`, '', '');
 
-L.push('\nUSO DE HABILIDADE POR CLASSE'); L.push('-'.repeat(78));
-for(const [c,n] of Object.entries(A.habilidades).sort((a,b)=>b[1]-a[1])){ const rodadas=A.classes[c]||1; linha(c, n, num(n/rodadas)+' por rodada jogada', ''); }
+L.push('\nUSO DE FEITIÇOS'); L.push('-'.repeat(78));
+for(const [c,n] of Object.entries(A.habilidades).sort((a,b)=>b[1]-a[1])) linha(c, n, num(n/Math.max(1,A.rodadas))+' por rodada', '');
 
 if(A.vitorias.total){ L.push('\nRESULTADOS'); L.push('-'.repeat(78));
   linha('Partidas com placar', A.vitorias.total, '', '');

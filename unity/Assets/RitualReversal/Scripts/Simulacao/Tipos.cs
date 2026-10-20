@@ -24,6 +24,9 @@ namespace RitualReversal.Simulacao
         public static double regrow = 40, sensorRaio = 58, pegadaVida = 20, visaoRede = 75, nevoaAlcance = 26, speed = 4.6, sprint = 6, botSpeed = 3.9, spawnSafe = 7;
         public static bool iniciarDeGraca = false;
         public static double timerPick = 35, timerIntro = 25, timerSummary = 15;
+        // v5.5: o coro ecoa o setor do ritual quando ele passa deste progresso; quem lançou um sigilo há menos de
+        // ataqueCanal segundos não canaliza; levar dano reinicia a execução de um caído
+        public static double ecoProg = 0.25, ataqueCanal = 1; public static bool danoInterrompeExecucao = true;
     }
 
     public class ClasseDef { public string id, team, name, arma, text; public double hp, speed; }
@@ -103,6 +106,7 @@ namespace RitualReversal.Simulacao
         public RastroAlvo rastro; public VigiaPt vigiaPt; public Vigia vigia; public double esperando; public int? esperaAltar;
         public int? decoyAlvo; public double decoyT, decoyPrazo; public int chamarizes; public double chamarizT, emperrado;
         public Pedido pedido; // ping de um humano da equipe
+        public double olharT, ecoT = -1; public int ecoAlvo = -1;
         public bool Ignorado(string k, double t) { double v; return ignora != null && ignora.TryGetValue(k, out v) && v > t; }
         public void Ignorar(string k, double ate) { if (ignora == null) ignora = new Dictionary<string, double>(); ignora[k] = ate; }
     }
@@ -123,7 +127,7 @@ namespace RitualReversal.Simulacao
 
     public class Altar : Ponto
     {
-        public int i; public string name, state = "dormant"; public bool chosen, decoy, localized, arrived, tardio, grande;
+        public int i; public string name, state = "dormant"; public bool chosen, decoy, localized, arrived, tardio, grande, eco;
         public double prog, cp, seal, sealIdle, startT, maxProg, selo = 1, fireT, sealT; public int lastN = 1, maxN; public double? doneT;
         public List<int> sealers = new List<int>();
     }
@@ -137,6 +141,9 @@ namespace RitualReversal.Simulacao
     public class Tarefa { public string id, nome; public int meta, rec, prog; public bool feita; }
     public class Placar { public int done, @sealed; public double? lastT; public double maxP; }
     public class Buff { public double ess, selo; }
+    public class Eco { public string setor; public double t; }
+    // setores do eco: cada setor tem dois altares (um dentro da catedral e um perto dela)
+    public class Setor { public string id, nome; public int[] altares; }
 
     // ações que o jogador pede fora do movimento (menus, compras, pronto)
     public class Acao { public string type, cls, f, npc, item, k; public int i; public double x, z; }
@@ -204,5 +211,6 @@ namespace RitualReversal.Simulacao
         public Dictionary<string, List<Tarefa>> tarefas = new Dictionary<string, List<Tarefa>> { { "H", new List<Tarefa>() }, { "C", new List<Tarefa>() } };
         public List<Rastro> rastros = new List<Rastro>(); public List<Pegada> pegadas = new List<Pegada>();
         public int pedidos;
+        public Eco eco; public HashSet<int> suspeitaC = new HashSet<int>(); // eco do coro para a caça; altares que o culto sabe que foram descobertos
     }
 }

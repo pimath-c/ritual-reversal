@@ -61,7 +61,7 @@ namespace RitualReversal.Simulacao
             foreach (var R in g.reagents) { R.has = true; R.t = 0; }
             g.know = g.altars.Select(a => "?").ToArray(); g.visit = g.altars.Select(a => -99.0).ToArray(); g.decoys = 2; g.transferUsed = false; g.rastros = new List<Rastro>(); g.pegadas = new List<Pegada>();
             g.proj = new List<Projetil>(); g.pickups = new List<Coletavel>(); foreach (var f in g.flares) f.t = 0; g.actors = new List<Ator>(); g.picks = new List<int>(); g.ready = new Dictionary<string, bool>(); g.buff = new Buff();
-            g.endAt = 0; g.lastResolveT = 0; g.rt = 0; g.firstContact = null; g.momento = 0; PrepararNoite(g);
+            g.endAt = 0; g.lastResolveT = 0; g.rt = 0; g.firstContact = null; g.momento = 0; g.eco = null; g.suspeitaC = new HashSet<int>(); PrepararNoite(g);
         }
         static void EnterPick(Jogo g, int round)
         {
@@ -404,6 +404,8 @@ namespace RitualReversal.Simulacao
             if (t.st == "dead" || t.invuln > 0) return;
             if (!g.firstContact.HasValue || g.firstContact.Value == 0) { g.firstContact = R2(g.rt); LogE(g, "first_contact"); }
             if (t.st == "down") { t.downT -= amt / 8; t.att[src.id] = g.t; return; }
+            // executar exige calma: quem leva dano recomeça a execução
+            if (CFG.danoInterrompeExecucao && t.hold.key.StartsWith("exe", StringComparison.Ordinal)) { if (t.hold.t > 0) LogE(g, "execucao_interrompida", "who", t.name, "by", src.name); t.hold = new Hold(); }
             if (t.shield > 0) { double s = Math.Min(t.shield, amt); t.shield -= s; amt -= s; }
             t.hp -= amt; t.hitT = g.t; t.att[src.id] = g.t; t.veuT = 0;
             Ev(g, "hurt", "a", t.id, "s", src.id, "sx", R2(src.x), "sz", R2(src.z)); Ev(g, "hit", "a", src.id, "alvo", t.id, "derrubou", t.hp <= 0);
@@ -556,7 +558,7 @@ namespace RitualReversal.Simulacao
                     }
                 case "purge":
                     {
-                        bool was = A.decoy; TarefaProg(g, "H", "purgar"); A.state = "dormant"; A.decoy = false; g.know[A.i] = "limpo";
+                        bool was = A.decoy; TarefaProg(g, "H", "purgar"); A.state = "dormant"; A.decoy = false; g.know[A.i] = "limpo"; if (A.chosen) g.suspeitaC.Add(A.i); // o culto recebe o aviso da purga
                         Feed(g, was ? "Chamariz queimado em " + A.name + "." : A.name + " foi purgado.", "h", "H"); Feed(g, "Um altar foi purgado: " + A.name + ".", "c", "C");
                         LogE(g, "purge", "altar", A.name, "decoy", was, "by", a.name); break;
                     }
@@ -633,7 +635,7 @@ namespace RitualReversal.Simulacao
         public static double MareFactor(Jogo g) { return 1 + Math.Min(.2, Math.Floor((g.rt - g.lastResolveT) / 60) * .05); }
         static void StartRitual(Jogo g, Altar A, Ator by)
         {
-            A.state = "active"; A.startT = g.rt; A.localized = false; A.selo = 1; A.arrived = false; A.maxN = 0; A.tardio = g.momento >= 2; A.grande = Fendas(g) + Farois(g) >= 2;
+            A.state = "active"; A.startT = g.rt; A.localized = false; A.selo = 1; A.arrived = false; A.maxN = 0; A.tardio = g.momento >= 2; A.grande = Fendas(g) + Farois(g) >= 2; A.eco = false;
             if (g.buff.selo > g.t) { A.selo = 1.1; g.buff.selo = 0; Feed(g, "Selo de Luz corrompido: este ritual corre 10% mais rápido.", "c", "C"); }
             int n = g.actors.Count(c => c.team == "C" && c.st == "alive" && InCircle(c, A));
             SentinelaAvisa(g, A, "um ritual começou");
@@ -641,9 +643,19 @@ namespace RitualReversal.Simulacao
             Ev(g, "presage"); Feed(g, "Presságio: um ritual despertou.", "big", "H"); Feed(g, "Ritual iniciado: " + A.name + ".", "c", "C");
             LogE(g, "ritual_start", "altar", A.name, "channelers", Math.Max(1, n), "by", by.name);
         }
+        public static readonly Setor[] SETORES = { new Setor { id = "oeste", nome = "a oeste", altares = new[] { 0, 3 } }, new Setor { id = "centro", nome = "no centro", altares = new[] { 1, 4 } }, new Setor { id = "leste", nome = "a leste", altares = new[] { 2, 5 } } };
+        public static Setor SetorDoAltar(int i) { return SETORES.First(s => s.altares.Contains(i)); }
+        // o eco do coro: a caça ouve de que setor vem o ritual (dois altares possíveis) antes de o coro revelar o altar
+        static void EcoDoCoro(Jogo g, Altar A)
+        {
+            A.eco = true; var S = SetorDoAltar(A.i); g.eco = new Eco { setor = S.id, t = R2(g.rt) };
+            Ev(g, "eco", "setor", S.id, "altares", S.altares.ToList());
+            Feed(g, "O coro ecoa " + S.nome + ": o ritual está em " + string.Join(" ou em ", S.altares.Select(i => g.altars[i].name)) + ".", "big h", "H"); Feed(g, "Os Caçadores ouviram o eco do coro " + S.nome + ".", "c", "C");
+            LogE(g, "eco", "altar", A.name, "setor", S.id);
+        }
         static void Localize(Jogo g, Altar A, string how)
         {
-            if (A.localized) return; A.localized = true; g.know[A.i] = "ativo";
+            if (A.localized) return; A.localized = true; g.know[A.i] = "ativo"; g.eco = null;
             Feed(g, "O coro revela: " + A.name + ".", "big", "H"); Feed(g, "Os Caçadores descobriram " + A.name + ".", "c", "C");
             LogE(g, "localized", "altar", A.name, "prog", R2(A.prog), "how", how);
         }
@@ -651,7 +663,7 @@ namespace RitualReversal.Simulacao
         static void MoverSeguro(Ponto a, double nx, double nz, double r) { double px = a.x, pz = a.z; a.x = nx; a.z = nz; Mapa.Resolve(a, r); if (!Mapa.Livre(a, r)) { a.x = px; a.z = pz; } }
         static void ResolveAltar(Jogo g, Altar A, string kind)
         {
-            A.state = kind; A.maxProg = Math.Max(A.maxProg, A.prog); g.lastResolveT = g.rt; A.sealers = new List<int>();
+            A.state = kind; A.maxProg = Math.Max(A.maxProg, A.prog); g.lastResolveT = g.rt; A.sealers = new List<int>(); g.eco = null;
             foreach (var a in g.actors) { a.dc = 0; a.revUsed = false; if (a.sealing == A.i) a.sealing = -1; }
             if (kind == "fenda") { A.doneT = R2(g.rt); Ev(g, "doom"); Feed(g, "Ritual completo em " + A.name + ". Uma Fenda se abriu.", "big c"); LogE(g, "ritual_complete", "altar", A.name, "canalizadores", A.maxN > 0 ? A.maxN : 1); }
             else { Ev(g, "sealed"); g.buff.ess = 0; Feed(g, A.name + " foi selado. Um Farol se acendeu.", "big h"); LogE(g, "sealed", "altar", A.name, "prog", R2(A.prog), "canalizadores", A.maxN > 0 ? A.maxN : 1); }
@@ -664,7 +676,8 @@ namespace RitualReversal.Simulacao
             foreach (var A in g.altars)
             {
                 if (A.state != "active") continue;
-                var ch = g.actors.Where(c => c.team == "C" && c.st == "alive" && InCircle(c, A)).Take(2).ToList(); int n = ch.Count;
+                // quem acabou de lançar um sigilo não canaliza: defender e celebrar são escolhas separadas
+                var ch = g.actors.Where(c => c.team == "C" && c.st == "alive" && InCircle(c, A) && !(CFG.ataqueCanal > 0 && g.t - c.lastShotT < CFG.ataqueCanal)).Take(2).ToList(); int n = ch.Count;
                 bool rune = false;
                 if (n > 0)
                 {
@@ -679,6 +692,7 @@ namespace RitualReversal.Simulacao
                     }
                 A.maxProg = Math.Max(A.maxProg, A.prog);
                 int nn = Math.Max(1, A.lastN); double rad = CFG.ritRad[nn] * (rune ? 1.5 : 1) * (A.tardio ? 1.4 : 1);
+                if (!A.localized && !A.eco && CFG.ecoProg > 0 && A.prog >= CFG.ecoProg) EcoDoCoro(g, A);
                 if (!A.localized) { if (A.prog >= CFG.ritLoc[nn]) Localize(g, A, "coro"); else if (n > 0 && g.actors.Any(h => h.team == "H" && h.st == "alive" && Dist(h, A) < rad)) Localize(g, A, "ouvido"); }
                 if (!A.arrived && g.actors.Any(h => h.team == "H" && h.st == "alive" && InCircle(h, A))) { A.arrived = true; LogE(g, "hunter_arrive", "altar", A.name, "prog", R2(A.prog), "channelers", nn, "remaining", R2((1 - A.prog) * CFG.ritDur[nn])); }
                 var sealers = g.actors.Where(h => h.team == "H" && h.st == "alive" && h.sealing == A.i && InCircle(h, A)).ToList();
