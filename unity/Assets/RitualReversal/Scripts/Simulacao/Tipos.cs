@@ -129,7 +129,7 @@ namespace RitualReversal.Simulacao
     public class Altar : Ponto
     {
         public int i; public string name, state = "dormant"; public bool chosen, decoy, localized, arrived, tardio, grande, eco;
-        public double prog, cp, seal, sealIdle, startT, maxProg, selo = 1, fireT, sealT; public int lastN = 1, maxN; public double? doneT;
+        public double prog, cp, seal, sealIdle, startT, maxProg, selo = 1, fireT, sealT, avisoSeloT = -99; public int lastN = 1, maxN; public double? doneT;
         public List<int> sealers = new List<int>();
     }
     public class Reagente : Ponto { public int i; public bool has = true; public double t; }

@@ -111,6 +111,7 @@ function routeEvents(r){
       if(e.to!=null&&(!me||e.to!==me.id)) continue;
       if((e.type==='sensor'||e.type==='evp'||e.type==='blind'||e.type==='stun')&&(!me||e.a!==me.id)) continue;
       if(e.type==='presage'&&role!=='H') continue;
+      if(e.type==='selando'&&role!=='C') continue; // só o culto sente o selo
       if((e.type==='ping'||e.type==='fala')&&e.team!==role) continue; // ping e frases só para a própria equipe
       c.ev.push(e);
     }

@@ -1656,6 +1656,8 @@ const SFX={
   collect:(x,z)=>sfxNoise(x,z,26,.5,'bandpass',700,2,.5),
   flare:(x,z)=>sfxNoise(x,z,20,.6,'highpass',2000,1,.3),
   rune:(x,z)=>sfxTone(x,z,30,300,900,.6,'triangle',.3),
+  // selo começando no ritual do culto: dois toques dissonantes, vindos do altar
+  selando:(x,z)=>{ [[466,440],[311,294]].forEach(([a,b],i)=>setTimeout(()=>sfxTone(x,z,400,a,b,.9,'sawtooth',.06),i*260)); },
   // eco do coro: três vozes graves vindas do setor do ritual, audíveis de longe
   eco:(x,z)=>[196,247,294].forEach((f,i)=>setTimeout(()=>sfxTone(x,z,320,f,f*.985,2.6,'triangle',.11),i*140)),
   arrasto:(x,z)=>{ sfxTone(x,z,45,70,40,1.8,'sawtooth',.25); setTimeout(()=>sfxTone(x,z,45,520,180,1.2,'triangle',.12),300); },
@@ -2075,6 +2077,7 @@ function handleEvents(list,online){
       case 'ping': receberPing(e); break;
       case 'fala': receberFala(e); break;
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
+      case 'selando': if(myRole()==='C'){ const A=V.altars[e.altar]; SFX.selando(e.x,e.z); legenda('selando',e.x,e.z,`Selando o ritual em ${A?A.name:'um altar'}`,'cult',400); marcoLT('eco',`A caça começou a selar ${A?A.name:''}`); } break;
       case 'eco': { const L=(e.altares||[]).map(i=>V.altars[i]).filter(Boolean); if(!L.length) break; const x=L.reduce((s,A)=>s+A.x,0)/L.length, z=L.reduce((s,A)=>s+A.z,0)/L.length;
         SFX.eco(x,z); legenda('eco',x,z,`Coro distante: ${L.map(A=>A.name).join(' ou ')}`,'rit',400); anunciar('O coro ecoa',L.map(A=>A.name).join(' ou ')); if(myRole()==='H') dica('h_eco'); marcoLT('eco','Eco do coro'); break; }
       case 'sensor': sensorV=e.v; sensorShowT=5; SFX.ping(e.v); break;
@@ -2716,8 +2719,8 @@ function introScreen(){
   const key='intro'+V.round+mine+feit+rdy+JSON.stringify(SET.binds);
   const H=role==='H';
   const LB=LAB(), mud=labMudancas(LB), crep=fmt(LB.crepusculo);
-  const brief=H?`<p>No <b>Crepúsculo</b> (${crep}), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto.${LB.economia?' Negocie com o Ermitão, na cabana perto do acampamento.':''} Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer.</p>`
-    :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio.${LB.economia?' Negocie com a Carpideira, no cemitério.':''} Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.</p>`;
+  const brief=H?`<p>No <b>Crepúsculo</b> (${crep}), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto.${LB.economia?' Negocie com o Ermitão, na cabana perto do acampamento.':''} Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Quando um ritual começa, o coro logo ecoa o setor dele: dois altares possíveis, e o que você descartou decide para onde correr. Resista até o amanhecer.</p>`
+    :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio.${LB.economia?' Negocie com a Carpideira, no cemitério.':''} Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir. Quem ataca não canaliza; você sente quando a caça começa a selar o seu ritual.</p>`;
   const CLn=CLIMAS[climaDe(chaveClima()+':'+(V.round||1))];
   setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2><p class="lede" style="text-align:left!important;margin:0 0 8px!important">${CLn.nome}: ${CLn.sub.toLowerCase()}.</p>${brief}${mud.length?`<p class="labAviso">Laboratório de playtest: ${esc(mud.join(' · '))}.</p>`:''}
     <h3>Arquétipo</h3><div class="choices ${CLASS_BY_TEAM[role].length>2?'tres':''}">${CLASS_BY_TEAM[role].map(c=>`<button class="choice ${c===mine?'sel':''}" data-c="${c}" ${rdy?'disabled':''}><b>${CLASSES[c].name}</b><span>${CLASSES[c].text}</span><small>${CLASSES[c].hp} de vida</small></button>`).join('')}</div>

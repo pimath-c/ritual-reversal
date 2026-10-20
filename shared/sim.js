@@ -101,7 +101,7 @@ const LUGARES=[ // nomes que aparecem na planta
   {name:'Sacristia',x:-66,z:-8},{name:'Nave em ruínas',x:72,z:-16},{name:'Coro',x:-34,z:40},{name:'Poço',x:6,z:-4},{name:'Jardim',x:30,z:16},
   {name:'Cripta',x:-66,z:52},{name:'Ossuário',x:66,z:52},
   {name:'Acampamento',x:-158,z:-17},{name:'Círculo de Pedras',x:158,z:-17},{name:'Cabana do Ermitão',x:-142,z:-74},
-  {name:'Cemitério',x:132,z:72},{name:'Encruzilhada',x:30,z:-106},{name:'Ruínas Sombrias',x:-118,z:-120}];
+  {name:'Cemitério',x:132,z:72},{name:'Encruzilhada',x:30,z:-106},{name:'Ruínas Sombrias',x:-118,z:-120},{name:'Brecha Norte',x:-35.5,z:-54}];
 LUGARES.forEach(L=>{ if(!naCatedral(L.x,L.z)) Object.assign(L,mataP(L.x,L.z,25)); });
 
 const WALLS=[];
@@ -947,6 +947,8 @@ function updateAltars(g,dt){
     if(sealers.length){
       if(!A.sealers.length){ tarefaProg(g,'H','selar'); }
       if(!A.sealers.length) logE(g,'seal_start',{altar:A.name,prog:r2(A.prog),sealers:sealers.length});
+      // o ritual sente o selo: o culto é avisado onde estiver (no máximo a cada 8 s por altar) e decide se volta para defender
+      if(!A.sealers.length&&g.rt-(A.avisoSeloT==null?-99:A.avisoSeloT)>8){ A.avisoSeloT=g.rt; ev(g,{type:'selando',altar:A.i,x:A.x,z:A.z}); feed(g,`Os Caçadores estão selando o ritual em ${A.name}!`,'big c','C'); }
       let rate=0; sealers.forEach(s=>rate=Math.max(rate,1/(s.cls==='exorcista'?CFG.sealExo:CFG.seal)));
       if(sealers.length>=2) rate*=CFG.coSeal; if(g.buff.ess>g.t) rate*=1.25; rate=Math.min(rate,1/CFG.sealMin);
       let at=0; sealers.forEach(s=>at=Math.max(at,recentAttackers(g,s)));

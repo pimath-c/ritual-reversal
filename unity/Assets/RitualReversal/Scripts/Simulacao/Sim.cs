@@ -700,6 +700,8 @@ namespace RitualReversal.Simulacao
                 {
                     if (A.sealers.Count == 0) TarefaProg(g, "H", "selar");
                     if (A.sealers.Count == 0) LogE(g, "seal_start", "altar", A.name, "prog", R2(A.prog), "sealers", sealers.Count);
+                    // o ritual sente o selo: o culto é avisado onde estiver (no máximo a cada 8 s por altar) e decide se volta para defender
+                    if (A.sealers.Count == 0 && g.rt - A.avisoSeloT > 8) { A.avisoSeloT = g.rt; Ev(g, "selando", "altar", A.i, "x", A.x, "z", A.z); Feed(g, "Os Caçadores estão selando o ritual em " + A.name + "!", "big c", "C"); }
                     double rate = 0; foreach (var s in sealers) rate = Math.Max(rate, 1 / (s.cls == "exorcista" ? CFG.sealExo : CFG.seal));
                     if (sealers.Count >= 2) rate *= CFG.coSeal; if (g.buff.ess > g.t) rate *= 1.25; rate = Math.Min(rate, 1 / CFG.sealMin);
                     int at = 0; foreach (var s in sealers) at = Math.Max(at, RecentAttackers(g, s));
