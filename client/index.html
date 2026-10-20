@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ritual Reversal — Protótipo v5.5</title>
+<title>Ritual Reversal — Protótipo v5.6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -3036,14 +3036,13 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['O coro ecoa','Aos 25% de um ritual, a caça ouve o setor dele: oeste, centro ou leste, dois altares cada. O que você já descartou decide para onde correr.'],
-  ['Quem ataca não canaliza','Cada sigilo pausa a canalização de quem atirou por um instante. Em dupla, um Cultista celebra e o outro defende.'],
-  ['Execução contestável','Levar dano recomeça a execução de um caído: atire em quem executa o seu aliado.'],
-  ['O culto sente o selo','Quando a caça começa a selar um ritual, o culto ouve e vê de onde, esteja onde estiver.'],
-  ['Brecha Norte','Uma brecha na parede norte liga a ala oeste e o Claustro aos Menires (de 191 m para 75 m a partir da Capela Oeste).'],
-  ['Bots','Correm quando há ritual em andamento, seguem o eco, defendem o aliado caído e não largam mais o ritual para fazer compras.'],
-  ['Na v5.4','Fim da noite em 2 rituais, laboratório e relatório de playtest, chat de equipe na partida.']];
-function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.5</h2><p class="lede">O que mudou desde a última versão.</p>
+const NOVIDADES=[['Mostrador do círculo','O chão de cada altar mostra a borda exata do círculo, o progresso do ritual e o selo. A caça só vê depois de localizar o ritual.'],
+  ['Online mais justo','Cada jogador só recebe o que pode saber: sons de inimigos só ao alcance do ouvido, o ritual não localizado continua escondido da caça, tarefas e Chamarizes só para a própria equipe.'],
+  ['Regras','O Empurrão também pausa a canalização. Quem pisa no círculo de um ritual vê o ritual.'],
+  ['Custos e motivos','Os rótulos dizem o que cada ação gasta e, quando não dá, por quê.'],
+  ['Relatório do playtest','Cada ritual mostra o que a caça fez: selou, chegou a tempo e perdeu o círculo, chegou tarde, foi a outro altar ou nunca chegou.'],
+  ['Na v5.5','Eco do coro, quem ataca não canaliza, execução contestável, o culto sente o selo e a Brecha Norte.']];
+function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.6</h2><p class="lede">O que mudou desde a última versão.</p>
     <div class="novidades">${NOVIDADES.map(([t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
     <div class="btnrow"><button class="go" id="bNovOk">Voltar</button></div>`,()=>{ $('#bNovOk').onclick=()=>{ novidadesAberto=false; screenKey=''; }; }); }
 // cola das teclas, na pausa

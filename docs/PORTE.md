@@ -38,6 +38,9 @@ esforço da engine nova no que o navegador não faz bem: modelos, animação, lu
   (`SETORES`: oeste 0 e 3, centro 1 e 4, leste 2 e 5); só canaliza quem não lançou sigilo nos últimos `ataqueCanal`
   (0,6 s); levar dano zera a execução em andamento; o culto recebe 'selando' quando um selo começa (a cada 8 s por
   altar, no máximo).
+- **v5.6**: Empurrão também pausa a canalização (`ataqueT`); um Caçador vivo dentro do círculo localiza o ritual; toda
+  ação é conferida de novo ao acontecer (`acaoNegada`), o que importa para bots, que decidem antes de segurar o E.
+  O servidor filtra cada evento por destinatário (`eventoPara`): numa engine nova, mantenha esse filtro no servidor.
 - **Laboratório de playtest** (`opts.lab`, validado por `labDe` em `g.lab`): `crepusculo` 180/120/90 s,
   `fogo` 'atual' (70%/45%), 'a' (80%/60%) ou 'b' (90%/70%), `execucao` 4,5/6/7,5 s, `economia` (sem ela não há
   óbolos, as tarefas não pagam e os mercadores não negociam) e `formato`. Valores fora da lista voltam ao padrão.

@@ -31,7 +31,7 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.5)
+## Estado atual (v5.6)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -71,6 +71,15 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   1.3 com ritual em andamento, seguem o eco, `g.suspeitaC` (o culto só sabe o que viu ou o aviso de purga), não
   compram com ritual em andamento, histerese no mercador, `_segurou/_semSegurar` (0,5 s sem segurar zera o E),
   `botRasteja`. `tools/simular.js` aceita `CFG=`. Bots, 200 noites: culto 42–46% (v5.4: 78%).
+- v5.6 (notas em `notas/v5.6.md`): auditoria e integridade. `Sim.eventoPara(g,e,me,role)` decide quem recebe cada
+  evento (servidor e jogo local): sons/efeitos por `ALCANCE_SOM` ou emissor à vista (`_visto`), 'hit' só a quem atirou,
+  'hurt' sem posição do atacante para os outros, eco/presságio só caça, 'selando' só culto. O snapshot da caça mascara o
+  ritual não localizado; inimigo escondido vai sem hold/sealing/reag; tarefas, Chamarizes e Transferência só para a
+  própria equipe; 'restart' só do anfitrião. Regras: Empurrão pausa a canalização (`ataqueT`, não `lastShotT`), Caçador
+  no círculo localiza ('circulo'), `acaoNegada` confere a ação na hora (bots). Registro 2 (`VERSAO`, `REGISTRO`):
+  `caca_perto`, `altar_errado`, `canal_saiu`, `acao_negada`; `relatorio` classifica a caça por ritual (`caca`,
+  `conversao`). `tools/simular.js` com `SEMENTE=` é reproduzível byte a byte. Mostrador do círculo no chão (shader em
+  `buildAltars`). Bots, sementes 1000–1199: culto 50%.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
