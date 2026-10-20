@@ -1008,7 +1008,7 @@ function canSee(g,b,t,range){
 }
 function botPickTarget(g,b){
   const ens=enemiesOf(g,b).filter(e=>e.st==='alive'&&canSee(g,b,e,34*difDe(g,b).vista)); if(!ens.length) return null;
-  const pri=e=>dist(b,e)-(e.sealing>=0?30:0)-(b.team==='H'&&g.altars.some(A=>A.state==='active'&&inCircle(e,A))?15:0);
+  const pri=e=>dist(b,e)-(e.sealing>=0?30:0)-(b.team==='H'&&g.altars.some(A=>A.state==='active'&&inCircle(e,A))?15:0)-(e.hold.key.startsWith('exe')?25:0); // quem executa um aliado vem primeiro
   ens.sort((x,y)=>pri(x)-pri(y)); return ens[0];
 }
 const lerpAngle=(a,b,t)=>{ const d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return a+d*t; };
@@ -1063,7 +1063,8 @@ function botHold(g,b,key,time,dt,ctx){ if(b.hold.key!==key){ b.hold={key,t:0,max
 const inEnemySpawn=(b,p)=>{ const s=SPAWN[b.team==='H'?'C':'H']; return Math.hypot(p.x-s.x,p.z-s.z)<CFG.spawnSafe+2; };
 function botHelpDowned(g,b,dt,fighting){
   const ally=g.actors.find(o=>o!==b&&o.team===b.team&&o.st==='down'&&dist(o,b)<20);
-  if(ally&&!fighting){ if(dist(b,ally)<1.5){ b.moving=false; botHold(g,b,'rev'+ally.id,CFG.revive,dt,{type:'revive',b:ally.id}); return true; } setGoal(g,b,ally.x,ally.z,'rv'+ally.id); botMove(g,b,dt,1.05); return true; }
+  // reanima também lutando, se o aliado está ao lado e o inimigo à vista está longe
+  if(ally&&(!fighting||(dist(b,ally)<6&&(!b.ai.target||dist(b,b.ai.target)>18)))){ if(dist(b,ally)<1.5){ b.moving=false; botHold(g,b,'rev'+ally.id,CFG.revive,dt,{type:'revive',b:ally.id}); return true; } setGoal(g,b,ally.x,ally.z,'rv'+ally.id); botMove(g,b,dt,1.05); return true; }
   const foe=g.actors.find(o=>o.team!==b.team&&o.st==='down'&&dist(o,b)<10&&losClear(b,o)); // só executa quem enxerga
   if(foe&&!fighting){ if(dist(b,foe)<1.5){ b.moving=false; botHold(g,b,'exe'+foe.id,g.lab.execucao,dt,{type:'execute',b:foe.id}); return true; } setGoal(g,b,foe.x,foe.z,'ex'+foe.id); botMove(g,b,dt,1.05); return true; }
   return false;
@@ -1075,6 +1076,10 @@ function botAtendePing(g,b,dt,fighting){ const P=b.ai.pedido; if(!P) return fals
   if(Math.hypot(P.x-b.x,P.z-b.z)<3.2){ if(P.k==='altar'){ b.ai.pedido=null; return false; }
     if(P.chegou<0) P.chegou=g.t; if(g.t-P.chegou>6){ b.ai.pedido=null; return false; } b.moving=false; return true; }
   setGoal(g,b,P.x,P.z,'pedido'+P.n); botMove(g,b,dt,1.1); return true; }
+// Caído, o bot rasteja até o aliado de pé mais perto (até 25 m), como um jogador faria para ser reanimado.
+function botRasteja(g,b,dt){ b.moving=false; if(b.st!=='down') return;
+  const al=g.actors.filter(o=>o!==b&&o.team===b.team&&o.st==='alive'&&dist(o,b)<25).sort((x,y)=>dist(b,x)-dist(b,y))[0];
+  if(!al||dist(b,al)<1.2) return; setGoal(g,b,al.x,al.z,'rasteja'+al.id); botMove(g,b,dt,1); }
 function botNoite(g,b,dt){ const ai=b.ai, role=b.team;
   // compras: Cultista sem reagente compra; Caçador com pouca munição compra
   const quer=g.lab.economia&&(role==='C'?(b.reag===0&&b.obolos>=ITENS.reagente.preco&&'reagente'):(b.reserve<16&&b.obolos>=ITENS.municao.preco&&'municao'));
@@ -1240,7 +1245,7 @@ function playStep(g,dt){
   }
   for(const a of g.actors){
     if(a.st==='dead'){ a.respawnT-=dt; if(a.respawnT<=0){ spawn(g,a,false); ev(g,{type:'respawn',a:a.id}); } continue; }
-    if(a.st==='down'){ a.downT-=dt; a.sealing=-1; if(a.downT<=0) kill(g,a,null); if(!a.human){ a.moving=false; } else humanActions(g,a,dt); continue; }
+    if(a.st==='down'){ a.downT-=dt; a.sealing=-1; if(a.downT<=0) kill(g,a,null); if(!a.human) botRasteja(g,a,dt); else humanActions(g,a,dt); continue; }
     if(a.human) humanActions(g,a,dt);
     else if(a.stunT<=0){ if(a.team==='H') aiHunter(g,a,dt); else aiCult(g,a,dt);
       // rede de segurança: bot parado 15 s sem estar ocupado tem a decisão reiniciada (não corrige a causa; limita o estrago)

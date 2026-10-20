@@ -26,7 +26,7 @@ namespace RitualReversal.Simulacao
         static Ator BotPickTarget(Jogo g, Ator b)
         {
             var ens = EnemiesOf(g, b).Where(e => e.st == "alive" && CanSee(g, b, e, 34 * DifDe(g, b).vista)).ToList(); if (ens.Count == 0) return null;
-            Func<Ator, double> pri = e => Dist(b, e) - (e.sealing >= 0 ? 30 : 0) - (b.team == "H" && g.altars.Any(A => A.state == "active" && InCircle(e, A)) ? 15 : 0);
+            Func<Ator, double> pri = e => Dist(b, e) - (e.sealing >= 0 ? 30 : 0) - (b.team == "H" && g.altars.Any(A => A.state == "active" && InCircle(e, A)) ? 15 : 0) - (e.hold.key.StartsWith("exe", StringComparison.Ordinal) ? 25 : 0); // quem executa um aliado vem primeiro
             JS.Sort(ens, (x, y) => pri(x) - pri(y)); return ens[0];
         }
         static double LerpAngle(double a, double b, double t) { double d = ((b - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; return a + d * t; }
@@ -121,10 +121,18 @@ namespace RitualReversal.Simulacao
             }
             SetGoal(g, b, P.x, P.z, "pedido" + P.n); BotMove(g, b, dt, 1.1); return true;
         }
+        // caído, o bot rasteja até o aliado de pé mais perto (até 25 m), como um jogador faria para ser reanimado
+        static void BotRasteja(Jogo g, Ator b, double dt)
+        {
+            b.moving = false; if (b.st != "down") return;
+            var al = JS.Primeiro(g.actors.Where(o => o != b && o.team == b.team && o.st == "alive" && Dist(o, b) < 25).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
+            if (al == null || Dist(b, al) < 1.2) return; SetGoal(g, b, al.x, al.z, "rasteja" + al.id); BotMove(g, b, dt, 1);
+        }
         static bool BotHelpDowned(Jogo g, Ator b, double dt, bool fighting)
         {
             var ally = g.actors.FirstOrDefault(o => o != b && o.team == b.team && o.st == "down" && Dist(o, b) < 20);
-            if (ally != null && !fighting)
+            // reanima também lutando, se o aliado está ao lado e o inimigo à vista está longe
+            if (ally != null && (!fighting || (Dist(b, ally) < 6 && (b.ai.target == null || Dist(b, b.ai.target) > 18))))
             {
                 if (Dist(b, ally) < 1.5) { b.moving = false; BotHold(g, b, "rev" + ally.id, CFG.revive, dt, new Ctx { type = "revive", b = ally.id }); return true; }
                 SetGoal(g, b, ally.x, ally.z, "rv" + ally.id); BotMove(g, b, dt, 1.05); return true;

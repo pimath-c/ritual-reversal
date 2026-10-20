@@ -808,7 +808,7 @@ namespace RitualReversal.Simulacao
             foreach (var a in g.actors)
             {
                 if (a.st == "dead") { a.respawnT -= dt; if (a.respawnT <= 0) { Spawn(g, a, false); Ev(g, "respawn", "a", a.id); } continue; }
-                if (a.st == "down") { a.downT -= dt; a.sealing = -1; if (a.downT <= 0) Kill(g, a, null); if (!a.human) a.moving = false; else HumanActions(g, a, dt); continue; }
+                if (a.st == "down") { a.downT -= dt; a.sealing = -1; if (a.downT <= 0) Kill(g, a, null); if (!a.human) BotRasteja(g, a, dt); else HumanActions(g, a, dt); continue; }
                 if (a.human) HumanActions(g, a, dt);
                 else if (a.stunT <= 0)
                 {
