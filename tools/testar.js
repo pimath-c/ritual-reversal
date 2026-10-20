@@ -131,7 +131,18 @@ console.log('6. Empurrão pausa a canalização, pisar no círculo localiza');
     Sim._botHold(g2,c2,'col0',3.5,.2,{type:'collect',R:0}); if(c2.reag!==0) falha('bot coletou reagente que já tinha sido pego');
     if(!g2.log.some(e=>e.ev==='acao_negada')) falha('ação negada fora do registro'); }
   console.log('   ok'); }
-console.log(`7. ${N} partidas só de bots com invariantes`);
+// 7. O que a caça sabe de cada altar: passar perto não descarta (antes todo altar visitado aparecia "descartado")
+console.log('7. Conhecimento dos altares: visto, descartado, purgado');
+{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'know'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+  for(const a of g.actors){ a.st='dead'; a.respawnT=999; } const h=g.actors.find(a=>a.team==='H'); Object.assign(h,{st:'alive',hp:h.maxHp,human:true});
+  const esc=g.altars.find(A=>A.chosen), livre=g.altars.find(A=>!A.chosen); esc.state='dormant'; g.know=g.know.map(()=>'?');
+  h.x=esc.x+3; h.z=esc.z; Sim.step(g,1/30); if(g.know[esc.i]!=='visto') falha(`altar escolhido visitado virou "${g.know[esc.i]}" (deveria ser "visto": nada prova que não é do culto)`);
+  esc.state='awake'; Sim.step(g,1/30); if(g.know[esc.i]!=='desperto') falha('altar visto que desperta deveria virar "desperto"');
+  h.x=-140; h.z=0; Sim.step(g,1/30); esc.decoy=false; Sim._doAction(g,h,{type:'purge',A:esc.i}); if(g.know[esc.i]!=='purgado') falha('purgar um altar verdadeiro deveria marcar "purgado"');
+  h.x=esc.x+3; h.z=esc.z; Sim.step(g,1/30); if(g.know[esc.i]!=='purgado') falha('passar perto não deveria apagar "purgado"');
+  Object.assign(livre,{state:'awake',decoy:true}); Sim._doAction(g,h,{type:'purge',A:livre.i}); if(g.know[livre.i]!=='descartado') falha('Chamariz queimado deveria marcar "descartado"'); }
+console.log('   ok');
+console.log(`8. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};
 for(let m=0;m<N;m++){

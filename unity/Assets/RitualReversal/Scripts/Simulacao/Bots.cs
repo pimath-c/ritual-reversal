@@ -217,7 +217,7 @@ namespace RitualReversal.Simulacao
             if (g.eco != null && !fighting)
             {
                 var S = SETORES.First(x => x.id == g.eco.setor);
-                var cands = S.altares.Select(i => g.altars[i]).Where(A => A.state != "fenda" && A.state != "farol" && g.know[A.i] != "limpo" && g.know[A.i] != "chamariz").ToList();
+                var cands = S.altares.Select(i => g.altars[i]).Where(A => A.state != "fenda" && A.state != "farol" && g.know[A.i] != "descartado" && g.know[A.i] != "chamariz").ToList();
                 if (cands.Count > 0)
                 {
                     Func<Altar, int> pri = A => g.know[A.i] == "confirmado" || g.know[A.i] == "desperto" ? 0 : 1;

@@ -172,6 +172,9 @@ namespace RitualReversal.Simulacao
         public static int MomentoDe(double rt, double crep = 0) { for (int i = 0; i < CFG.momentoAte.Length; i++) if (rt < (i == 0 && crep > 0 ? crep : CFG.momentoAte[i])) return i; return CFG.momentoAte.Length - 1; }
         public static double FimMomento(Jogo g, int i) { return i == 0 ? g.lab.crepusculo : CFG.momentoAte[i]; }
         static void GanhaObolos(Jogo g, Ator a, int n) { if (g.lab.economia) a.obolos += n; }
+        // o que a caça sabe: "?", "visto" (passou perto, nada desperto; não descarta), "descartado" (sinal do santuário ou Chamariz
+        // queimado), "purgado" (era do culto), "desperto", "confirmado", "chamariz", "ativo"
+        public static bool SemAura(string k) { return k == "?" || k == "visto" || k == "descartado" || k == "purgado"; }
         public static int Fendas(Jogo g) { return g.altars.Count(A => A.state == "fenda"); }
         public static int Farois(Jogo g) { return g.altars.Count(A => A.state == "farol"); }
         // três rituais por noite, no máximo, e um de cada vez; devolve o motivo do bloqueio ou null
@@ -282,7 +285,7 @@ namespace RitualReversal.Simulacao
                     if (!R.visto) { R.visto = true; Feed(g, "Marcas de arrasto em " + O.name + ": o culto levou o ritual daqui para outro altar.", "big h", "H"); LogE(g, "rastro_visto", "altar", O.name, "by", h.name); }
                     if (!R.lido && h.cls == "rastreador")
                     {
-                        R.lido = true; if (g.know[P.i] == "?" || g.know[P.i] == "limpo") g.know[P.i] = "desperto";
+                        R.lido = true; if (SemAura(g.know[P.i])) g.know[P.i] = "desperto";
                         Feed(g, h.name + " segue o arrasto: ele termina em " + P.name + ".", "big h", "H"); LogE(g, "rastro_lido", "para", P.name, "by", h.name);
                     }
                 }
@@ -291,7 +294,7 @@ namespace RitualReversal.Simulacao
         static void SentinelaAvisa(Jogo g, Altar A, string oque)
         {
             var s = g.pontos.FirstOrDefault(p => p.tipo == "sentinela" && p.acesa && JS.Hypot(p.x - A.x, p.z - A.z) < 24); if (s == null) return;
-            if (g.know[A.i] == "?" || g.know[A.i] == "limpo") g.know[A.i] = "desperto"; Feed(g, "Uma sentinela tocou: " + oque + " em " + A.name + ".", "big h", "H"); LogE(g, "sentinela", "altar", A.name);
+            if (SemAura(g.know[A.i])) g.know[A.i] = "desperto"; Feed(g, "Uma sentinela tocou: " + oque + " em " + A.name + ".", "big h", "H"); LogE(g, "sentinela", "altar", A.name);
         }
 
         // ============ LUZ E SANIDADE ============
@@ -564,8 +567,8 @@ namespace RitualReversal.Simulacao
                         {
                             p.ativo = false; GanhaObolos(g, a, 1); TarefaProg(g, "H", "pistas");
                             // o sinal responde "onde NÃO está": descarta um altar que o culto não escolheu e que a equipe ainda não conhece
-                            var cand = g.altars.Where(X => !X.chosen && X.state == "dormant" && g.know[X.i] == "?").ToList(); int k = Idx(cand.Count); var D = k < cand.Count ? cand[k] : null;
-                            if (D != null) { g.know[D.i] = "limpo"; Feed(g, a.name + " leu um sinal antigo: " + D.name + " não foi escolhido pelo culto.", "h", "H"); LogE(g, "pista_info", "altar", D.name); }
+                            var cand = g.altars.Where(X => !X.chosen && X.state == "dormant" && (g.know[X.i] == "?" || g.know[X.i] == "visto")).ToList(); int k = Idx(cand.Count); var D = k < cand.Count ? cand[k] : null;
+                            if (D != null) { g.know[D.i] = "descartado"; Feed(g, a.name + " leu um sinal antigo: " + D.name + " não foi escolhido pelo culto.", "h", "H"); LogE(g, "pista_info", "altar", D.name); }
                             else Feed(g, a.name + " examinou um sinal antigo; ele não diz nada novo.", "h", "H");
                         }
                         else if (p.tipo == "sentinela") { p.acesa = true; TarefaProg(g, "H", "sentinelas"); Feed(g, a.name + " acendeu uma sentinela.", "h", "H"); Ev(g, "sfx", "k", "flare", "x", p.x, "z", p.z, "a", a.id); }
@@ -575,7 +578,7 @@ namespace RitualReversal.Simulacao
                     }
                 case "purge":
                     {
-                        bool was = A.decoy; TarefaProg(g, "H", "purgar"); A.state = "dormant"; A.decoy = false; g.know[A.i] = "limpo"; if (A.chosen) g.suspeitaC.Add(A.i); // o culto recebe o aviso da purga
+                        bool was = A.decoy; TarefaProg(g, "H", "purgar"); A.state = "dormant"; A.decoy = false; g.know[A.i] = was ? "descartado" : "purgado"; /* purgar um verdadeiro revela que era do culto */ if (A.chosen) g.suspeitaC.Add(A.i); // o culto recebe o aviso da purga
                         Feed(g, was ? "Chamariz queimado em " + A.name + "." : A.name + " foi purgado.", "h", "H"); Feed(g, "Um altar foi purgado: " + A.name + ".", "c", "C");
                         LogE(g, "purge", "altar", A.name, "decoy", was, "by", a.name); break;
                     }
@@ -782,9 +785,10 @@ namespace RitualReversal.Simulacao
                     var A = g.altars[i]; double d = Dist(h, A); if (d >= 10) continue; g.visit[i] = g.t; string k = g.know[i];
                     if (A.state == "awake")
                     {
-                        if (k == "?" || k == "limpo") { g.know[i] = "desperto"; Ev(g, "evp", "a", h.id, "x", A.x, "z", A.z); Feed(g, "EVP: vozes em " + A.name + ".", "h", "H"); LogE(g, "evp", "altar", A.name, "real", A.chosen && !A.decoy, "by", h.name); }
+                        if (SemAura(k)) { g.know[i] = "desperto"; Ev(g, "evp", "a", h.id, "x", A.x, "z", A.z); Feed(g, "EVP: vozes em " + A.name + ".", "h", "H"); LogE(g, "evp", "altar", A.name, "real", A.chosen && !A.decoy, "by", h.name); }
                     }
-                    else if (A.state == "dormant" && k != "limpo") g.know[i] = "limpo";
+                    // passar perto de um altar dormente só diz que nada está desperto agora: não descarta (só o sinal do santuário descarta)
+                    else if (A.state == "dormant" && (k == "?" || k == "desperto" || k == "confirmado" || k == "chamariz")) g.know[i] = "visto";
                 }
                 if (h.lantern)
                 {

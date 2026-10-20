@@ -224,7 +224,7 @@ namespace RitualReversal
                 var A = g.altars[i]; string ch = "?"; Color c = CINZA * 1.6f; bool barra = false;
                 if (A.state == "fenda") { ch = "✕"; c = CARMIM_VIVO; }
                 else if (A.state == "farol") { ch = "✓"; c = OURO; }
-                else if (papel == "H") { string k = g.know[i]; if (A.state == "active" && A.localized) { ch = "!"; c = CARMIM_VIVO; barra = true; } else if (k == "desperto") { ch = "◆"; c = ROXO_VIVO; } else if (k == "confirmado") { ch = "◆"; c = ROXO_VIVO; } else if (k == "chamariz") { ch = "◆"; c = CINZA * 2f; } else if (k == "limpo") { ch = "·"; c = CINZA; } }
+                else if (papel == "H") { string k = g.know[i]; if (A.state == "active" && A.localized) { ch = "!"; c = CARMIM_VIVO; barra = true; } else if (k == "desperto") { ch = "◆"; c = ROXO_VIVO; } else if (k == "confirmado") { ch = "◆"; c = ROXO_VIVO; } else if (k == "chamariz") { ch = "◆"; c = CINZA * 2f; } else if (k == "descartado") { ch = "✕"; c = CINZA; } else if (k == "purgado") { ch = "○"; c = OURO; } else if (k == "visto") { ch = "·"; c = CINZA * .8f; } }
                 else { if (A.state == "active") { ch = "!"; c = CARMIM_VIVO; barra = true; } else if (A.state == "awake") { ch = "◆"; c = A.decoy ? CINZA * 2f : ROXO_VIVO; } else { ch = A.chosen ? "○" : "·"; c = A.chosen ? CARMIM_VIVO : CINZA; } }
                 var rr = new Rect(x0 + i * 150, 102, 144, 44); Caixa(rr, new Color(0, 0, 0, .45f));
                 GUI.Label(new Rect(rr.x, rr.y, rr.width, 26), Cor(ch + " " + A.name, c), sCentro);
@@ -361,7 +361,7 @@ namespace RitualReversal
                 Color c = CINZA * 1.5f; string k = g.know[A.i];
                 if (A.state == "fenda") c = CARMIM; else if (A.state == "farol") c = OURO;
                 else if (papel == "C") c = A.state == "active" ? CARMIM_VIVO : A.chosen ? (A.state == "awake" ? ROXO_VIVO : CARMIM) : A.decoy ? CINZA * 2f : c;
-                else c = A.state == "active" && A.localized ? CARMIM_VIVO : k == "confirmado" ? ROXO_VIVO : k == "desperto" ? ROXO : k == "chamariz" ? CINZA * 2f : k == "limpo" ? CINZA * .6f : c;
+                else c = A.state == "active" && A.localized ? CARMIM_VIVO : k == "confirmado" ? ROXO_VIVO : k == "desperto" ? ROXO : k == "chamariz" ? CINZA * 2f : k == "descartado" ? CINZA * .6f : k == "purgado" ? OURO * .7f : c;
                 Caixa(new Rect(X(A.x) - 9, Z(A.z) - 9, 18, 18), c);
                 GUI.Label(new Rect(X(A.x) - 90, Z(A.z) + (A.z < 0 ? 12 : -36), 180, 24), A.name, new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleCenter });
             }

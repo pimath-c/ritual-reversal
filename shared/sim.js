@@ -647,13 +647,17 @@ function rastrear(g){
   for(const R of g.rastros){ if(g.rt-R.t>180) continue;
     for(const h of g.actors){ if(h.team!=='H'||h.st!=='alive'||Math.hypot(h.x-R.x,h.z-R.z)>9) continue; const P=g.altars[R.para], O=g.altars[R.de];
       if(!R.visto){ R.visto=true; feed(g,`Marcas de arrasto em ${O.name}: o culto levou o ritual daqui para outro altar.`,'big h','H'); logE(g,'rastro_visto',{altar:O.name,by:h.name}); }
-      if(!R.lido&&h.cls==='rastreador'){ R.lido=true; if(g.know[P.i]==='?'||g.know[P.i]==='limpo') g.know[P.i]='desperto';
+      if(!R.lido&&h.cls==='rastreador'){ R.lido=true; if(semAura(g.know[P.i])) g.know[P.i]='desperto';
         feed(g,`${h.name} segue o arrasto: ele termina em ${P.name}.`,'big h','H'); logE(g,'rastro_lido',{para:P.name,by:h.name}); } } }
 }
 // sentinelas acesas denunciam consagrações e rituais por perto
 function sentinelaAvisa(g,A,oque){ const s=g.pontos.find(p=>p.tipo==='sentinela'&&p.acesa&&Math.hypot(p.x-A.x,p.z-A.z)<24); if(!s) return;
-  if(g.know[A.i]==='?'||g.know[A.i]==='limpo') g.know[A.i]='desperto'; feed(g,`Uma sentinela tocou: ${oque} em ${A.name}.`,'big h','H'); logE(g,'sentinela',{altar:A.name}); }
+  if(semAura(g.know[A.i])) g.know[A.i]='desperto'; feed(g,`Uma sentinela tocou: ${oque} em ${A.name}.`,'big h','H'); logE(g,'sentinela',{altar:A.name}); }
 
+// O que a caça sabe de cada altar (g.know): '?' nada; 'visto' passou perto e não havia nada desperto (não descarta);
+// 'descartado' um sinal disse que o culto não o escolheu (ou um Chamariz foi queimado ali); 'purgado' era do culto e foi
+// purgado; 'desperto' há vozes (consagrado ou Chamariz); 'confirmado' resíduo de reagente; 'chamariz' sem resíduo; 'ativo'.
+const semAura=k=>k==='?'||k==='visto'||k==='descartado'||k==='purgado'; // nada desperto conhecido ali
 // ============ LUZ E SANIDADE ============
 function lightAt(g,x,z){
   let L=0;
@@ -846,14 +850,14 @@ function doAction(g,a,ctx){
     case 'ponto': { const p=g.pontos[ctx.P]; if(!p||!p.ativo) break;
       if(p.tipo==='pista'){ p.ativo=false; ganhaObolos(g,a,1); tarefaProg(g,'H','pistas');
         // o sinal responde "onde NÃO está": descarta um altar que o culto não escolheu e que a equipe ainda não conhece
-        const cand=g.altars.filter(A=>!A.chosen&&A.state==='dormant'&&g.know[A.i]==='?'); const D=cand[Math.floor(Math.random()*cand.length)];
-        if(D){ g.know[D.i]='limpo'; feed(g,`${a.name} leu um sinal antigo: ${D.name} não foi escolhido pelo culto.`,'h','H'); logE(g,'pista_info',{altar:D.name}); }
+        const cand=g.altars.filter(A=>!A.chosen&&A.state==='dormant'&&(g.know[A.i]==='?'||g.know[A.i]==='visto')); const D=cand[Math.floor(Math.random()*cand.length)];
+        if(D){ g.know[D.i]='descartado'; feed(g,`${a.name} leu um sinal antigo: ${D.name} não foi escolhido pelo culto.`,'h','H'); logE(g,'pista_info',{altar:D.name}); }
         else feed(g,`${a.name} examinou um sinal antigo; ele não diz nada novo.`,'h','H'); }
       else if(p.tipo==='sentinela'){ p.acesa=true; tarefaProg(g,'H','sentinelas'); feed(g,`${a.name} acendeu uma sentinela.`,'h','H'); ev(g,{type:'sfx',k:'flare',x:p.x,z:p.z,a:a.id}); }
       else if(p.tipo==='erva'){ p.ativo=false; p.t=50; ganhaObolos(g,a,1); tarefaProg(g,'C','ervas'); }
       else if(p.tipo==='tumulo'){ p.ativo=false; if(a.reag<CFG.carry) a.reag++; else ganhaObolos(g,a,2); tarefaProg(g,'C','tumulos'); feed(g,`${a.name} profanou um túmulo.`,'c','C'); }
       logE(g,'ponto',{tipo:p.tipo,by:a.name}); break; }
-    case 'purge': { const was=A.decoy; tarefaProg(g,'H','purgar'); A.state='dormant'; A.decoy=false; g.know[A.i]='limpo'; if(A.chosen) g.suspeitaC[A.i]=true; // o culto recebe o aviso da purga
+    case 'purge': { const was=A.decoy; tarefaProg(g,'H','purgar'); A.state='dormant'; A.decoy=false; g.know[A.i]=was?'descartado':'purgado'; if(A.chosen) g.suspeitaC[A.i]=true; /* purgar um verdadeiro revela que era do culto; um Chamariz queimado, que não era */ // o culto recebe o aviso da purga
       feed(g,was?`Chamariz queimado em ${A.name}.`:`${A.name} foi purgado.`,'h','H'); feed(g,`Um altar foi purgado: ${A.name}.`,'c','C');
       logE(g,'purge',{altar:A.name,decoy:was,by:a.name}); break; }
     case 'burn': R.has=false; R.t=CFG.regrow*1.2; logE(g,'burn',{by:a.name}); if(a.human) ev(g,{type:'feed',msg:'Reagente queimado.',cls:'h',to:a.id}); break;
@@ -1001,9 +1005,11 @@ function updateAltars(g,dt){
 function updateKnowledge(g,dt){
   for(const h of g.actors){ if(h.team!=='H'||h.st!=='alive') continue;
     g.altars.forEach((A,i)=>{ const d=dist(h,A); if(d>=10) return; g.visit[i]=g.t; const k=g.know[i];
-      if(A.state==='awake'){ if(k==='?'||k==='limpo'){ g.know[i]='desperto'; ev(g,{type:'evp',a:h.id,x:A.x,z:A.z}); feed(g,`EVP: vozes em ${A.name}.`,'h','H'); logE(g,'evp',{altar:A.name,real:A.chosen&&!A.decoy,by:h.name}); }
+      if(A.state==='awake'){ if(semAura(k)){ g.know[i]='desperto'; ev(g,{type:'evp',a:h.id,x:A.x,z:A.z}); feed(g,`EVP: vozes em ${A.name}.`,'h','H'); logE(g,'evp',{altar:A.name,real:A.chosen&&!A.decoy,by:h.name}); }
       }
-      else if(A.state==='dormant'&&k!=='limpo') g.know[i]='limpo';
+      // passar perto de um altar dormente só diz que nada está desperto agora: ele ainda pode ser do culto e não ter sido
+      // consagrado. Só o sinal do santuário descarta, e só a purga revela que era do culto.
+      else if(A.state==='dormant'&&(k==='?'||k==='desperto'||k==='confirmado'||k==='chamariz')) g.know[i]='visto';
     });
     if(h.lantern){ const fx=-Math.sin(h.yaw),fz=-Math.cos(h.yaw);
       g.altars.forEach((A,i)=>{ if(A.state!=='awake'&&A.state!=='active') return; const dx=A.x-h.x,dz=A.z-h.z,d=Math.hypot(dx,dz); if(d>16||d<.5) return;
@@ -1163,7 +1169,7 @@ function aiHunter(g,b,dt){
   }
   // eco do coro: vai aos altares do setor que a equipe ainda não descartou (primeiro os despertos); a dupla se divide
   if(g.eco&&!fighting){ const S=SETORES.find(s=>s.id===g.eco.setor);
-    const cands=S.altares.map(i=>g.altars[i]).filter(A=>A.state!=='fenda'&&A.state!=='farol'&&g.know[A.i]!=='limpo'&&g.know[A.i]!=='chamariz');
+    const cands=S.altares.map(i=>g.altars[i]).filter(A=>A.state!=='fenda'&&A.state!=='farol'&&g.know[A.i]!=='descartado'&&g.know[A.i]!=='chamariz');
     if(cands.length){ const pri=A=>g.know[A.i]==='confirmado'||g.know[A.i]==='desperto'?0:1; cands.sort((x,y)=>pri(x)-pri(y)||dist(b,x)-dist(b,y));
       const mate=g.actors.find(h=>h!==b&&h.team==='H'&&h.st==='alive'), mateAlvo=mate&&mate.ai.ecoT===g.eco.t?mate.ai.ecoAlvo:-1;
       let T=cands[0]; if(cands.length>1&&mateAlvo===T.i&&mate.id<b.id) T=cands[1];
@@ -1415,7 +1421,7 @@ function snapshot(g,role){
     slots:g.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),
     altars:g.altars.map(A=>{
       // a caça só vê o que sabe: um ritual ainda não localizado aparece como o altar que ela conhecia (desperto ou não)
-      const oculto=hide&&A.state==='active'&&!A.localized, sabe=!(g.know[A.i]==='?'||g.know[A.i]==='limpo');
+      const oculto=hide&&A.state==='active'&&!A.localized, sabe=!semAura(g.know[A.i]);
       const masked=hide&&A.state==='awake'&&!sabe, st=oculto?(sabe?'awake':'dormant'):masked?'dormant':A.state;
       if(oculto) return {i:A.i,name:A.name,x:A.x,z:A.z,state:st,chosen:false,decoy:false,prog:0,cp:0,seal:0,localized:false,grande:false,lastN:1,maxProg:0,doneT:A.doneT};
       return {i:A.i,name:A.name,x:A.x,z:A.z,state:st,chosen:hide?false:A.chosen,decoy:hide?false:A.decoy,prog:r2(A.prog),cp:A.cp,seal:r2(A.seal),localized:A.localized,grande:!!A.grande,lastN:A.lastN,maxProg:r2(A.maxProg),doneT:A.doneT}; }),
@@ -1445,5 +1451,5 @@ function snapshot(g,role){
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,_botHold:botHold,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,_botHold:botHold,_doAction:doAction,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

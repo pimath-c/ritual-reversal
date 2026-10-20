@@ -79,7 +79,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   no círculo localiza ('circulo'), `acaoNegada` confere a ação na hora (bots). Registro 2 (`VERSAO`, `REGISTRO`):
   `caca_perto`, `altar_errado`, `canal_saiu`, `acao_negada`; `relatorio` classifica a caça por ritual (`caca`,
   `conversao`). `tools/simular.js` com `SEMENTE=` é reproduzível byte a byte. Mostrador do círculo no chão (shader em
-  `buildAltars`). Bots, sementes 1000–1199: culto 50%.
+  `buildAltars`). Bots, sementes 1000–1199: culto 50%. v5.6a: `g.know` sem 'limpo': 'visto' (passou perto, nada desperto;
+  não descarta), 'descartado' (sinal do santuário ou Chamariz queimado), 'purgado' (era do culto); `semAura(k)`.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

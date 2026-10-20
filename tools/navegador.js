@@ -90,6 +90,14 @@ const VISTAS=[
   console.log('eco:',JSON.stringify(eco)); if(eco.pips!==2) erros.push('eco não marcou os dois altares do setor'); if(!/Coro distante/.test(eco.legenda)) erros.push('eco sem legenda');
   await page.screenshot({path:path.join(OUT,'eco.png')});
   await page.evaluate(()=>{ __T.game.eco=null; });
+  // faixa do topo: descartado, visitado e purgado são marcas diferentes, cada uma com a sua explicação
+  await page.evaluate(()=>{ const g=__T.game; window.__know=g.know.slice(); g.know=['descartado','visto','purgado','desperto','?','chamariz']; });
+  await page.waitForTimeout(1200);
+  const pips=await page.evaluate(()=>[...document.querySelectorAll('#strip .pip')].map(p=>({c:p.className,i:p.querySelector('i').textContent,t:p.title})));
+  console.log('faixa:',pips.map(p=>p.i+' '+p.t).join(' | '));
+  if(!/clean/.test(pips[0].c)||!/seen/.test(pips[1].c)||!/purged/.test(pips[2].c)||pips[0].i===pips[1].i) erros.push('faixa não separa descartado, visitado e purgado: '+JSON.stringify(pips.slice(0,3)));
+  await page.screenshot({path:path.join(OUT,'faixa-conhecimento.png')});
+  await page.evaluate(()=>{ __T.game.know=window.__know; });
   await page.waitForTimeout(600);
   await page.keyboard.down('Tab'); await page.waitForTimeout(600); await page.screenshot({path:path.join(OUT,'planta.png')}); await page.keyboard.up('Tab');
   // partida acelerada: despausa, avança a simulação em blocos de 30 s e deixa o cliente desenhar e tratar os eventos entre eles

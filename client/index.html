@@ -43,7 +43,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 .pip.awake .gem{ border-color:#9b6fc0; background:rgba(107,58,138,.35); } .pip.awake .gem i{ color:#d6b8f0; }
 .pip.confirmed .gem{ border-color:#c69cf0; background:rgba(107,58,138,.6); box-shadow:0 0 10px rgba(180,120,240,.6); } .pip.confirmed .gem i{ color:#fff; }
 .pip.decoy .gem{ border-color:#6c6c6c; background:rgba(60,60,60,.4); } .pip.decoy .gem i{ color:#aaa; text-decoration:line-through; }
-.pip.clean .gem i{ color:#4f5760; }
+.pip.clean .gem i{ color:#4f5760; } .pip.seen .gem i{ color:#8a919a; } .pip.purged .gem{ border-color:#b08a3e; } .pip.purged .gem i{ color:#d8b46a; }
 .pip.eco .gem{ outline:1.5px dashed var(--gold-hi); outline-offset:4px; animation:throb 1.6s ease-in-out infinite; }
 .pip.active .gem{ border-color:var(--crimson-hi); background:rgba(163,32,58,.55); box-shadow:0 0 14px rgba(224,67,94,.8); animation:throb 1s ease-in-out infinite; } .pip.active .gem i{ color:#fff; }
 .pip.fenda .gem{ border-color:#3a1b4a; background:#12071a; } .pip.fenda .gem i{ color:var(--crimson-hi); }
@@ -88,7 +88,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #caderno.on{ display:block; } #caderno small{ display:block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
 #caderno .cd{ padding:5px 0 6px; border-top:1px solid #262b31; } #caderno .cd b{ font-family:var(--serif); font-weight:400; font-size:17px; } #caderno .cd i{ font-style:normal; font-size:13px; font-weight:600; margin-left:8px; padding:0 6px; border:1px solid currentColor; }
 #caderno .cd span{ display:block; font-size:13.5px; color:#cfc6b6; } #caderno .cd em{ display:block; font-style:normal; font-size:12.5px; color:var(--muted); margin-top:1px; }
-#caderno .limpo i{ color:#7d858f; } #caderno .desperto i{ color:#c69cf0; } #caderno .confirmado i{ color:#e0c8ff; } #caderno .chamariz i{ color:#aaa; } #caderno .ativo i,#caderno .fenda i{ color:var(--crimson-hi); } #caderno .farol i{ color:var(--gold-hi); } #caderno .nada i{ color:#5c636b; }
+#caderno .limpo i{ color:#7d858f; } #caderno .purgado i{ color:#d8b46a; } #caderno .desperto i{ color:#c69cf0; } #caderno .confirmado i{ color:#e0c8ff; } #caderno .chamariz i{ color:#aaa; } #caderno .ativo i,#caderno .fenda i{ color:var(--crimson-hi); } #caderno .farol i{ color:var(--gold-hi); } #caderno .nada i{ color:#5c636b; }
 body.toque #caderno{ top:94px; right:12px; transform:scale(.72); transform-origin:top right; }
 /* tutorial */
 #tutorial{ position:absolute; left:26px; top:300px; width:330px; padding:10px 14px 12px; background:rgba(8,9,11,.85); border-left:3px solid var(--crimson-hi); display:none; pointer-events:none; }
@@ -2338,7 +2338,10 @@ function anotarCaderno(msg){ if(!V||!V.altars) return; if(CAD.id!==V.matchId){ C
 function estadoCaderno(A,i,papel){
   if(A.state==='fenda') return ['Fenda','Ritual completo: conta para o culto','fenda']; if(A.state==='farol') return ['Farol','Ritual selado: conta para os Caçadores','farol'];
   if(papel==='H'){ const k=V.know[i]; if(A.state==='active'&&A.localized) return ['Ritual!',`Ritual em andamento, ${Math.floor(A.prog*100)}%: vá selar`,'ativo'];
-    return {'?':['Sem pistas','Nada se sabe ainda: santuários, sentinelas e o sensor ajudam','nada'],limpo:['Descartado','O culto não escolheu este altar (ou já foi purgado)','limpo'],
+    return {'?':['Sem pistas','Nada se sabe ainda: santuários, sentinelas e o sensor ajudam','nada'],
+      visto:['Visitado','Nada desperto quando a caça passou. Pode ainda ser do culto e não ter sido consagrado','nada'],
+      descartado:['Descartado','Um sinal do santuário (ou um Chamariz queimado) disse que o culto não escolheu este altar. Cuidado com a Transferência','limpo'],
+      purgado:['Purgado','Era um altar do culto e foi purgado. Pode ser consagrado de novo','purgado'],
       desperto:['Desperto','Consagrado ou Chamariz: purgue, ou confirme com a lanterna','desperto'],confirmado:['Confirmado','Resíduo de reagente: é um altar do culto. Purgue antes da Vigília','confirmado'],
       chamariz:['Chamariz','Sem resíduo: é isca. Não perca tempo aqui','chamariz'],ativo:['Ritual!','Ritual em andamento: vá selar','ativo']}[k]||['?','','nada']; }
   if(A.state==='active') return ['Ritual',`Seu ritual está em ${Math.floor(A.prog*100)}%${A.localized?', e os Caçadores sabem onde':''}`,'ativo'];
@@ -2585,8 +2588,9 @@ function updateHUD(dt,m){
   // strip
   AV.forEach((O,i)=>{ const A=V.altars[i]; let st='',ch='?';
     if(A.state==='fenda'){ st='fenda'; ch='✕'; } else if(A.state==='farol'){ st='farol'; ch='✓'; }
-    else if(role==='H'){ const k=V.know[i]; if(A.state==='active'&&A.localized){ st='active'; ch='!'; } else if(k==='desperto'){ st='awake'; ch='◆'; } else if(k==='confirmado'){ st='confirmed'; ch='◆'; } else if(k==='chamariz'){ st='decoy'; ch='◆'; } else if(k==='limpo'){ st='clean'; ch='·'; } }
+    else if(role==='H'){ const k=V.know[i]; if(A.state==='active'&&A.localized){ st='active'; ch='!'; } else if(k==='desperto'){ st='awake'; ch='◆'; } else if(k==='confirmado'){ st='confirmed'; ch='◆'; } else if(k==='chamariz'){ st='decoy'; ch='◆'; } else if(k==='descartado'){ st='clean'; ch='✕'; } else if(k==='purgado'){ st='purged'; ch='○'; } else if(k==='visto'){ st='seen'; ch='·'; } }
     else { if(A.state==='active'){ st='active'; ch='!'; } else if(A.state==='awake'){ st=A.decoy?'decoy':'awake'; ch='◆'; } else ch=A.chosen?'○':'·'; }
+    const tt=role==='H'?(PIP_DICA[st]||'Sem pistas sobre este altar'):''; if(O.pip.title!==A.name+(tt?': '+tt:'')) O.pip.title=A.name+(tt?': '+tt:'');
     const cls='pip '+st+(role==='C'&&A.chosen?' chosen':'')+(role==='H'&&V.eco&&altaresDoSetor(V.eco.setor).includes(i)?' eco':''); if(O.pip.className!==cls) O.pip.className=cls; const gi=O.pip.querySelector('i'); if(gi.textContent!==ch) gi.textContent=ch;
     O.pip.querySelector('.bar span').style.width=((A.state==='active'&&(role==='C'||A.localized))?A.prog*100:0)+'%'; });
   // interaction
@@ -2612,9 +2616,11 @@ function updateHUD(dt,m){
   $('#net').textContent=line; $('#net').style.color=MODE==='online'&&(ping>250||NET.rate<12)?'var(--crimson-hi)':'var(--muted)';
   if($('#tabMap').style.display==='grid') mapSvg($('#tabSvg'),{me:mv,state:(A,i)=>altarMapStyle(A,i,role)});
 }
+// o que cada marca da faixa do topo quer dizer para a caça (aparece ao passar o mouse; o caderno, J, explica mais)
+const PIP_DICA={clean:'descartado por um sinal do santuário',seen:'visitado, nada desperto (não descarta)',purged:'purgado: era do culto',awake:'desperto: vozes (consagrado ou Chamariz)',confirmed:'confirmado: resíduo de reagente',decoy:'Chamariz',active:'ritual em andamento',fenda:'Fenda',farol:'Farol'};
 function altarMapStyle(A,i,role){ if(A.state==='fenda') return {fill:'#12071a',stroke:'#e0435e'}; if(A.state==='farol') return {fill:'#6d4f1c',stroke:'#f3d58e'};
   if(role==='C') return A.state==='active'?{fill:'#a3203a',stroke:'#fff'}:A.chosen?{fill:A.state==='awake'?'#43285a':'#2a0f18',stroke:'#e0435e'}:A.decoy?{fill:'#333',stroke:'#888'}:null;
-  const k=V.know[i]; if(A.state==='active'&&A.localized) return {fill:'#a3203a',stroke:'#fff'}; if(k==='confirmado') return {fill:'#6b3a8a',stroke:'#e0c0ff'}; if(k==='desperto') return {fill:'#43285a',stroke:'#9b6fc0'}; if(k==='chamariz') return {fill:'#333',stroke:'#888'}; if(k==='limpo') return {fill:'#101214',stroke:'#3f4650'}; return null; }
+  const k=V.know[i]; if(A.state==='active'&&A.localized) return {fill:'#a3203a',stroke:'#fff'}; if(k==='confirmado') return {fill:'#6b3a8a',stroke:'#e0c0ff'}; if(k==='desperto') return {fill:'#43285a',stroke:'#9b6fc0'}; if(k==='chamariz') return {fill:'#333',stroke:'#888'}; if(k==='descartado') return {fill:'#101214',stroke:'#3f4650'}; if(k==='purgado') return {fill:'#2a2312',stroke:'#b08a3e'}; return null; }
 let PLANTA_FIXA=null;
 function plantaFixa(X,Z,S){ if(PLANTA_FIXA) return PLANTA_FIXA;
   const CT=CATEDRAL, cl=Sim.CLAUSTRO, f=v=>v.toFixed(1); let h='';
