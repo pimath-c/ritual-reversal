@@ -44,6 +44,7 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 .pip.confirmed .gem{ border-color:#c69cf0; background:rgba(107,58,138,.6); box-shadow:0 0 10px rgba(180,120,240,.6); } .pip.confirmed .gem i{ color:#fff; }
 .pip.decoy .gem{ border-color:#6c6c6c; background:rgba(60,60,60,.4); } .pip.decoy .gem i{ color:#aaa; text-decoration:line-through; }
 .pip.clean .gem i{ color:#4f5760; }
+.pip.eco .gem{ outline:1.5px dashed var(--gold-hi); outline-offset:4px; animation:throb 1.6s ease-in-out infinite; }
 .pip.active .gem{ border-color:var(--crimson-hi); background:rgba(163,32,58,.55); box-shadow:0 0 14px rgba(224,67,94,.8); animation:throb 1s ease-in-out infinite; } .pip.active .gem i{ color:#fff; }
 .pip.fenda .gem{ border-color:#3a1b4a; background:#12071a; } .pip.fenda .gem i{ color:var(--crimson-hi); }
 .pip.farol .gem{ border-color:var(--gold-hi); background:rgba(210,173,98,.45); } .pip.farol .gem i{ color:#fff; }
@@ -1655,6 +1656,8 @@ const SFX={
   collect:(x,z)=>sfxNoise(x,z,26,.5,'bandpass',700,2,.5),
   flare:(x,z)=>sfxNoise(x,z,20,.6,'highpass',2000,1,.3),
   rune:(x,z)=>sfxTone(x,z,30,300,900,.6,'triangle',.3),
+  // eco do coro: três vozes graves vindas do setor do ritual, audíveis de longe
+  eco:(x,z)=>[196,247,294].forEach((f,i)=>setTimeout(()=>sfxTone(x,z,320,f,f*.985,2.6,'triangle',.11),i*140)),
   arrasto:(x,z)=>{ sfxTone(x,z,45,70,40,1.8,'sawtooth',.25); setTimeout(()=>sfxTone(x,z,45,520,180,1.2,'triangle',.12),300); },
   push:(x,z)=>{ sfxNoise(x,z,28,.35,'lowpass',300,1,.9); sfxTone(x,z,28,90,40,.3,'sine',.6); },
   flash:(x,z)=>{ sfxNoise(x,z,30,.4,'highpass',3000,1,.7); sfxTone(x,z,30,2400,1800,.25,'sine',.2); },
@@ -2072,6 +2075,8 @@ function handleEvents(list,online){
       case 'ping': receberPing(e); break;
       case 'fala': receberFala(e); break;
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
+      case 'eco': { const L=(e.altares||[]).map(i=>V.altars[i]).filter(Boolean); if(!L.length) break; const x=L.reduce((s,A)=>s+A.x,0)/L.length, z=L.reduce((s,A)=>s+A.z,0)/L.length;
+        SFX.eco(x,z); legenda('eco',x,z,`Coro distante: ${L.map(A=>A.name).join(' ou ')}`,'rit',400); anunciar('O coro ecoa',L.map(A=>A.name).join(' ou ')); if(myRole()==='H') dica('h_eco'); marcoLT('eco','Eco do coro'); break; }
       case 'sensor': sensorV=e.v; sensorShowT=5; SFX.ping(e.v); break;
       case 'evp': SFX.whisper(e.x,e.z); legenda('evp',e.x,e.z); break;
       case 'blind': blindT=1.5; notaHab('Você foi cegado','#fff4d0'); break;
@@ -2216,13 +2221,13 @@ const PASSOS_TUT={
      {t:'Aperte Q para usar o Sensor Áurico. Ele mede a força do sinal dos altares consagrados por perto.',feito:()=>meuLog('sensor')},
      {t:'Adiantamos o relógio: a Vigília chegou e os altares consagrados despertam. Ligue a lanterna (F): ela mostra resíduo só nos altares verdadeiros.',avanca:true,feito:()=>V.momento>=1&&me()&&me().lantern},
      {t:'Vá a um altar desperto (diamante roxo no alto da tela) e segure E para purgá-lo antes que o ritual comece.',alvo:m=>maisPerto(V.altars.filter((A,i)=>V.know[i]==='desperto'||V.know[i]==='confirmado'),m),feito:()=>meuLog('purge')},
-     {t:'Quando ouvir um ritual (legendas em vermelho), siga o som até o círculo e segure E dentro dele para selar. Com o aliado junto o selo anda muito mais rápido.',alvo:m=>maisPerto(V.altars.filter(A=>A.state==='active'),m),feito:()=>{ const m=me(); return m&&m.sealing>=0; }}],
+     {t:'Quando um ritual começar, o coro logo ecoa o setor: dois altares possíveis, marcados na faixa do topo. Vá até o certo, siga o som até o círculo e segure E dentro dele para selar. Com o aliado junto o selo anda muito mais rápido.',alvo:m=>maisPerto(V.altars.filter(A=>A.state==='active'),m),feito:()=>{ const m=me(); return m&&m.sealing>=0; }}],
   C:[{t:'Ande com WASD e olhe com o mouse. Pegue um reagente no Claustro: vá ao frasco marcado e segure E.',alvo:m=>maisPerto(V.reagents.filter(R=>R.has),m),feito:()=>{ const m=me(); return m&&m.reag>0; }},
      {t:'Vá a um dos seus altares (marcado) e segure E para consagrá-lo. Isso gasta o reagente e prepara o altar para a Vigília.',alvo:m=>maisPerto(V.altars.filter(A=>A.chosen&&A.state==='dormant'),m),feito:()=>meuLog('consecrate')},
      {t:'Colha uma erva na floresta ou profane um túmulo no cemitério (segure E no ponto marcado). Tarefas rendem óbolos para a loja.',alvo:m=>maisPerto(V.pontos.filter(p=>(p.tipo==='erva'||p.tipo==='tumulo')&&p.ativo),m),feito:()=>meuLog('ponto',e=>e.tipo==='erva'||e.tipo==='tumulo')},
      {t:'Adiantamos o relógio até a Vigília: os rituais já podem começar. Pegue outro reagente.',avanca:true,alvo:m=>maisPerto(V.reagents.filter(R=>R.has),m),feito:()=>{ const m=me(); return V.momento>=1&&m&&m.reag>0; }},
      {t:'No altar consagrado, segure E para iniciar o ritual.',alvo:m=>maisPerto(V.altars.filter(A=>A.chosen&&A.state==='awake'),m),feito:()=>meuLog('ritual_start')},
-     {t:'Fique dentro do círculo: o ritual só avança com alguém canalizando. Se os Caçadores chegarem, T transfere o ritual para outro altar consagrado. Leve o ritual a 25%.',alvo:m=>maisPerto(V.altars.filter(A=>A.state==='active'),m),feito:()=>V.altars.some(A=>A.state==='active'&&A.prog>=.25)}]};
+     {t:'Fique dentro do círculo sem atacar: o ritual só avança com quem canaliza, e cada sigilo pausa a sua canalização por 1 s. Aos 25%, o coro ecoa o setor para os Caçadores. Leve o ritual a 25%.',alvo:m=>maisPerto(V.altars.filter(A=>A.state==='active'),m),feito:()=>V.altars.some(A=>A.state==='active'&&A.prog>=.25)}]};
 function pularPassoTutorial(){ if(!TUT.ativo||TUT.fim) return; TUT.i++; TUT.avancou=false; SFX.click(); }
 function atualizarTutorial(dt,m){ const el=$('#tutorial'); if(!el) return; if(!TUT.ativo||!V||V.phase!=='play'||!m){ el.classList.remove('on'); return; }
   const L=PASSOS_TUT[TUT.papel], P=L[TUT.i];
@@ -2250,7 +2255,8 @@ const DICAS={
   c_inicio:'Colha ervas e profane túmulos para ganhar óbolos. Os reagentes livres ficam no Claustro.',
   c_consagrar:'Este é um dos seus altares: segure E para consagrar (gasta 1 reagente). Faça isso no Crepúsculo.',
   c_vigilia:'Os rituais já podem começar: segure E num altar consagrado, com um reagente, e fique no círculo.',
-  c_circulo:'O ritual só avança com alguém no círculo. Se os Caçadores chegarem, T transfere o ritual para outro altar.',
+  c_circulo:'O ritual só avança com quem está no círculo sem atacar: um sigilo pausa a sua canalização por 1 s. Em dupla, um canaliza e o outro defende.',
+  h_eco:'O coro ecoou: o ritual está num dos dois altares marcados na faixa do topo. O que você já descartou decide para onde correr.',
   c_sentinela:'Sentinela acesa: consagrar perto dela avisa os Caçadores. Prefira altares longe da luz.',
   queda:'Você caiu. Um aliado pode te reanimar segurando E perto de você; o inimigo pode te executar.',
   aliado:'Seu aliado caiu. Vá até ele e segure E para reanimar antes que ele sangre até o fim.',
@@ -2558,7 +2564,7 @@ function updateHUD(dt,m){
     if(A.state==='fenda'){ st='fenda'; ch='✕'; } else if(A.state==='farol'){ st='farol'; ch='✓'; }
     else if(role==='H'){ const k=V.know[i]; if(A.state==='active'&&A.localized){ st='active'; ch='!'; } else if(k==='desperto'){ st='awake'; ch='◆'; } else if(k==='confirmado'){ st='confirmed'; ch='◆'; } else if(k==='chamariz'){ st='decoy'; ch='◆'; } else if(k==='limpo'){ st='clean'; ch='·'; } }
     else { if(A.state==='active'){ st='active'; ch='!'; } else if(A.state==='awake'){ st=A.decoy?'decoy':'awake'; ch='◆'; } else ch=A.chosen?'○':'·'; }
-    const cls='pip '+st+(role==='C'&&A.chosen?' chosen':''); if(O.pip.className!==cls) O.pip.className=cls; const gi=O.pip.querySelector('i'); if(gi.textContent!==ch) gi.textContent=ch;
+    const cls='pip '+st+(role==='C'&&A.chosen?' chosen':'')+(role==='H'&&V.eco&&altaresDoSetor(V.eco.setor).includes(i)?' eco':''); if(O.pip.className!==cls) O.pip.className=cls; const gi=O.pip.querySelector('i'); if(gi.textContent!==ch) gi.textContent=ch;
     O.pip.querySelector('.bar span').style.width=((A.state==='active'&&(role==='C'||A.localized))?A.prog*100:0)+'%'; });
   // interaction
   const mv=MODE==='online'&&NET.pred?Object.assign({},m,{x:NET.pred.x,z:NET.pred.z}):m;
@@ -2571,9 +2577,11 @@ function updateHUD(dt,m){
   let R=null,bd=1e9; for(const A of V.altars){ if(A.state!=='active') continue; if(role==='H'&&!A.localized&&dist(mv,A)>CFG.rit[Math.max(1,A.lastN)].rad) continue; const d=dist(mv,A); if(d<bd&&(d<30||role==='C')){ bd=d; R=A; } }
   const race=$('#race');
   if(R){ race.style.display='block'; $('#raceName').textContent=R.name; $('#ritFill').style.width=(R.prog*100)+'%'; $('#ritPct').textContent=Math.floor(R.prog*100)+'%'; $('#selFill').style.width=(R.seal*100)+'%'; $('#selPct').textContent=Math.floor(R.seal*100)+'%';
-    const n=V.actors.filter(c=>c.team==='C'&&c.st==='alive'&&Sim.inCircle(c,R)).length, s=V.actors.filter(h=>h.team==='H'&&h.sealing===R.i).length; let note='';
-    if(s) note=s>=2?'Selando em dupla':'Selando';
-    else if(n===0) note=R.prog>R.cp?'Círculo vazio: o ritual recua até o checkpoint':'Círculo vazio';
+    const noCirculo=V.actors.filter(c=>c.team==='C'&&c.st==='alive'&&Sim.inCircle(c,R)), atacando=c=>CFG.ataqueCanal>0&&V.t-c.lastShotT<CFG.ataqueCanal;
+    const n=noCirculo.filter(c=>!atacando(c)).length, s=V.actors.filter(h=>h.team==='H'&&h.sealing===R.i).length; let note='';
+    if(role==='C'&&m.team==='C'&&Sim.inCircle(m,R)&&atacando(m)) note='Você atacou: a sua canalização parou por 1 s';
+    else if(s) note=s>=2?'Selando em dupla':'Selando';
+    else if(n===0) note=noCirculo.length?'Ninguém canaliza: quem ataca não celebra':R.prog>R.cp?'Círculo vazio: o ritual recua até o checkpoint':'Círculo vazio';
     else { const mf=Sim.mareFactor(V); note=`${n} ${n>1?'canalizando':'canalizando sozinho'}${mf>1?`, Maré Profana +${Math.round((mf-1)*100)}%`:''}`; }
     $('#raceNote').textContent=note; } else race.style.display='none';
   const ping=Math.round(NET.ping); let line=`${Math.round(fpsEMA)} fps`;
@@ -2737,13 +2745,18 @@ function amostrarNoite(){ if(!V||V.phase!=='play'||!V.altars) return; const R=ro
   if(V.rt-R.ultimo<1&&R.am.length) return; R.ultimo=V.rt;
   R.am.push({rt:V.rt,a:V.altars.map(A=>A.state==='active'?[+A.prog.toFixed(3),+A.seal.toFixed(3)]:null)}); }
 const COR_ALT=['#e0435e','#b98cff','#ff9a5a','#5ad1c8','#7fb2ff','#ff6fb0'];
+const SETOR_NOME=Object.fromEntries(Sim.SETORES.map(S=>[S.id,S.nome]));
+const altaresDoSetor=s=>(Sim.SETORES.find(S=>S.id===s)||{altares:[]}).altares;
 function marcosDoLog(log,r){ const out=[]; for(const e of log){ if(e.r!==r) continue;
     if(e.ev==='ritual_start') out.push({rt:e.t,tipo:'inicio',txt:`${e.by} iniciou o ritual em ${e.altar}`});
     else if(e.ev==='ritual_complete') out.push({rt:e.t,tipo:'fenda',txt:`Fenda aberta em ${e.altar}`});
     else if(e.ev==='sealed') out.push({rt:e.t,tipo:'farol',txt:`Ritual selado em ${e.altar}: Farol`});
     else if(e.ev==='down') out.push({rt:e.t,tipo:'queda',txt:`${e.by} derrubou ${e.who}`});
     else if(e.ev==='revive') out.push({rt:e.t,tipo:'reanima',txt:`${e.by} reanimou ${e.who}`});
-    else if(e.ev==='transfer') out.push({rt:e.t,tipo:'inicio',txt:`${e.by} transferiu o ritual de ${e.from} para ${e.to}`}); }
+    else if(e.ev==='transfer') out.push({rt:e.t,tipo:'inicio',txt:`${e.by} transferiu o ritual de ${e.from} para ${e.to}`});
+    else if(e.ev==='eco') out.push({rt:e.t,tipo:'eco',txt:`O coro ecoou ${(SETOR_NOME[e.setor]||e.setor)} (era ${e.altar})`});
+    else if(e.ev==='localized') out.push({rt:e.t,tipo:'eco',txt:`A caça localizou o ritual em ${e.altar}`});
+    else if(e.ev==='execucao_interrompida') out.push({rt:e.t,tipo:'reanima',txt:`${e.by} interrompeu a execução de ${e.who}`}); }
   return out; }
 function graficoNoite(r){ const R=LT.rod[r]; if(!R||!R.am.length) return '';
   const log=logDaNoite(); if(log&&log.length){ const doLog=marcosDoLog(log,r); R.mkFinal=R.mk.filter(m=>m.tipo==='momento'||m.tipo==='grande').concat(doLog).sort((a,b)=>a.rt-b.rt); } else R.mkFinal=R.mk;
@@ -2757,7 +2770,7 @@ function graficoNoite(r){ const R=LT.rod[r]; if(!R||!R.am.length) return '';
     if(seg.length) linhas.push(seg), selos.push(sel);
     for(const L of linhas) h+=`<polyline points="${L.join(' ')}" fill="none" stroke="${COR_ALT[i%6]}" stroke-width="2.2"/>`;
     for(const L of selos) if(L.some(p=>+p.split(',')[1]<H-9)) h+=`<polyline points="${L.join(' ')}" fill="none" stroke="#f3d58e" stroke-width="1.6" stroke-dasharray="4 3"/>`; }
-  const IC={inicio:['▲','#e0435e'],fenda:['✕','#e0435e'],farol:['✓','#f3d58e'],grande:['✶','#ff5a6e'],momento:['◆','#8f877b'],queda:['✚','#c9d3dc'],morte:['☠','#c9d3dc'],reanima:['♥','#8fd0a0']};
+  const IC={inicio:['▲','#e0435e'],fenda:['✕','#e0435e'],farol:['✓','#f3d58e'],grande:['✶','#ff5a6e'],momento:['◆','#8f877b'],eco:['◎','#d6b8f0'],queda:['✚','#c9d3dc'],morte:['☠','#c9d3dc'],reanima:['♥','#8fd0a0']};
   for(const m of R.mkFinal){ const ic=IC[m.tipo]||['•','#ccc']; h+=`<text x="${X(m.rt)}" y="-2" fill="${ic[1]}" font-size="12" text-anchor="middle"><title>${fmt(m.rt)} · ${esc(m.txt)}</title>${ic[0]}</text>`; }
   h+='</svg>';
   const leg=V.altars.map((A,i)=>R.am.some(q=>q.a[i])?`<span><i style="background:${COR_ALT[i%6]}"></i>${esc(A.name)}</span>`:'').join('');
@@ -3022,16 +3035,16 @@ function comoJogarScreen(){
       <div><h3 style="color:var(--crimson-hi)">Como Cultista</h3>
         ${passo(1,'Crepúsculo: prepare-se',`Colha ervas na floresta e profane túmulos no cemitério, a sudeste. Tarefas rendem óbolos; negocie reagentes com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro.`)}
         ${passo(2,'Consagre em silêncio',`Você escolheu 3 de 6 altares. Consagrar gasta 1 reagente. Cuidado com as sentinelas acesas: elas denunciam você.`)}
-        ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
+        ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. Quem ataca não canaliza: cada sigilo pausa a sua canalização por 1 s, então em dupla um celebra e o outro defende. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
         ${passo(4,'Hora Morta: o Grande Ritual',`Se estiver 1 a 1, o ritual decisivo só começa agora, e a catedral inteira ouve. Vença dois dos três antes do amanhecer.`)}
       </div>
       <div><h3 style="color:var(--gold)">Como Caçador</h3>
         ${passo(1,'Crepúsculo: prepare-se',`Cada sinal lido num santuário descarta um altar que o culto não escolheu. Acenda sentinelas e negocie munição, óleo e sinalizadores com o Ermitão, na cabana perto do acampamento.`)}
         ${passo(2,'Investigue',`${kb('sensor')} lê sinais por perto, o EVP sussurra junto de altares consagrados, e a Lanterna (${kb('lantern')}) mostra resíduo só nos verdadeiros.`)}
-        ${passo(3,'Vigília: purgue e sele',`Segure ${kb('use')} num altar consagrado para purgar. No Presságio, corra ao círculo e sele em dupla. Marcas de arrasto num altar denunciam uma Transferência.`)}
+        ${passo(3,'Vigília: purgue e sele',`Segure ${kb('use')} num altar consagrado para purgar. Depois do Presságio, o coro ecoa o setor do ritual: dois altares possíveis, e o que você já descartou decide para onde correr. Sele em dupla. Marcas de arrasto num altar denunciam uma Transferência.`)}
         ${passo(4,'Resista até o amanhecer',`Cada ritual selado força os Cultistas a recomeçar em outro altar. Selem dois dos três rituais, ou resistam até o amanhecer.`)}
       </div></div>
-    <p class="fine">Caído, um aliado pode te reanimar. O inimigo pode te executar. O som diz muito: use fones (as legendas mostram de que lado vem cada som). ${kb('ping')} marca um ponto, um altar ou um inimigo para o aliado, e ${kb('falas')} abre as frases rápidas; o bot aliado também obedece.</p>
+    <p class="fine">Caído, um aliado pode te reanimar. O inimigo pode te executar, mas levar dano recomeça a execução: atire em quem executa o seu aliado. O som diz muito: use fones (as legendas mostram de que lado vem cada som). ${kb('ping')} marca um ponto, um altar ou um inimigo para o aliado, e ${kb('falas')} abre as frases rápidas; o bot aliado também obedece.</p>
     <div class="btnrow"><button class="go" id="bComoOk">Entendi</button></div>`,()=>{ $('#bComoOk').onclick=()=>{ comoJogarAberto=false; screenKey=''; }; });
 }
 function openSettings(){ settingsOpen=true; backTo=screenKey; screenKey=''; }

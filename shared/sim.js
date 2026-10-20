@@ -731,7 +731,7 @@ function damage(g,t,amt,src){
   if(!g.firstContact){ g.firstContact=r2(g.rt); logE(g,'first_contact',{}); }
   if(t.st==='down'){ t.downT-=amt/8; t.att[src.id]=g.t; return; }
   // executar exige calma: quem leva dano recomeça a execução
-  if(CFG.danoInterrompeExecucao&&t.hold.key.startsWith('exe')){ if(t.hold.t>0) logE(g,'execucao_interrompida',{who:t.name,by:src.name}); t.hold={key:'',t:0,max:0}; }
+  if(CFG.danoInterrompeExecucao&&t.hold.key.startsWith('exe')){ if(t.hold.t>0){ logE(g,'execucao_interrompida',{who:t.name,by:src.name}); if(t.human) ev(g,{type:'feed',msg:'Você levou dano: a execução recomeçou.',cls:'',to:t.id}); } t.hold={key:'',t:0,max:0}; }
   if(t.shield>0){ const s=Math.min(t.shield,amt); t.shield-=s; amt-=s; }
   t.hp-=amt; t.hitT=g.t; t.att[src.id]=g.t; t.veuT=0;
   ev(g,{type:'hurt',a:t.id,s:src.id,sx:r2(src.x),sz:r2(src.z)}); ev(g,{type:'hit',a:src.id,alvo:t.id,derrubou:t.hp<=0});
@@ -1357,5 +1357,5 @@ function snapshot(g,role){
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,SETORES,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

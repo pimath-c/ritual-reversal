@@ -405,7 +405,7 @@ namespace RitualReversal.Simulacao
             if (!g.firstContact.HasValue || g.firstContact.Value == 0) { g.firstContact = R2(g.rt); LogE(g, "first_contact"); }
             if (t.st == "down") { t.downT -= amt / 8; t.att[src.id] = g.t; return; }
             // executar exige calma: quem leva dano recomeça a execução
-            if (CFG.danoInterrompeExecucao && t.hold.key.StartsWith("exe", StringComparison.Ordinal)) { if (t.hold.t > 0) LogE(g, "execucao_interrompida", "who", t.name, "by", src.name); t.hold = new Hold(); }
+            if (CFG.danoInterrompeExecucao && t.hold.key.StartsWith("exe", StringComparison.Ordinal)) { if (t.hold.t > 0) { LogE(g, "execucao_interrompida", "who", t.name, "by", src.name); if (t.human) Ev(g, "feed", "msg", "Você levou dano: a execução recomeçou.", "cls", "", "to", t.id); } t.hold = new Hold(); }
             if (t.shield > 0) { double s = Math.Min(t.shield, amt); t.shield -= s; amt -= s; }
             t.hp -= amt; t.hitT = g.t; t.att[src.id] = g.t; t.veuT = 0;
             Ev(g, "hurt", "a", t.id, "s", src.id, "sx", R2(src.x), "sz", R2(src.z)); Ev(g, "hit", "a", src.id, "alvo", t.id, "derrubou", t.hp <= 0);

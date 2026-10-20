@@ -74,6 +74,13 @@ const VISTAS=[
   if(!gr.bussola) erros.push('bússola vazia'); if(!gr.legendas) erros.push('o Grande Ritual não gerou legenda de som');
   console.log('grande ritual:',JSON.stringify(gr)); if(!gr.corpo) erros.push('Grande Ritual não mudou a interface');
   await page.evaluate(()=>{ Object.assign(__T.game.altars[1],window.__antes); });
+  // eco do coro a leste: a faixa marca os dois altares do setor e a legenda diz de onde vem o coro
+  await page.evaluate(()=>{ const g=__T.game; g.eco={setor:'leste',t:g.rt}; g.events.push({type:'eco',setor:'leste',altares:[2,5]}); });
+  await page.waitForTimeout(1500);
+  const eco=await page.evaluate(()=>({pips:document.querySelectorAll('#strip .pip.eco').length,legenda:[...document.querySelectorAll('#legendas div')].map(d=>d.textContent).join(' | ')}));
+  console.log('eco:',JSON.stringify(eco)); if(eco.pips!==2) erros.push('eco não marcou os dois altares do setor'); if(!/Coro distante/.test(eco.legenda)) erros.push('eco sem legenda');
+  await page.screenshot({path:path.join(OUT,'eco.png')});
+  await page.evaluate(()=>{ __T.game.eco=null; });
   await page.waitForTimeout(600);
   await page.keyboard.down('Tab'); await page.waitForTimeout(600); await page.screenshot({path:path.join(OUT,'planta.png')}); await page.keyboard.up('Tab');
   // partida acelerada: despausa, avança a simulação em blocos de 30 s e deixa o cliente desenhar e tratar os eventos entre eles
