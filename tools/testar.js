@@ -125,6 +125,11 @@ console.log('6. Empurrão pausa a canalização, pisar no círculo localiza');
   const L=g.log.find(e=>e.ev==='localized'); if(!L) falha('Caçador dentro do círculo não localizou o ritual');
   const p1=A.prog; c.inp.c={q:0,f:0,g:0,r:0,ab:1}; for(let i=0;i<12;i++){ c.x=A.x; c.z=A.z; Sim.step(g,1/30); }
   if(!g.log.some(e=>e.ev==='ability'&&e.feitico==='empurrao')) falha('o Empurrão não saiu no teste'); else if(A.prog>p1+1e-9) falha(`ritual avançou logo depois do Empurrão (${p1} → ${A.prog})`);
+  // ação conferida na hora: o bot que segura "coletar" num frasco que o parceiro já pegou não ganha reagente de graça
+  { const g2=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'neg'}); for(let i=0;i<3000&&g2.phase!=='play';i++) Sim.step(g2,1/30);
+    const c2=g2.actors.find(a=>a.team==='C'), R=g2.reagents[0]; R.has=false; c2.reag=0; c2.hold={key:'col0',t:3.4,max:3.5};
+    Sim._botHold(g2,c2,'col0',3.5,.2,{type:'collect',R:0}); if(c2.reag!==0) falha('bot coletou reagente que já tinha sido pego');
+    if(!g2.log.some(e=>e.ev==='acao_negada')) falha('ação negada fora do registro'); }
   console.log('   ok'); }
 console.log(`7. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);

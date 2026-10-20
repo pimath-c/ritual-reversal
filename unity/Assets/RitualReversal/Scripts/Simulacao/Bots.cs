@@ -197,7 +197,7 @@ namespace RitualReversal.Simulacao
                 if (b.feitico == "flash" && d < 12) UseAbility(g, b);
                 if (b.feitico == "purificacao" && EnemiesOf(g, b).Any(e => e.st == "alive" && Dist(b, e) < 5.5 && Mapa.LosClear(b, e))) UseAbility(g, b);
             }
-            if (b.feitico == "sal" && b.abilCd <= 0) { var As = g.altars.FirstOrDefault(A => (A.state == "active" || g.know[A.i] == "confirmado") && Dist(b, A) < 7); if (As != null) UseAbility(g, b); }
+            if (b.feitico == "sal" && b.abilCd <= 0) { var As = g.altars.FirstOrDefault(A => ((A.state == "active" && A.localized) || g.know[A.i] == "confirmado") && Dist(b, A) < 7); if (As != null) UseAbility(g, b); }
             if (BotHelpDowned(g, b, dt, fighting)) return;
             if (BotAtendePing(g, b, dt, fighting)) return;
             if (!fighting && BotNoite(g, b, dt)) return;
@@ -227,7 +227,8 @@ namespace RitualReversal.Simulacao
                     ai.ecoAlvo = T.i; ai.ecoT = g.eco.t; var se = CircleSpot(T, b); SetGoal(g, b, se.x, se.z, "eco" + T.i); BotMove(g, b, dt, CORRIDA_BOT); return;
                 }
             }
-            var known = JS.Primeiro(g.altars.Where(A => A.state == "awake" && CONHECIDO.Contains(g.know[A.i])).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
+            // o bot só vê o que a caça sabe: um ritual ainda não localizado continua sendo, para ele, o altar desperto que era
+            var known = JS.Primeiro(g.altars.Where(A => (A.state == "awake" || (A.state == "active" && !A.localized)) && CONHECIDO.Contains(g.know[A.i])).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
             if (known != null && !(g.know[known.i] == "chamariz" && Dist(b, known) > 12))
             {
                 // antes de purgar, confere com a Lanterna se o altar desperto é de verdade ou um Chamariz
@@ -236,7 +237,7 @@ namespace RitualReversal.Simulacao
                     double dk = Dist(b, known);
                     if (dk < 14 && dk > 1.5 && Mapa.LosClear(b, known)) { b.moving = false; b.lantern = true; b.yaw = LerpAngle(b.yaw, JS.Atan2(-(known.x - b.x), -(known.z - b.z)), .3); return; }
                 }
-                if (Dist(b, known) < 3) { b.moving = false; if (!fighting) BotHold(g, b, "purge" + known.i, CFG.purge, dt, new Ctx { type = "purge", A = known.i }); return; }
+                if (Dist(b, known) < 3) { b.moving = false; if (known.state != "awake") return; /* já está no círculo: o ritual se revela */ if (!fighting) BotHold(g, b, "purge" + known.i, CFG.purge, dt, new Ctx { type = "purge", A = known.i }); return; }
                 var s = CircleSpot(known, b); SetGoal(g, b, s.x, s.z, "pg" + known.i); BotMove(g, b, dt, 1); return;
             }
             if (ai.alert != null && g.t - ai.alert.t < 6 && !fighting && !InEnemySpawn(b, ai.alert))

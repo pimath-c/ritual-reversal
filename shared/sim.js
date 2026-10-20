@@ -826,8 +826,22 @@ function contexts(g,a){
   return out;
 }
 function transferSource(g,a){ const c=g.altars.filter(A=>A.chosen&&A.state==='dormant'); if(!c.length) return null; c.sort((x,y)=>dist(a,y)-dist(a,x)); return c[0]; }
+// A ação é conferida de novo na hora de acontecer: o jogador passa por contexts(), mas o bot decide antes e segura o E;
+// nesse meio-tempo o parceiro pode ter pego o reagente, gasto o último Chamariz ou o ritual pode ter começado ali.
+function acaoNegada(g,a,ctx,A,R){
+  switch(ctx.type){
+    case 'collect': return !R||!R.has?'reagente já foi pego':a.reag>=CFG.carry?'mãos cheias':null;
+    case 'burn': return !R||!R.has?'reagente já foi pego':null;
+    case 'consecrate': return !A||!A.chosen||A.state!=='dormant'?'altar não está pronto para consagrar':a.reag<1?'sem reagente':null;
+    case 'start': return !A||!A.chosen||A.decoy||A.state!=='awake'?'altar não está desperto':bloqueioRitual(g)||(!CFG.iniciarDeGraca&&a.reag<1?'sem reagente':null);
+    case 'decoy': return !A||A.chosen||A.state!=='dormant'?'altar não está livre':g.decoys<1?'sem Chamarizes':null;
+    case 'purge': return !A||A.state!=='awake'?'altar não está desperto':null;
+    case 'transfer': return !A||A.chosen||A.state!=='dormant'?'destino não está livre':null;
+  }
+  return null; }
 function doAction(g,a,ctx){
   const A=ctx.A!=null?g.altars[ctx.A]:null, R=ctx.R!=null?g.reagents[ctx.R]:null, B=ctx.b!=null?g.actors.find(x=>x.id===ctx.b):null;
+  const neg=acaoNegada(g,a,ctx,A,R); if(neg){ logE(g,'acao_negada',{who:a.name,tipo:ctx.type,motivo:neg}); return; }
   switch(ctx.type){
     case 'ponto': { const p=g.pontos[ctx.P]; if(!p||!p.ativo) break;
       if(p.tipo==='pista'){ p.ativo=false; ganhaObolos(g,a,1); tarefaProg(g,'H','pistas');
@@ -1135,7 +1149,7 @@ function aiHunter(g,b,dt){
   if(ai.target&&b.abilCd<=0){ const d=dist(b,ai.target);
     if(b.feitico==='flash'&&d<12) useAbility(g,b);
     if(b.feitico==='purificacao'&&enemiesOf(g,b).some(e=>e.st==='alive'&&dist(b,e)<5.5&&losClear(b,e))) useAbility(g,b); }
-  if(b.feitico==='sal'&&b.abilCd<=0){ const A=g.altars.find(A=>(A.state==='active'||g.know[A.i]==='confirmado')&&dist(b,A)<7); if(A) useAbility(g,b); }
+  if(b.feitico==='sal'&&b.abilCd<=0){ const A=g.altars.find(A=>((A.state==='active'&&A.localized)||g.know[A.i]==='confirmado')&&dist(b,A)<7); if(A) useAbility(g,b); }
   if(botHelpDowned(g,b,dt,fighting)) return;
   if(botAtendePing(g,b,dt,fighting)) return;
   if(!fighting&&botNoite(g,b,dt)) return;
@@ -1154,12 +1168,13 @@ function aiHunter(g,b,dt){
       const mate=g.actors.find(h=>h!==b&&h.team==='H'&&h.st==='alive'), mateAlvo=mate&&mate.ai.ecoT===g.eco.t?mate.ai.ecoAlvo:-1;
       let T=cands[0]; if(cands.length>1&&mateAlvo===T.i&&mate.id<b.id) T=cands[1];
       ai.ecoAlvo=T.i; ai.ecoT=g.eco.t; const s=circleSpot(T,b); setGoal(g,b,s.x,s.z,'eco'+T.i); botMove(g,b,dt,CORRIDA_BOT); return; } }
-  const known=g.altars.filter(A=>A.state==='awake'&&['confirmado','desperto','chamariz'].includes(g.know[A.i])).sort((x,y)=>dist(b,x)-dist(b,y))[0];
+  // o bot só vê o que a caça sabe: um ritual ainda não localizado continua sendo, para ele, o altar desperto que era
+  const known=g.altars.filter(A=>(A.state==='awake'||(A.state==='active'&&!A.localized))&&['confirmado','desperto','chamariz'].includes(g.know[A.i])).sort((x,y)=>dist(b,x)-dist(b,y))[0];
   if(known&&!(g.know[known.i]==='chamariz'&&dist(b,known)>12)){
     // antes de purgar, confere com a Lanterna se o altar desperto é de verdade ou um Chamariz
     if(g.know[known.i]==='desperto'&&!fighting&&b.carga>5){ const d=dist(b,known);
       if(d<14&&d>1.5&&losClear(b,known)){ b.moving=false; b.lantern=true; b.yaw=lerpAngle(b.yaw,Math.atan2(-(known.x-b.x),-(known.z-b.z)),.3); return; } }
-    if(dist(b,known)<3){ b.moving=false; if(!fighting) botHold(g,b,'purge'+known.i,CFG.purge,dt,{type:'purge',A:known.i}); return; }
+    if(dist(b,known)<3){ b.moving=false; if(known.state!=='awake') return; /* já está no círculo: o ritual se revela */ if(!fighting) botHold(g,b,'purge'+known.i,CFG.purge,dt,{type:'purge',A:known.i}); return; }
     const s=circleSpot(known,b); setGoal(g,b,s.x,s.z,'pg'+known.i); botMove(g,b,dt,1); return; }
   if(ai.alert&&g.t-ai.alert.t<6&&!fighting&&!inEnemySpawn(b,ai.alert)){ setGoal(g,b,ai.alert.x,ai.alert.z,'al'+Math.round(ai.alert.t)); botMove(g,b,dt,1); if(dist(b,ai.alert)<2) ai.alert=null; return; }
   if(b.cls==='rastreador'&&!fighting){ // segue a pegada mais fresca por perto
@@ -1430,5 +1445,5 @@ function snapshot(g,role){
 }
 
 return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+  DIF,LAB_OPCOES,labDe,relatorio,SETORES,damage,_botHold:botHold,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

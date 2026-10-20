@@ -536,9 +536,25 @@ namespace RitualReversal.Simulacao
             return o;
         }
         static Altar TransferSource(Jogo g, Ator a) { var c = g.altars.Where(A => A.chosen && A.state == "dormant").ToList(); if (c.Count == 0) return null; JS.Sort(c, (x, y) => Dist(a, y) - Dist(a, x)); return c[0]; }
+        // a ação é conferida de novo na hora de acontecer: o bot decide antes e segura o E, e nesse meio-tempo o mundo muda
+        static string AcaoNegada(Jogo g, Ator a, Ctx ctx, Altar A, Reagente R)
+        {
+            switch (ctx.type)
+            {
+                case "collect": return R == null || !R.has ? "reagente já foi pego" : a.reag >= CFG.carry ? "mãos cheias" : null;
+                case "burn": return R == null || !R.has ? "reagente já foi pego" : null;
+                case "consecrate": return A == null || !A.chosen || A.state != "dormant" ? "altar não está pronto para consagrar" : a.reag < 1 ? "sem reagente" : null;
+                case "start": return A == null || !A.chosen || A.decoy || A.state != "awake" ? "altar não está desperto" : BloqueioRitual(g) ?? (!CFG.iniciarDeGraca && a.reag < 1 ? "sem reagente" : null);
+                case "decoy": return A == null || A.chosen || A.state != "dormant" ? "altar não está livre" : g.decoys < 1 ? "sem Chamarizes" : null;
+                case "purge": return A == null || A.state != "awake" ? "altar não está desperto" : null;
+                case "transfer": return A == null || A.chosen || A.state != "dormant" ? "destino não está livre" : null;
+            }
+            return null;
+        }
         static void DoAction(Jogo g, Ator a, Ctx ctx)
         {
             Altar A = ctx.A.HasValue ? g.altars[ctx.A.Value] : null; Reagente R = ctx.R.HasValue ? g.reagents[ctx.R.Value] : null; Ator B = ctx.b.HasValue ? g.actors.FirstOrDefault(x => x.id == ctx.b.Value) : null;
+            string neg = AcaoNegada(g, a, ctx, A, R); if (neg != null) { LogE(g, "acao_negada", "who", a.name, "tipo", ctx.type, "motivo", neg); return; }
             switch (ctx.type)
             {
                 case "ponto":
