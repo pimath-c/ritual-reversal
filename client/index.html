@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ritual Reversal — Protótipo v5.6</title>
+<title>Ritual Reversal — Protótipo v5.7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -306,6 +306,19 @@ details.lab .labRow{ flex-wrap:wrap; margin:6px 0; font-size:14px; } details.lab
 #anuncio{ position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); text-align:center; opacity:0; transition:opacity 1.2s; pointer-events:none; }
 #anuncio.on{ opacity:1; transition:opacity .6s; } #anuncio b{ display:block; font-family:var(--serif); font-weight:400; font-size:clamp(40px,6vw,68px); color:var(--bone); text-shadow:0 2px 24px rgba(0,0,0,.95); }
 #anuncio span{ font-size:20px; color:#c9bfae; text-shadow:0 1px 6px #000; }
+/* v5.7: lance da noite (jogada decisiva), logo abaixo do anúncio */
+#lance{ position:absolute; left:50%; top:calc(30% + 64px); transform:translateX(-50%) scale(.96); text-align:center; opacity:0; transition:opacity .9s, transform .9s; pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(12,10,8,.82) 18%,rgba(12,10,8,.82) 82%,transparent); padding:4px 44px 6px; border-top:1px solid rgba(243,213,142,.55); border-bottom:1px solid rgba(243,213,142,.55); white-space:nowrap; }
+#lance.on{ opacity:1; transform:translateX(-50%) scale(1); transition:opacity .25s, transform .25s; }
+#lance small{ display:block; font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--gold-hi); }
+#lance b{ display:block; font-family:var(--serif); font-weight:400; font-size:22px; color:var(--bone); }
+#lance span{ font-size:14px; color:#c9bfae; } #lance.c{ border-color:rgba(224,67,94,.6); } #lance.c small{ color:var(--crimson-hi); }
+#lance.meu b{ color:var(--gold-hi); }
+body.toque #lance b{ font-size:19px; } body.toque #lance span{ font-size:12px; } body.toque #lance{ white-space:normal; width:86vw; padding:6px 12px; }
+.lances{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; margin:6px 0 14px; text-align:left; }
+.lances div{ background:rgba(16,14,12,.75); border-left:2px solid var(--gold-hi); padding:7px 10px; } .lances div.c{ border-color:var(--crimson-hi); }
+.lances div.meu{ background:rgba(60,46,20,.55); } .lances b{ display:block; font-family:var(--serif); font-weight:400; font-size:17px; color:var(--bone); }
+.lances span{ font-size:13px; color:#c9bfae; } .lances small{ float:right; color:var(--muted); font-size:12px; }
 .choices.tres{ grid-template-columns:1fr 1fr 1fr; }
 .loja{ display:flex; flex-direction:column; gap:10px; } .loja .item{ display:grid; grid-template-columns:1fr auto; gap:14px; align-items:center; padding:10px 12px; background:rgba(14,16,19,.8); border:1px solid #3a4149; }
 .loja .item b{ font-family:var(--serif); font-weight:400; font-size:20px; display:block; } .loja .item span{ font-size:15px; color:#c9c1b2; }
@@ -366,7 +379,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
     <div class="side b"><b id="scoreB">0</b><span id="nameB">Adversários</span></div>
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
-  <div id="feed"></div><div id="chatJogo"><input id="iChatJogo" maxlength="140" autocomplete="off" placeholder="Mensagem para a sala · Enter envia, Esc cancela" aria-label="Mensagem para a sala"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div>
+  <div id="feed"></div><div id="chatJogo"><input id="iChatJogo" maxlength="140" autocomplete="off" placeholder="Mensagem para a sala · Enter envia, Esc cancela" aria-label="Mensagem para a sala"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div><div id="lance" role="status"></div>
   <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="caderno"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div>
   <div id="interact"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/><circle id="ring" cx="23" cy="23" r="19" fill="none" stroke="#f3d58e" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" transform="rotate(-90 23 23)"/></svg><div class="lbl" id="interactLbl"></div><div class="lbl" id="interactLbl2"></div></div>
   <div id="race" class="plate">
@@ -1318,9 +1331,9 @@ function buildAltars(){
     // mostrador no chão: a borda no raio exato do círculo, o progresso do ritual (carmim, com os pontos de controle)
     // e o selo (dourado, por dentro). Um shader por altar, sem textura; só aparece com o ritual ativo e conhecido.
     const R=CFG.circleR, lado=2*(R+.6), dial=new THREE.Mesh(new THREE.PlaneGeometry(lado,lado),new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:false,
-      uniforms:{prog:{value:0},selo:{value:0},op:{value:0},R:{value:R},lado:{value:lado},cR:{value:new THREE.Color(0xff3a5a)},cS:{value:new THREE.Color(0xf3d58e)},cB:{value:new THREE.Color(0xe0435e)},cp:{value:new THREE.Vector2(CFG.cps[0],CFG.cps[1])}},
+      uniforms:{prog:{value:0},selo:{value:0},op:{value:0},fl:{value:0},cF:{value:new THREE.Color(0xffffff)},R:{value:R},lado:{value:lado},cR:{value:new THREE.Color(0xff3a5a)},cS:{value:new THREE.Color(0xf3d58e)},cB:{value:new THREE.Color(0xe0435e)},cp:{value:new THREE.Vector2(CFG.cps[0],CFG.cps[1])}},
       vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-      fragmentShader:`varying vec2 vUv; uniform float prog,selo,op,R,lado; uniform vec3 cR,cS,cB; uniform vec2 cp;
+      fragmentShader:`varying vec2 vUv; uniform float prog,selo,op,fl,R,lado; uniform vec3 cR,cS,cB,cF; uniform vec2 cp;
         float banda(float r,float a,float b){ return smoothstep(a-.03,a+.01,r)*(1.0-smoothstep(b-.01,b+.03,r)); }
         void main(){ vec2 p=(vUv-.5)*lado; float r=length(p); float ang=fract(atan(p.x,-p.y)/6.2831853+1.0);
           vec4 c=vec4(0.0);
@@ -1330,6 +1343,7 @@ function buildAltars(){
           c=mix(c,vec4(.16,.17,.2,.6),fora*(1.0-cheio)); c=mix(c,vec4(cR,.95),fora*cheio); c=mix(c,vec4(1.0,.93,.85,.95),fora*clamp(tick,0.0,1.0));
           float dentro=banda(r,R-.42,R-.2); float sv=step(ang,selo)*step(.001,selo);
           c=mix(c,vec4(.16,.17,.2,.5),dentro*step(.001,selo)*(1.0-sv)); c=mix(c,vec4(cS,.95),dentro*sv);
+          float onda=fl*banda(r,R-.2+(1.0-fl)*.5,R+.12+(1.0-fl)*.5); c=mix(c,vec4(cF,.9),clamp(onda,0.0,1.0)*.6);
           gl_FragColor=vec4(c.rgb,c.a*op); if(gl_FragColor.a<.01) discard; }`}));
     dial.rotation.x=-Math.PI/2; dial.position.y=.07; dial.renderOrder=3; g.add(dial);
     return {circle,sealRing,beam,L,em,es,rm,bm,dial,au:null};
@@ -1685,6 +1699,9 @@ const SFX={
   vazio:()=>sfxTone(null,null,1,1800,1600,.03,'square',.07),
   cabeca:()=>{ sfxTone(null,null,1,2400,2400,.12,'sine',.18); sfxTone(null,null,1,3600,3600,.08,'sine',.08); },
   derrubou:()=>{ sfxTone(null,null,1,180,60,.35,'sine',.5); setTimeout(()=>sfxTone(null,null,1,660,660,.5,'triangle',.12),60); },
+  quebra:()=>{ sfxTone(null,null,1,980,120,.32,'sawtooth',.16); setTimeout(()=>sfxTone(null,null,1,1480,1400,.45,'triangle',.11),70); setTimeout(()=>sfxTone(null,null,1,740,700,.6,'triangle',.08),160); },
+  interrompido:()=>{ sfxTone(null,null,1,320,90,.5,'sawtooth',.14); },
+  lance:()=>{ sfxTone(null,null,1,523,523,.45,'triangle',.1); setTimeout(()=>sfxTone(null,null,1,784,784,.8,'triangle',.11),150); },
   hab:(cls,x,z)=>{ if(cls==='soldado'){ sfxTone(x,z,40,5200,3000,.12,'square',.12); } else if(cls==='exorcista'){ [784,1046,1318].forEach((f,i)=>setTimeout(()=>sfxTone(x,z,34,f,f,.9,'sine',.12),i*70)); } else if(cls==='guardiao'){ sfxTone(x,z,34,60,30,.5,'sine',.9); } else { sfxTone(x,z,34,220,660,.9,'sawtooth',.08); } },
   estouro:(x,z)=>{ sfxNoise(x,z,22,.25,'bandpass',900,2,.5); sfxTone(x,z,22,420,90,.25,'triangle',.25); },
 };
@@ -1840,6 +1857,7 @@ function evVisible(e,role,meId){
   if(e.to!=null&&e.to!==meId) return false;
   if((e.type==='sensor'||e.type==='evp'||e.type==='blind'||e.type==='stun')&&e.a!==meId) return false;
   if(e.type==='presage'&&role!=='H') return false;
+  if((e.type==='interrupcao'||e.type==='lance')&&e.team&&e.team!==role) return false;
   return true;
 }
 
@@ -2097,7 +2115,11 @@ function handleEvents(list,online){
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
       case 'selando': if(myRole()==='C'){ const A=V.altars[e.altar]; SFX.selando(e.x,e.z); legenda('selando',e.x,e.z,`Selando o ritual em ${A?A.name:'um altar'}`,'cult',400); marcoLT('eco',`A caça começou a selar ${A?A.name:''}`); } break;
       case 'eco': { const L=(e.altares||[]).map(i=>V.altars[i]).filter(Boolean); if(!L.length) break; const x=L.reduce((s,A)=>s+A.x,0)/L.length, z=L.reduce((s,A)=>s+A.z,0)/L.length;
-        SFX.eco(x,z); legenda('eco',x,z,`Coro distante: ${L.map(A=>A.name).join(' ou ')}`,'rit',400); anunciar('O coro ecoa',L.map(A=>A.name).join(' ou ')); if(myRole()==='H') dica('h_eco'); marcoLT('eco','Eco do coro'); break; }
+        SFX.eco(x,z); legenda('eco',x,z,`Coro distante: ${L.map(A=>A.name).join(' ou ')}`,'rit',400);
+        // dedução: se a equipe já descartou um dos dois, o eco aponta para o outro (uma Transferência ainda pode enganar)
+        const poss=myRole()==='H'&&V.know?L.filter(A=>altarPossivel(A.i)):L;
+        if(poss.length===1&&L.length===2){ const fora=L.find(A=>A!==poss[0]); anunciar('Dedução',`${fora.name} foi descartado: o ritual deve estar em ${poss[0].name}`); SFX.lance(); feed(`Dedução: ${fora.name} foi descartado, então o eco aponta ${poss[0].name}.`,'h'); }
+        else anunciar('O coro ecoa',L.map(A=>A.name).join(' ou ')); if(myRole()==='H') dica('h_eco'); marcoLT('eco','Eco do coro'); break; }
       case 'sensor': sensorV=e.v; sensorShowT=5; SFX.ping(e.v); break;
       case 'evp': SFX.whisper(e.x,e.z); legenda('evp',e.x,e.z); break;
       case 'blind': blindT=1.5; notaHab('Você foi cegado','#fff4d0'); break;
@@ -2107,8 +2129,17 @@ function handleEvents(list,online){
       case 'hab': efeitoHabilidade(e,e.a===id); SFX.hab&&SFX.hab(e.cls,e.x,e.z); if(e.a!==id) legenda('hab',e.x,e.z,FEITICOS[e.f]?FEITICOS[e.f].nome:'Feitiço',FEIT_BY_TEAM.C.includes(e.f)?'cult':'');
         if(e.a===id){ const n=(e.alvos||[]).length; notaHab(HAB_TXT[e.f](n),n||['runa','veu','sal'].includes(e.f)?'var(--gold-hi)':'var(--muted)'); const t=$('#tAb'); if(t){ t.classList.remove('pulso'); void t.offsetWidth; t.classList.add('pulso'); } if(e.f==='empurrao') FX.kickP+=.02; }
         break;
-      case 'doom': SFX.doom(); break;
-      case 'sealed': SFX.sealed(); break;
+      case 'doom': { SFX.doom(); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
+        anunciar(eu?'Você abriu uma Fenda':'Uma Fenda se abriu',por.length?`${listaNomes(por)} ${por.length>1?'completaram':'completou'} o ritual${A?' em '+A.name:''}`:(A?A.name:'')); if(A) piscarMostrador(e.altar,'#ff3a5a'); break; }
+      case 'sealed': { SFX.sealed(); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
+        anunciar(eu?'Você selou o ritual':'Um Farol se acendeu',por.length?`${listaNomes(por)} ${por.length>1?'selaram':'selou'}${A?' '+A.name:' o ritual'}`:(A?A.name:'')); if(A) piscarMostrador(e.altar,'#f3d58e'); break; }
+      case 'interrupcao': { const A=V.altars[e.altar], aut=V.actors.find(b=>b.id===e.a), vit=V.actors.find(b=>b.id===e.alvo), oQue=e.tipo==='selo'?'o selo':'a canalização';
+        piscarMostrador(e.altar,e.tipo==='selo'?'#ff3a5a':'#f3d58e');
+        if(e.a===id){ notaHab(e.tipo==='selo'?'Selo interrompido!':'Canalização interrompida!',e.tipo==='selo'?'var(--crimson-hi)':'var(--gold-hi)'); SFX.quebra(); FX.kickP+=.025; marcaAcerto('kill'); }
+        else if(e.alvo===id){ notaHab(`${aut?aut.name:'Alguém'} interrompeu ${e.tipo==='selo'?'seu selo':'sua canalização'}`,'#fff'); SFX.interrompido(); }
+        else if(m&&aut&&vit) feed(`${aut.name} interrompeu ${oQue} de ${vit.name}${A?' em '+A.name:''}.`,aut.team===m.team?(m.team==='H'?'h':'c'):'');
+        break; }
+      case 'lance': mostrarLance(e,m); break;
     }
   }
 }
@@ -2185,11 +2216,20 @@ function syncActors(dt){
   V.flares.forEach((f,i)=>{ const o=flareObjs[i]; if(f.t>0){ o.L.position.set(f.x,1.2,f.z); o.L.intensity=(f.t>1?2.6:2.6*f.t)*(.9+Math.random()*.2); o.s.position.set(f.x,.3,f.z); o.s.visible=true; o.s.material.opacity=Math.min(1,f.t); } else { o.L.intensity=0; o.s.visible=false; } });
 }
 function hunterSees(A){ const k=V.know[A.i]; return ['desperto','confirmado','chamariz','ativo'].includes(k); }
+// v5.7: investigação com progresso. Quando um sinal descarta um altar, a caça vê quantos ainda podem ser do culto.
+const INV={prev:null,partida:null};
+const altarPossivel=i=>{ const k=V.know[i], st=V.altars[i].state; return k!=='descartado'&&k!=='chamariz'&&st!=='fenda'&&st!=='farol'; };
+function progressoInvestigacao(role){ if(role!=='H'||!V.know||V.phase!=='play'){ INV.prev=null; return; }
+  if(INV.partida!==V.matchId+':'+V.round){ INV.partida=V.matchId+':'+V.round; INV.prev=null; }
+  if(INV.prev) V.know.forEach((k,i)=>{ if(k==='descartado'&&INV.prev[i]!=='descartado'){ const n=V.altars.filter((A,j)=>altarPossivel(j)).length;
+      notaHab(`${V.altars[i].name} descartado · ${n} ${n===1?'altar ainda pode':'altares ainda podem'} ser do culto`,'#cfe3ff'); SFX.ping(.35); } });
+  INV.prev=V.know.slice(); }
+function piscarMostrador(i,cor){ const O=AV[i]; if(!O) return; const U=O.dial.material.uniforms; U.fl.value=1; U.cF.value.set(cor); }
 function syncAltars(dt){
-  const role=myRole(), m=me(), px=camera.position.x, pz=camera.position.z;
+  const role=myRole(), m=me(), px=camera.position.x, pz=camera.position.z; progressoInvestigacao(role);
   V.altars.forEach((A,i)=>{ const O=AV[i]; let st=A.state; if(role==='H'&&st==='active'&&!A.localized) st=hunterSees(A)?'awake':'dormant'; // como o servidor mostra à caça
     if(role==='H'&&st==='awake'&&!hunterSees(A)) st='dormant';
-    { const U=O.dial.material.uniforms, ve=st==='active'; U.op.value=lerp(U.op.value,ve?1:0,.12); U.prog.value=ve?A.prog:0; U.selo.value=ve?A.seal:0; O.dial.visible=U.op.value>.01; }
+    { const U=O.dial.material.uniforms, ve=st==='active'; U.op.value=lerp(U.op.value,ve?1:0,.12); U.prog.value=ve?A.prog:0; U.selo.value=ve?A.seal:0; U.fl.value=Math.max(0,U.fl.value-(dt||.016)*1.4); O.dial.visible=U.op.value>.01; }
     let op=.05,col=0x6b3a8a,li=0,lc=0x6b3a8a,beam=0,bcol=0xe0435e,emb=0,spin=.05; const t=performance.now()/1000;
     if(st==='awake'){ op=.18+.06*Math.sin(t*2+i); li=.9+.2*Math.sin(t*3); col=0x8a4ad0; lc=0x7a3ab0; if(role==='C'&&!A.chosen) col=0x555566; }
     if(st==='active'){ const pulse=A.prog>=.25?(.5+.5*Math.sin(t*1.3*Math.PI*2)):.5; op=.9+.1*pulse; col=0xff5577; lc=0xff2040; li=1.4+1.6*A.prog+pulse*.8; spin=.4+A.prog*1.6; emb=.9; if(A.localized) beam=.22+.1*pulse; if(A.grande){ beam=.55+.3*pulse; bcol=0xff2a3a; li*=1.6; spin*=1.8; } }
@@ -2434,6 +2474,29 @@ function atualizarTarefas(role){ const el=$('#tarefas'); const T=(V.tarefas&&V.t
   const html=T.length?`<b>Tarefas da equipe</b>`+T.map(t=>`<div class="${t.feita?'feita':''}">${t.feita?'✓':'○'} ${esc(t.nome)}${t.meta?` <span>${t.prog}/${t.meta}</span>`:''}</div>`).join(''):'';
   if(el._h!==html){ el.innerHTML=html; el._h=html; } }
 let anuncioT=0;
+// v5.7: lances da noite. Ao vivo, uma faixa curta; no fim, a lista da noite.
+const listaNomes=L=>L.length<2?(L[0]||''):L.slice(0,-1).join(', ')+' e '+L[L.length-1];
+const pctL=v=>v==null?'':Math.round(v*100)+'%';
+const LANCE_TXT={
+  selo_limite:e=>['Selo no último instante',`${listaNomes(e.quem)} ${e.quem.length>1?'selaram':'selou'} com o ritual em ${pctL(e.v)}`],
+  achou_cedo:e=>['Achou antes do coro',`${listaNomes(e.quem)} encontrou o ritual${e.nome?' em '+e.nome:''} com ${pctL(e.v)}`],
+  defesa:e=>['Defesa até o fim',`${listaNomes(e.quem)} ${e.quem.length>1?'seguraram':'segurou'} o ritual${e.nome?' em '+e.nome:''} com o selo em ${pctL(e.v)}`],
+  resgate:e=>['Resgate',e.quem.length>1?`${e.quem[0]} impediu a execução e ${e.quem[1]} reanimou`:`${e.quem[0]} impediu a execução e reanimou`],
+  transferencia:e=>['A Transferência deu certo',`${listaNomes(e.quem)} levou o ritual${e.nome?' para '+e.nome:''}, e ele virou Fenda`],
+  chamariz:e=>['O Chamariz funcionou',`O Chamariz de ${listaNomes(e.quem)}${e.nome?' em '+e.nome:''} prendeu a caça por ${e.v} s`]};
+const LANCE_CULTO={defesa:1,transferencia:1,chamariz:1};
+const ehLanceCulto=e=>!!(LANCE_CULTO[e.tipo]||(e.tipo==='resgate'&&e.team==='C'));
+const LANCE={fila:[],t:-1};
+function mostrarLance(e,m){ const A=e.altar>=0?V.altars[e.altar]:null, f=LANCE_TXT[e.tipo]; if(!f) return;
+  const [tit,sub]=f(Object.assign({},e,{quem:e.quem||[],nome:A?A.name:''})); LANCE.fila.push({tit,sub,c:ehLanceCulto(e),meu:!!(m&&(e.quem||[]).includes(m.name))}); }
+function atualizarLance(dt){ const el=$('#lance'); if(!el) return; LANCE.t-=dt;
+  if(LANCE.t<=0){ if(el.classList.contains('on')){ el.classList.remove('on'); LANCE.t=0; }
+    if(LANCE.fila.length&&LANCE.t<-.9){ const L=LANCE.fila.shift(); el.className=(L.c?'c ':'')+(L.meu?'meu':''); el.innerHTML=`<small>Lance da noite</small><b>${esc(L.tit)}</b><span>${esc(L.sub)}</span>`;
+      void el.offsetWidth; el.classList.add('on'); LANCE.t=4.2; SFX.lance(); } } }
+function lancesDaNoite(log){ if(!log||!log.length) return ''; const L=log.filter(e=>e.ev==='lance'&&LANCE_TXT[e.tipo]); if(!L.length) return '';
+  const meu=V.actors.find(a=>a.cid===meCid);
+  return `<h3>Lances da noite</h3><div class="lances">${L.map(e=>{ const [t,s]=LANCE_TXT[e.tipo](Object.assign({},e,{quem:e.quem||[],nome:e.altar}));
+    return `<div class="${ehLanceCulto(e)?'c':''}${meu&&(e.quem||[]).includes(meu.name)?' meu':''}"><small>${fmt(e.t)}</small><b>${esc(t)}</b><span>${esc(s)}</span></div>`; }).join('')}</div>`; }
 function anunciar(titulo,sub){ const el=$('#anuncio'); el.innerHTML=`<b>${esc(titulo)}</b><span>${esc(sub)}</span>`; el.classList.add('on'); anuncioT=4.5; }
 // Loja dos mercadores: abre com E perto deles; a compra em si é validada pela regra.
 let lojaAberta=null;
@@ -2785,7 +2848,9 @@ function marcosDoLog(log,r){ const out=[]; for(const e of log){ if(e.r!==r) cont
     else if(e.ev==='transfer') out.push({rt:e.t,tipo:'inicio',txt:`${e.by} transferiu o ritual de ${e.from} para ${e.to}`});
     else if(e.ev==='eco') out.push({rt:e.t,tipo:'eco',txt:`O coro ecoou ${(SETOR_NOME[e.setor]||e.setor)} (era ${e.altar})`});
     else if(e.ev==='localized') out.push({rt:e.t,tipo:'eco',txt:`A caça localizou o ritual em ${e.altar}`});
-    else if(e.ev==='execucao_interrompida') out.push({rt:e.t,tipo:'reanima',txt:`${e.by} interrompeu a execução de ${e.who}`}); }
+    else if(e.ev==='execucao_interrompida') out.push({rt:e.t,tipo:'reanima',txt:`${e.by} interrompeu a execução de ${e.who}`});
+    else if(e.ev==='interrupcao') out.push({rt:e.t,tipo:'queda',txt:`${e.by} interrompeu ${e.tipo==='selo'?'o selo':'a canalização'} de ${e.who} em ${e.altar}`});
+    else if(e.ev==='lance'&&LANCE_TXT[e.tipo]) out.push({rt:e.t,tipo:'lance',txt:LANCE_TXT[e.tipo](Object.assign({},e,{quem:e.quem||[],nome:e.altar})).join(': ')}); }
   return out; }
 function graficoNoite(r){ const R=LT.rod[r]; if(!R||!R.am.length) return '';
   const log=logDaNoite(); if(log&&log.length){ const doLog=marcosDoLog(log,r); R.mkFinal=R.mk.filter(m=>m.tipo==='momento'||m.tipo==='grande').concat(doLog).sort((a,b)=>a.rt-b.rt); } else R.mkFinal=R.mk;
@@ -2799,7 +2864,7 @@ function graficoNoite(r){ const R=LT.rod[r]; if(!R||!R.am.length) return '';
     if(seg.length) linhas.push(seg), selos.push(sel);
     for(const L of linhas) h+=`<polyline points="${L.join(' ')}" fill="none" stroke="${COR_ALT[i%6]}" stroke-width="2.2"/>`;
     for(const L of selos) if(L.some(p=>+p.split(',')[1]<H-9)) h+=`<polyline points="${L.join(' ')}" fill="none" stroke="#f3d58e" stroke-width="1.6" stroke-dasharray="4 3"/>`; }
-  const IC={inicio:['▲','#e0435e'],fenda:['✕','#e0435e'],farol:['✓','#f3d58e'],grande:['✶','#ff5a6e'],momento:['◆','#8f877b'],eco:['◎','#d6b8f0'],queda:['✚','#c9d3dc'],morte:['☠','#c9d3dc'],reanima:['♥','#8fd0a0']};
+  const IC={inicio:['▲','#e0435e'],fenda:['✕','#e0435e'],farol:['✓','#f3d58e'],grande:['✶','#ff5a6e'],momento:['◆','#8f877b'],eco:['◎','#d6b8f0'],queda:['✚','#c9d3dc'],morte:['☠','#c9d3dc'],reanima:['♥','#8fd0a0'],lance:['★','#f3d58e']};
   for(const m of R.mkFinal){ const ic=IC[m.tipo]||['•','#ccc']; h+=`<text x="${X(m.rt)}" y="-2" fill="${ic[1]}" font-size="12" text-anchor="middle"><title>${fmt(m.rt)} · ${esc(m.txt)}</title>${ic[0]}</text>`; }
   h+='</svg>';
   const leg=V.altars.map((A,i)=>R.am.some(q=>q.a[i])?`<span><i style="background:${COR_ALT[i%6]}"></i>${esc(A.name)}</span>`:'').join('');
@@ -2956,7 +3021,7 @@ function summaryScreen(){
   const cultIsMine=(V.round===1?'B':'A')===slot.team;
   const who=cultIsMine?'Sua equipe completou':'Os Cultistas adversários completaram';
   setScreen('sum'+V.round+rdy,`<h2>${UMA_NOITE()?'O amanhecer':'Fim da rodada '+V.round}</h2><p>${who} <b>${sc.done}</b> de 3 rituais${sc.lastT!=null?`, o último aos ${fmt(sc.lastT)}`:''}. ${sc.sealed} ${sc.sealed===1?'ritual foi selado':'rituais foram selados'}.</p>
-    ${V.round===1&&!UMA_NOITE()?'<p>Agora os lados se invertem: quem caçou passa a celebrar.</p>':''}${MODE==='local'?premios((game.log||[]).filter(e=>e.r===V.round)):''}${graficoNoite(V.round)}${statsTable()}
+    ${V.round===1&&!UMA_NOITE()?'<p>Agora os lados se invertem: quem caçou passa a celebrar.</p>':''}${MODE==='local'?lancesDaNoite((game.log||[]).filter(e=>e.r===V.round))+premios((game.log||[]).filter(e=>e.r===V.round)):''}${graficoNoite(V.round)}${statsTable()}
     <div class="btnrow"><button class="go" id="bReady" ${rdy?'disabled':''}>${rdy?'Aguardando os outros':V.round===1&&!UMA_NOITE()?'Continuar para a rodada 2':'Ver resultado'}</button></div><p class="wait" id="dyn"></p>`,
   ()=>{ $('#bReady').onclick=()=>sendAct({type:'ready'}); });
   $('#dyn').textContent=(MODE==='online'?readyList():'')+timerText();
@@ -2967,7 +3032,7 @@ function finalScreen(){
   const row=(n,s)=>!s?'':`<tr><td>${n}</td><td class="n">${s.done}</td><td class="n">${s.lastT!=null?fmt(s.lastT):'—'}</td><td class="n">${Math.round(s.maxP*100)}%</td></tr>`;
   const isHost=MODE==='local'||NET.host===meCid;
   setScreen('final'+(V.matchId||'')+(DES.feito?DES.feito.p:''),`<h2 style="color:${w.win==null?'var(--bone)':mineW?'var(--gold)':'var(--crimson-hi)'}">${title}</h2><p>${w.why[0].toUpperCase()+w.why.slice(1)}.</p>
-    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${blocoDesafio()}${premios(logDaNoite())}${placarJogadores(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
+    <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${blocoDesafio()}${lancesDaNoite(logDaNoite())}${premios(logDaNoite())}${placarJogadores(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
     <div class="btnrow">${temReplay(1)?'<button class="go ghost" id="bRep1">Rever a noite</button>':''}${!UMA_NOITE()&&temReplay(2)?'<button class="go ghost" id="bRep2">Rever a rodada 2</button>':''}<button class="go ghost" id="bRel">Relatório do playtest</button><button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
   ()=>{ $('#bLog').onclick=downloadLog; $('#bRel').onclick=()=>{ REL.aberto=true; screenKey=''; SFX.click(); }; [1,2].forEach(r=>{ const b=$('#bRep'+r); if(b) b.onclick=()=>{ REP.aberto=true; REP.r=r; REP.t=0; REP.play=true; screenKey=''; }; }); const a=$('#bAgain'); if(a) a.onclick=()=>{ if(MODE==='local'&&game) game.matchId=DES.ativo?String(game.matchId).split('#')[0]+'#'+Date.now():String(Date.now()); sendAct({type:'restart'}); /* id novo: o perfil conta a revanche e o clima muda (no desafio, o clima do dia fica) */ }; const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });
 }
@@ -2978,6 +3043,11 @@ const REL={aberto:false};
 const PERGUNTAS_PLAYTEST=['Em que momento você sentiu que estava investigando de verdade?','Em que momento sentiu que estava só correndo de um lugar a outro?',
   'Qual informação mudou a sua decisão?','Quando você sentiu que não tinha como responder ao adversário?','Qual mecânica você tiraria do jogo?','Você jogaria mais uma partida? Por quê?'];
 const CAUSA_SELO={'caído':'caiu','empurrão':'Empurrão','atordoado':'atordoado','saiu':'saiu do círculo','soltou':'soltou o E','lutar':'parou para lutar'};
+// v5.7: o que cada lado fez no círculo (a menos de 12 m, depois que a caça chegou)
+function textoDisputa(R){ const D=R.disputa; if(!D) return ''; const H=D.caca, C=D.culto, n=v=>Math.round(v||0), i=R.interrupcoes||{};
+  return `Caça: ${n(H.selando)} s selando (${n(H.sobFogo)} s sob fogo), ${n(H.atacando)} s atirando, ${n(H.dano)} de dano, ${H.quedas||0} ${H.quedas===1?'queda':'quedas'}. `+
+    `Culto: ${n(C.canal)} s canalizando, ${n(C.atacando)} s atacando, ${n(C.dano)} de dano, ${C.quedas||0} ${C.quedas===1?'queda':'quedas'}. `+
+    `Interrupções: ${i.selo||0} de selo, ${i.canal||0} de canalização.`; }
 const CACA_TXT={selou:'Selou',perdeu_disputa:'Chegou a tempo e perdeu o círculo',chegou_tarde:'Chegou tarde demais',perto_sem_entrar:'Chegou perto e não entrou',altar_errado:'Foi a outro altar e não chegou',nunca_chegou:'Nunca chegou perto',aberto:'A noite acabou antes'};
 const COMO_DESCOBRIU={evp:'EVP',sentinela:'sentinela',lanterna:'Lanterna',rastro_lido:'marcas de arrasto',localized:'o coro revelou o ritual'};
 function respostasPlaytest(){ try{ return JSON.parse(localStorage.getItem('rr-resp-'+V.matchId)||'[]'); }catch(e){ return []; } }
@@ -2991,7 +3061,8 @@ function textoRelatorio(D){ const L=[`Ritual Reversal v${Sim.VERSAO} · relatór
     L.push('',`Rodada ${M.rodada}: ${M.fendas} Fendas, ${M.farois} Faróis, ${fmt(M.duracao)} de noite`,
       `Investigação: primeira verdade aos ${I.primeiraVerdade!=null?fmt(I.primeiraVerdade):'—'} (${COMO_DESCOBRIU[I.comoDescobriu]||'—'}), ${I.pistasNovas} pistas novas, maior trecho sem pista ${fmt(I.maiorIntervaloSemPista)}`,
       `Engano: ${E.chamarizes} Chamarizes (${E.chamarizesDesmascarados} desmascarados, ${E.chamarizesQueimados} queimados), ${E.transferencias} Transferências, ${E.purgasDeAltarVerdadeiro} purgas de altar verdadeiro`,
-      ...M.rituais.map(R=>`Ritual em ${R.altar} (${fmt(R.inicio)}): localizado após ${R.localizado!=null?Math.round(R.localizado)+' s':'—'}, caça chegou após ${R.chegada!=null?Math.round(R.chegada)+' s':'—'}, ${R.tentativasSelo} tentativas de selo, ${R.resultado}`),
+      ...M.rituais.map(R=>`Ritual em ${R.altar} (${fmt(R.inicio)}): localizado após ${R.localizado!=null?Math.round(R.localizado)+' s':'—'}, caça chegou após ${R.chegada!=null?Math.round(R.chegada)+' s':'—'}, ${R.tentativasSelo} tentativas de selo, ${R.resultado}${R.disputa?'. '+textoDisputa(R):''}`),
+      ...(M.lances||[]).filter(x=>LANCE_TXT[x.tipo]).map(x=>`Lance (${fmt(x.t)}): ${LANCE_TXT[x.tipo](Object.assign({},x,{nome:x.altar})).join(': ')}`),
       `Selamento: ${S.tentativas} tentativas, ${S.selados} selados, interrupções: ${Object.entries(S.interrupcoes).map(([k,v])=>`${CAUSA_SELO[k]||k} ${v}`).join(', ')||'nenhuma'}`,
       `Combate: ${C.quedas} quedas, ${C.execucoes} execuções, ${C.sangraram} sangraram, ${C.reanimacoes} reanimações, primeira queda ${C.primeiraQueda!=null?fmt(C.primeiraQueda):'—'}`); }
   const R=D.respostas.filter(x=>x.resposta.trim()); if(R.length){ L.push('','Respostas:'); R.forEach(x=>L.push(`- ${x.pergunta} ${x.resposta.trim()}`)); }
@@ -3007,10 +3078,10 @@ function relatorioScreen(){ const log=logDaNoite();
       ${tr('Maior trecho sem pista nova',t(I.maiorIntervaloSemPista),'Muito longo: a caça passou tempo andando sem aprender nada.')}
       ${tr('Trecho médio sem pista nova',t(I.intervaloMedioSemPista),'')}</table>
     <table class="res rel"><tr><th>Ritual</th><th class="n">Início</th><th class="n">Localizado</th><th class="n">Caça chegou</th><th class="n">Selos</th><th>Resultado</th><th>A caça</th></tr>
-      ${M.rituais.map(R=>`<tr><td>${esc(R.altar)}</td><td class="n">${t(R.inicio)}</td><td class="n">${s(R.localizado)}</td><td class="n">${s(R.chegada)}</td><td class="n">${R.tentativasSelo}</td><td>${R.resultado==='farol'?'Farol':R.resultado==='fenda'?'Fenda':'—'}</td><td class="fine">${esc(CACA_TXT[R.caca]||'')}${R.altaresErrados&&R.altaresErrados.length?` (passou por ${esc([...new Set(R.altaresErrados)].join(', '))})`:''}${R.cultoSaiu&&R.cultoSaiu.length?`; culto saiu do círculo: ${esc(R.cultoSaiu.join(', '))}`:''}</td></tr>`).join('')||'<tr><td colspan="7">Nenhum ritual começou.</td></tr>'}</table>
+      ${M.rituais.map(R=>`<tr><td>${esc(R.altar)}</td><td class="n">${t(R.inicio)}</td><td class="n">${s(R.localizado)}</td><td class="n">${s(R.chegada)}</td><td class="n">${R.tentativasSelo}</td><td>${R.resultado==='farol'?'Farol':R.resultado==='fenda'?'Fenda':'—'}</td><td class="fine">${esc(CACA_TXT[R.caca]||'')}${R.altaresErrados&&R.altaresErrados.length?` (passou por ${esc([...new Set(R.altaresErrados)].join(', '))})`:''}${R.cultoSaiu&&R.cultoSaiu.length?`; culto saiu do círculo: ${esc(R.cultoSaiu.join(', '))}`:''}</td></tr>${R.disputa?`<tr class="disputa"><td></td><td colspan="6" class="fine">${esc(textoDisputa(R))}</td></tr>`:''}`).join('')||'<tr><td colspan="7">Nenhum ritual começou.</td></tr>'}</table>
     <p class="fine" style="text-align:left!important">Tempos contados desde o início de cada ritual. A última coluna separa "nunca chegou", "foi a outro altar", "chegou perto e não entrou", "chegou tarde" e "chegou a tempo e perdeu o círculo".</p>
     <table class="res rel"><tr><th>Engano e selamento</th><th class="n"></th><th>O que revela</th></tr>
-      ${tr('Chamarizes plantados',E.chamarizes,`${E.chamarizesDesmascarados} desmascarados pela Lanterna, ${E.chamarizesQueimados} queimados, ${E.evpEmChamariz} EVP enganados`)}
+      ${tr('Chamarizes plantados',E.chamarizes,`${E.chamarizesDesmascarados} desmascarados pela Lanterna, ${E.chamarizesQueimados} queimados (prenderam a caça por ${Math.round(E.segundosPresosEmChamariz||0)} s), ${E.evpEmChamariz} EVP enganados`)}
       ${tr('Purgas de altar verdadeiro',E.purgasDeAltarVerdadeiro,'a caça acertou um altar antes do ritual')}
       ${tr('Transferências',E.transferencias,`${F.rastrosVistos} marcas de arrasto vistas, ${F.rastrosLidos} lidas`)}
       ${tr('Tentativas de selo',S.tentativas,`${S.selados} viraram Farol. Interrupções: ${Object.entries(S.interrupcoes).map(([k,v])=>`${CAUSA_SELO[k]||k} ${v}`).join(', ')||'nenhuma'}`)}</table>
@@ -3042,13 +3113,14 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Mostrador do círculo','O chão de cada altar mostra a borda exata do círculo, o progresso do ritual e o selo. A caça só vê depois de localizar o ritual.'],
-  ['Online mais justo','Cada jogador só recebe o que pode saber: sons de inimigos só ao alcance do ouvido, o ritual não localizado continua escondido da caça, tarefas e Chamarizes só para a própria equipe.'],
-  ['Regras','O Empurrão também pausa a canalização. Quem pisa no círculo de um ritual vê o ritual.'],
-  ['Custos e motivos','Os rótulos dizem o que cada ação gasta e, quando não dá, por quê.'],
-  ['Relatório do playtest','Cada ritual mostra o que a caça fez: selou, chegou a tempo e perdeu o círculo, chegou tarde, foi a outro altar ou nunca chegou.'],
-  ['Na v5.5','Eco do coro, quem ataca não canaliza, execução contestável, o culto sente o selo e a Brecha Norte.']];
-function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.6</h2><p class="lede">O que mudou desde a última versão.</p>
+const NOVIDADES=[['Interrupções que se sentem','Derrubar quem sela ou canaliza, ou empurrar quem sela, dá um aviso claro a quem fez e a quem sofreu, com som próprio, e o círculo pisca.'],
+  ['Fenda e Farol com nomes','O fim de cada ritual diz quem completou ou quem selou.'],
+  ['Lances da noite','Jogadas decisivas aparecem na hora e no fim da noite: selo no último instante, ritual achado antes do coro, defesa até a Fenda, resgate depois de impedir a execução, Transferência que deu certo e Chamariz que prendeu a caça.'],
+  ['Investigação com progresso','Cada sinal que descarta um altar diz quantos ainda podem ser do culto. Quando o eco aponta dois altares e um já foi descartado, o jogo faz a dedução.'],
+  ['O engano conta','Quando um Chamariz é queimado, o culto fica sabendo por quanto tempo ele prendeu a caça.'],
+  ['Relatório do playtest','Cada ritual disputado mostra o que cada lado fez no círculo: tempo selando e sob fogo, canalizando e atacando, dano e quedas.'],
+  ['Na v5.6','Mostrador do círculo, online mais justo e altares visitados que não aparecem mais como descartados.']];
+function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.7</h2><p class="lede">O que mudou desde a última versão.</p>
     <div class="novidades">${NOVIDADES.map(([t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
     <div class="btnrow"><button class="go" id="bNovOk">Voltar</button></div>`,()=>{ $('#bNovOk').onclick=()=>{ novidadesAberto=false; screenKey=''; }; }); }
 // cola das teclas, na pausa
@@ -3174,7 +3246,7 @@ function tick(now){
   flames.forEach((f,i)=>{ f.scale.y=.26+Math.sin(now*.02+i)*.03; });
   if(RT.dust){ RT.dust.rotation.y+=dt*.004; RT.dust.position.y=Math.sin(now*.0002)*.3; }
   updateParticles(dt); atualizarEfeitos(dt); atualizarToast(dt);
-  anuncioT=Math.max(0,anuncioT-dt); if(anuncioT<=0) $('#anuncio').classList.remove('on');
+  anuncioT=Math.max(0,anuncioT-dt); if(anuncioT<=0) $('#anuncio').classList.remove('on'); atualizarLance(dt);
   habNotaT=Math.max(0,habNotaT-dt); if(habNotaT<=0) $('#habNota').classList.remove('on');
   atordT=Math.max(0,atordT-dt); $('#atordoado').style.opacity=(atordT*.9).toFixed(2);
   for(let i=tracers.length-1;i>=0;i--){ const tr=tracers[i]; tr.t-=dt; tr.l.material.opacity=Math.max(0,tr.t/.07); if(tr.t<=0){ world.remove(tr.l); descartar(tr.l); tracers.splice(i,1); } }

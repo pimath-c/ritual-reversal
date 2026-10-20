@@ -22,6 +22,10 @@ const CFG={
   timers:{pick:35,intro:25,summary:15},
   // v5.5: o coro ecoa o setor do ritual (oeste, centro ou leste) quando ele passa deste progresso, antes de revelar o altar
   ecoProg:0.25,
+  // lances da noite (só reconhecimento, não mudam regra): Chamariz que prendeu a caça por 20 s, ritual defendido com o selo
+  // passando de 50%, selo com o ritual em 85% ou mais, ritual achado antes do eco já em andamento (8%; quem estava parado
+  // no altar quando ele começou não descobriu nada)
+  iscaLance:20, defesaLance:.5, limiteLance:.85, achouLance:.08,
   // v5.5: quem lançou um sigilo há menos disto (s) não canaliza: o Cultista escolhe entre defender e celebrar.
   // 0,6 s calibrado em 200 noites de bots por valor (1 s: culto 38%; 0,8 s: 42%; 0,6 s: 46%)
   ataqueCanal:.6,
@@ -452,7 +456,7 @@ const humans=g=>g.slots.filter(s=>s.cid);
 function resetRoundState(g){
   g.altars=ALTARS.map((d,i)=>({i,name:d.name,x:d.x,z:d.z,state:'dormant',chosen:false,decoy:false,prog:0,cp:0,seal:0,sealIdle:0,localized:false,lastN:1,startT:0,maxProg:0,doneT:null,selo:1,sealers:[],arrived:false,eco:false}));
   g.reagents.forEach(R=>{ R.has=true; R.t=0; });
-  g.know=g.altars.map(()=>'?'); g.visit=g.altars.map(()=>-99); g.decoys=2; g.transferUsed=false; g.rastros=[]; g.pegadas=[];
+  g.know=g.altars.map(()=>'?'); g.visit=g.altars.map(()=>-99); g.decoys=2; g.transferUsed=false; g.transferPara=-1; g.transferPor=''; g.rastros=[]; g.pegadas=[];
   g.proj=[]; g.pickups=[]; g.flares.forEach(f=>f.t=0); g.actors=[]; g.picks=[]; g.ready={}; g.buff={ess:0,selo:0};
   g.endAt=0; g.lastResolveT=0; g.rt=0; g.firstContact=null; g.momento=0; g.eco=null; g.suspeitaC={}; prepararNoite(g);
 }
@@ -547,7 +551,7 @@ function reclaimHuman(g,slotIdx,cid,name){
 
 
 // versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
-const VERSAO='5.6', REGISTRO=2;
+const VERSAO='5.7', REGISTRO=3;
 
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.
@@ -741,9 +745,10 @@ function damage(g,t,amt,src){
   if(!g.firstContact){ g.firstContact=r2(g.rt); logE(g,'first_contact',{}); }
   if(t.st==='down'){ t.downT-=amt/8; t.att[src.id]=g.t; return; }
   // executar exige calma: quem leva dano recomeça a execução
-  if(CFG.danoInterrompeExecucao&&t.hold.key.startsWith('exe')){ if(t.hold.t>0){ logE(g,'execucao_interrompida',{who:t.name,by:src.name}); if(t.human) ev(g,{type:'feed',msg:'Você levou dano: a execução recomeçou.',cls:'',to:t.id}); } t.hold={key:'',t:0,max:0}; }
+  if(CFG.danoInterrompeExecucao&&t.hold.key.startsWith('exe')){ if(t.hold.t>0){ logE(g,'execucao_interrompida',{who:t.name,by:src.name}); if(t.human) ev(g,{type:'feed',msg:'Você levou dano: a execução recomeçou.',cls:'',to:t.id});
+      const B=g.actors.find(x=>'exe'+x.id===t.hold.key); if(B&&B.st==='down') B.salvoPor=src.name; } t.hold={key:'',t:0,max:0}; }
   if(t.shield>0){ const s=Math.min(t.shield,amt); t.shield-=s; amt-=s; }
-  t.hp-=amt; t.hitT=g.t; t.att[src.id]=g.t; t.veuT=0;
+  t.hp-=amt; t.hitT=g.t; t.att[src.id]=g.t; t.veuT=0; disputaDano(g,t,src,amt);
   ev(g,{type:'hurt',a:t.id,s:src.id,sx:r2(src.x),sz:r2(src.z)}); ev(g,{type:'hit',a:src.id,alvo:t.id,derrubou:t.hp<=0});
   if(!t.human) t.ai.alert={x:src.x,z:src.z,t:g.t};
   if(t.hp<=0) goDown(g,t,src);
@@ -751,9 +756,34 @@ function damage(g,t,amt,src){
 function goDown(g,t,src){
   if(t.revUsed){ kill(g,t,src); return; }
   if(src&&src.team!==t.team) ganhaObolos(g,src,1);
-  t.st='down'; t.hp=0; t.downT=CFG.downTime; t.sealing=-1; t.hold={key:'',t:0,max:0}; t.lantern=false;
+  const selando=t.sealing, canal=t.team==='C'?g.altars.find(A=>A.state==='active'&&inCircle(t,A)):null;
+  t.st='down'; t.hp=0; t.downT=CFG.downTime; t.sealing=-1; t.hold={key:'',t:0,max:0}; t.lantern=false; t.salvoPor=null;
   feed(g,`${src.name} derrubou ${t.name}`,t.team==='C'?'h':'c'); logE(g,'down',{who:t.name,team:t.team,by:src.name,x:r2(t.x),z:r2(t.z)});
+  for(const A of g.altars){ if(A.state!=='active'||!A.arrived||!A.obs) continue; if(dist(t,A)<12) dsp(A.obs,t.id).quedas++; if(dist(src,A)<12) dsp(A.obs,src.id).derrubou++; }
+  if(selando>=0) interrupcao(g,'selo','queda',src,t,g.altars[selando]);
+  else if(canal) interrupcao(g,'canal','queda',src,t,canal);
 }
+// Interrupção que se sente: quem causou e quem sofreu recebem o aviso, e o mostrador do círculo pisca. Um ritual que a
+// caça ainda não localizou só é anunciado ao culto (derrubar alguém no círculo não revela o altar).
+function interrupcao(g,tipo,causa,src,t,A){ if(!A) return;
+  if(src.team==='C'&&A.obs) A.obs.defesa[src.id]=1;
+  ev(g,{type:'interrupcao',tipo,causa,a:src.id,alvo:t.id,altar:A.i,team:tipo==='canal'&&!A.localized?'C':null});
+  logE(g,'interrupcao',{tipo,causa,by:src.name,who:t.name,altar:A.name,prog:r2(A.prog),seal:r2(A.seal)}); }
+// Lance da noite: uma jogada que decidiu ou quase decidiu um ritual. Vai para o registro (tela do fim da noite) e, ao
+// vivo, para a equipe que fez a jogada (team) ou para todos.
+function lance(g,tipo,quem,A,team,v){ quem=[...new Set(quem.filter(Boolean))];
+  ev(g,{type:'lance',tipo,quem,altar:A?A.i:-1,team:team||null,v:v==null?null:v});
+  logE(g,'lance',{tipo,quem,altar:A?A.name:'',team:team||null,v:v==null?null:v}); }
+// registro da disputa no círculo: o que cada um fez a menos de 12 m de um ritual depois que a caça chegou
+function dsp(O,id){ return O.d[id]||(O.d[id]={perto:0,circulo:0,selando:0,sobFogo:0,canal:0,atacando:0,dano:0,sofrido:0,quedas:0,derrubou:0}); }
+function disputaDano(g,t,src,amt){ for(const A of g.altars){ if(A.state!=='active'||!A.arrived||!A.obs) continue;
+    if(dist(t,A)<12||dist(src,A)<12){ dsp(A.obs,src.id).dano+=amt; dsp(A.obs,t.id).sofrido+=amt; } } }
+function medirDisputa(g,A,ch,sealers,dt){ const O=A.obs; for(const c of ch) O.canal[c.id]=1; if(!A.arrived) return;
+  for(const a of g.actors){ if(a.st!=='alive'||dist(a,A)>=12) continue; const D=dsp(O,a.id); D.perto+=dt;
+    if(inCircle(a,A)) D.circulo+=dt;
+    if(sealers.includes(a)){ D.selando+=dt; if(recentAttackers(g,a)>0) D.sobFogo+=dt; }
+    if(ch.includes(a)) D.canal+=dt;
+    if(g.t-a.ataqueT<.6||g.t-a.lastShotT<.6) D.atacando+=dt; } }
 function kill(g,t,src,how){
   t.st='dead'; t.hp=0; t.deaths++; t.dc++; t.sealing=-1; t.hold={key:'',t:0,max:0}; t.lantern=false;
   t.respawnT=CFG.respawnMomento[Math.max(0,g.momento)]+Math.min(6,2*(t.dc-1));
@@ -776,8 +806,8 @@ function useAbility(g,a){
   else if(F==='empurrao'){ a.ataqueT=g.t; // empurrar é atacar: pausa a canalização de quem empurra
     let n=0; for(const e of enemiesOf(g,a)){ if(e.st!=='alive') continue; const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz); if(d>3.8||d<.01) continue; if((dx*fx+dz*fz)/d<.34) continue;
       const ux=dx/d,uz=dz/d; for(let s=0;s<8;s++) moverSeguro(e,e.x+ux*.5,e.z+uz*.5,.4);
-      const was=e.sealing>=0; e.sealing=-1; e.hold={key:'',t:0,max:0}; e.pushedT=g.t; e.stunT=Math.max(e.stunT,.45); damage(g,e,10,a); n++; alvos.push(e.id);
-      if(was) logE(g,'push_seal',{who:e.name,by:a.name}); }
+      const sl=e.sealing, was=sl>=0; e.sealing=-1; e.hold={key:'',t:0,max:0}; e.pushedT=g.t; e.stunT=Math.max(e.stunT,.45); damage(g,e,10,a); n++; alvos.push(e.id);
+      if(was){ logE(g,'push_seal',{who:e.name,by:a.name}); interrupcao(g,'selo',e.st==='alive'?'empurrao':'queda',a,e,g.altars[sl]); } }
     ev(g,{type:'sfx',k:'push',x:r2(a.x),z:r2(a.z),a:a.id});
   }
   else if(F==='flash'){
@@ -857,20 +887,24 @@ function doAction(g,a,ctx){
       else if(p.tipo==='erva'){ p.ativo=false; p.t=50; ganhaObolos(g,a,1); tarefaProg(g,'C','ervas'); }
       else if(p.tipo==='tumulo'){ p.ativo=false; if(a.reag<CFG.carry) a.reag++; else ganhaObolos(g,a,2); tarefaProg(g,'C','tumulos'); feed(g,`${a.name} profanou um túmulo.`,'c','C'); }
       logE(g,'ponto',{tipo:p.tipo,by:a.name}); break; }
-    case 'purge': { const was=A.decoy; tarefaProg(g,'H','purgar'); A.state='dormant'; A.decoy=false; g.know[A.i]=was?'descartado':'purgado'; if(A.chosen) g.suspeitaC[A.i]=true; /* purgar um verdadeiro revela que era do culto; um Chamariz queimado, que não era */ // o culto recebe o aviso da purga
+    case 'purge': { const was=A.decoy, isca=r2(A.iscaT||0); tarefaProg(g,'H','purgar'); A.state='dormant'; A.decoy=false; g.know[A.i]=was?'descartado':'purgado'; if(A.chosen) g.suspeitaC[A.i]=true; /* purgar um verdadeiro revela que era do culto; um Chamariz queimado, que não era */ // o culto recebe o aviso da purga
       feed(g,was?`Chamariz queimado em ${A.name}.`:`${A.name} foi purgado.`,'h','H'); feed(g,`Um altar foi purgado: ${A.name}.`,'c','C');
-      logE(g,'purge',{altar:A.name,decoy:was,by:a.name}); break; }
+      logE(g,'purge',{altar:A.name,decoy:was,by:a.name,isca:was?isca:null});
+      // o engano recompensado: o culto só fica sabendo quanto o Chamariz prendeu a caça quando ele é queimado
+      if(was){ feed(g,`Seu Chamariz em ${A.name} prendeu a caça por ${Math.round(isca)} s.`,'c','C'); if(isca>=CFG.iscaLance) lance(g,'chamariz',[A.iscaDono],A,'C',Math.round(isca)); }
+      A.iscaT=0; A.iscaDono=''; break; }
     case 'burn': R.has=false; R.t=CFG.regrow*1.2; logE(g,'burn',{by:a.name}); if(a.human) ev(g,{type:'feed',msg:'Reagente queimado.',cls:'h',to:a.id}); break;
     case 'collect': R.has=false; R.t=CFG.regrow; a.reag++; ev(g,{type:'sfx',k:'collect',x:R.x,z:R.z,a:a.id}); logE(g,'collect',{by:a.name}); if(a.human) ev(g,{type:'feed',msg:`Reagente coletado (${a.reag}/${CFG.carry}).`,cls:'c',to:a.id}); break;
     case 'consecrate': a.reag--; A.state='awake'; A.decoy=false; tarefaProg(g,'C','consagrar'); sentinelaAvisa(g,A,'consagração'); feed(g,`${A.name} consagrado.`,'c','C'); logE(g,'consecrate',{altar:A.name,by:a.name}); break;
     case 'start': if(!CFG.iniciarDeGraca) a.reag--; startRitual(g,A,a); break;
-    case 'decoy': g.decoys--; A.state='awake'; A.decoy=true; feed(g,`Chamariz plantado em ${A.name}.`,'c','C'); logE(g,'decoy',{altar:A.name,by:a.name}); break;
-    case 'transfer': { const F=g.altars[ctx.from]; if(!F||!F.chosen||F.state!=='dormant'||g.transferUsed||a.reag<1) break; F.chosen=false; A.chosen=true; a.reag--; g.transferUsed=true;
+    case 'decoy': g.decoys--; A.state='awake'; A.decoy=true; A.iscaT=0; A.iscaDono=a.name; feed(g,`Chamariz plantado em ${A.name}.`,'c','C'); logE(g,'decoy',{altar:A.name,by:a.name}); break;
+    case 'transfer': { const F=g.altars[ctx.from]; if(!F||!F.chosen||F.state!=='dormant'||g.transferUsed||a.reag<1) break; F.chosen=false; A.chosen=true; a.reag--; g.transferUsed=true; g.transferPara=A.i; g.transferPor=a.name;
       feed(g,`Transferência: ${A.name} substitui ${F.name}.`,'c','C'); logE(g,'transfer',{from:F.name,to:A.name,by:a.name});
       // a Transferência deixa rastro: marcas de arrasto no altar de origem por 3 min e um lamento audível por perto dos dois altares
       g.rastros.push({de:F.i,para:A.i,x:F.x,z:F.z,t:g.rt,visto:false,lido:false});
       ev(g,{type:'sfx',k:'arrasto',x:r2(F.x),z:r2(F.z),a:a.id}); ev(g,{type:'sfx',k:'arrasto',x:r2(A.x),z:r2(A.z),a:a.id}); break; }
-    case 'revive': if(B&&B.st==='down'){ B.st='alive'; B.hp=Math.round(B.maxHp*.45); B.revUsed=true; B.invuln=1; B.downT=0; feed(g,`${a.name} reanimou ${B.name}`,B.team==='H'?'h':'c',B.team); logE(g,'revive',{who:B.name,by:a.name}); } break;
+    case 'revive': if(B&&B.st==='down'){ B.st='alive'; B.hp=Math.round(B.maxHp*.45); B.revUsed=true; B.invuln=1; B.downT=0; feed(g,`${a.name} reanimou ${B.name}`,B.team==='H'?'h':'c',B.team); logE(g,'revive',{who:B.name,by:a.name});
+      if(B.salvoPor) lance(g,'resgate',[B.salvoPor,a.name],null,B.team,null); B.salvoPor=null; } break;
     case 'execute': if(B&&B.st==='down'){ kill(g,B,a,'exec'); } break;
   }
 }
@@ -921,7 +955,7 @@ function humanActions(g,a,dt){
 // ============ ALTARES ============
 function mareFactor(g){ return 1+Math.min(.2,Math.floor((g.rt-g.lastResolveT)/60)*.05); }
 function startRitual(g,A,by){
-  A.state='active'; A.startT=g.rt; A.localized=false; A.selo=1; A.arrived=false; A.maxN=0; A.tardio=g.momento>=2; A.grande=fendas(g)+farois(g)>=2; A.eco=false; A.obs={perto:{},errado:{},dentro:{}};
+  A.state='active'; A.startT=g.rt; A.localized=false; A.selo=1; A.arrived=false; A.maxN=0; A.tardio=g.momento>=2; A.grande=fendas(g)+farois(g)>=2; A.eco=false; A.obs=novaObs();
   if(g.buff.selo>g.t){ A.selo=1.1; g.buff.selo=0; feed(g,'Selo de Luz corrompido: este ritual corre 10% mais rápido.','c','C'); }
   const n=g.actors.filter(c=>c.team==='C'&&c.st==='alive'&&inCircle(c,A)).length;
   sentinelaAvisa(g,A,'um ritual começou');
@@ -936,14 +970,22 @@ function ecoDoCoro(g,A){ A.eco=true; const S=setorDoAltar(A.i); g.eco={setor:S.i
   logE(g,'eco',{altar:A.name,setor:S.id}); }
 function localize(g,A,how){ if(A.localized) return; A.localized=true; g.know[A.i]='ativo'; g.eco=null;
   feed(g,`O coro revela: ${A.name}.`,'big','H'); feed(g,`Os Caçadores descobriram ${A.name}.`,'c','C');
-  logE(g,'localized',{altar:A.name,prog:r2(A.prog),how}); }
+  logE(g,'localized',{altar:A.name,prog:r2(A.prog),how});
+  if((how==='ouvido'||how==='circulo')&&!A.eco&&A.prog>=CFG.achouLance){ const h=g.actors.filter(x=>x.team==='H'&&x.st==='alive').sort((x,y)=>dist(x,A)-dist(y,A))[0]; if(h) lance(g,'achou_cedo',[h.name],A,'H',r2(A.prog)); } }
 // Move e, se o resultado ainda ficar preso entre peças (cantos côncavos de escombros), desfaz o passo.
 function moverSeguro(a,nx,nz,r){ const px=a.x,pz=a.z; a.x=nx; a.z=nz; resolve(a,r); if(!livre(a,r)){ a.x=px; a.z=pz; } }
 function resolveAltar(g,A,kind){
+  const O=A.obs||(A.obs=novaObs());
+  const nomes=f=>g.actors.filter(f).map(a=>a.name), seladores=nomes(a=>A.sealers.includes(a.id)), canalizaram=nomes(a=>O.canal[a.id]);
+  // a disputa no círculo de cada um, para o relatório (só se a caça chegou ao círculo)
+  if(A.arrived) for(const a of g.actors){ const D=O.d[a.id]; if(!D) continue; const o={altar:A.name,who:a.name,team:a.team}; for(const k in D) o[k]=r2(D[k]); logE(g,'disputa',o); }
   A.state=kind; A.maxProg=Math.max(A.maxProg,A.prog); g.lastResolveT=g.rt; A.sealers=[]; g.eco=null;
   g.actors.forEach(a=>{ a.dc=0; a.revUsed=false; if(a.sealing===A.i) a.sealing=-1; });
-  if(kind==='fenda'){ A.doneT=r2(g.rt); ev(g,{type:'doom'}); feed(g,`Ritual completo em ${A.name}. Uma Fenda se abriu.`,'big c'); logE(g,'ritual_complete',{altar:A.name,canalizadores:A.maxN||1}); }
-  else { ev(g,{type:'sealed'}); g.buff.ess=0; feed(g,`${A.name} foi selado. Um Farol se acendeu.`,'big h'); logE(g,'sealed',{altar:A.name,prog:r2(A.prog),canalizadores:A.maxN||1}); }
+  if(kind==='fenda'){ A.doneT=r2(g.rt); ev(g,{type:'doom',altar:A.i,por:canalizaram}); feed(g,`Ritual completo em ${A.name}. Uma Fenda se abriu.`,'big c'); logE(g,'ritual_complete',{altar:A.name,canalizadores:A.maxN||1,por:canalizaram});
+    if(O.maxSeal>=CFG.defesaLance) lance(g,'defesa',Object.keys(O.defesa).length?nomes(a=>O.defesa[a.id]):canalizaram,A,'C',r2(O.maxSeal));
+    if(g.transferPara===A.i) lance(g,'transferencia',[g.transferPor],A,'C',null); }
+  else { ev(g,{type:'sealed',altar:A.i,por:seladores}); g.buff.ess=0; feed(g,`${A.name} foi selado. Um Farol se acendeu.`,'big h'); logE(g,'sealed',{altar:A.name,prog:r2(A.prog),canalizadores:A.maxN||1,por:seladores});
+    if(A.prog>=CFG.limiteLance) lance(g,'selo_limite',seladores,A,null,r2(A.prog)); }
   if(kind==='fenda') tarefaProg(g,'C','ritual');
   const F=fendas(g), P=farois(g);
   if(F+P>=3||(g.lab.formato!=='placar'&&(F>=2||P>=2))) g.endAt=g.rt+3;
@@ -951,7 +993,8 @@ function resolveAltar(g,A,kind){
 // Observação para o relatório (não muda regra nenhuma): onde a caça esteve durante o ritual e por que o culto saiu do
 // círculo. Separa "nunca chegou", "foi ao altar errado", "chegou perto e não entrou", "chegou tarde" e "perdeu a disputa".
 const MOTIVO_BOT=[['npc','comprar'],['tr','transferir'],['dg','chamariz'],['rv','reanimar'],['ex','executar'],['r','reagente'],['pedido','ping'],['desvio','desvio'],['ch','voltar ao círculo']];
-function observarRitual(g,A){ const O=A.obs||(A.obs={perto:{},errado:{},dentro:{}});
+const novaObs=()=>({perto:{},errado:{},dentro:{},canal:{},defesa:{},d:{},maxSeal:0});
+function observarRitual(g,A){ const O=A.obs||(A.obs=novaObs());
   for(const h of g.actors){ if(h.team!=='H'||h.st!=='alive') continue;
     if(!O.perto[h.id]&&dist(h,A)<25){ O.perto[h.id]=1; logE(g,'caca_perto',{altar:A.name,who:h.name,prog:r2(A.prog)}); }
     for(const B of g.altars){ if(B===A||B.state==='fenda'||B.state==='farol'||dist(h,B)>=8) continue; const k=h.id+':'+B.i; if(O.errado[k]) continue; O.errado[k]=1;
@@ -998,11 +1041,14 @@ function updateAltars(g,dt){
         logE(g,'seal_stop',{altar:A.name,seal:r2(A.seal),cause}); }
       A.sealIdle+=dt; if(A.sealIdle>3) A.seal=Math.max(0,A.seal-dt/CFG.seal);
     }
+    medirDisputa(g,A,ch,sealers,dt); A.obs.maxSeal=Math.max(A.obs.maxSeal,A.seal);
     A.sealers=sealers.map(s=>s.id);
     if(A.seal>=1) resolveAltar(g,A,'farol'); else if(A.prog>=1){ A.prog=1; resolveAltar(g,A,'fenda'); }
   }
 }
 function updateKnowledge(g,dt){
+  // quanto um Chamariz prende a caça: segundos de Caçador a menos de 12 m dele (cada Caçador conta)
+  for(const A of g.altars) if(A.decoy&&A.state==='awake') for(const h of g.actors) if(h.team==='H'&&h.st==='alive'&&dist(h,A)<12) A.iscaT=(A.iscaT||0)+dt;
   for(const h of g.actors){ if(h.team!=='H'||h.st!=='alive') continue;
     g.altars.forEach((A,i)=>{ const d=dist(h,A); if(d>=10) return; g.visit[i]=g.t; const k=g.know[i];
       if(A.state==='awake'){ if(semAura(k)){ g.know[i]='desperto'; ev(g,{type:'evp',a:h.id,x:A.x,z:A.z}); feed(g,`EVP: vozes em ${A.name}.`,'h','H'); logE(g,'evp',{altar:A.name,real:A.chosen&&!A.decoy,by:h.name}); }
@@ -1344,6 +1390,10 @@ function roundStats(g,round){
 // Mede o que importa para saber se a investigação funciona: quando a caça descobre a verdade, quanto tempo passa sem
 // pista nova, quanto o engano custa, como as descobertas viram (ou não) Faróis, e o que o combate faz com isso.
 const INFO_CACA=['eco','pista_info','evp','sentinela','lanterna','decoy_spotted','rastro_visto','rastro_lido','localized','sal'];
+// a disputa de um ritual somada por equipe (registros 'disputa' do fim do ritual; vazio se a caça não chegou ao círculo)
+function resumoDisputa(L){ if(!L.length) return null; const soma=team=>{ const o={jogadores:0}; for(const e of L) if(e.team===team){ o.jogadores++;
+      for(const k of ['perto','circulo','selando','sobFogo','canal','atacando','dano','sofrido','quedas','derrubou']) o[k]=r2((o[k]||0)+(e[k]||0)); } return o; };
+  return {caca:soma('H'),culto:soma('C')}; }
 function relatorio(log,r){ r=r||1;
   const L=(log||[]).filter(e=>(e.r||1)===r), c=k=>L.filter(e=>e.ev===k), fim=c('round_end')[0], T=fim?fim.t:(L.length?L[L.length-1].t:0);
   const verdade=L.filter(e=>(e.ev==='evp'&&e.real)||e.ev==='sentinela'||e.ev==='lanterna'||e.ev==='rastro_lido'||e.ev==='localized');
@@ -1358,7 +1408,9 @@ function relatorio(log,r){ r=r||1;
     const caca=resultado==='farol'?'selou':resultado==='aberto'?'aberto':cheg?(cheg.remaining<CFG.sealMin?'chegou_tarde':'perdeu_disputa'):perto?'perto_sem_entrar':errados.length?'altar_errado':'nunca_chegou';
     return {altar:s.altar,inicio:s.t,localizado:loc?r2(loc.t-s.t):null,comoLocalizou:loc?loc.how:null,chegada:cheg?r2(cheg.t-s.t):null,restanteNaChegada:cheg?cheg.remaining:null,tentativasSelo:sel,
       resultado,caca,altaresErrados:errados.map(e=>e.altar),interrupcoesSelo:no.filter(e=>e.ev==='seal_stop'&&e.altar===s.altar).map(e=>e.cause),
-      cultoSaiu:no.filter(e=>e.ev==='canal_saiu'&&e.altar===s.altar).map(e=>e.motivo),duracao:fimR?r2(fimR.t-s.t):null,localizarAoFim:loc&&fimR?r2(fimR.t-loc.t):null}; });
+      cultoSaiu:no.filter(e=>e.ev==='canal_saiu'&&e.altar===s.altar).map(e=>e.motivo),duracao:fimR?r2(fimR.t-s.t):null,localizarAoFim:loc&&fimR?r2(fimR.t-loc.t):null,
+      disputa:resumoDisputa(no.filter(e=>e.ev==='disputa'&&e.altar===s.altar&&fimR&&e.t===fimR.t)),
+      interrupcoes:{selo:no.filter(e=>e.ev==='interrupcao'&&e.altar===s.altar&&e.tipo==='selo').length,canal:no.filter(e=>e.ev==='interrupcao'&&e.altar===s.altar&&e.tipo==='canal').length}}; });
   const conversao={}; rituais.forEach(R=>conversao[R.caca]=(conversao[R.caca]||0)+1);
   const causas={}; c('seal_stop').forEach(e=>causas[e.cause]=(causas[e.cause]||0)+1);
   const feiticos={}; c('ability').forEach(e=>feiticos[e.feitico]=(feiticos[e.feitico]||0)+1);
@@ -1370,8 +1422,9 @@ function relatorio(log,r){ r=r||1;
       sensor:c('sensor').length,sensorComSinal:c('sensor').filter(e=>e.v>.02).length,evp:c('evp').length,lanterna:c('lanterna').length+c('decoy_spotted').length,
       sal:c('sal').length,rastrosVistos:c('rastro_visto').length,rastrosLidos:c('rastro_lido').length,pings:c('ping').length,frases:c('fala').length,feiticos},
     engano:{chamarizes:c('decoy').length,chamarizesDesmascarados:c('decoy_spotted').length,chamarizesQueimados:purgas.filter(e=>e.decoy).length,
-      purgasDeAltarVerdadeiro:purgas.filter(e=>!e.decoy).length,evpEmChamariz:c('evp').filter(e=>!e.real).length,transferencias:c('transfer').length},
-    rituais, conversao,
+      purgasDeAltarVerdadeiro:purgas.filter(e=>!e.decoy).length,evpEmChamariz:c('evp').filter(e=>!e.real).length,transferencias:c('transfer').length,
+      segundosPresosEmChamariz:r2(purgas.reduce((t,e)=>t+(e.decoy&&e.isca?e.isca:0),0))},
+    rituais, conversao, lances:c('lance').map(e=>({t:e.t,tipo:e.tipo,quem:e.quem||[],altar:e.altar,team:e.team,v:e.v})),
     selamento:{tentativas:c('seal_start').length,interrupcoes:causas,selados:c('sealed').length},
     combate:{primeiraQueda:c('down').length?c('down')[0].t:null,quedas:c('down').length,execucoes:mortes.filter(e=>e.how==='exec').length,
       sangraram:mortes.filter(e=>e.how==='bleed').length,reanimacoes:c('revive').length},
@@ -1399,6 +1452,7 @@ function eventoPara(g,e,me,role){
   if(t==='sensor'||t==='evp'||t==='blind'||t==='stun'||t==='hit') return me&&e.a===me.id?e:null;
   if(t==='presage'||t==='eco') return role==='H'?e:null;
   if(t==='selando') return role==='C'?e:null;
+  if(t==='interrupcao'||t==='lance') return e.team&&e.team!==role?null:e;
   if(t==='ping'||t==='fala'||t==='tarefa') return e.team===role?e:null;
   if(t==='hurt'){ if(me&&e.a===me.id) return e; const v=g.actors.find(a=>a.id===e.a); // os outros veem o golpe, sem saber de onde veio
     return v&&(v.team===role||visivelPara(g,v,role))?Object.assign({},e,{sx:null,sz:null}):null; }

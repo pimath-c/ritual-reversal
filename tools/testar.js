@@ -142,7 +142,44 @@ console.log('7. Conhecimento dos altares: visto, descartado, purgado');
   h.x=esc.x+3; h.z=esc.z; Sim.step(g,1/30); if(g.know[esc.i]!=='purgado') falha('passar perto não deveria apagar "purgado"');
   Object.assign(livre,{state:'awake',decoy:true}); Sim._doAction(g,h,{type:'purge',A:livre.i}); if(g.know[livre.i]!=='descartado') falha('Chamariz queimado deveria marcar "descartado"'); }
 console.log('   ok');
-console.log(`8. ${N} partidas só de bots com invariantes`);
+// 8. v5.7: interrupções, desfecho com nomes, lances da noite e registro da disputa (só reconhecimento, nenhuma regra muda)
+console.log('8. Interrupções, lances e disputa no círculo');
+{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'v57'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+  for(const a of g.actors){ a.st='dead'; a.respawnT=999; } const [h,h2]=g.actors.filter(a=>a.team==='H'), [c,c2]=g.actors.filter(a=>a.team==='C');
+  const viva=a=>Object.assign(a,{st:'alive',hp:a.maxHp,human:true,revUsed:false,invuln:0,inp:Object.assign({},a.inp,{use:false,fire:false})});
+  const A=g.altars.find(x=>x.chosen); Object.assign(A,{state:'active',localized:true,prog:.5,cp:.25,seal:0,arrived:true}); viva(h); viva(c); h.x=A.x+1; h.z=A.z; c.x=A.x-1.5; c.z=A.z;
+  Sim.step(g,1/30); g.events.length=0; h.sealing=A.i; Sim.damage(g,h,999,c);
+  const ei=g.events.find(e=>e.type==='interrupcao'); if(!ei||ei.tipo!=='selo'||ei.a!==c.id||ei.alvo!==h.id||ei.altar!==A.i||ei.team) falha('derrubar quem sela deveria gerar a interrupção do selo para todos');
+  if(!g.log.some(e=>e.ev==='interrupcao'&&e.tipo==='selo'&&e.by===c.name)) falha('a interrupção do selo deveria ir para o registro');
+  // canalização interrompida num ritual que a caça não localizou: só o culto fica sabendo
+  viva(h); h.x=A.x+40; h.z=A.z; A.localized=false; c.x=A.x+.5; c.z=A.z; g.events.length=0; Sim.damage(g,c,999,h);
+  const ec=g.events.find(e=>e.type==='interrupcao'); if(!ec||ec.tipo!=='canal'||ec.team!=='C') falha('derrubar quem canaliza um ritual não localizado deveria avisar só o culto');
+  else if(Sim.eventoPara(g,ec,h,'H')||!Sim.eventoPara(g,ec,c2,'C')) falha('o filtro de eventos deveria mandar a interrupção da canalização só ao culto');
+  // selo no último instante: o Farol anuncia quem selou e vira lance
+  c.st='dead'; A.localized=true; Object.assign(A,{prog:.9,seal:.999}); viva(h); h.x=A.x+1; h.z=A.z; h.inp.use=true; g.events.length=0;
+  for(let i=0;i<5&&A.state==='active';i++) Sim.step(g,1/30); h.inp.use=false;
+  const es=g.events.find(e=>e.type==='sealed'); if(A.state!=='farol'||!es||!(es.por||[]).includes(h.name)) falha('o Farol deveria anunciar quem selou');
+  const el=g.events.find(e=>e.type==='lance'&&e.tipo==='selo_limite'); if(!el||!el.quem.includes(h.name)||el.v<.85) falha('selar com o ritual acima de 85% deveria virar o lance "selo no último instante"');
+  const dp=g.log.filter(e=>e.ev==='disputa'&&e.altar===A.name); if(!dp.length||!dp.some(e=>e.who===h.name&&e.team==='H'&&e.selando>0)) falha('o fim do ritual deveria registrar a disputa de cada um (quem selou, por quanto tempo)');
+  if(!dp.some(e=>e.who===c.name&&e.derrubou>=1)) falha('a disputa deveria contar quem derrubou alguém perto do círculo');
+  // Chamariz: o culto só fica sabendo quanto ele prendeu a caça quando ele é queimado
+  const D=g.altars.find(x=>!x.chosen&&x.state==='dormant'); Sim._doAction(g,c,{type:'decoy',A:D.i}); viva(c); Sim._doAction(g,c,{type:'decoy',A:D.i});
+  if(!D.decoy||D.state!=='awake') falha('plantar Chamariz no teste'); h.x=D.x+5; h.z=D.z; c.x=-140; c.z=0;
+  for(let i=0;i<30*25;i++){ Sim.step(g,1/30); g.events.length=0; h.x=D.x+5; h.z=D.z; }
+  g.events.length=0; Sim._doAction(g,h,{type:'purge',A:D.i});
+  const pg=g.log.filter(e=>e.ev==='purge').pop(); if(!pg||!pg.decoy||!(pg.isca>=24&&pg.isca<=26)) falha(`a purga do Chamariz deveria registrar ~25 s de caça presa (${pg&&pg.isca})`);
+  const fc=g.events.find(e=>e.type==='feed'&&e.team==='C'&&/prendeu a caça por/.test(e.msg)); if(!fc) falha('o culto deveria saber quanto o Chamariz prendeu a caça');
+  else if(Sim.eventoPara(g,fc,h,'H')) falha('o tempo do Chamariz não pode chegar à caça');
+  const lc=g.events.find(e=>e.type==='lance'&&e.tipo==='chamariz'); if(!lc||lc.team!=='C'||lc.quem[0]!==c.name) falha('Chamariz que prende a caça por 20 s deveria virar lance do culto');
+  // resgate: quem impede a execução e reanima o aliado
+  viva(c); viva(c2); viva(h); c2.x=h.x=c.x=0; c2.z=0; h.z=1; c.z=-1; Sim.damage(g,c2,999,h); if(c2.st!=='down') falha('derrubar no teste do resgate');
+  h.hold={key:'exe'+c2.id,t:1,max:4.5}; Sim.damage(g,h,5,c); if(c2.salvoPor!==c.name) falha('interromper a execução deveria marcar quem salvou');
+  g.events.length=0; Sim._doAction(g,c,{type:'revive',b:c2.id});
+  const lr=g.events.find(e=>e.type==='lance'&&e.tipo==='resgate'); if(!lr||lr.team!=='C'||lr.quem.join()!==c.name) falha('reanimar depois de impedir a execução deveria virar o lance "resgate"');
+  const M=Sim.relatorio(g.log,g.round); if(!M.lances||M.lances.length<3) falha('o relatório deveria listar os lances da noite');
+  if(!(M.engano.segundosPresosEmChamariz>=24)) falha('o relatório deveria somar o tempo preso em Chamarizes'); }
+console.log('   ok');
+console.log(`9. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};
 for(let m=0;m<N;m++){

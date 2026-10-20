@@ -59,7 +59,7 @@ namespace RitualReversal.Simulacao
             g.altars = new List<Altar>();
             for (int i = 0; i < Mapa.ALTARS.Count; i++) { var d = Mapa.ALTARS[i]; g.altars.Add(new Altar { i = i, name = d.name, x = d.x, z = d.z }); }
             foreach (var R in g.reagents) { R.has = true; R.t = 0; }
-            g.know = g.altars.Select(a => "?").ToArray(); g.visit = g.altars.Select(a => -99.0).ToArray(); g.decoys = 2; g.transferUsed = false; g.rastros = new List<Rastro>(); g.pegadas = new List<Pegada>();
+            g.know = g.altars.Select(a => "?").ToArray(); g.visit = g.altars.Select(a => -99.0).ToArray(); g.decoys = 2; g.transferUsed = false; g.transferPara = -1; g.transferPor = ""; g.rastros = new List<Rastro>(); g.pegadas = new List<Pegada>();
             g.proj = new List<Projetil>(); g.pickups = new List<Coletavel>(); foreach (var f in g.flares) f.t = 0; g.actors = new List<Ator>(); g.picks = new List<int>(); g.ready = new Dictionary<string, bool>(); g.buff = new Buff();
             g.endAt = 0; g.lastResolveT = 0; g.rt = 0; g.firstContact = null; g.momento = 0; g.eco = null; g.suspeitaC = new HashSet<int>(); PrepararNoite(g);
         }
@@ -408,9 +408,10 @@ namespace RitualReversal.Simulacao
             if (!g.firstContact.HasValue || g.firstContact.Value == 0) { g.firstContact = R2(g.rt); LogE(g, "first_contact"); }
             if (t.st == "down") { t.downT -= amt / 8; t.att[src.id] = g.t; return; }
             // executar exige calma: quem leva dano recomeça a execução
-            if (CFG.danoInterrompeExecucao && t.hold.key.StartsWith("exe", StringComparison.Ordinal)) { if (t.hold.t > 0) { LogE(g, "execucao_interrompida", "who", t.name, "by", src.name); if (t.human) Ev(g, "feed", "msg", "Você levou dano: a execução recomeçou.", "cls", "", "to", t.id); } t.hold = new Hold(); }
+            if (CFG.danoInterrompeExecucao && t.hold.key.StartsWith("exe", StringComparison.Ordinal)) { if (t.hold.t > 0) { LogE(g, "execucao_interrompida", "who", t.name, "by", src.name); if (t.human) Ev(g, "feed", "msg", "Você levou dano: a execução recomeçou.", "cls", "", "to", t.id);
+                    var B = g.actors.FirstOrDefault(x => "exe" + x.id == t.hold.key); if (B != null && B.st == "down") B.salvoPor = src.name; } t.hold = new Hold(); }
             if (t.shield > 0) { double s = Math.Min(t.shield, amt); t.shield -= s; amt -= s; }
-            t.hp -= amt; t.hitT = g.t; t.att[src.id] = g.t; t.veuT = 0;
+            t.hp -= amt; t.hitT = g.t; t.att[src.id] = g.t; t.veuT = 0; DisputaDano(g, t, src, amt);
             Ev(g, "hurt", "a", t.id, "s", src.id, "sx", R2(src.x), "sz", R2(src.z)); Ev(g, "hit", "a", src.id, "alvo", t.id, "derrubou", t.hp <= 0);
             if (!t.human) t.ai.alert = new Alerta { x = src.x, z = src.z, t = g.t };
             if (t.hp <= 0) GoDown(g, t, src);
@@ -419,8 +420,44 @@ namespace RitualReversal.Simulacao
         {
             if (t.revUsed) { Kill(g, t, src); return; }
             if (src != null && src.team != t.team) GanhaObolos(g, src, 1);
-            t.st = "down"; t.hp = 0; t.downT = CFG.downTime; t.sealing = -1; t.hold = new Hold(); t.lantern = false;
+            int selando = t.sealing; var canal = t.team == "C" ? g.altars.FirstOrDefault(A => A.state == "active" && InCircle(t, A)) : null;
+            t.st = "down"; t.hp = 0; t.downT = CFG.downTime; t.sealing = -1; t.hold = new Hold(); t.lantern = false; t.salvoPor = null;
             Feed(g, src.name + " derrubou " + t.name, t.team == "C" ? "h" : "c"); LogE(g, "down", "who", t.name, "team", t.team, "by", src.name, "x", R2(t.x), "z", R2(t.z));
+            foreach (var A in g.altars) { if (A.state != "active" || !A.arrived || A.obs == null) continue; if (Dist(t, A) < 12) Dsp(A.obs, t.id).quedas++; if (Dist(src, A) < 12) Dsp(A.obs, src.id).derrubou++; }
+            if (selando >= 0) Interrupcao(g, "selo", "queda", src, t, g.altars[selando]);
+            else if (canal != null) Interrupcao(g, "canal", "queda", src, t, canal);
+        }
+        // interrupção que se sente: quem causou e quem sofreu recebem o aviso; ritual não localizado só é anunciado ao culto
+        static void Interrupcao(Jogo g, string tipo, string causa, Ator src, Ator t, Altar A)
+        {
+            if (A == null) return;
+            if (src.team == "C" && A.obs != null) A.obs.defesa.Add(src.id);
+            Ev(g, "interrupcao", "tipo", tipo, "causa", causa, "a", src.id, "alvo", t.id, "altar", A.i, "team", tipo == "canal" && !A.localized ? "C" : null);
+            LogE(g, "interrupcao", "tipo", tipo, "causa", causa, "by", src.name, "who", t.name, "altar", A.name, "prog", R2(A.prog), "seal", R2(A.seal));
+        }
+        // lance da noite: vai para o registro e, ao vivo, para a equipe que fez a jogada (team) ou para todos
+        static void Lance(Jogo g, string tipo, IEnumerable<string> quem, Altar A, string team, object v)
+        {
+            var q = quem.Where(x => !string.IsNullOrEmpty(x)).Distinct().ToList();
+            Ev(g, "lance", "tipo", tipo, "quem", q, "altar", A != null ? A.i : -1, "team", team, "v", v);
+            LogE(g, "lance", "tipo", tipo, "quem", q, "altar", A != null ? A.name : "", "team", team, "v", v);
+        }
+        static Disputa Dsp(ObsRitual O, int id) { Disputa D; if (!O.d.TryGetValue(id, out D)) { D = new Disputa(); O.d[id] = D; } return D; }
+        static void DisputaDano(Jogo g, Ator t, Ator src, double amt)
+        {
+            foreach (var A in g.altars) { if (A.state != "active" || !A.arrived || A.obs == null) continue; if (Dist(t, A) < 12 || Dist(src, A) < 12) { Dsp(A.obs, src.id).dano += amt; Dsp(A.obs, t.id).sofrido += amt; } }
+        }
+        static void MedirDisputa(Jogo g, Altar A, List<Ator> ch, List<Ator> sealers, double dt)
+        {
+            var O = A.obs; foreach (var c in ch) O.canal.Add(c.id); if (!A.arrived) return;
+            foreach (var a in g.actors)
+            {
+                if (a.st != "alive" || Dist(a, A) >= 12) continue; var D = Dsp(O, a.id); D.perto += dt;
+                if (InCircle(a, A)) D.circulo += dt;
+                if (sealers.Contains(a)) { D.selando += dt; if (RecentAttackers(g, a) > 0) D.sobFogo += dt; }
+                if (ch.Contains(a)) D.canal += dt;
+                if (g.t - a.ataqueT < .6 || g.t - a.lastShotT < .6) D.atacando += dt;
+            }
         }
         static void Kill(Jogo g, Ator t, Ator src, string how = null)
         {
@@ -453,8 +490,8 @@ namespace RitualReversal.Simulacao
                 {
                     if (e.st != "alive") continue; double dx = e.x - a.x, dz = e.z - a.z, d = JS.Hypot(dx, dz); if (d > 3.8 || d < .01) continue; if ((dx * fx + dz * fz) / d < .34) continue;
                     double ux = dx / d, uz = dz / d; for (int s = 0; s < 8; s++) MoverSeguro(e, e.x + ux * .5, e.z + uz * .5, .4);
-                    bool was = e.sealing >= 0; e.sealing = -1; e.hold = new Hold(); e.pushedT = g.t; e.stunT = Math.Max(e.stunT, .45); Damage(g, e, 10, a); alvos.Add(e.id);
-                    if (was) LogE(g, "push_seal", "who", e.name, "by", a.name);
+                    int sl = e.sealing; bool was = sl >= 0; e.sealing = -1; e.hold = new Hold(); e.pushedT = g.t; e.stunT = Math.Max(e.stunT, .45); Damage(g, e, 10, a); alvos.Add(e.id);
+                    if (was) { LogE(g, "push_seal", "who", e.name, "by", a.name); Interrupcao(g, "selo", e.st == "alive" ? "empurrao" : "queda", a, e, g.altars[sl]); }
                 }
                 Ev(g, "sfx", "k", "push", "x", R2(a.x), "z", R2(a.z), "a", a.id);
             }
@@ -578,26 +615,30 @@ namespace RitualReversal.Simulacao
                     }
                 case "purge":
                     {
-                        bool was = A.decoy; TarefaProg(g, "H", "purgar"); A.state = "dormant"; A.decoy = false; g.know[A.i] = was ? "descartado" : "purgado"; /* purgar um verdadeiro revela que era do culto */ if (A.chosen) g.suspeitaC.Add(A.i); // o culto recebe o aviso da purga
+                        bool was = A.decoy; double isca = R2(A.iscaT); TarefaProg(g, "H", "purgar"); A.state = "dormant"; A.decoy = false; g.know[A.i] = was ? "descartado" : "purgado"; /* purgar um verdadeiro revela que era do culto */ if (A.chosen) g.suspeitaC.Add(A.i); // o culto recebe o aviso da purga
                         Feed(g, was ? "Chamariz queimado em " + A.name + "." : A.name + " foi purgado.", "h", "H"); Feed(g, "Um altar foi purgado: " + A.name + ".", "c", "C");
-                        LogE(g, "purge", "altar", A.name, "decoy", was, "by", a.name); break;
+                        LogE(g, "purge", "altar", A.name, "decoy", was, "by", a.name, "isca", was ? (object)isca : null);
+                        // o engano recompensado: o culto só fica sabendo quanto o Chamariz prendeu a caça quando ele é queimado
+                        if (was) { Feed(g, "Seu Chamariz em " + A.name + " prendeu a caça por " + JS.Round(isca) + " s.", "c", "C"); if (isca >= CFG.iscaLance) Lance(g, "chamariz", new[] { A.iscaDono }, A, "C", (double)JS.Round(isca)); }
+                        A.iscaT = 0; A.iscaDono = ""; break;
                     }
                 case "burn": R.has = false; R.t = CFG.regrow * 1.2; LogE(g, "burn", "by", a.name); if (a.human) Ev(g, "feed", "msg", "Reagente queimado.", "cls", "h", "to", a.id); break;
                 case "collect": R.has = false; R.t = CFG.regrow; a.reag++; Ev(g, "sfx", "k", "collect", "x", R.x, "z", R.z, "a", a.id); LogE(g, "collect", "by", a.name); if (a.human) Ev(g, "feed", "msg", "Reagente coletado (" + a.reag + "/" + CFG.carry + ").", "cls", "c", "to", a.id); break;
                 case "consecrate": a.reag--; A.state = "awake"; A.decoy = false; TarefaProg(g, "C", "consagrar"); SentinelaAvisa(g, A, "consagração"); Feed(g, A.name + " consagrado.", "c", "C"); LogE(g, "consecrate", "altar", A.name, "by", a.name); break;
                 case "start": if (!CFG.iniciarDeGraca) a.reag--; StartRitual(g, A, a); break;
-                case "decoy": g.decoys--; A.state = "awake"; A.decoy = true; Feed(g, "Chamariz plantado em " + A.name + ".", "c", "C"); LogE(g, "decoy", "altar", A.name, "by", a.name); break;
+                case "decoy": g.decoys--; A.state = "awake"; A.decoy = true; A.iscaT = 0; A.iscaDono = a.name; Feed(g, "Chamariz plantado em " + A.name + ".", "c", "C"); LogE(g, "decoy", "altar", A.name, "by", a.name); break;
                 case "transfer":
                     {
                         var F = ctx.from.HasValue && ctx.from.Value < g.altars.Count ? g.altars[ctx.from.Value] : null; if (F == null || !F.chosen || F.state != "dormant" || g.transferUsed || a.reag < 1) break;
-                        F.chosen = false; A.chosen = true; a.reag--; g.transferUsed = true;
+                        F.chosen = false; A.chosen = true; a.reag--; g.transferUsed = true; g.transferPara = A.i; g.transferPor = a.name;
                         Feed(g, "Transferência: " + A.name + " substitui " + F.name + ".", "c", "C"); LogE(g, "transfer", "from", F.name, "to", A.name, "by", a.name);
                         // a Transferência deixa rastro: marcas de arrasto no altar de origem por 3 min e um lamento audível perto dos dois altares
                         g.rastros.Add(new Rastro { de = F.i, para = A.i, x = F.x, z = F.z, t = g.rt });
                         Ev(g, "sfx", "k", "arrasto", "x", R2(F.x), "z", R2(F.z), "a", a.id); Ev(g, "sfx", "k", "arrasto", "x", R2(A.x), "z", R2(A.z), "a", a.id); break;
                     }
                 case "revive":
-                    if (B != null && B.st == "down") { B.st = "alive"; B.hp = JS.Round(B.maxHp * .45); B.revUsed = true; B.invuln = 1; B.downT = 0; Feed(g, a.name + " reanimou " + B.name, B.team == "H" ? "h" : "c", B.team); LogE(g, "revive", "who", B.name, "by", a.name); }
+                    if (B != null && B.st == "down") { B.st = "alive"; B.hp = JS.Round(B.maxHp * .45); B.revUsed = true; B.invuln = 1; B.downT = 0; Feed(g, a.name + " reanimou " + B.name, B.team == "H" ? "h" : "c", B.team); LogE(g, "revive", "who", B.name, "by", a.name);
+                        if (B.salvoPor != null) Lance(g, "resgate", new[] { B.salvoPor, a.name }, null, B.team, null); B.salvoPor = null; }
                     break;
                 case "execute": if (B != null && B.st == "down") Kill(g, B, a, "exec"); break;
             }
@@ -678,15 +719,34 @@ namespace RitualReversal.Simulacao
             if (A.localized) return; A.localized = true; g.know[A.i] = "ativo"; g.eco = null;
             Feed(g, "O coro revela: " + A.name + ".", "big", "H"); Feed(g, "Os Caçadores descobriram " + A.name + ".", "c", "C");
             LogE(g, "localized", "altar", A.name, "prog", R2(A.prog), "how", how);
+            if ((how == "ouvido" || how == "circulo") && !A.eco && A.prog >= CFG.achouLance) { var h = g.actors.Where(x => x.team == "H" && x.st == "alive").OrderBy(x => Dist(x, A)).FirstOrDefault(); if (h != null) Lance(g, "achou_cedo", new[] { h.name }, A, "H", R2(A.prog)); }
         }
         // move e, se o resultado ainda ficar preso entre peças (cantos côncavos de escombros), desfaz o passo
         static void MoverSeguro(Ponto a, double nx, double nz, double r) { double px = a.x, pz = a.z; a.x = nx; a.z = nz; Mapa.Resolve(a, r); if (!Mapa.Livre(a, r)) { a.x = px; a.z = pz; } }
         static void ResolveAltar(Jogo g, Altar A, string kind)
         {
+            var O = A.obs ?? (A.obs = new ObsRitual());
+            var seladores = g.actors.Where(a => A.sealers.Contains(a.id)).Select(a => a.name).ToList(); var canalizaram = g.actors.Where(a => O.canal.Contains(a.id)).Select(a => a.name).ToList();
+            // a disputa no círculo de cada um, para o relatório (só se a caça chegou ao círculo)
+            if (A.arrived) foreach (var a in g.actors)
+                {
+                    Disputa D; if (!O.d.TryGetValue(a.id, out D)) continue;
+                    LogE(g, "disputa", "altar", A.name, "who", a.name, "team", a.team, "perto", R2(D.perto), "circulo", R2(D.circulo), "selando", R2(D.selando), "sobFogo", R2(D.sobFogo), "canal", R2(D.canal),
+                        "atacando", R2(D.atacando), "dano", R2(D.dano), "sofrido", R2(D.sofrido), "quedas", D.quedas, "derrubou", D.derrubou);
+                }
             A.state = kind; A.maxProg = Math.Max(A.maxProg, A.prog); g.lastResolveT = g.rt; A.sealers = new List<int>(); g.eco = null;
             foreach (var a in g.actors) { a.dc = 0; a.revUsed = false; if (a.sealing == A.i) a.sealing = -1; }
-            if (kind == "fenda") { A.doneT = R2(g.rt); Ev(g, "doom"); Feed(g, "Ritual completo em " + A.name + ". Uma Fenda se abriu.", "big c"); LogE(g, "ritual_complete", "altar", A.name, "canalizadores", A.maxN > 0 ? A.maxN : 1); }
-            else { Ev(g, "sealed"); g.buff.ess = 0; Feed(g, A.name + " foi selado. Um Farol se acendeu.", "big h"); LogE(g, "sealed", "altar", A.name, "prog", R2(A.prog), "canalizadores", A.maxN > 0 ? A.maxN : 1); }
+            if (kind == "fenda")
+            {
+                A.doneT = R2(g.rt); Ev(g, "doom", "altar", A.i, "por", canalizaram); Feed(g, "Ritual completo em " + A.name + ". Uma Fenda se abriu.", "big c"); LogE(g, "ritual_complete", "altar", A.name, "canalizadores", A.maxN > 0 ? A.maxN : 1, "por", canalizaram);
+                if (O.maxSeal >= CFG.defesaLance) Lance(g, "defesa", O.defesa.Count > 0 ? g.actors.Where(a => O.defesa.Contains(a.id)).Select(a => a.name).ToList() : canalizaram, A, "C", R2(O.maxSeal));
+                if (g.transferPara == A.i) Lance(g, "transferencia", new[] { g.transferPor }, A, "C", null);
+            }
+            else
+            {
+                Ev(g, "sealed", "altar", A.i, "por", seladores); g.buff.ess = 0; Feed(g, A.name + " foi selado. Um Farol se acendeu.", "big h"); LogE(g, "sealed", "altar", A.name, "prog", R2(A.prog), "canalizadores", A.maxN > 0 ? A.maxN : 1, "por", seladores);
+                if (A.prog >= CFG.limiteLance) Lance(g, "selo_limite", seladores, A, null, R2(A.prog));
+            }
             if (kind == "fenda") TarefaProg(g, "C", "ritual");
             int F = Fendas(g), P = Farois(g);
             if (F + P >= 3 || (g.lab.formato != "placar" && (F >= 2 || P >= 2))) g.endAt = g.rt + 3;
@@ -771,12 +831,15 @@ namespace RitualReversal.Simulacao
                     }
                     A.sealIdle += dt; if (A.sealIdle > 3) A.seal = Math.Max(0, A.seal - dt / CFG.seal);
                 }
+                MedirDisputa(g, A, ch, sealers, dt); A.obs.maxSeal = Math.Max(A.obs.maxSeal, A.seal);
                 A.sealers = sealers.Select(s => s.id).ToList();
                 if (A.seal >= 1) ResolveAltar(g, A, "farol"); else if (A.prog >= 1) { A.prog = 1; ResolveAltar(g, A, "fenda"); }
             }
         }
         static void UpdateKnowledge(Jogo g, double dt)
         {
+            // quanto um Chamariz prende a caça: segundos de Caçador a menos de 12 m dele (cada Caçador conta)
+            foreach (var A in g.altars) if (A.decoy && A.state == "awake") foreach (var h in g.actors) if (h.team == "H" && h.st == "alive" && Dist(h, A) < 12) A.iscaT += dt;
             foreach (var h in g.actors)
             {
                 if (h.team != "H" || h.st != "alive") continue;

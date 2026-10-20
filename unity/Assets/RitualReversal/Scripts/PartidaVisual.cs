@@ -133,9 +133,51 @@ namespace RitualReversal
                         int f = e.Int("f"); var quem = g.actors.Find(q => q.id == e.Int("a")); if (f >= 0 && f < falas.Length) Feed((quem != null ? quem.name : "Aliado") + ": " + falas[f], papel == "H" ? "h" : "c");
                     }
                     break;
-                case "doom": som.Tocar("doom"); break;
-                case "sealed": som.Tocar("sealed"); break;
+                case "doom":
+                case "sealed":
+                    {
+                        // v5.7: o fim do ritual com nomes
+                        som.Tocar(e.type); var por = Nomes(e["por"]); int ai = e.Int("altar"); string alt = ai >= 0 && ai < g.altars.Count ? g.altars[ai].name : "";
+                        var m = g.actors.Find(a => a.id == eu); bool meu = m != null && por.Contains(m.name), fenda = e.type == "doom";
+                        string tit = fenda ? (meu ? "Você abriu uma Fenda" : "Uma Fenda se abriu") : (meu ? "Você selou o ritual" : "Um Farol se acendeu");
+                        string sub = por.Count == 0 ? alt : ListaNomes(por) + (fenda ? (por.Count > 1 ? " completaram o ritual" : " completou o ritual") + (alt != "" ? " em " + alt : "") : (por.Count > 1 ? " selaram " : " selou ") + alt);
+                        Anunciar(tit + (sub != "" ? ": " + sub : ""), 4.5f); break;
+                    }
+                case "interrupcao":
+                    {
+                        // v5.7: interrupção que se sente (quem fez, quem sofreu, a equipe)
+                        if (e.Str("team") != null && e.Str("team") != papel) break;
+                        bool selo = e.Str("tipo") == "selo"; var aut = g.actors.Find(a => a.id == e.Int("a")); var vit = g.actors.Find(a => a.id == e.Int("alvo"));
+                        if (e.Int("a") == eu) { NotaHab(selo ? "Selo interrompido!" : "Canalização interrompida!", selo ? CARMIM_VIVO : OURO); som.Tocar("derrubou"); marcaAcerto = "kill"; hitT = .45f; fp.kickP += .025f; }
+                        else if (e.Int("alvo") == eu) { NotaHab((aut != null ? aut.name : "Alguém") + " interrompeu " + (selo ? "seu selo" : "sua canalização"), Color.white); som.Tocar("hurt"); }
+                        else if (aut != null && vit != null) Feed(aut.name + " interrompeu " + (selo ? "o selo" : "a canalização") + " de " + vit.name + ".", aut.team == "H" ? "h" : "c");
+                        break;
+                    }
+                case "lance":
+                    {
+                        if (e.Str("team") != null && e.Str("team") != papel) break;
+                        string t = TextoLance(e); if (t != null) { Feed("Lance da noite: " + t, "big"); som.Tocar("sealed"); }
+                        break;
+                    }
             }
+        }
+        static List<string> Nomes(object v) { var L = new List<string>(); var en = v as System.Collections.IEnumerable; if (en != null && !(v is string)) foreach (var x in en) if (x != null) L.Add(x.ToString()); return L; }
+        static string ListaNomes(List<string> L) { return L.Count < 2 ? (L.Count == 1 ? L[0] : "") : string.Join(", ", L.GetRange(0, L.Count - 1)) + " e " + L[L.Count - 1]; }
+        // os lances da noite (mesmos textos do protótipo)
+        string TextoLance(Evento e)
+        {
+            var q = Nomes(e["quem"]); int ai = e.Int("altar"); string alt = ai >= 0 && ai < g.altars.Count ? g.altars[ai].name : ""; string quem = ListaNomes(q);
+            double v = e["v"] != null ? e.Num("v") : 0; string pct = Mathf.RoundToInt((float)v * 100) + "%";
+            switch (e.Str("tipo"))
+            {
+                case "selo_limite": return "selo no último instante: " + quem + (q.Count > 1 ? " selaram" : " selou") + " com o ritual em " + pct;
+                case "achou_cedo": return "achou antes do coro: " + quem + " encontrou o ritual em " + alt + " com " + pct;
+                case "defesa": return "defesa até o fim: " + quem + (q.Count > 1 ? " seguraram" : " segurou") + " o ritual em " + alt + " com o selo em " + pct;
+                case "resgate": return "resgate: " + (q.Count > 1 ? q[0] + " impediu a execução e " + q[1] + " reanimou" : quem + " impediu a execução e reanimou");
+                case "transferencia": return "a Transferência deu certo: " + quem + " levou o ritual para " + alt + ", e ele virou Fenda";
+                case "chamariz": return "o Chamariz funcionou: o Chamariz de " + quem + " em " + alt + " prendeu a caça por " + Mathf.RoundToInt((float)v) + " s";
+            }
+            return null;
         }
         static System.Collections.IEnumerator Depois(float s, System.Action f) { yield return new WaitForSeconds(s); f(); }
         static string TextoHab(string f, int n)

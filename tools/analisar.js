@@ -10,7 +10,7 @@ const dir=args.find(a=>!a.startsWith('--'))||path.join(__dirname,'..','logs');
 const csvOut=args.includes('--csv')?args[args.indexOf('--csv')+1]:null;
 const Sim=require('../shared/sim.js');
 const CACA_NOME={selou:'selou (Farol)',perdeu_disputa:'chegou a tempo e perdeu o círculo',chegou_tarde:'chegou tarde demais',perto_sem_entrar:'chegou perto e não entrou',altar_errado:'foi a outro altar e não chegou',nunca_chegou:'nunca chegou perto',aberto:'noite acabou antes'};
-const CONV={}, SAIDA={}, VERSOES={};
+const CONV={}, SAIDA={}, VERSOES={}, DISP={}, LANCES={}, ISCA=[];
 const NOITE={n:0,culto:0,fendas:0,farois:0,duracao:[],verdade:[],semVerdade:0,maiorSemPista:[],pistas:[],lanterna:0,desmasc:0,localizarFim:[],labs:{}};
 
 const METAS={
@@ -69,7 +69,14 @@ for(const f of files){
     NOITE.fendas+=M.fendas; NOITE.farois+=M.farois; NOITE.duracao.push(M.duracao); NOITE.pistas.push(I.pistasNovas); NOITE.maiorSemPista.push(I.maiorIntervaloSemPista);
     if(I.primeiraVerdade!=null) NOITE.verdade.push(I.primeiraVerdade); else NOITE.semVerdade++;
     NOITE.lanterna+=M.ferramentas.lanterna; NOITE.desmasc+=M.engano.chamarizesDesmascarados;
-    M.rituais.forEach(R=>{ if(R.localizarAoFim!=null) NOITE.localizarFim.push(R.localizarAoFim); CONV[R.caca]=(CONV[R.caca]||0)+1; (R.cultoSaiu||[]).forEach(m=>SAIDA[m]=(SAIDA[m]||0)+1); });
+    M.rituais.forEach(R=>{ if(R.localizarAoFim!=null) NOITE.localizarFim.push(R.localizarAoFim); CONV[R.caca]=(CONV[R.caca]||0)+1; (R.cultoSaiu||[]).forEach(m=>SAIDA[m]=(SAIDA[m]||0)+1);
+      // a disputa no círculo (registro 3 em diante): o que cada lado fez, separado pelo desfecho
+      if(R.disputa&&(R.caca==='selou'||R.caca==='perdeu_disputa')){ const D=DISP[R.caca]||(DISP[R.caca]={n:0,v:{}}), H=R.disputa.caca, C=R.disputa.culto; D.n++;
+        const soma=(k,v)=>D.v[k]=(D.v[k]||0)+(v||0);
+        soma('cacaCirculo',H.circulo); soma('cacaSelando',H.selando); soma('cacaSobFogo',H.sobFogo); soma('cacaAtacando',H.atacando); soma('cacaDano',H.dano); soma('cacaQuedas',H.quedas);
+        soma('cultoCirculo',C.circulo); soma('cultoCanal',C.canal); soma('cultoAtacando',C.atacando); soma('cultoDano',C.dano); soma('cultoQuedas',C.quedas);
+        soma('intSelo',R.interrupcoes&&R.interrupcoes.selo); soma('intCanal',R.interrupcoes&&R.interrupcoes.canal); } });
+    (M.lances||[]).forEach(x=>LANCES[x.tipo]=(LANCES[x.tipo]||0)+1); if(M.engano.segundosPresosEmChamariz!=null) ev.filter(e=>e.ev==='purge'&&e.decoy&&e.isca!=null).forEach(e=>ISCA.push(e.isca));
     const v=J.versao?`v${J.versao} (registro ${J.registro})`:'anterior à v5.6'; VERSOES[v]=(VERSOES[v]||0)+1;
     const lab=Sim.labDe(J.lab), mud=Object.keys(Sim.LAB_OPCOES).filter(k=>lab[k]!==Sim.labDe()[k]).map(k=>`${k}=${lab[k]}`).join(',')||'padrão'; NOITE.labs[mud]=(NOITE.labs[mud]||0)+1; }
   const S=J.scores||{};
@@ -147,7 +154,18 @@ if(NOITE.n){ L.push('\nNOITE ÚNICA (relatório de playtest)'); L.push('-'.repea
     for(const k of ['selou','perdeu_disputa','chegou_tarde','perto_sem_entrar','altar_errado','nunca_chegou','aberto']) if(CONV[k]) linha(CACA_NOME[k], CONV[k], pct(CONV[k]/totR), ''); }
   const totS=Object.values(SAIDA).reduce((a,b)=>a+b,0);
   if(totS){ L.push('\nPOR QUE UM CULTISTA SAIU DO CÍRCULO COM O RITUAL EM ANDAMENTO'); L.push('-'.repeat(78));
-    for(const [k,v] of Object.entries(SAIDA).sort((a,b)=>b[1]-a[1])) linha(k, v, pct(v/totS), ''); } }
+    for(const [k,v] of Object.entries(SAIDA).sort((a,b)=>b[1]-a[1])) linha(k, v, pct(v/totS), ''); }
+  if(DISP.selou||DISP.perdeu_disputa){ L.push('\nA DISPUTA NO CÍRCULO: MÉDIA POR RITUAL (a menos de 12 m, depois que a caça chegou)'); L.push('-'.repeat(78));
+    const S=DISP.selou||{n:0,v:{}}, P=DISP.perdeu_disputa||{n:0,v:{}}, m=(D,k,d=1)=>D.n?num((D.v[k]||0)/D.n,d):'—';
+    linha('', 'Selou', 'Perdeu o círculo', ''); linha('Rituais', S.n, P.n, '');
+    for(const [k,nome,d] of [['cacaCirculo','Caça no círculo (s)'],['cacaSelando','Caça selando (s)'],['cacaSobFogo','   selando sob fogo (s)'],['cacaAtacando','Caça atirando (s)'],['cacaDano','Dano causado pela caça',0],['cacaQuedas','Caçadores derrubados',2],
+      ['cultoCirculo','Culto no círculo (s)'],['cultoCanal','Culto canalizando (s)'],['cultoAtacando','Culto atacando (s)'],['cultoDano','Dano causado pelo culto',0],['cultoQuedas','Cultistas derrubados',2],
+      ['intSelo','Selos interrompidos',2],['intCanal','Canalizações interrompidas',2]]) linha(nome, m(S,k,d), m(P,k,d), ''); }
+  const totL=Object.values(LANCES).reduce((a,b)=>a+b,0);
+  if(totL||ISCA.length){ L.push('\nLANCES DA NOITE'); L.push('-'.repeat(78));
+    const NL={selo_limite:'selo no último instante',achou_cedo:'achou o ritual antes do coro',defesa:'defendeu o ritual até a Fenda',resgate:'reanimou depois de impedir a execução',transferencia:'Transferência que virou Fenda',chamariz:'Chamariz que prendeu a caça'};
+    for(const [k,v] of Object.entries(LANCES).sort((a,b)=>b[1]-a[1])) linha(NL[k]||k, v, num(v/NOITE.n,2)+' por noite', '');
+    if(ISCA.length) linha('Chamariz queimado: caça presa (s)', num(med(ISCA),0), `mediana de ${ISCA.length}`, ''); } }
 
 const fora=Object.keys(METAS).filter(k=>medido[k]!=null&&status(k,medido[k])!=='na meta');
 L.push('\n'+(fora.length?`Fora da meta: ${fora.map(k=>METAS[k][2]).join('; ')}.`:'Todas as métricas principais estão dentro da meta.'));

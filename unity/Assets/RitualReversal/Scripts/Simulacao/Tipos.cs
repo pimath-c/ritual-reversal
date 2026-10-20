@@ -27,6 +27,9 @@ namespace RitualReversal.Simulacao
         // v5.5: o coro ecoa o setor do ritual quando ele passa deste progresso; quem lançou um sigilo há menos de
         // ataqueCanal segundos não canaliza; levar dano reinicia a execução de um caído
         public static double ecoProg = 0.25, ataqueCanal = .6; public static bool danoInterrompeExecucao = true;
+        // lances da noite (só reconhecimento): Chamariz que prendeu a caça por 20 s, defesa com o selo passando de 50%, selo com o ritual em 85%,
+        // ritual achado antes do eco já em andamento (8%)
+        public static double iscaLance = 20, defesaLance = .5, limiteLance = .85, achouLance = .08;
     }
 
     public class ClasseDef { public string id, team, name, arma, text; public double hp, speed; }
@@ -123,6 +126,7 @@ namespace RitualReversal.Simulacao
         public IA ai = new IA();
         public double _vx, _vz; public double? _px, _pz; public Pegada _pegada; public double stepT;
         public bool _segurou; public double _semSegurar; // bot: segurou E neste passo; há quanto tempo não segura
+        public string salvoPor; // caído: quem interrompeu a execução dele (lance do resgate se ele for reanimado)
         public bool hidden; // só no cliente online: o snapshot escondeu este inimigo (fora da visão)
     }
 
@@ -132,6 +136,7 @@ namespace RitualReversal.Simulacao
         public ObsRitual obs; // só para o relatório: onde a caça esteve e quem saiu do círculo durante o ritual
         public double prog, cp, seal, sealIdle, startT, maxProg, selo = 1, fireT, sealT, avisoSeloT = -99; public int lastN = 1, maxN; public double? doneT;
         public List<int> sealers = new List<int>();
+        public double iscaT; public string iscaDono = ""; // Chamariz: segundos de Caçador a menos de 12 m e quem plantou
     }
     public class Reagente : Ponto { public int i; public bool has = true; public double t; }
     public class Projetil { public int id, owner; public double x, y, z, vx, vy, vz, life, dmg; public string team; }
@@ -144,7 +149,13 @@ namespace RitualReversal.Simulacao
     public class Placar { public int done, @sealed; public double? lastT; public double maxP; }
     public class Buff { public double ess, selo; }
     public class Eco { public string setor; public double t; }
-    public class ObsRitual { public HashSet<int> perto = new HashSet<int>(); public HashSet<string> errado = new HashSet<string>(); public Dictionary<int, bool> dentro = new Dictionary<int, bool>(); }
+    public class ObsRitual
+    {
+        public HashSet<int> perto = new HashSet<int>(); public HashSet<string> errado = new HashSet<string>(); public Dictionary<int, bool> dentro = new Dictionary<int, bool>();
+        public HashSet<int> canal = new HashSet<int>(), defesa = new HashSet<int>(); public Dictionary<int, Disputa> d = new Dictionary<int, Disputa>(); public double maxSeal;
+    }
+    // o que cada um fez a menos de 12 m de um ritual depois que a caça chegou (registro 'disputa')
+    public class Disputa { public double perto, circulo, selando, sobFogo, canal, atacando, dano, sofrido; public int quedas, derrubou; }
     // setores do eco: cada setor tem dois altares (um dentro da catedral e um perto dela)
     public class Setor { public string id, nome; public int[] altares; }
 
@@ -205,7 +216,7 @@ namespace RitualReversal.Simulacao
         public List<Slot> slots = new List<Slot>(); public List<Altar> altars = new List<Altar>(); public List<Reagente> reagents = new List<Reagente>();
         public List<Ator> actors = new List<Ator>(); public List<Projetil> proj = new List<Projetil>(); public List<Coletavel> pickups = new List<Coletavel>();
         public List<Sinalizador> flares = new List<Sinalizador>(); public string[] know = new string[0]; public double[] visit = new double[0];
-        public int decoys = 2; public bool transferUsed; public double lastResolveT, endAt; public List<Evento> events = new List<Evento>(); public List<Registro> log = new List<Registro>();
+        public int decoys = 2; public bool transferUsed; public int transferPara = -1; public string transferPor = ""; public double lastResolveT, endAt; public List<Evento> events = new List<Evento>(); public List<Registro> log = new List<Registro>();
         public Dictionary<string, Placar> scores = new Dictionary<string, Placar> { { "A", null }, { "B", null } };
         public Dictionary<int, Estatisticas> stats = new Dictionary<int, Estatisticas>();
         public List<int> picks = new List<int>(); public Dictionary<string, bool> ready = new Dictionary<string, bool>(); public Dictionary<string, string> cls = new Dictionary<string, string>();

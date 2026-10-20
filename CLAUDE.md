@@ -31,7 +31,7 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.6)
+## Estado atual (v5.7)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -81,6 +81,15 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `conversao`). `tools/simular.js` com `SEMENTE=` é reproduzível byte a byte. Mostrador do círculo no chão (shader em
   `buildAltars`). Bots, sementes 1000–1199: culto 50%. v5.6a: `g.know` sem 'limpo': 'visto' (passou perto, nada desperto;
   não descarta), 'descartado' (sinal do santuário ou Chamariz queimado), 'purgado' (era do culto); `semAura(k)`.
+- v5.7 (notas em `notas/v5.7.md`): recompensa e reconhecimento, nenhuma regra muda (partidas iguais à v5.6a passo a
+  passo). Eventos novos: 'interrupcao' (`interrupcao(g,tipo,causa,src,t,A)` em `goDown` e no Empurrão; canalização de
+  ritual não localizado só para o culto) e 'lance' (`lance(g,tipo,quem,A,team,v)`: selo_limite, achou_cedo, defesa,
+  resgate, transferencia, chamariz; limiares `CFG.iscaLance/defesaLance/limiteLance`); 'doom'/'sealed' levam `altar` e
+  `por`. Registro 3: `interrupcao`, `lance`, `disputa` (por ator no fim do ritual, `medirDisputa`/`disputaDano`, em
+  `A.obs.d`), `purge.isca` (`A.iscaT`, segundos de Caçador a 12 m do Chamariz). `relatorio` traz `rituais[].disputa`,
+  `interrupcoes`, `lances` e `engano.segundosPresosEmChamariz`; `analisar.js` compara a disputa dos rituais selados
+  com os perdidos. Cliente: faixa `#lance`, `piscarMostrador` (uniform `fl`), `progressoInvestigacao`, dedução no eco,
+  "Lances da noite" no resultado. Bots, sementes 1000–1199: culto 42% (a queda de 50% veio da v5.6a).
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

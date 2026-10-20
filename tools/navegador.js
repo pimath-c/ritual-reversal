@@ -82,6 +82,21 @@ const VISTAS=[
   await page.waitForTimeout(5000); await page.screenshot({path:path.join(OUT,'circulo.png')});
   const dial=await page.evaluate(()=>{ const O=__T.AV&&__T.AV[0]; return O?{visivel:O.dial.visible,op:+O.dial.material.uniforms.op.value.toFixed(2),prog:O.dial.material.uniforms.prog.value}:null; });
   console.log('mostrador:',JSON.stringify(dial)); if(!dial||!dial.visivel||dial.prog<.59) erros.push('mostrador do círculo não apareceu');
+  // v5.7: interrupção, Farol com nomes e lance da noite, no mesmo altar
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), o=g.actors.find(a=>a.team!==m.team);
+    g.events.push({type:'interrupcao',tipo:'selo',causa:'queda',a:m.id,alvo:o.id,altar:0,team:null}); });
+  await page.waitForFunction(()=>/interrompid/i.test(document.querySelector('#habNota').textContent),null,{timeout:8000}).catch(()=>{});
+  const intr=await page.evaluate(()=>({nota:document.querySelector('#habNota').textContent,cor:__T.AV[0].dial.material.uniforms.cF.value.getHexString()})); // a onda some em menos de 1 s; a cor diz que ela foi disparada
+  await page.screenshot({path:path.join(OUT,'interrupcao.png')});
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local');
+    g.events.push({type:'sealed',altar:0,por:[m.name,'Irmã Vela']},{type:'lance',tipo:'selo_limite',quem:[m.name],altar:0,team:null,v:.93}); });
+  await page.waitForFunction(()=>document.querySelector('#lance').classList.contains('on'),null,{timeout:8000}).catch(()=>{});
+  const lan=await page.evaluate(()=>({anuncio:document.querySelector('#anuncio').textContent,lance:document.querySelector('#lance').textContent,on:document.querySelector('#lance').classList.contains('on')}));
+  console.log('interrupção e lance:',JSON.stringify(intr),JSON.stringify(lan));
+  if(!/interrompid/i.test(intr.nota)||intr.cor!=='ff3a5a') erros.push('interrupção sem aviso ou sem piscar o mostrador');
+  if(!/selou o ritual/.test(lan.anuncio)||!/Irmã Vela/.test(lan.anuncio)) erros.push('o Farol não anunciou quem selou: '+lan.anuncio);
+  if(!lan.on||!/último instante/.test(lan.lance)||!/93%/.test(lan.lance)) erros.push('o lance da noite não apareceu: '+lan.lance);
+  await page.screenshot({path:path.join(OUT,'lance.png')});
   await page.evaluate(()=>{ Object.assign(__T.game.altars[0],window.__antes0); });
   // eco do coro a leste: a faixa marca os dois altares do setor e a legenda diz de onde vem o coro
   await page.evaluate(()=>{ const g=__T.game; g.eco={setor:'leste',t:g.rt}; g.events.push({type:'eco',setor:'leste',altares:[2,5]}); });
@@ -108,9 +123,11 @@ const VISTAS=[
   const ult=fases[fases.length-1]; console.log(`partida acelerada: ${fases.length} blocos, terminou em ${ult.ph} aos ${ult.rt} s, ${ult.fendas} Fendas, ${ult.far} Faróis`);
   await page.screenshot({path:path.join(OUT,'fim.png')});
   // até o resultado: a tela final precisa abrir (a noite única quebrava aqui) com a linha do tempo da noite
-  if(ult.ph==='summary'){ await page.evaluate(()=>{ document.querySelectorAll('style').forEach(st=>{ if(st.textContent.includes('#scr{display:none')) st.remove(); }); __T.sendAct({type:'ready'}); });
+  if(ult.ph==='summary'){ await page.evaluate(()=>{ document.querySelectorAll('style').forEach(st=>{ if(st.textContent.includes('#scr{display:none')) st.remove(); });
+      __T.game.log.push({t:100,r:1,ev:'lance',tipo:'chamariz',quem:['b2'],altar:'Menires',team:'C',v:31}); __T.sendAct({type:'ready'}); });
     await page.waitForFunction(()=>__T.game.phase==='final',null,{timeout:30000}); await page.waitForTimeout(2500);
-    const fin=await page.evaluate(()=>({titulo:(document.querySelector('#scrBody h2')||{}).textContent||'',grafico:!!document.querySelector('svg.linhaTempo')}));
+    const fin=await page.evaluate(()=>({titulo:(document.querySelector('#scrBody h2')||{}).textContent||'',grafico:!!document.querySelector('svg.linhaTempo'),lances:[...document.querySelectorAll('.lances div')].map(d=>d.textContent).join(' | ')}));
+    if(!/Chamariz de b2/.test(fin.lances)) erros.push('o resultado não listou os lances da noite: '+fin.lances);
     console.log('resultado:',JSON.stringify(fin)); if(!/Vitória|Empate/.test(fin.titulo)) erros.push('tela de resultado não abriu: '+fin.titulo); if(!fin.grafico) erros.push('resultado sem a linha do tempo');
     await page.screenshot({path:path.join(OUT,'resultado.png')});
     // relatório do playtest: tabelas da noite, perguntas e o texto para copiar
