@@ -2227,7 +2227,7 @@ const PASSOS_TUT={
      {t:'Colha uma erva na floresta ou profane um túmulo no cemitério (segure E no ponto marcado). Tarefas rendem óbolos para a loja.',alvo:m=>maisPerto(V.pontos.filter(p=>(p.tipo==='erva'||p.tipo==='tumulo')&&p.ativo),m),feito:()=>meuLog('ponto',e=>e.tipo==='erva'||e.tipo==='tumulo')},
      {t:'Adiantamos o relógio até a Vigília: os rituais já podem começar. Pegue outro reagente.',avanca:true,alvo:m=>maisPerto(V.reagents.filter(R=>R.has),m),feito:()=>{ const m=me(); return V.momento>=1&&m&&m.reag>0; }},
      {t:'No altar consagrado, segure E para iniciar o ritual.',alvo:m=>maisPerto(V.altars.filter(A=>A.chosen&&A.state==='awake'),m),feito:()=>meuLog('ritual_start')},
-     {t:'Fique dentro do círculo sem atacar: o ritual só avança com quem canaliza, e cada sigilo pausa a sua canalização por 1 s. Aos 25%, o coro ecoa o setor para os Caçadores. Leve o ritual a 25%.',alvo:m=>maisPerto(V.altars.filter(A=>A.state==='active'),m),feito:()=>V.altars.some(A=>A.state==='active'&&A.prog>=.25)}]};
+     {t:'Fique dentro do círculo sem atacar: o ritual só avança com quem canaliza, e cada sigilo pausa a sua canalização por um instante. Aos 25%, o coro ecoa o setor para os Caçadores. Leve o ritual a 25%.',alvo:m=>maisPerto(V.altars.filter(A=>A.state==='active'),m),feito:()=>V.altars.some(A=>A.state==='active'&&A.prog>=.25)}]};
 function pularPassoTutorial(){ if(!TUT.ativo||TUT.fim) return; TUT.i++; TUT.avancou=false; SFX.click(); }
 function atualizarTutorial(dt,m){ const el=$('#tutorial'); if(!el) return; if(!TUT.ativo||!V||V.phase!=='play'||!m){ el.classList.remove('on'); return; }
   const L=PASSOS_TUT[TUT.papel], P=L[TUT.i];
@@ -2255,7 +2255,7 @@ const DICAS={
   c_inicio:'Colha ervas e profane túmulos para ganhar óbolos. Os reagentes livres ficam no Claustro.',
   c_consagrar:'Este é um dos seus altares: segure E para consagrar (gasta 1 reagente). Faça isso no Crepúsculo.',
   c_vigilia:'Os rituais já podem começar: segure E num altar consagrado, com um reagente, e fique no círculo.',
-  c_circulo:'O ritual só avança com quem está no círculo sem atacar: um sigilo pausa a sua canalização por 1 s. Em dupla, um canaliza e o outro defende.',
+  c_circulo:'O ritual só avança com quem está no círculo sem atacar: um sigilo pausa a sua canalização por um instante. Em dupla, um canaliza e o outro defende.',
   h_eco:'O coro ecoou: o ritual está num dos dois altares marcados na faixa do topo. O que você já descartou decide para onde correr.',
   c_sentinela:'Sentinela acesa: consagrar perto dela avisa os Caçadores. Prefira altares longe da luz.',
   queda:'Você caiu. Um aliado pode te reanimar segurando E perto de você; o inimigo pode te executar.',
@@ -2579,7 +2579,7 @@ function updateHUD(dt,m){
   if(R){ race.style.display='block'; $('#raceName').textContent=R.name; $('#ritFill').style.width=(R.prog*100)+'%'; $('#ritPct').textContent=Math.floor(R.prog*100)+'%'; $('#selFill').style.width=(R.seal*100)+'%'; $('#selPct').textContent=Math.floor(R.seal*100)+'%';
     const noCirculo=V.actors.filter(c=>c.team==='C'&&c.st==='alive'&&Sim.inCircle(c,R)), atacando=c=>CFG.ataqueCanal>0&&V.t-c.lastShotT<CFG.ataqueCanal;
     const n=noCirculo.filter(c=>!atacando(c)).length, s=V.actors.filter(h=>h.team==='H'&&h.sealing===R.i).length; let note='';
-    if(role==='C'&&m.team==='C'&&Sim.inCircle(m,R)&&atacando(m)) note='Você atacou: a sua canalização parou por 1 s';
+    if(role==='C'&&m.team==='C'&&Sim.inCircle(m,R)&&atacando(m)) note='Você atacou: a sua canalização parou por um instante';
     else if(s) note=s>=2?'Selando em dupla':'Selando';
     else if(n===0) note=noCirculo.length?'Ninguém canaliza: quem ataca não celebra':R.prog>R.cp?'Círculo vazio: o ritual recua até o checkpoint':'Círculo vazio';
     else { const mf=Sim.mareFactor(V); note=`${n} ${n>1?'canalizando':'canalizando sozinho'}${mf>1?`, Maré Profana +${Math.round((mf-1)*100)}%`:''}`; }
@@ -3035,7 +3035,7 @@ function comoJogarScreen(){
       <div><h3 style="color:var(--crimson-hi)">Como Cultista</h3>
         ${passo(1,'Crepúsculo: prepare-se',`Colha ervas na floresta e profane túmulos no cemitério, a sudeste. Tarefas rendem óbolos; negocie reagentes com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro.`)}
         ${passo(2,'Consagre em silêncio',`Você escolheu 3 de 6 altares. Consagrar gasta 1 reagente. Cuidado com as sentinelas acesas: elas denunciam você.`)}
-        ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. Quem ataca não canaliza: cada sigilo pausa a sua canalização por 1 s, então em dupla um celebra e o outro defende. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
+        ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. Quem ataca não canaliza: cada sigilo pausa a sua canalização por um instante, então em dupla um celebra e o outro defende. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
         ${passo(4,'Hora Morta: o Grande Ritual',`Se estiver 1 a 1, o ritual decisivo só começa agora, e a catedral inteira ouve. Vença dois dos três antes do amanhecer.`)}
       </div>
       <div><h3 style="color:var(--gold)">Como Caçador</h3>

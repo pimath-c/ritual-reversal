@@ -77,10 +77,15 @@ console.log('4. Regras do círculo e bots');
   { const g=nova(), c=g.actors.find(a=>a.team==='C'), h=g.actors.find(a=>a.team==='H'); Object.assign(c,{st:'alive',hp:c.maxHp,invuln:0}); c.hold={key:'exe'+h.id,t:3,max:4.5};
     Sim.damage(g,c,5,h); if(c.hold.t!==0||c.hold.key!=='') falha('dano não interrompeu a execução'); if(!g.log.some(e=>e.ev==='execucao_interrompida')) falha('execução interrompida fora do registro'); }
   // o Caçador que decidiu ir ao Ermitão chega lá (antes empacava a 55 m em linha reta, onde o caminho se afasta)
-  { const g=nova(), h=g.actors.find(a=>a.team==='H'); Object.assign(h,{st:'alive',hp:h.maxHp,x:-99,z:-15,reserve:8,obolos:5}); h.ai.goal=null; h.ai.goalKey='';
+  { const g=nova(), h=g.actors.find(a=>a.team==='H'); Object.assign(h,{st:'alive',hp:h.maxHp,x:-88.1,z:-30.6,reserve:8,obolos:5}); h.ai.goal=null; h.ai.goalKey=''; // a 52 m em linha reta; o caminho passa a 67 m antes de chegar
     for(let i=0;i<30*60&&!g.log.some(e=>e.ev==='compra');i++){ h.reserve=Math.min(h.reserve,8); Sim.step(g,1/30); }
     if(!g.log.some(e=>e.ev==='compra')) falha(`Caçador não chegou ao Ermitão (parou em ${h.x.toFixed(1)}, ${h.z.toFixed(1)})`); }
-  console.log('   eco do setor, ataque pausa a canalização, dano recomeça a execução, bot chega ao mercador'); }
+  // um bot que largou o E não fica travado sem atirar (a contagem pendurada impedia o tiro com o inimigo a 4 m)
+  { const g=nova(), h=g.actors.find(a=>a.team==='H'), c=g.actors.find(a=>a.team==='C'); Object.assign(h,{st:'alive',hp:h.maxHp,x:-66.6,z:-42.1,ammo:8,reserve:48}); h.ai.goal=null; h.ai.goalKey='';
+    Object.assign(c,{st:'alive',hp:c.maxHp,x:-67,z:-38,human:true,invuln:0}); h.hold={key:'purge0',t:2,max:6}; const A=g.altars[0]; Object.assign(A,{state:'awake',chosen:true}); g.know[0]='confirmado';
+    let atirou=false; for(let i=0;i<30*3&&!atirou;i++){ Sim.step(g,1/30); atirou=g.events.some(e=>e.type==='tracer'&&e.a===h.id); g.events.length=0; }
+    if(!atirou) falha('Caçador com a contagem de purga pendurada não atirou no Cultista a 4 m'); }
+  console.log('   eco do setor, ataque pausa a canalização, dano recomeça a execução, bot chega ao mercador, bot que larga o E atira'); }
 console.log(`5. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};

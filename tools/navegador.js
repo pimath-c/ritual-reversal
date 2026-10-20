@@ -22,7 +22,8 @@ const VISTAS=[
   {nome:'corredor-norte',x:-40,z:-31,yaw:-Math.PI/2,pitch:.15},
   {nome:'claustro',x:-30,z:-8,yaw:-.6,pitch:.2},
   {nome:'nartex',x:0,z:56,yaw:0,pitch:.1},
-  {nome:'capela-oeste',x:-66,z:-38,yaw:0,pitch:.1}];
+  {nome:'capela-oeste',x:-66,z:-38,yaw:0,pitch:.1},
+  {nome:'brecha-norte',x:-35.5,z:-48,yaw:0,pitch:.08},{nome:'brecha-norte-fora',x:-38.5,z:-71,yaw:Math.PI,pitch:.1}];
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const page=await browser.newPage({viewport:{width:1280,height:720}});

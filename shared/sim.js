@@ -22,8 +22,9 @@ const CFG={
   timers:{pick:35,intro:25,summary:15},
   // v5.5: o coro ecoa o setor do ritual (oeste, centro ou leste) quando ele passa deste progresso, antes de revelar o altar
   ecoProg:0.25,
-  // v5.5: quem lançou um sigilo há menos disto (s) não canaliza: o Cultista escolhe entre defender e celebrar
-  ataqueCanal:1,
+  // v5.5: quem lançou um sigilo há menos disto (s) não canaliza: o Cultista escolhe entre defender e celebrar.
+  // 0,6 s calibrado em 200 noites de bots por valor (1 s: culto 38%; 0,8 s: 42%; 0,6 s: 46%)
+  ataqueCanal:.6,
   // v5.5: levar dano reinicia a execução de um caído
   danoInterrompeExecucao:true,
 };
@@ -127,17 +128,18 @@ W(-HALF.x-1,-HALF.x,-HALF.z,HALF.z,5,'limite'); W(HALF.x,HALF.x+1,-HALF.z,HALF.z
 
 // ---- paredes da catedral: portas principais nos quatro lados e duas brechas ----
 // Oeste: porta dos Caçadores e uma porta lateral para o Coro. Leste: porta dos Cultistas e uma brecha para a Nave.
-// Sul: a grande porta do Nártex e uma brecha. Norte: uma porta estreita para a Encruzilhada.
+// Sul: a grande porta do Nártex e uma brecha. Norte: uma porta estreita para a Encruzilhada e, desde a v5.5, uma
+// brecha a noroeste que liga a ala oeste aos Menires (antes eram 191 m andando da Capela Oeste até lá).
 const PORTAIS=[ // para o cliente desenhar batentes, lintéis e lanternas
   {nome:'Porta Oeste',eixo:'z',fixo:-96.5,a:-4,b:4},{nome:'Porta do Coro',eixo:'z',fixo:-96.5,a:27,b:31},
   {nome:'Porta Leste',eixo:'z',fixo:96.5,a:-4,b:4},{nome:'Brecha Leste',eixo:'z',fixo:96.5,a:-24,b:-20,brecha:true},
   {nome:'Grande Porta',eixo:'x',fixo:58.5,a:-4,b:4},{nome:'Brecha Sul',eixo:'x',fixo:58.5,a:-24,b:-20,brecha:true},
-  {nome:'Porta Norte',eixo:'x',fixo:-58.5,a:33,b:38}];
+  {nome:'Porta Norte',eixo:'x',fixo:-58.5,a:33,b:38},{nome:'Brecha Norte',eixo:'x',fixo:-58.5,a:-38,b:-33,brecha:true}];
 const vaosDe=(eixo,fixo)=>PORTAIS.filter(p=>p.eixo===eixo&&p.fixo===fixo).map(p=>[p.a,p.b]).sort((u,v)=>u[0]-v[0]);
 muro('x',-58.5,-97,97,vaosDe('x',-58.5),14); muro('x',58.5,-97,97,vaosDe('x',58.5),14);
 muro('z',-96.5,-58,58,vaosDe('z',-96.5),14); muro('z',96.5,-58,58,vaosDe('z',96.5),14);
 W(-14,-8,59,62,14,'torre'); W(8,14,59,62,14,'torre'); // campanários flanqueando a grande porta
-escombros(97.5,-25,1.6,4,1.2); escombros(-25,59.8,1.6,4,1.2); // pedras que caíram para fora das brechas
+escombros(97.5,-25,1.6,4,1.2); escombros(-25,59.8,1.6,4,1.2); escombros(-31.5,-60.5,1.2,3,1.1); // pedras que caíram para fora das brechas
 
 // ---- Claustro: entradas de larguras e posições diferentes, um canto desabado que deixa ver mas não passar ----
 muro('x',CLAUSTRO.z1,CLAUSTRO.x1,44,[[-40,-33],[22,25]]);          // norte: uma larga, uma estreita
@@ -199,7 +201,8 @@ const TRILHAS=[
   {w:3.5,pts:[[50,-100],[96,-112],[124,-88]]},
   {w:4.5,pts:[[0,59],[14,80],[33,99]]},                           // grande porta → Carvalho Oco
   {w:3,pts:[[-22,59],[-36,90]]},{w:3,pts:[[-96,29],[-120,32]]},{w:3,pts:[[97,-22],[126,-28]]},
-  {w:3.5,pts:[[123,62],[124,74]]}];                               // perímetro → cemitério
+  {w:3.5,pts:[[123,62],[124,74]]},                                // perímetro → cemitério
+  {w:3,pts:[[-35.5,-59],[-37,-72],[-40,-87]]}];                   // brecha norte → perímetro (para os Menires)
 TRILHAS.forEach(T=>{ T.pts=T.pts.map(([x,z])=>mataXZ(x,z,12)); });
 // Clareiras: abertas ao céu. O luar ilumina (bom para os Caçadores) e a mata em volta esconde quem chega.
 const CLAREIRAS=[{x:-158,z:0,r:15},{x:158,z:0,r:15},{x:-50,z:-104,r:14},{x:40,z:105,r:13},{x:132,z:90,r:20},{x:50,z:-100,r:9},{x:-142,z:-62,r:10}].map(c=>({...c,...mataP(c.x,c.z,12)}));
@@ -1059,7 +1062,7 @@ function botCombat(g,b,dt){
   return true;
 }
 function castSigilAt(g,b,tx,ty,tz){ let dx=tx-b.x,dy=ty-1.62,dz=tz-b.z; const l=Math.hypot(dx,dy,dz)||1; castSigil(g,b,dx/l,dy/l,dz/l); }
-function botHold(g,b,key,time,dt,ctx){ if(b.hold.key!==key){ b.hold={key,t:0,max:time}; } b.hold.t+=dt; if(b.hold.t>=time){ doAction(g,b,ctx); b.hold={key:'',t:0,max:0}; } }
+function botHold(g,b,key,time,dt,ctx){ b._segurou=true; if(b.hold.key!==key){ b.hold={key,t:0,max:time}; } b.hold.t+=dt; if(b.hold.t>=time){ doAction(g,b,ctx); b.hold={key:'',t:0,max:0}; } }
 const inEnemySpawn=(b,p)=>{ const s=SPAWN[b.team==='H'?'C':'H']; return Math.hypot(p.x-s.x,p.z-s.z)<CFG.spawnSafe+2; };
 function botHelpDowned(g,b,dt,fighting){
   const ally=g.actors.find(o=>o!==b&&o.team===b.team&&o.st==='down'&&dist(o,b)<20);
@@ -1250,7 +1253,10 @@ function playStep(g,dt){
     if(a.st==='dead'){ a.respawnT-=dt; if(a.respawnT<=0){ spawn(g,a,false); ev(g,{type:'respawn',a:a.id}); } continue; }
     if(a.st==='down'){ a.downT-=dt; a.sealing=-1; if(a.downT<=0) kill(g,a,null); if(!a.human) botRasteja(g,a,dt); else humanActions(g,a,dt); continue; }
     if(a.human) humanActions(g,a,dt);
-    else if(a.stunT<=0){ if(a.team==='H') aiHunter(g,a,dt); else aiCult(g,a,dt);
+    else if(a.stunT<=0){ a._segurou=false; if(a.team==='H') aiHunter(g,a,dt); else aiCult(g,a,dt);
+      // como o jogador que solta o E: meio segundo sem segurar zera a contagem (antes ela ficava pendurada e
+      // impedia o bot de atirar, o que travava a dupla parada ao lado de um inimigo)
+      if(a._segurou) a._semSegurar=0; else if(a.hold.key&&(a._semSegurar=(a._semSegurar||0)+dt)>.5){ a.hold={key:'',t:0,max:0}; a._semSegurar=0; }
       // rede de segurança: bot parado 15 s sem estar ocupado tem a decisão reiniciada (não corrige a causa; limita o estrago)
       const ai=a.ai, vigiando=ai.goal&&ai.goalKey.startsWith('pt')&&dist(a,ai.goal)<2, lutando=ai.target&&g.t-a.lastShotT<2.5;
       const ocupado=a.sealing>=0||a.hold.t>0||vigiando||lutando||g.altars.some(A=>A.state==='active'&&inCircle(a,A))||(ai.esperando&&g.t-ai.esperando<.5);

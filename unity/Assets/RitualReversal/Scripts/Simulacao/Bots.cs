@@ -102,7 +102,7 @@ namespace RitualReversal.Simulacao
         static void CastSigilAt(Jogo g, Ator b, double tx, double ty, double tz) { double dx = tx - b.x, dy = ty - 1.62, dz = tz - b.z; double l = JS.Hypot(dx, dy, dz); if (l == 0 || double.IsNaN(l)) l = 1; CastSigil(g, b, dx / l, dy / l, dz / l); }
         static void BotHold(Jogo g, Ator b, string key, double time, double dt, Ctx ctx)
         {
-            if (b.hold.key != key) b.hold = new Hold(key, 0, time);
+            b._segurou = true; if (b.hold.key != key) b.hold = new Hold(key, 0, time);
             b.hold.t += dt; if (b.hold.t >= time) { DoAction(g, b, ctx); b.hold = new Hold(); }
         }
         static bool InEnemySpawn(Ator b, Ponto p) { var s = Mapa.SPAWN[b.team == "H" ? "C" : "H"]; return JS.Hypot(p.x - s.x, p.z - s.z) < CFG.spawnSafe + 2; }

@@ -26,7 +26,7 @@ namespace RitualReversal.Simulacao
         public static double timerPick = 35, timerIntro = 25, timerSummary = 15;
         // v5.5: o coro ecoa o setor do ritual quando ele passa deste progresso; quem lançou um sigilo há menos de
         // ataqueCanal segundos não canaliza; levar dano reinicia a execução de um caído
-        public static double ecoProg = 0.25, ataqueCanal = 1; public static bool danoInterrompeExecucao = true;
+        public static double ecoProg = 0.25, ataqueCanal = .6; public static bool danoInterrompeExecucao = true;
     }
 
     public class ClasseDef { public string id, team, name, arma, text; public double hp, speed; }
@@ -122,6 +122,7 @@ namespace RitualReversal.Simulacao
         public Entrada inp = new Entrada(); public Controles lc = new Controles(); public bool lcIni;
         public IA ai = new IA();
         public double _vx, _vz; public double? _px, _pz; public Pegada _pegada; public double stepT;
+        public bool _segurou; public double _semSegurar; // bot: segurou E neste passo; há quanto tempo não segura
         public bool hidden; // só no cliente online: o snapshot escondeu este inimigo (fora da visão)
     }
 

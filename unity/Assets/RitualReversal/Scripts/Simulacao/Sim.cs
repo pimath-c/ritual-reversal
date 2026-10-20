@@ -812,7 +812,9 @@ namespace RitualReversal.Simulacao
                 if (a.human) HumanActions(g, a, dt);
                 else if (a.stunT <= 0)
                 {
-                    if (a.team == "H") AiHunter(g, a, dt); else AiCult(g, a, dt);
+                    a._segurou = false; if (a.team == "H") AiHunter(g, a, dt); else AiCult(g, a, dt);
+                    // como o jogador que solta o E: meio segundo sem segurar zera a contagem (antes ela travava o tiro do bot)
+                    if (a._segurou) a._semSegurar = 0; else if (a.hold.key != "" && (a._semSegurar += dt) > .5) { a.hold = new Hold(); a._semSegurar = 0; }
                     // rede de segurança: bot parado 15 s sem estar ocupado tem a decisão reiniciada (não corrige a causa; limita o estrago)
                     var ai = a.ai; bool vigiando = ai.goal != null && ai.goalKey.StartsWith("pt", StringComparison.Ordinal) && Dist(a, ai.goal) < 2, lutando = ai.target != null && g.t - a.lastShotT < 2.5;
                     bool ocupado = a.sealing >= 0 || a.hold.t > 0 || vigiando || lutando || g.altars.Any(A => A.state == "active" && InCircle(a, A)) || (ai.esperando != 0 && g.t - ai.esperando < .5);
