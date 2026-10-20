@@ -31,8 +31,8 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.4)
-- Números: selar sob fogo 70%/45%, executar 4,5 s, reanimar 5 s, momentos 3:00 / 10:00 / 18:00.
+## Estado atual (v5.5)
+- Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
 - Qualidade Alto/Médio/Baixo/Mínimo, resolução adaptativa, controles de toque, app Android.
@@ -64,6 +64,13 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   servidor filtra por papel; `SET.mudoAdv`); bots Caçadores conferem altar desperto com a Lanterna (sem sorteio).
   `tools/simular.js` e `tools/comparar-cs.js` aceitam `LAB=fogo=a,execucao=6,...`. Bots, 210 noites: culto 78% no
   normal, 67% com selo sob fogo 80%/60%; sem economia, 75%.
+- v5.5 (notas em `notas/v5.5.md`): disputa no círculo. Eco do coro (`CFG.ecoProg` .25, `SETORES` oeste/centro/leste
+  com dois altares cada, `g.eco`, evento 'eco' só para a caça); quem lançou sigilo há menos de `CFG.ataqueCanal` (.6 s)
+  não canaliza; dano reinicia execução (`CFG.danoInterrompeExecucao`); o culto é avisado do selo (evento 'selando',
+  só para o culto, `A.avisoSeloT`); Brecha Norte (PORTAIS, trilha e LUGARES; reexportar o mapa). Bots: `CORRIDA_BOT`
+  1.3 com ritual em andamento, seguem o eco, `g.suspeitaC` (o culto só sabe o que viu ou o aviso de purga), não
+  compram com ritual em andamento, histerese no mercador, `_segurou/_semSegurar` (0,5 s sem segurar zera o E),
+  `botRasteja`. `tools/simular.js` aceita `CFG=`. Bots, 200 noites: culto 42–46% (v5.4: 78%).
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

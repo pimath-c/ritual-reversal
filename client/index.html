@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ritual Reversal — Protótipo v5.4</title>
+<title>Ritual Reversal — Protótipo v5.5</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2956,10 +2956,10 @@ const COMO_DESCOBRIU={evp:'EVP',sentinela:'sentinela',lanterna:'Lanterna',rastro
 function respostasPlaytest(){ try{ return JSON.parse(localStorage.getItem('rr-resp-'+V.matchId)||'[]'); }catch(e){ return []; } }
 function guardarRespostas(r){ try{ localStorage.setItem('rr-resp-'+V.matchId,JSON.stringify(r)); }catch(e){} }
 function dadosRelatorio(){ const log=logDaNoite()||[], rodadas=UMA_NOITE()?[1]:[1,2];
-  return {jogo:'Ritual Reversal',versao:'5.4',partida:V.matchId,quando:new Date().toISOString(),papel:myRole(),lab:LAB(),mudancas:labMudancas(LAB()),
+  return {jogo:'Ritual Reversal',versao:'5.5',partida:V.matchId,quando:new Date().toISOString(),papel:myRole(),lab:LAB(),mudancas:labMudancas(LAB()),
     vencedor:Sim.winner(V),jogadores:V.slots.map(s=>({nome:s.name,equipe:s.team,humano:!!s.cid})),
     metricas:rodadas.map(r=>Sim.relatorio(log,r)),respostas:PERGUNTAS_PLAYTEST.map((p,i)=>({pergunta:p,resposta:respostasPlaytest()[i]||''})),registro:log}; }
-function textoRelatorio(D){ const L=[`Ritual Reversal v5.4 · relatório do playtest · partida ${D.partida}`,`Regras: ${D.mudancas.length?D.mudancas.join(' · '):'normais'}`,`Resultado: ${D.vencedor?D.vencedor.why:'—'}`];
+function textoRelatorio(D){ const L=[`Ritual Reversal v5.5 · relatório do playtest · partida ${D.partida}`,`Regras: ${D.mudancas.length?D.mudancas.join(' · '):'normais'}`,`Resultado: ${D.vencedor?D.vencedor.why:'—'}`];
   for(const M of D.metricas){ const I=M.investigacao, E=M.engano, C=M.combate, S=M.selamento;
     L.push('',`Rodada ${M.rodada}: ${M.fendas} Fendas, ${M.farois} Faróis, ${fmt(M.duracao)} de noite`,
       `Investigação: primeira verdade aos ${I.primeiraVerdade!=null?fmt(I.primeiraVerdade):'—'} (${COMO_DESCOBRIU[I.comoDescobriu]||'—'}), ${I.pistasNovas} pistas novas, maior trecho sem pista ${fmt(I.maiorIntervaloSemPista)}`,
@@ -3015,13 +3015,14 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Fim da noite','Quem leva dois dos três rituais vence e a noite acaba ali. O placar mostra a regra embaixo do relógio.'],
-  ['Laboratório de playtest','No menu e no lobby: Crepúsculo de 3:00, 2:00 ou 1:30, selo sob fogo mais forte, execução mais lenta e noite sem óbolos e mercadores. Mude uma regra por vez.'],
-  ['Relatório do playtest','No fim da noite: quando a caça descobriu a verdade, quanto tempo andou sem pista, como cada ritual terminou, o custo dos Chamarizes e as perguntas para quem jogou. Baixe em JSON ou copie como texto.'],
-  ['Chat de equipe','Na partida online, Enter fala só com a sua equipe; Tab troca para todos. Os Ajustes silenciam os adversários.'],
-  ['Bots','Caçadores conferem altares despertos com a Lanterna antes de purgar, em vez de adivinhar se é Chamariz.'],
-  ['Na v5.3','Jogo sozinho com papel e dificuldade, tutorial, desafio da noite, ping e frases, legendas dos sons, bússola, caderno (J), Rever a noite, perfil e conquistas.']];
-function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.4</h2><p class="lede">O que mudou desde a última versão.</p>
+const NOVIDADES=[['O coro ecoa','Aos 25% de um ritual, a caça ouve o setor dele: oeste, centro ou leste, dois altares cada. O que você já descartou decide para onde correr.'],
+  ['Quem ataca não canaliza','Cada sigilo pausa a canalização de quem atirou por um instante. Em dupla, um Cultista celebra e o outro defende.'],
+  ['Execução contestável','Levar dano recomeça a execução de um caído: atire em quem executa o seu aliado.'],
+  ['O culto sente o selo','Quando a caça começa a selar um ritual, o culto ouve e vê de onde, esteja onde estiver.'],
+  ['Brecha Norte','Uma brecha na parede norte liga a ala oeste e o Claustro aos Menires (de 191 m para 75 m a partir da Capela Oeste).'],
+  ['Bots','Correm quando há ritual em andamento, seguem o eco, defendem o aliado caído e não largam mais o ritual para fazer compras.'],
+  ['Na v5.4','Fim da noite em 2 rituais, laboratório e relatório de playtest, chat de equipe na partida.']];
+function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center">Novidades da v5.5</h2><p class="lede">O que mudou desde a última versão.</p>
     <div class="novidades">${NOVIDADES.map(([t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
     <div class="btnrow"><button class="go" id="bNovOk">Voltar</button></div>`,()=>{ $('#bNovOk').onclick=()=>{ novidadesAberto=false; screenKey=''; }; }); }
 // cola das teclas, na pausa

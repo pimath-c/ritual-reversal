@@ -34,6 +34,10 @@ esforço da engine nova no que o navegador não faz bem: modelos, animação, lu
 - **Vitória** (uma noite): Cultistas vencem com 2 rituais completos (Fendas). Caçadores vencem selando 2
   (Faróis) ou chegando ao amanhecer. A noite acaba 3 s depois do segundo ritual de um lado
   (`formato` 'melhorDeTres', o padrão desde a v5.4); 'placar' deixa a noite correr até o amanhecer.
+- **Disputa no círculo** (v5.5): aos `ecoProg` (25%) de progresso o coro ecoa o setor do ritual para a caça
+  (`SETORES`: oeste 0 e 3, centro 1 e 4, leste 2 e 5); só canaliza quem não lançou sigilo nos últimos `ataqueCanal`
+  (0,6 s); levar dano zera a execução em andamento; o culto recebe 'selando' quando um selo começa (a cada 8 s por
+  altar, no máximo).
 - **Laboratório de playtest** (`opts.lab`, validado por `labDe` em `g.lab`): `crepusculo` 180/120/90 s,
   `fogo` 'atual' (70%/45%), 'a' (80%/60%) ou 'b' (90%/70%), `execucao` 4,5/6/7,5 s, `economia` (sem ela não há
   óbolos, as tarefas não pagam e os mercadores não negociam) e `formato`. Valores fora da lista voltam ao padrão.
