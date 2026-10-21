@@ -234,6 +234,6 @@ function gota(A){ A.brasa.getWorldPosition(_p); const m=new THREE.SpriteMaterial
   const ang=Math.random()*TAU; sp.position.copy(_p).add(V3(Math.cos(ang)*.035,-.05,Math.sin(ang)*.035)); sp.scale.set(.012,.018,1); const v=V3(0,0,0);
   efeito(sp,.7,(o,u)=>{ v.y-=9.8*.016; o.position.addScaledVector(v,.016); o.material.opacity=.85*(1-u); }); }
 
-return {COLECAO,OFICIOS,SKINS,ESC,porId,limpar,salvar,preparar,aplicar,gancho,quadro,textura,
+return {COLECAO,OFICIOS,SKINS,ESC,porId,limpar,salvar,preparar,aplicar,gancho,quadro,textura,PEND,   // PEND: para tools/exportar-primeira-pessoa.js
   escolher(arma,id){ if(!SKINS[arma]||!SKINS[arma].some(s=>s.id===id)) return false; ESC[arma]=id; salvar(); return true; }};
 };

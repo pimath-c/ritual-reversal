@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 
 namespace RitualReversal
 {
-    public enum Tecla { W, A, S, D, Shift, E, T, Q, F, G, R, Tab, Esc, Enter, Z, C }
+    public enum Tecla { W, A, S, D, Shift, E, T, Q, F, G, R, Tab, Esc, Enter, Z, C, I }
 
     public static class EntradaUnity
     {
@@ -18,7 +18,7 @@ namespace RitualReversal
                 case Tecla.W: return Key.W; case Tecla.A: return Key.A; case Tecla.S: return Key.S; case Tecla.D: return Key.D;
                 case Tecla.Shift: return Key.LeftShift; case Tecla.E: return Key.E; case Tecla.T: return Key.T; case Tecla.Q: return Key.Q;
                 case Tecla.F: return Key.F; case Tecla.G: return Key.G; case Tecla.R: return Key.R; case Tecla.Tab: return Key.Tab;
-                case Tecla.Esc: return Key.Escape; case Tecla.Z: return Key.Z; case Tecla.C: return Key.C; default: return Key.Enter;
+                case Tecla.Esc: return Key.Escape; case Tecla.Z: return Key.Z; case Tecla.C: return Key.C; case Tecla.I: return Key.I; default: return Key.Enter;
             }
         }
         public static bool Segurando(Tecla t) { var k = Keyboard.current; return k != null && k[Mapear(t)].isPressed; }
@@ -36,7 +36,7 @@ namespace RitualReversal
                 case Tecla.W: return KeyCode.W; case Tecla.A: return KeyCode.A; case Tecla.S: return KeyCode.S; case Tecla.D: return KeyCode.D;
                 case Tecla.Shift: return KeyCode.LeftShift; case Tecla.E: return KeyCode.E; case Tecla.T: return KeyCode.T; case Tecla.Q: return KeyCode.Q;
                 case Tecla.F: return KeyCode.F; case Tecla.G: return KeyCode.G; case Tecla.R: return KeyCode.R; case Tecla.Tab: return KeyCode.Tab;
-                case Tecla.Esc: return KeyCode.Escape; case Tecla.Z: return KeyCode.Z; case Tecla.C: return KeyCode.C; default: return KeyCode.Return;
+                case Tecla.Esc: return KeyCode.Escape; case Tecla.Z: return KeyCode.Z; case Tecla.C: return KeyCode.C; case Tecla.I: return KeyCode.I; default: return KeyCode.Return;
             }
         }
         public static bool Segurando(Tecla t) { return Input.GetKey(Mapear(t)); }

@@ -30,7 +30,10 @@ namespace RitualReversal
             som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => som.Tocar("corvo", x, z);
             // v5.8: impactos e momentos do ritual tocam pelo Som; a arma avisa o meio do ciclo (alavanca, cão) e o passo
             mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
-            fp.AoSomArma = k => som.Tocar(k); fp.AoPasso = () => som.Tocar("mystep"); fp.camFx = PlayerPrefs.GetFloat("rr-camfx", 1);
+            fp.AoPasso = () => som.Tocar("mystep"); fp.camFx = PlayerPrefs.GetFloat("rr-camfx", 1);
+            // primeira pessoa (ArmaFP): os sons dos clipes são gravações; sem a gravação, a síntese do Som
+            fp.arma.AoTocar = (k, vol, max, varia) => { if (!som.Amostra(k, vol: vol, max: max, varia: varia)) som.Tocar(k); return true; };
+            fp.arma.raizMundo = mundo.raiz; mundo.AoExecutar = E => fp.Executou();
         }
 
         void LimparVisual() { if (mundo != null) mundo.Limpar(); if (som != null) som.Silenciar(); }
@@ -45,11 +48,11 @@ namespace RitualReversal
             if (jogando)
             {
                 bool correndo = ultimaEntrada != null && ultimaEntrada.sp && ultimaEntrada.mz < 0 && m.moving && m.st == "alive";
-                fp.Atualizar(m, (float)m.x, (float)m.z, m.moving, ultimaEntrada != null ? (float)ultimaEntrada.mx : 0, ultimaEntrada != null ? (float)ultimaEntrada.mz : 0, correndo, (float)lookYaw, (float)lookPitch, dt, agora);
+                fp.Atualizar(m, g, (float)m.x, (float)m.z, m.moving, ultimaEntrada != null ? (float)ultimaEntrada.mx : 0, ultimaEntrada != null ? (float)ultimaEntrada.mz : 0, correndo, (float)lookYaw, (float)lookPitch, dt, agora);
             }
             else
             {
-                fp.Esconder(); float a = agora * .04f;
+                fp.Esconder(dt); float a = agora * .04f;
                 cam.transform.position = new Vector3(6 + Mathf.Sin(a) * 17, 3.4f, -(-4 + Mathf.Cos(a) * 13)); cam.transform.LookAt(new Vector3(6, 4.5f, 4)); cam.transform.Rotate(0, .28f * Mathf.Rad2Deg, 0, Space.Self);
                 cam.fieldOfView = 72;
             }
@@ -157,7 +160,7 @@ namespace RitualReversal
                 case "hab":
                     {
                         Ator quem = g.actors.Find(a => a.id == e.Int("a")); som.Hab(quem != null ? quem.cls : "", x, z);
-                        if (e.Int("a") == eu) { var al = e["alvos"] as System.Collections.ICollection; int n = al != null ? al.Count : 0; string f = e.Str("f"); NotaHab(TextoHab(f, n), n > 0 || f == "runa" || f == "veu" || f == "sal" ? OURO : CINZA * 2); if (f == "empurrao") fp.kickP += .02f; }
+                        if (e.Int("a") == eu) { var al = e["alvos"] as System.Collections.ICollection; int n = al != null ? al.Count : 0; string f = e.Str("f"); NotaHab(TextoHab(f, n), n > 0 || f == "runa" || f == "veu" || f == "sal" ? OURO : CINZA * 2); if (f == "empurrao") fp.kickP += .02f; fp.Hab(); }
                         break;
                     }
                 case "ping": if (e.Str("team") == papel) ReceberPing(e); break;

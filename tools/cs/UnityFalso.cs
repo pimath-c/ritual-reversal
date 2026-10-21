@@ -346,6 +346,10 @@ namespace UnityEngine
         // ponto local -> mundo (escala, giro, posição, subindo pelos pais)
         public Vector3 TransformPoint(Vector3 p) { var t = this; while (t != null) { p = t.localRotation * Vector3.Scale(p, t.localScale) + t.localPosition; t = t.pai; } return p; }
         public Vector3 TransformDirection(Vector3 d) { var t = this; while (t != null) { d = t.localRotation * d; t = t.pai; } return d; }
+        public Vector3 TransformVector(Vector3 d) { var t = this; while (t != null) { d = t.localRotation * Vector3.Scale(d, t.localScale); t = t.pai; } return d; }
+        public Vector3 InverseTransformPoint(Vector3 p) { if (pai != null) p = pai.InverseTransformPoint(p); p = Quaternion.Inverse(localRotation) * (p - localPosition); return new Vector3(p.x / localScale.x, p.y / localScale.y, p.z / localScale.z); }
+        public Vector3 InverseTransformVector(Vector3 d) { if (pai != null) d = pai.InverseTransformVector(d); d = Quaternion.Inverse(localRotation) * d; return new Vector3(d.x / localScale.x, d.y / localScale.y, d.z / localScale.z); }
+        public bool IsChildOf(Transform p) { for (var t = this; t != null; t = t.pai) if (t == p) return true; return false; }
         public Vector3 position { get { return pai == null ? localPosition : pai.TransformPoint(localPosition); } set { localPosition = value; } }
         public Quaternion rotation { get { var q = localRotation; for (var t = pai; t != null; t = t.pai) q = t.localRotation * q; return q; } set { localRotation = value; } }
         public Vector3 eulerAngles { get { return Vector3.zero; } set { localRotation = Quaternion.Euler(value); } }
@@ -443,13 +447,18 @@ namespace UnityEngine
     {
         public LightType type; public Color color = Color.white; public float range = 10, intensity = 1, spotAngle = 30, innerSpotAngle, shadowBias, shadowNormalBias, shadowStrength = 1; public LightShadows shadows; public LightRenderMode renderMode; public int cullingMask = -1;
     }
-    public class TextAsset : Object { public string text; public TextAsset(string t) { text = t; } }
+    public class TextAsset : Object { public string text; public byte[] bytes; public TextAsset(string t) { text = t; } public TextAsset(byte[] b) { bytes = b; } }
+    public static class ImageConversion { public static bool LoadImage(Texture2D t, byte[] b) { return false; } }
     public static class Resources
     {
         public static string pasta = "";
         public static T Load<T>(string n) where T : Object
         {
-            if (typeof(T) == typeof(TextAsset)) { var p = System.IO.Path.Combine(pasta, n + ".json"); if (System.IO.File.Exists(p)) return new TextAsset(System.IO.File.ReadAllText(p)) as T; }
+            if (typeof(T) == typeof(TextAsset))
+            {
+                var p = System.IO.Path.Combine(pasta, n + ".json"); if (System.IO.File.Exists(p)) return new TextAsset(System.IO.File.ReadAllText(p)) as T;
+                p = System.IO.Path.Combine(pasta, n + ".bytes"); if (System.IO.File.Exists(p)) return new TextAsset(System.IO.File.ReadAllBytes(p)) as T;
+            }
             return null;
         }
     }

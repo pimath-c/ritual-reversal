@@ -38,6 +38,8 @@ commits em português.
     node tools/comparar-cs.js 2 1 40000 H   # porte C# (Unity) igual ao sim.js, bit a bit (precisa do Mono)
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-ver.js [pasta] [regex]   # mundo do Unity ao lado do oficial, sem o Unity (Mono)
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/exportar-primeira-pessoa.js   # mudou arma.js/skins.js? regrava Resources/primeira-pessoa.*
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v6)
@@ -162,9 +164,20 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Sem abrir o Unity: `tools/unity-ver.js` compila o visual contra `tools/cs/UnityFalso.cs` (UnityEngine de mentira),
   roda `Mundo.Construir()` (`tools/cs/ExportarMundo.cs`), desenha a exportação no three com a câmera, névoa e luzes de
   cada vista do oficial e grava oficial | Unity lado a lado em `dist/unity-ver/`. Também pega exceções na montagem.
-  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE e a luz de recorte (RIMLUZ); clima (chuva, raios); mãos e
-  clipes da v5.9 (`client/arma.js`), skins e Arsenal; a maior parte da interface da v5.3 em diante (bússola, legendas,
-  espectador, caderno, replay, perfil, tutorial, laboratório, relatório, mostrador do círculo, lances).
+  Primeira pessoa da v5.9/v6 no Unity: `ArmaFP.cs` é o motor do `client/arma.js` (amostrar, misturar, quadros de
+  referência, IK, dedos, camadas, peças, cartuchos, municiador, cetro) com as contas do three em double (`V3d`, `Qd`, `Md`);
+  `SkinsFP.cs` é o `client/skins.js` (papéis, detalhe em três planos, acessórios, pendentes, ganchos). A árvore, as malhas,
+  os materiais e os clipes já preparados vêm do jogo oficial: `tools/exportar-primeira-pessoa.js` grava
+  `Resources/primeira-pessoa.json`, `primeira-pessoa-geo.bytes` (pele das mãos em pedaços rígidos, um por osso) e
+  `Resources/Detalhes/*.bytes` (PNG das texturas de detalhe). Shader `Resources/RitualReversalPrimeiraPessoa.shader`
+  (UniversalFragmentPBR + luz de leitura + detalhe da skin + varredura; relevo por derivadas de tela; sem ele, URP/Lit).
+  `PrimeiraPessoa.cs` ficou com a câmera (altura 1,67), a lanterna, o clarão e as cápsulas, e monta o corpo e o contexto
+  que o `ArmaFP.Quadro` recebe. Tecla I inspeciona; `ArmaFP.Forcar`/`LuzEstudio`/`TrocarSkin` são a vitrine e o Arsenal.
+  `tools/unity-fp.js` roda os mesmos casos no navegador e no `ArmaFP` (Mono, `tools/cs/TesteFP.cs`) e compara cada nó:
+  656 poses, diferença máxima 2e-7 m, e uma passada de fumaça por todas as skins e entradas.
+  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE e a luz de recorte (RIMLUZ); clima (chuva, raios); a tela do
+  Arsenal; a maior parte da interface da v5.3 em diante (bússola, legendas, espectador, caderno, replay, perfil, tutorial,
+  laboratório, relatório, mostrador do círculo, lances).
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
@@ -172,9 +185,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - Sons: ouvir em fones e acertar volumes; trocar o tiro montado por gravação de arma quando Freesound/OpenGameArt/
   Kenney/Sonniss estiverem liberados na rede do ambiente.
 - Playtests com 4 pessoas antes de mais conteúdo.
-- Unity igual ao oficial (pedido do dono): feito o mundo da v6, reagentes, velas, execução e ambiente; falta a lista em
-  "Visual do protótipo no Unity" (primeira pessoa da v5.9, skins, Arsenal, GRADE/RIMLUZ, clima e a interface).
+- Unity igual ao oficial (pedido do dono): feitos o mundo da v6, reagentes, velas, execução, ambiente, a primeira pessoa
+  da v5.9 e as skins; falta a lista em "Visual do protótipo no Unity" (Arsenal, GRADE/RIMLUZ, clima e a interface).
 - v6 sem gente: equilíbrio entre bots ficou em 38–40% para o culto; os sons novos não foram ouvidos (ambiente sem áudio).
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
-  As mãos e animações da v5.9 (`client/arma.js`) ainda não foram portadas para o Unity.
+  O shader da primeira pessoa nunca compilou num Unity de verdade (só o C# é conferido aqui).
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.
