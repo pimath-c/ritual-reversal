@@ -32,7 +32,7 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.8a)
+## Estado atual (v5.8b)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -106,6 +106,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `MundoAtores.cs` (`ImpactoMundo/Corpo`, `AoSom`), `MundoAltares.cs` (runas do ritual, `RitualSelado/Fenda/
   Interrompido`, `MarcaInvestigacao`, `AoTremor`). Discord: `postar-discord.js` divide em vários cartões; o workflow
   posta cada `notas/*.md` novo ou `[discord: notas/x.md]` da mensagem do commit (segredo DISCORD_WEBHOOK ou _URL).
+- v5.8b (notas em `notas/v5.8b.md`, do primeiro registro de playtest humano): lance 'selo_limite' usa `A.maxProg`
+  (o progresso recua até a etapa enquanto se sela sem canalização); `comprar` nega munição cheia (80) e 4 sinalizadores;
+  registro baixado/servidor levam `dificuldade` (e `lab`, `papel` no cliente); `analisar.js` aceita um arquivo só.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

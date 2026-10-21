@@ -228,6 +228,8 @@ namespace RitualReversal.Simulacao
             if (it.momento > 0 && g.momento < it.momento) { nega(it.nome + " só aparece a partir da Vigília."); return; }
             if (a.obolos < it.preco) { nega("Faltam " + (it.preco - a.obolos) + " óbolos."); return; }
             if (itemId == "reagente" && a.reag >= CFG.carry) { nega("Você já carrega 2 reagentes."); return; }
+            if (itemId == "municao" && a.reserve >= 80) { nega("Sua reserva de munição já está cheia."); return; }
+            if (itemId == "flare" && a.flares >= 4) { nega("Você já carrega 4 sinalizadores."); return; }
             if (itemId == "amuleto" && a.amuleto) { nega("Só um amuleto por noite."); return; }
             if (itemId == "cinza" && g.decoys >= 4) { nega("A equipe já tem Chamarizes demais."); return; }
             a.obolos -= it.preco;
@@ -747,7 +749,8 @@ namespace RitualReversal.Simulacao
             else
             {
                 Ev(g, "sealed", "altar", A.i, "por", seladores); g.buff.ess = 0; Feed(g, A.name + " foi selado. Um Farol se acendeu.", "big h"); LogE(g, "sealed", "altar", A.name, "prog", R2(A.prog), "canalizadores", A.maxN > 0 ? A.maxN : 1, "por", seladores);
-                if (A.prog >= CFG.limiteLance) Lance(g, "selo_limite", seladores, A, null, R2(A.prog));
+                // o ponto mais alto do ritual: sem canalização o progresso recua até a etapa enquanto a caça sela
+                if (A.maxProg >= CFG.limiteLance) Lance(g, "selo_limite", seladores, A, null, R2(A.maxProg));
             }
             if (kind == "fenda") TarefaProg(g, "C", "ritual");
             int F = Fendas(g), P = Farois(g);

@@ -178,6 +178,20 @@ console.log('8. Interrupções, lances e disputa no círculo');
   const lr=g.events.find(e=>e.type==='lance'&&e.tipo==='resgate'); if(!lr||lr.team!=='C'||lr.quem.join()!==c.name) falha('reanimar depois de impedir a execução deveria virar o lance "resgate"');
   const M=Sim.relatorio(g.log,g.round); if(!M.lances||M.lances.length<3) falha('o relatório deveria listar os lances da noite');
   if(!(M.engano.segundosPresosEmChamariz>=24)) falha('o relatório deveria somar o tempo preso em Chamarizes'); }
+// v5.8b, do primeiro playtest: o culto caiu com o ritual em 98%, o progresso recuou até a etapa de 75% enquanto a caça
+// selava e o Farol saiu sem o lance "no último instante"; e comprar munição com a reserva cheia cobrava e não dava nada
+{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:j?null:'eu',name:'b'+j})),matchId:'v58b'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+  for(const a of g.actors){ a.st='dead'; a.respawnT=999; } const h=g.actors.find(a=>a.cid==='eu');
+  Object.assign(h,{st:'alive',hp:h.maxHp,invuln:0,inp:Object.assign({},h.inp,{use:false,fire:false})});
+  const A=g.altars.find(x=>x.chosen); Object.assign(A,{state:'active',localized:true,arrived:true,prog:.98,maxProg:.98,cp:.75,seal:0}); h.x=A.x+1; h.z=A.z; h.inp.use=true;
+  for(let i=0;i<30*30&&A.state==='active';i++){ Sim.step(g,1/30); h.x=A.x+1; h.z=A.z; }
+  const el=g.events.find(e=>e.type==='lance'&&e.tipo==='selo_limite');
+  if(A.state!=='farol') falha('o selo do teste deveria acender o Farol');
+  else if(!(A.prog<.85)) falha(`o teste deveria reproduzir o recuo do progresso (ficou em ${A.prog})`);
+  else if(!el||!(el.v>=.97)) falha('salvar um ritual que chegou a 98% deveria virar o lance "selo no último instante", mesmo com o progresso recuado');
+  if(g.lab.economia){ const n=Sim.NPCS.find(x=>x.vende.includes('municao')); h.x=n.x+1; h.z=n.z; h.reserve=80; h.obolos=5;
+    Sim.act(g,'eu',{type:'comprar',npc:n.id,item:'municao'}); Sim.step(g,1/30);
+    if(h.obolos!==5) falha('comprar munição com a reserva cheia não pode cobrar'); } }
 console.log('   ok');
 console.log(`9. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);

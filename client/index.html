@@ -3300,14 +3300,16 @@ async function salvarArquivo(name,data,msg){
 async function downloadLog(){
   const msg=$('#logMsg');
   if(MODE==='online'&&NET.logUrl){ const a=document.createElement('a'); a.href=NET.logUrl; a.download=''; document.body.appendChild(a); a.click(); a.remove(); msg.textContent='O servidor também guarda uma cópia na pasta logs.'; return; }
-  const data=JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,match:game.matchId,slots:game.slots,scores:game.scores,stats:game.stats,events:game.log},null,1), name=`ritual-reversal-${game.matchId}.json`;
+  // dificuldade, regras do laboratório e papel vão junto: sem eles, um registro de playtest não diz contra quem se jogou
+  const data=JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,match:game.matchId,dificuldade:(game.opts&&game.opts.dificuldade)||'normal',lab:game.lab,papel:myRole(),slots:game.slots,scores:game.scores,stats:game.stats,events:game.log},null,1), name=`ritual-reversal-${game.matchId}.json`;
   try{ if(window.claude&&window.claude.use){ const d=await window.claude.use('downloads'); if(d){ await d.save({filename:name,data}); msg.textContent='Registro salvo.'; return; } } }
   catch(e){ if(e&&e.code==='declined'){ msg.textContent='Download cancelado.'; return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); msg.textContent='Registro salvo.';
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Sons gravados','Tiros, impactos, passos por chão, sino, corvos, coro e o ritual inteiro agora usam gravações reais de bibliotecas abertas, com variação a cada vez. Créditos em Ajustes.'],
+const NOVIDADES=[['Do primeiro playtest (v5.8b)','Salvar um ritual que chegou a 85% ou mais vira o lance "Selo no último instante", mesmo que o progresso recue enquanto você sela. A loja não cobra munição com a reserva cheia. O registro baixado diz a dificuldade dos bots.'],
+  ['Sons gravados','Tiros, impactos, passos por chão, sino, corvos, coro e o ritual inteiro agora usam gravações reais de bibliotecas abertas, com variação a cada vez. Créditos em Ajustes.'],
   ['Cada arma tem seu peso','A carabina coiceia curto e abre a alavanca a cada tiro; o revólver sobe mais e gira o tambor; o cetro recolhe as runas e as solta.'],
   ['Acerto que se sente','O acerto confirmado pelo servidor tem marca, som, uma pausa curta no coice e um empurrão leve na câmera. Golpe no escudo de osso aparece como bloqueio.'],
   ['Quem leva o tiro reage','O alvo cede na direção do golpe, a cabeça estala no tiro na cabeça, e a queda e a reanimação têm movimento.'],

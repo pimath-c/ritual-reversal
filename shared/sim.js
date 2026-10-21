@@ -551,7 +551,7 @@ function reclaimHuman(g,slotIdx,cid,name){
 
 
 // versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
-const VERSAO='5.8', REGISTRO=3;
+const VERSAO='5.8b', REGISTRO=3;
 
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.
@@ -620,6 +620,8 @@ function comprar(g,cid,npcId,itemId){
   if(it.momento&&g.momento<it.momento) return nega(`${it.nome} só aparece a partir da Vigília.`);
   if(a.obolos<it.preco) return nega(`Faltam ${it.preco-a.obolos} óbolos.`);
   if(itemId==='reagente'&&a.reag>=CFG.carry) return nega('Você já carrega 2 reagentes.');
+  if(itemId==='municao'&&a.reserve>=80) return nega('Sua reserva de munição já está cheia.');   // antes cobrava e não dava nada
+  if(itemId==='flare'&&a.flares>=4) return nega('Você já carrega 4 sinalizadores.');
   if(itemId==='amuleto'&&a.amuleto) return nega('Só um amuleto por noite.');
   if(itemId==='cinza'&&g.decoys>=4) return nega('A equipe já tem Chamarizes demais.');
   a.obolos-=it.preco;
@@ -988,7 +990,9 @@ function resolveAltar(g,A,kind){
     if(O.maxSeal>=CFG.defesaLance) lance(g,'defesa',Object.keys(O.defesa).length?nomes(a=>O.defesa[a.id]):canalizaram,A,'C',r2(O.maxSeal));
     if(g.transferPara===A.i) lance(g,'transferencia',[g.transferPor],A,'C',null); }
   else { ev(g,{type:'sealed',altar:A.i,por:seladores}); g.buff.ess=0; feed(g,`${A.name} foi selado. Um Farol se acendeu.`,'big h'); logE(g,'sealed',{altar:A.name,prog:r2(A.prog),canalizadores:A.maxN||1,por:seladores});
-    if(A.prog>=CFG.limiteLance) lance(g,'selo_limite',seladores,A,null,r2(A.prog)); }
+    // "no último instante" conta o ponto mais alto a que o ritual chegou: sem ninguém canalizando, o progresso recua até a
+    // última etapa enquanto a caça sela, e um ritual salvo a 98% terminava em 75% e não ganhava o lance
+    if(A.maxProg>=CFG.limiteLance) lance(g,'selo_limite',seladores,A,null,r2(A.maxProg)); }
   if(kind==='fenda') tarefaProg(g,'C','ritual');
   const F=fendas(g), P=farois(g);
   if(F+P>=3||(g.lab.formato!=='placar'&&(F>=2||P>=2))) g.endAt=g.rt+3;

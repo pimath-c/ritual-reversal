@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Junta os registros de partida e compara com as metas do documento de balanceamento v2.
-// Uso:  node tools/analisar.js [pasta]        (padrão: ./logs)
+// Uso:  node tools/analisar.js [pasta ou registro.json]        (padrão: ./logs)
 //       node tools/analisar.js logs --csv saida.csv
 'use strict';
 const fs=require('fs'), path=require('path');
@@ -10,7 +10,7 @@ const dir=args.find(a=>!a.startsWith('--'))||path.join(__dirname,'..','logs');
 const csvOut=args.includes('--csv')?args[args.indexOf('--csv')+1]:null;
 const Sim=require('../shared/sim.js');
 const CACA_NOME={selou:'selou (Farol)',perdeu_disputa:'chegou a tempo e perdeu o círculo',chegou_tarde:'chegou tarde demais',perto_sem_entrar:'chegou perto e não entrou',altar_errado:'foi a outro altar e não chegou',nunca_chegou:'nunca chegou perto',aberto:'noite acabou antes'};
-const CONV={}, SAIDA={}, VERSOES={}, DISP={}, LANCES={}, ISCA=[];
+const CONV={}, SAIDA={}, VERSOES={}, DIFS={}, DISP={}, LANCES={}, ISCA=[];
 const NOITE={n:0,culto:0,fendas:0,farois:0,duracao:[],verdade:[],semVerdade:0,maiorSemPista:[],pistas:[],lanterna:0,desmasc:0,localizarFim:[],labs:{}};
 
 const METAS={
@@ -26,8 +26,10 @@ const pct=v=>v==null?'—':(v*100).toFixed(0)+'%';
 const seg=v=>v==null?'—':`${Math.floor(v/60)}:${String(Math.round(v%60)).padStart(2,'0')}`;
 const num=(v,d=1)=>v==null?'—':v.toFixed(d);
 
-if(!fs.existsSync(dir)){ console.error(`Pasta não encontrada: ${dir}`); process.exit(1); }
-const files=fs.readdirSync(dir).filter(f=>f.endsWith('.json'));
+if(!fs.existsSync(dir)){ console.error(`Pasta ou arquivo não encontrado: ${dir}`); process.exit(1); }
+// aceita uma pasta de registros ou um registro só (o JSON baixado no fim da noite)
+const umArquivo=fs.statSync(dir).isFile(), base=umArquivo?path.dirname(dir):dir;
+const files=umArquivo?[path.basename(dir)]:fs.readdirSync(dir).filter(f=>f.endsWith('.json'));
 if(!files.length){ console.error(`Nenhum registro .json em ${dir}. Jogue uma partida ou rode: node tools/simular.js 20`); process.exit(1); }
 
 const A={ partidas:0, rodadas:0, humanos:0, rituais:{1:{n:0,completos:0,selados:0,chegou:0,restante:[]},2:{n:0,completos:0,selados:0,chegou:0,restante:[]}},
@@ -36,7 +38,7 @@ const A={ partidas:0, rodadas:0, humanos:0, rituais:{1:{n:0,completos:0,selados:
   vitorias:{cultoDaVez:0,total:0}, desempates:0, empates:0, classes:{} };
 
 for(const f of files){
-  let J; try{ J=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')); }catch(e){ console.error(`Registro ilegível, ignorado: ${f}`); continue; }
+  let J; try{ J=JSON.parse(fs.readFileSync(path.join(base,f),'utf8')); }catch(e){ console.error(`Registro ilegível, ignorado: ${f}`); continue; }
   const ev=J.events||[]; if(!ev.length) continue;
   const emAndamento={};
   const fechar=R=>{ const b=A.rituais[R.n]; b.n++; if(R.chegou){ b.chegou++; if(R.restante!=null) b.restante.push(R.restante); } };
@@ -77,7 +79,7 @@ for(const f of files){
         soma('cultoCirculo',C.circulo); soma('cultoCanal',C.canal); soma('cultoAtacando',C.atacando); soma('cultoDano',C.dano); soma('cultoQuedas',C.quedas);
         soma('intSelo',R.interrupcoes&&R.interrupcoes.selo); soma('intCanal',R.interrupcoes&&R.interrupcoes.canal); } });
     (M.lances||[]).forEach(x=>LANCES[x.tipo]=(LANCES[x.tipo]||0)+1); if(M.engano.segundosPresosEmChamariz!=null) ev.filter(e=>e.ev==='purge'&&e.decoy&&e.isca!=null).forEach(e=>ISCA.push(e.isca));
-    const v=J.versao?`v${J.versao} (registro ${J.registro})`:'anterior à v5.6'; VERSOES[v]=(VERSOES[v]||0)+1;
+    const v=J.versao?`v${J.versao} (registro ${J.registro})`:'anterior à v5.6'; VERSOES[v]=(VERSOES[v]||0)+1; const dd=J.dificuldade||'não registrada'; DIFS[dd]=(DIFS[dd]||0)+1;
     const lab=Sim.labDe(J.lab), mud=Object.keys(Sim.LAB_OPCOES).filter(k=>lab[k]!==Sim.labDe()[k]).map(k=>`${k}=${lab[k]}`).join(',')||'padrão'; NOITE.labs[mud]=(NOITE.labs[mud]||0)+1; }
   const S=J.scores||{};
   if(S.A&&S.B){ A.vitorias.total++; if(S.A.done===S.B.done){ if(S.A.lastT!==S.B.lastT||Math.abs(S.A.maxP-S.B.maxP)>.005) A.desempates++; else A.empates++; } }
@@ -149,6 +151,7 @@ if(NOITE.n){ L.push('\nNOITE ÚNICA (relatório de playtest)'); L.push('-'.repea
   linha('Da localização ao fim do ritual', num(med(NOITE.localizarFim),0)+' s', 'mediana', '');
   linha('Lanterna em altar desperto', NOITE.lanterna, `${NOITE.desmasc} Chamarizes desmascarados`, '');
   linha('Versões dos registros', Object.entries(VERSOES).map(([k,v])=>`${k}: ${v}`).join('; '), '', '');
+  linha('Dificuldade dos bots', Object.entries(DIFS).map(([k,v])=>`${k}: ${v}`).join('; '), '', '');
   const totR=Object.values(CONV).reduce((a,b)=>a+b,0);
   if(totR&&!CONV.undefined){ L.push('\nO QUE A CAÇA FEZ EM CADA RITUAL'); L.push('-'.repeat(78));
     for(const k of ['selou','perdeu_disputa','chegou_tarde','perto_sem_entrar','altar_errado','nunca_chegou','aberto']) if(CONV[k]) linha(CACA_NOME[k], CONV[k], pct(CONV[k]/totR), ''); }

@@ -100,7 +100,7 @@ wss.on('connection',ws=>{
 function flushLog(r,final){
   if(!r.game||!r.logFile) return;
   const L=r.game.log; if(L.length===r.logN&&!final) return;
-  fs.writeFileSync(r.logFile,JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,match:r.game.matchId,lab:r.game.lab,slots:r.slots,scores:r.game.scores,stats:r.game.stats,events:L},null,1)); r.logN=L.length;
+  fs.writeFileSync(r.logFile,JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,match:r.game.matchId,dificuldade:(r.game.opts&&r.game.opts.dificuldade)||'normal',lab:r.game.lab,slots:r.slots,scores:r.game.scores,stats:r.game.stats,events:L},null,1)); r.logN=L.length;
 }
 function routeEvents(r){
   const g=r.game; if(!g.events.length) return;
