@@ -1,11 +1,16 @@
 # Compila o APK de teste do app Android a cada envio que mexe no jogo.
-# O APK fica em Actions → a execução → Artifacts → ritual-reversal-apk (um .zip com o app-debug.apk dentro).
+# O APK fica em Actions → a execução → Artifacts → ritual-reversal-apk (um .zip com o app-debug.apk dentro) e também na
+# release "apk-teste", com link direto que baixa sem login (bom para o celular):
+# https://github.com/pimath-c/ritual-reversal/releases/download/apk-teste/ritual-reversal.apk
 name: APK Android
 
 on:
   push:
     paths: ['client/**', 'shared/**', 'mobile/**', 'tools/build-mobile.js', '.github/workflows/android.yml']
   workflow_dispatch:
+
+permissions:
+  contents: write   # para atualizar a release apk-teste
 
 jobs:
   apk:
@@ -39,3 +44,12 @@ jobs:
           name: ritual-reversal-apk
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+      # a mesma release é reaproveitada: cada envio troca o APK por um novo
+      - name: Publica na release apk-teste
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk ritual-reversal.apk
+          gh release view apk-teste >/dev/null 2>&1 || gh release create apk-teste --prerelease --target "$GITHUB_SHA" --title "APK de teste (último envio)" --notes "APK de teste do app Android, compilado a cada envio. Baixe ritual-reversal.apk abaixo e instale (o celular pede para permitir apps de fontes desconhecidas)."
+          gh release upload apk-teste ritual-reversal.apk --clobber
+          gh release edit apk-teste --notes "APK de teste do app Android, do commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d)). Baixe ritual-reversal.apk abaixo e instale (o celular pede para permitir apps de fontes desconhecidas)."
