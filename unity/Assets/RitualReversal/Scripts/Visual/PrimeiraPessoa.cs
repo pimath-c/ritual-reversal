@@ -20,7 +20,7 @@ namespace RitualReversal.Visual
         public float k, cast, sx, sy, mdx, mdy, spr, fov = 72, roll, kickP, spread, giroCetro;
         public float fovBase = 72;
         // v5.8: tempo desde o último tiro (anima o perfil), pausa de impacto, empurrões na câmera e ciclo dos passos
-        public float tT = 9, pausa, fovPunch, rollImp, fase, bobK, ix, iz; public int tiros; bool somFeito = true;
+        public float tT = 9, pausa, fovPunch, rollImp, fase, bobK, agK, ix, iz; public int tiros; bool somFeito = true;
         public float camFx = 1;                        // Ajustes, Impacto na câmera: 1 normal, .5 reduzido, 0 desligado
         public System.Action<string> AoSomArma;         // alavanca (carabina) ou cão (revólver), no meio do ciclo
         public System.Action AoPasso;                   // o passo do jogador toca no ponto mais baixo do balanço
@@ -87,9 +87,10 @@ namespace RitualReversal.Visual
             // passos e balanço no mesmo ciclo: dois passos por ciclo (andando 0,45 s, correndo 0,3 s); o passo toca no ponto
             // mais baixo do balanço e o balanço some suave ao parar
             bool andando = moving && m.st == "alive"; bobK = Mathf.Lerp(bobK, andando ? 1 : 0, Mathf.Min(1, dt * 8));
-            if (andando) { float f0 = fase; fase += dt * PI / (correndo ? .3f : .45f); if (Mathf.Floor(f0 / PI + .5f) != Mathf.Floor(fase / PI + .5f) && AoPasso != null) AoPasso(); }
-            float bob = -Mathf.Abs(Mathf.Sin(fase)) * (correndo ? .05f : .034f) * bobK * Mathf.Max(.5f, camFx);
-            cam.transform.position = new Vector3(x, down ? .45f : 1.65f + bob, -z);
+            agK = Mathf.Lerp(agK, m.ag && !down ? 1 : 0, Mathf.Min(1, dt * (m.ag ? 9 : 7))); // v6: agachado (C)
+            if (andando) { float f0 = fase; fase += dt * PI / (correndo ? .3f : m.ag ? .6f : .45f); if (Mathf.Floor(f0 / PI + .5f) != Mathf.Floor(fase / PI + .5f) && AoPasso != null) AoPasso(); }
+            float bob = -Mathf.Abs(Mathf.Sin(fase)) * (correndo ? .05f : .034f) * bobK * Mathf.Max(.5f, camFx) * (1 - agK * .55f);
+            cam.transform.position = new Vector3(x, down ? .45f : Mathf.Lerp(1.65f, 1.0f, agK) + bob, -z);
             fovPunch = Mathf.Lerp(fovPunch, 0, Mathf.Min(1, dt * 10)); rollImp = Mathf.Lerp(rollImp, 0, Mathf.Min(1, dt * 7));
             fov = Mathf.Lerp(fov, fovBase + (correndo ? 7 : 0), .1f); float fovAlvo = fov + fovPunch; if (Mathf.Abs(cam.fieldOfView - fovAlvo) > .05f) cam.fieldOfView = fovAlvo;
             roll = Mathf.Lerp(roll, moving && !down ? -mx * .022f : 0, .1f); kickP = Mathf.Lerp(kickP, 0, .14f);

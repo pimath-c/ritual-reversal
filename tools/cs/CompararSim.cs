@@ -32,7 +32,7 @@ static class CompararSim
         var p = new List<string>();
         p.Add("t:" + H(g.t)); p.Add("ph:" + g.phase); p.Add("rt:" + H(g.rt)); p.Add("m:" + g.momento);
         foreach (var a in g.actors)
-            p.Add(string.Join(",", new[] { a.id.ToString(), a.st, H(a.x), H(a.z), H(a.yaw), H(a.hp), a.reag.ToString(), a.sealing.ToString(), a.hold.key, H(a.hold.t), a.ai.goalKey, H(a.fervor), a.ammo.ToString(), a.reserve.ToString(), a.obolos.ToString(), H(a.sanity), a.ai.path.Count.ToString(), a.cls, a.feitico }));
+            p.Add(string.Join(",", new[] { a.id.ToString(), a.st, H(a.x), H(a.z), H(a.yaw), H(a.hp), a.reag.ToString(), a.sealing.ToString(), a.hold.key, H(a.hold.t), a.ai.goalKey, H(a.fervor), a.ammo.ToString(), a.reserve.ToString(), a.obolos.ToString(), H(a.sanity), a.ai.path.Count.ToString(), a.cls, a.feitico , a.ag ? "1" : "0" }));
         foreach (var A in g.altars) p.Add(string.Join(",", new[] { A.state, A.chosen ? "1" : "0", A.decoy ? "1" : "0", H(A.prog), H(A.seal), H(A.cp), A.localized ? "1" : "0" }));
         p.Add(string.Join(",", g.know)); p.Add(string.Join("", g.reagents.Select(R => R.has ? "1" : "0")));
         p.Add(string.Join(";", g.proj.Select(q => q.id + "@" + H(q.x) + "," + H(q.y) + "," + H(q.z))));
@@ -67,7 +67,7 @@ static class CompararSim
         Ponto q = D.path.Count > 0 ? D.path[0] : null; double yaw = q != null ? JS.Atan2(-(q.x - m.x), -(q.z - m.z)) : m.yaw; bool fire = false;
         Ator inimigo = null; double bd = 18; foreach (var e in g.actors) { if (e.team == m.team || e.st != "alive") continue; double d = JS.Hypot(e.x - m.x, e.z - m.z); if (d < bd && Mapa.LosClear(m, e)) { bd = d; inimigo = e; } }
         if (inimigo != null) { yaw = JS.Atan2(-(inimigo.x - m.x), -(inimigo.z - m.z)); fire = r() < .7; }
-        double mz = q != null ? -1 : 0; double mx = r() < .1 ? (r() < .5 ? -1 : 1) : 0; bool sp = r() < .3, use = r() >= .1, use2 = r() < .5; double pitch = (r() - .5) * .2;
+        double mz = q != null ? -1 : 0; double mx = r() < .1 ? (r() < .5 ? -1 : 1) : 0; bool sp = r() < .3, use = r() >= .1, use2 = r() < .5; double pitch = (r() - .5) * .2; bool ag = r() < .2;
         if (r() < 1.0 / 90) D.c.q++; if (r() < 1.0 / 90) D.c.f++; if (r() < 1.0 / 90) D.c.g++; if (r() < 1.0 / 90) D.c.r++; if (r() < 1.0 / 90) D.c.ab++;
         if (g.t > D.compraT)
         {
@@ -76,7 +76,7 @@ static class CompararSim
         }
         if (r() < .01) { string k = new[] { "ponto", "altar", "inimigo" }[(int)Math.Floor(r() * 3)]; double px = m.x + (r() - .5) * 40, pz = m.z + (r() - .5) * 40; int pi = (int)Math.Floor(r() * 7) - 1; Sim.Act(g, "eu", new Acao { type = "ping", x = px, z = pz, k = k, i = pi }); }
         if (r() < .006) { int f = (int)Math.Floor(r() * 7) - 1; Sim.Act(g, "eu", new Acao { type = "fala", i = f }); }
-        Sim.MoveHuman(g, m, new Entrada { mx = mx, mz = mz, sp = sp, yaw = yaw, pitch = pitch, fire = fire, use = use, use2 = use2, c = D.c.Copia(), viewT = g.t - .05 }, dt); Sim.Step(g, dt);
+        Sim.MoveHuman(g, m, new Entrada { mx = mx, mz = mz, sp = sp, ag = ag, yaw = yaw, pitch = pitch, fire = fire, use = use, use2 = use2, c = D.c.Copia(), viewT = g.t - .05 }, dt); Sim.Step(g, dt);
     }
     // LAB=crepusculo=90,fogo=b,execucao=6,economia=0,formato=placar  (o mesmo formato que tools/comparar-cs.js lê)
     static Lab LabDoAmbiente()

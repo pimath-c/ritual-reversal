@@ -22,6 +22,8 @@ namespace RitualReversal.Simulacao
         public static double sigilDano = 17, sigilVel = 48, sigilCusto = 14, fervorRegen = 8, fervorEspera = 1.8, quedaDano = 14, quedaPerto = 26, quedaLonge = 55, quedaMin = .75;
         public static double compensacaoMax = .5; // quanto se volta no tempo para julgar um tiro
         public static double regrow = 40, sensorRaio = 58, pegadaVida = 20, visaoRede = 75, nevoaAlcance = 26, speed = 4.6, sprint = 6, botSpeed = 3.9, spawnSafe = 7;
+        // v6: andar agachado (metade da velocidade, sem corrida, passos só de perto, alvo mais baixo)
+        public static double agachadoVel = .5, agachadoAltura = 1.15, agachadoOlho = .95;
         public static bool iniciarDeGraca = false;
         public static double timerPick = 35, timerIntro = 25, timerSummary = 15;
         // v5.5: o coro ecoa o setor do ritual quando ele passa deste progresso; quem lançou um sigilo há menos de
@@ -91,7 +93,7 @@ namespace RitualReversal.Simulacao
     public class Controles { public int q, f, g, r, ab; public Controles Copia() { return (Controles)MemberwiseClone(); } }
     public class Entrada
     {
-        public double mx, mz; public bool sp; public double yaw, pitch; public bool fire, use, use2; public double viewT; public Controles c = new Controles();
+        public double mx, mz; public bool sp, ag; public double yaw, pitch; public bool fire, use, use2; public double viewT; public Controles c = new Controles();
         public bool temYaw = true, temPitch = true, temViewT = true; // o JS só troca o valor quando ele veio na mensagem
     }
     public class Alerta : Ponto { public double t; }
@@ -120,7 +122,7 @@ namespace RitualReversal.Simulacao
         public double yaw, pitch; public string st = "alive"; public double downT, respawnT; public int deaths, dc; public bool revUsed; public int reag;
         public double hitT = -9; public Dictionary<int, double> att = new Dictionary<int, double>(); public double fireCd; public int ammo = 8, reserve = 48; public double reloadT;
         public double fervor = 100, sanity = 100, invuln; public int sealing = -1; public Hold hold = new Hold(); public bool lantern; public double carga = 100; public int flares = 2;
-        public double sensorCd, abilCd, lastShotT = -9, ataqueT = -9; public bool moving; public double panicT = -9, blindT, stunT, runeT, shield, shieldT, pushedT = -9;
+        public double sensorCd, abilCd, lastShotT = -9, ataqueT = -9; public bool moving, ag; public double panicT = -9, blindT, stunT, runeT, shield, shieldT, pushedT = -9;
         public List<double[]> hist = new List<double[]>(); public string feitico; public int obolos; public double veuT, slowT, revelT, curaT; public bool amuleto; public double pingT = -9;
         public Entrada inp = new Entrada(); public Controles lc = new Controles(); public bool lcIni;
         public IA ai = new IA();

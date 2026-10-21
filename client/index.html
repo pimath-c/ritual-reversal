@@ -56,6 +56,8 @@ body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:h
 #feed div.c{ border-left-color:var(--crimson-hi); } #feed div.h{ border-left-color:var(--gold); } #feed div.big{ font-family:var(--serif); font-size:20px; }
 #buffs{ position:absolute; top:182px; left:50%; transform:translateX(-50%); font-size:15px; text-align:center; color:var(--gold-hi); text-shadow:0 1px 2px #000; }
 #cross{ position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; }
+#agachadoChip{ position:absolute; left:50%; top:calc(50% + 58px); transform:translateX(-50%); font-size:12px; letter-spacing:.08em; color:#cfd6e2; opacity:0; transition:opacity .2s; text-shadow:0 1px 6px #000; pointer-events:none; }
+#agachadoChip.on{ opacity:.72; }
 #cross::before,#cross::after{ content:''; position:absolute; background:var(--mira,rgba(232,224,208,.85)); }
 #cross.ponto::before,#cross.ponto::after{ display:none; } #cross.ponto i{ left:8px; top:8px; width:6px; height:6px; border-radius:50%; background:var(--mira,#e8e0d0); }
 #cross.circulo::before,#cross.circulo::after{ display:none; } #cross.circulo i{ left:3px; top:3px; width:16px; height:16px; border-radius:50%; background:none; border:2px solid var(--mira,#e8e0d0); }
@@ -343,7 +345,7 @@ body.toque, body.toque *{ -webkit-user-select:none; user-select:none; -webkit-to
 #tqUse{ right:124px; bottom:24px; } #tqAbil{ right:28px; bottom:126px; }
 #tqReload,#tqT{ right:116px; bottom:106px; width:56px; height:56px; font-size:10px; }
 #tqLant{ right:22px; bottom:200px; } #tqSens{ right:78px; bottom:178px; } #tqFlare{ right:134px; bottom:170px; }
-#tqCorre{ left:14px; bottom:26px; }
+#tqCorre{ left:14px; bottom:26px; } #tqAgacha{ left:70px; bottom:26px; }
 #tqTopo{ position:absolute; right:10px; top:10px; width:198px; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; pointer-events:none; } /* duas fileiras no canto, à direita dos altares */
 #tqTopo .tq{ position:static; border-radius:10px; width:58px; height:34px; }
 #toque.H .c, #toque.C .h{ display:none; } #toque.solto{ display:none!important; }
@@ -382,7 +384,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
   </div>
   <div id="strip"></div><div id="bussola"></div><div id="buffs"></div>
   <div id="feed"></div><div id="chatJogo"><input id="iChatJogo" maxlength="140" autocomplete="off" placeholder="Mensagem para a sala · Enter envia, Esc cancela" aria-label="Mensagem para a sala"></div><div id="net"></div><div id="tarefas"></div><div id="anuncio"></div><div id="lance" role="status"></div>
-  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="caderno"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div><div id="abate"></div>
+  <div id="marks"></div><div id="dmgDir"></div><div id="cross"><i></i></div><div id="agachadoChip">AGACHADO · passos a 5 m</div><div id="hitmark"></div><div id="ammoHint"></div><div id="habNota"></div><div id="legendas" aria-live="polite"></div><div id="dica" role="status"></div><div id="caderno"></div><div id="tutorial" role="status"></div><div id="falas"></div><div id="atordoado"></div><div id="abate"></div>
   <div id="interact"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/><circle id="ring" cx="23" cy="23" r="19" fill="none" stroke="#f3d58e" stroke-width="4" stroke-dasharray="119.4" stroke-dashoffset="119.4" transform="rotate(-90 23 23)"/></svg><div class="lbl" id="interactLbl"></div><div class="lbl" id="interactLbl2"></div></div>
   <div id="race" class="plate">
     <div class="t" id="raceName">Abside</div>
@@ -410,6 +412,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
     <button class="tq h mini" data-a="sensor" id="tqSens">Sensor</button>
     <button class="tq h mini" data-a="flare" id="tqFlare">Flare</button>
     <button class="tq mini" data-a="sprint" id="tqCorre">Correr</button>
+    <button class="tq mini" data-a="agachar" id="tqAgacha">Agachar</button>
     <div id="tqTopo"><button class="tq mini" data-a="ping" id="tqPing">Marcar</button><button class="tq mini" data-a="falas" id="tqFalas">Frases</button><button class="tq mini" data-a="map" id="tqMapa">Mapa</button><button class="tq mini" data-a="caderno" id="tqCad">Caderno</button><button class="tq mini" id="tqPausa">Pausa</button></div>
   </div>
 </div>
@@ -430,6 +433,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 <script src="sim.js"></script>
 <script src="sons.js"></script>
 <script src="arma.js"></script>
+<script src="mundo.js"></script>
 <script>
 (function(){
 'use strict';
@@ -659,9 +663,9 @@ function radialTex(inner,outer){ return canvasTex(128,128,(g,W)=>{ const gr=g.cr
 function beamTex(){ return canvasTex(8,256,g=>{ const gr=g.createLinearGradient(0,256,0,0); gr.addColorStop(0,'rgba(255,255,255,.9)'); gr.addColorStop(.35,'rgba(255,255,255,.35)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(0,0,8,256); }); }
 function shaftTex(){ return canvasTex(64,256,g=>{ const gr=g.createLinearGradient(0,0,0,256); gr.addColorStop(0,'rgba(255,255,255,.95)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(0,0,64,256);
   const h=g.createLinearGradient(0,0,64,0); h.addColorStop(0,'rgba(0,0,0,1)'); h.addColorStop(.2,'rgba(0,0,0,0)'); h.addColorStop(.8,'rgba(0,0,0,0)'); h.addColorStop(1,'rgba(0,0,0,1)'); g.globalCompositeOperation='destination-out'; g.fillStyle=h; g.fillRect(0,0,64,256); }); }
-function stainedTex(rose){ return canvasTex(256,rose?256:512,(g,W,H)=>{ const pal=['#1d3f8f','#5a2a91','#8f1d3a','#1f6b7a','#c99a2e','#2a2f8f','#3d1768']; g.clearRect(0,0,W,H); g.save();
+function stainedTex(rose){ return canvasTex(256,rose?256:512,(g,W,H)=>{ const pal=['#14306e','#3e1f6a','#7a1430','#17505c','#a87a24','#1e2468','#2e1250','#5a1a20']; g.clearRect(0,0,W,H); g.save();
   if(rose){ g.beginPath(); g.arc(W/2,H/2,W/2-4,0,Math.PI*2); g.clip(); } else { g.beginPath(); g.moveTo(8,H); g.lineTo(8,H*.32); g.quadraticCurveTo(10,40,W/2,4); g.quadraticCurveTo(W-10,40,W-8,H*.32); g.lineTo(W-8,H); g.closePath(); g.clip(); }
-  let s=11; const r=()=>(s=(s*16807)%2147483647)/2147483647; const cell=rose?20:28;
+  let s=11; const r=()=>(s=(s*16807)%2147483647)/2147483647; const cell=rose?12:16;
   for(let y=0;y<H;y+=cell)for(let x=0;x<W;x+=cell){ g.fillStyle=pal[Math.floor(r()*pal.length)]; g.globalAlpha=.75+r()*.25; g.fillRect(x,y,cell,cell); }
   g.globalAlpha=1; g.strokeStyle='#07070a'; g.lineWidth=3;
   for(let y=0;y<=H;y+=cell){ g.beginPath(); g.moveTo(0,y+(r()-.5)*4); g.lineTo(W,y+(r()-.5)*4); g.stroke(); } for(let x=0;x<=W;x+=cell){ g.beginPath(); g.moveTo(x,0); g.lineTo(x+(r()-.5)*6,H); g.stroke(); }
@@ -848,10 +852,13 @@ function buildMarcas(){
     for(let i=0;i<uv.count;i++) uv.setXY(i,cu+uv.getX(i)*.25,cv+uv.getY(i)*.25);
     g.rotateX(-Math.PI/2); g.rotateY(rot==null?R()*6.283:rot); g.translate(x,.015+geos.length*.0004,z); geos.push(g); };
   Sim.ALTARS.forEach(A=>{ for(let k=0;k<3;k++) marca(A.x+(R()-.5)*5,A.z+(R()-.5)*5,1.2+R()*.8,0); marca(A.x+(R()-.5)*4,A.z+(R()-.5)*4,1.6,5); marca(A.x+(R()-.5)*7,A.z+(R()-.5)*7,3+R()*2,1); });
-  for(let k=0;k<70;k++){ const x=(R()-.5)*(CATEDRAL.x2-CATEDRAL.x1)*.95, z=(R()-.5)*(CATEDRAL.z2-CATEDRAL.z1)*.95; if(dentroCl(x,z)){ marca(x,z,2+R()*2,R()<.6?4:7); } else { const c2=R(); marca(x,z,1.5+R()*3,c2<.35?1:c2<.6?2:c2<.8?3:5); } }
-  for(let k=0;k<5;k++) marca(3+R()*6,-8-R()*3,2.2,7);
-  for(const [sx,dir] of [[SPAWN.H.x+32*Sim.HALF.x/Sim.HALF0.x,1],[SPAWN.C.x-32*Sim.HALF.x/Sim.HALF0.x,-1],[-90,1],[90,-1]]) for(let k=0;k<4;k++) marca(sx+dir*(3+k*2.6),(R()-.5)*3,1.9,6,dir>0?Math.PI/2:-Math.PI/2);
-  marca(-8,-40,3.2,8); marca(40,40,3,8); marca(-70,6,2.8,8);
+  // dentro da catedral: cera, fuligem, rachaduras, sangue seco e páginas soltas; no jardim do claustro, folhas e água
+  for(let k=0;k<90;k++){ const x=CATEDRAL.x1+R()*(CATEDRAL.x2-CATEDRAL.x1), z=CATEDRAL.z1+R()*(CATEDRAL.z2-CATEDRAL.z1), zn=Sim.zoneAt(x,z); if(zn!=='Catedral'&&zn!=='Claustro') continue;
+    if(dentroCl(x,z)) marca(x,z,2+R()*2,R()<.6?4:7); else { const c2=R(); marca(x,z,1.5+R()*3,c2<.35?1:c2<.6?2:c2<.8?3:5); } }
+  // pegadas de quem atravessa: na Ponte Grande, na Ponte Caída e no Aqueduto
+  for(let k=0;k<5;k++) marca((R()-.5)*3,-20+k*3.2,1.9,6,0); for(let k=0;k<4;k++) marca(-96+k*4,-77+(R()-.5),1.6,6,Math.PI/2); for(let k=0;k<4;k++) marca(84+k*4,-77+(R()-.5),1.6,6,-Math.PI/2);
+  // giz de outros rituais: no adro, na Pedreira e no Calvário
+  marca(-18,-28,3.2,8); marca(-40,44,3,8); marca(6,84,2.8,8);
   if(!geos.length||!THREE.BufferGeometryUtils) return;
   const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),new THREE.MeshStandardMaterial({map:tex,transparent:true,depthWrite:false,roughness:.95,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
   m.receiveShadow=true; m.renderOrder=1; world.add(m); }
@@ -865,7 +872,10 @@ function buildWorld(){
     MAT.casca=desgastar(new THREE.MeshStandardMaterial({color:0x6a6258,map:cm,normalMap:cn,roughness:1}),{mancha:.55,base:.55,musgo:1}); }
   MAT.estatua=desgastar(new THREE.MeshStandardMaterial({color:0x8e8c84,normalMap:TEX.floor.normalMap,roughness:1,flatShading:true}),{mancha:.5,base:.5,musgo:1});
   MAT.madeiraCorte=new THREE.MeshStandardMaterial({color:0x8a6a48,roughness:1});
-  const nmRocha=TEX.floor.normalMap.clone(); nmRocha.repeat.set(1.5,1.5); nmRocha.needsUpdate=true;
+  // v6: rocha de verdade (ruído em camadas, veios e estratos), sem as juntas das lajes do piso que antes apareciam nas pedras
+  { const nr=makeNoise(4404); TEX.rocha=pbr(256,(u,v,o)=>{ const f=nr.fbm(u*6,v*6,6,5), veio=Math.abs(Math.sin((v*9+nr.fbm(u*3,v*3,3,3)*3)*Math.PI)), estr=smooth(.55,1,veio)*.3, k=.55+.55*f;
+      o.h=f*.8+estr*.4; o.r=(70+30*f-25*estr)*k; o.g=(70+28*f-24*estr)*k; o.b=(66+26*f-22*estr)*k; o.ro=.92; },3.4); }
+  const nmRocha=TEX.rocha.normalMap.clone(); nmRocha.repeat.set(1.2,1.2); nmRocha.needsUpdate=true;
   MAT.rocha=desgastar(new THREE.MeshStandardMaterial({color:0x5c5e56,normalMap:nmRocha,roughness:1,flatShading:true}),{mancha:.5,base:.1,musgo:1});
   MAT.pedraVelha=desgastar(new THREE.MeshStandardMaterial({color:0x6a6a66,normalMap:nmRocha,roughness:1,flatShading:true}),{mancha:.5,base:.4,musgo:1});
   MAT.lona=new THREE.MeshStandardMaterial({color:0x5a4c34,map:TEX.cloth.map,normalMap:TEX.cloth.normalMap,roughness:1});
@@ -873,19 +883,8 @@ function buildWorld(){
   MAT.lapide=desgastar(new THREE.MeshStandardMaterial({...TEX.marble,color:0x8a8a86,roughness:1}),{mancha:.5,base:.5,musgo:.8});
   MAT.copaCarvalho=new THREE.MeshStandardMaterial({color:0x1c241a,roughness:1,flatShading:true});
   RT.rune=runeTexture(); RT.flame=radialTex('rgba(255,240,200,1)','rgba(255,120,20,0)'); RT.glow=radialTex('rgba(255,255,255,1)','rgba(255,255,255,0)'); RT.beam=beamTex(); RT.shaft=shaftTex(); RT.win=stainedTex(false); RT.rose=stainedTex(true);
-  const CT=CATEDRAL, floor=new THREE.Mesh(new THREE.PlaneGeometry(CT.x2-CT.x1,CT.z2-CT.z1),MAT.floor); floor.rotation.x=-Math.PI/2; floor.position.set((CT.x1+CT.x2)/2,0,(CT.z1+CT.z2)/2); floor.receiveShadow=true; world.add(floor);
-  const cl0=Sim.CLAUSTRO, tetoMat=MAT.wallDark.clone(); tetoMat.color.set(0x2a2a32); tetoMat.side=THREE.DoubleSide;
-  const teto=(x1,x2,z1,z2)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(x2-x1,z2-z1),tetoMat); m.rotation.x=Math.PI/2; m.position.set((x1+x2)/2,15,(z1+z2)/2); m.castShadow=true; world.add(m); };
-  teto(CT.x1-1,CT.x2+1,CT.z1-1,cl0.z1); teto(CT.x1-1,CT.x2+1,cl0.z2,CT.z2+1); teto(CT.x1-1,cl0.x1,cl0.z1,cl0.z2); teto(cl0.x2,CT.x2+1,cl0.z1,cl0.z2);
-  // (as vigas retas deram lugar às nervuras de buildCatedralViva)
-  // telhados de duas águas nas quatro alas em volta do Claustro: vista da floresta, a catedral é uma massa escura contra o céu
-  { const telhaMat=MAT.wallDark.clone(); telhaMat.color.set(0x3a3438); telhaMat.side=THREE.DoubleSide; const empena=MAT.wall.clone(); empena.side=THREE.DoubleSide;
-    const telhado=(x1,x2,z1,z2,aoLongoX)=>{ const larg=(aoLongoX?z2-z1:x2-x1)/2, comp=aoLongoX?x2-x1:z2-z1, alt=larg*.62, lado=Math.hypot(alt,larg), inc=Math.atan2(alt,larg), cx=(x1+x2)/2, cz=(z1+z2)/2;
-      const g=new THREE.Group(); g.position.set(cx,15,cz); if(!aoLongoX) g.rotation.y=Math.PI/2; world.add(g);
-      for(const sz of [-1,1]){ const t=new THREE.Mesh(new THREE.PlaneGeometry(comp,lado),telhaMat); t.position.set(0,alt/2,sz*larg/2); t.rotation.x=-Math.PI/2+sz*inc; g.add(t); }
-      for(const sx of [-1,1]){ const sh=new THREE.Shape(); sh.moveTo(-larg,0); sh.lineTo(larg,0); sh.lineTo(0,alt); sh.closePath(); const f=new THREE.Mesh(new THREE.ShapeGeometry(sh),empena); f.rotation.y=Math.PI/2; f.position.set(sx*comp/2,0,0); g.add(f); } };
-    telhado(CT.x1-1,CT.x2+1,CT.z1-1,cl0.z1,true); telhado(CT.x1-1,CT.x2+1,cl0.z2,CT.z2+1,true);
-    telhado(CT.x1-1,cl0.x1,cl0.z1,cl0.z2,false); telhado(cl0.x2,CT.x2+1,cl0.z1,cl0.z2,false); }
+  // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de client/mundo.js (RR_MUNDO)
+  CEU.vitrais=[]; MUNDO=window.RR_MUNDO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar}); Object.assign(PECAS,MUNDO.PECAS);
   // céu noturno sobre o Claustro: o único lugar do mapa onde se vê a lua
   const ceuTex=canvasTex(8,256,(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#010205'); gr.addColorStop(.55,'#060a14'); gr.addColorStop(1,'#101a2c'); c.fillStyle=gr; c.fillRect(0,0,W,H); });
   // cúpula do céu presa à câmera: sem borda em nenhuma direção (um plano deixava uma faixa vazia no horizonte)
@@ -902,44 +901,16 @@ function buildWorld(){
   const lua=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xdfe8ff,fog:false,toneMapped:false,depthWrite:false})); lua.scale.set(22,22,1); lua.userData.dinamico=true; world.add(lua);
   const lua2=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0x6f88c8,fog:false,transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending})); lua2.scale.set(64,64,1); world.add(lua2);
   CEU.lua=lua; CEU.lua2=lua2; CEU.ceu=ceu; CEU.estrelas=cupula.children.find(o=>o.isPoints)||null;
-  const luar=new THREE.PointLight(0x8fa8e0,.9,70,1.5); luar.position.set(0,26,0); scene.add(luar);
-  // piso do Claustro, mais escuro, para a zona se ler de longe
-  const cl=Sim.CLAUSTRO;
-  const piso=new THREE.Mesh(new THREE.PlaneGeometry(cl.x2-cl.x1,cl.z2-cl.z1),new THREE.MeshStandardMaterial({...TEX.floor,color:0x6a6256,roughness:1}));
-  ['map','normalMap','roughnessMap'].forEach(k=>{ piso.material[k]=piso.material[k].clone(); piso.material[k].repeat.set(14,7); piso.material[k].needsUpdate=true; });
-  piso.rotation.x=-Math.PI/2; piso.position.set((cl.x1+cl.x2)/2,.02,(cl.z1+cl.z2)/2); piso.receiveShadow=true; world.add(piso);
+  const luar=new THREE.PointLight(0x8fa8e0,.9,70,1.5); luar.position.set(-30,26,-54); scene.add(luar); // sobre o jardim do Claustro, a céu aberto
   // paredes vindas da simulação, com material por tipo
   Sim.WALLS.forEach(w=>{ if(PECAS[w.kind]) return PECAS[w.kind](w);
     const mat=w.kind==='tumba'?MAT.marble:w.kind==='cripta'?MAT.wallDark:w.kind==='biombo'?MAT.wood:MAT.wall;
     meshBox(w.x1,w.x2,0,w.h,w.z1,w.z2,mat,w.kind==='tumba'?2:4);
     if(w.h>2.2&&w.kind!=='biombo') meshBox(w.x1-.1,w.x2+.1,w.h,w.h+.35,w.z1-.1,w.z2+.1,MAT.wallDark).castShadow=false;
   });
-  const pg=new THREE.CylinderGeometry(.72,.85,15,14),uv=pg.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*1.2,uv.getY(i)*3.6);
-  const baseG=new THREE.CylinderGeometry(1.05,1.15,.7,14), capG=new THREE.CylinderGeometry(1.15,.8,.8,14);
-  PILLARS.forEach(([x,z])=>{ const p=new THREE.Mesh(pg,MAT.wall); p.position.set(x,7.5,z); p.castShadow=p.receiveShadow=true; world.add(p);
-    const b=new THREE.Mesh(baseG,MAT.marble); b.position.set(x,.35,z); world.add(b); const c=new THREE.Mesh(capG,MAT.wallDark); c.position.set(x,12.9,z); world.add(c); });
   PEWS.forEach(([x1,x2,z1,z2])=>{ for(let x=x1+.3;x<x2-.5;x+=3.1) for(const zz of [z1+.4,z1+2.1]){ if(zz>z2-.5) continue;
     meshBox(x,x+2.7,.42,.52,zz,zz+.55,MAT.wood,2); meshBox(x,x+2.7,.52,1,zz+.5,zz+.62,MAT.wood,2); meshBox(x,x+.1,0,.95,zz,zz+.6,MAT.wood,2); meshBox(x+2.6,x+2.7,0,.95,zz,zz+.6,MAT.wood,2); } });
-  const winMat=new THREE.MeshBasicMaterial({map:RT.win,transparent:true,alphaTest:.1,side:THREE.DoubleSide,color:new THREE.Color(1.35,1.35,1.6),fog:false,toneMapped:false});
-  const roseMat=new THREE.MeshBasicMaterial({map:RT.rose,transparent:true,alphaTest:.1,side:THREE.DoubleSide,color:new THREE.Color(1.5,1.4,1.6),fog:false,toneMapped:false});
-  const shaftMat=new THREE.MeshBasicMaterial({map:RT.shaft,transparent:true,opacity:.085,color:0x8fa6d8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
-  const janelas=[]; for(let x=CATEDRAL.x1+14;x<=CATEDRAL.x2-14;x+=16) janelas.push(x);
-  const noVao=(x,sz)=>Sim.PORTAIS.some(p=>p.eixo==='x'&&Math.sign(p.fixo)===sz&&x>p.a-3.5&&x<p.b+3.5)||(sz>0&&Math.abs(x)<17);
-  const winFora=winMat.clone(); winFora.color=new THREE.Color(.55,.5,.7);
-  CEU.vitrais=[winMat,roseMat,winFora].map(m=>({m,c:m.color.clone()})); // o Grande Ritual tinge os vitrais de sangue
-  for(const x of janelas) for(const sz of [-1,1]){ if(noVao(x,sz)) continue;
-    const w=new THREE.Mesh(new THREE.PlaneGeometry(3,7),winMat); w.position.set(x,8,sz*(CATEDRAL.z2-.06)); if(sz>0) w.rotation.y=Math.PI; world.add(w);
-    const f=new THREE.Mesh(new THREE.PlaneGeometry(3,7),winFora); f.position.set(x,8,sz*(CATEDRAL.z2+1.06)); if(sz<0) f.rotation.y=Math.PI; world.add(f);
-    const v=new THREE.Vector3(0,7.5,-sz*11).normalize(), gq=new THREE.Group(); gq.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),v.clone().negate());
-    const a=new THREE.Mesh(new THREE.PlaneGeometry(3,13.8),shaftMat), b=a.clone(); b.rotation.y=Math.PI/2; gq.add(a,b); gq.position.set(x,8-3.75,sz*(CATEDRAL.z2-5.6)); world.add(gq); }
-  for(const sx of [-1,1]) for(const lado of [0,1]){ const r=new THREE.Mesh(new THREE.CircleGeometry(3.6,40),lado?winFora:roseMat); r.position.set(sx*(CATEDRAL.x2+(lado?1.06:-.06)),10.2,0); r.rotation.y=(lado?1:-1)*sx*Math.PI/2; world.add(r); }
-  // portas: lintel e batentes sobre cada vão; as brechas ficam com a borda quebrada
-  for(const P of Sim.PORTAIS){ const ax=P.eixo==='x', f=P.fixo, box=(a,b,y1,y2,e1,e2,m)=>ax?meshBox(a,b,y1,y2,f+e1,f+e2,m):meshBox(f+e1,f+e2,y1,y2,a,b,m);
-    if(P.brecha){ for(let k=0;k<4;k++){ const a=P.a+(P.b-P.a)*k/4, b=a+(P.b-P.a)/4; box(a,b,8+vr()*3,14,-.5,.5,MAT.wall); } continue; }
-    box(P.a,P.b,5.6,14,-.5,.5,MAT.wall); box(P.a-.5,P.b+.5,5.3,5.7,-.8,.8,MAT.wallDark);
-    for(const e of [P.a-.45,P.b-.05]) box(e,e+.5,0,5.6,-.75,.75,MAT.wallDark);
-    const arco=new THREE.Mesh(new THREE.TorusGeometry((P.b-P.a)/2,.28,8,20,Math.PI),MAT.wallDark); const c=(P.a+P.b)/2;
-    if(ax) arco.position.set(c,5.6,f); else { arco.position.set(f,5.6,c); arco.rotation.y=Math.PI/2; } world.add(arco); }
+  MUNDO.construir();
   scene.add(new THREE.HemisphereLight(0x33476e,0x100a08,.5));
   const moon=new THREE.DirectionalLight(0x8aa2d6,.42); moon.position.set(18,40,26); moon.castShadow=true; moon.shadow.mapSize.set(PERF.nivel>=3?2048:1024,PERF.nivel>=3?2048:1024);
   // O mapa ficou grande demais para uma sombra só: a câmera de sombra acompanha o jogador (ver seguirLua).
@@ -986,23 +957,28 @@ function buildFloresta(){
   const n=makeNoise(9091);
   TEX.chao=pbr(512,(u,v,o)=>{ const f=n.fbm(u*8,v*8,8,5), fol=smooth(.52,.66,n.fbm(u*16+9,v*16+2,16,3)), musgo=smooth(.5,.72,n.fbm(u*4+5,v*4+1,4,4)), gr=n.fbm(u*32,v*32,32,2);
     const k=.62+.5*f; o.h=f*.45+fol*.35+gr*.2; o.r=lerp(lerp(58,40,musgo),84,fol*.7)*k; o.g=lerp(lerp(46,54,musgo),56,fol*.7)*k; o.b=lerp(lerp(36,32,musgo),30,fol*.7)*k; o.ro=.96; },2.4);
-  const M=40, LX=HALF.x*2+M*2, LZ=HALF.z*2+M*2, sx=Math.round(LX/3), sz=Math.round(LZ/3);
-  const geo=new THREE.PlaneGeometry(LX,LZ,sx,sz); geo.rotateX(-Math.PI/2);
-  const pos=geo.attributes.position, cor=new Float32Array(pos.count*3);
+  // v6: o chão é feito por regiões, com bordas exatamente onde o desfiladeiro começa (x = ±98, z = -6) e onde o promontório
+  // termina (x = ±82, z = -22): o chão que se vê e o chão onde se anda coincidem. Fora do mapa, a mata continua por 40 m.
+  const M=40, LX=HALF.x*2+M*2, LZ=HALF.z*2+M*2, D=Sim.DESFILADEIRO, P=Sim.PROMONTORIO;
   const segs=[]; Sim.TRILHAS.forEach(T=>{ for(let i=1;i<T.pts.length;i++) segs.push({ax:T.pts[i-1][0],az:T.pts[i-1][1],bx:T.pts[i][0],bz:T.pts[i][1],w:T.w}); });
   const dSeg=(x,z,q)=>{ const dx=q.bx-q.ax,dz=q.bz-q.az,L=dx*dx+dz*dz; const t=clamp(L?((x-q.ax)*dx+(z-q.az)*dz)/L:0,0,1); return Math.hypot(x-(q.ax+dx*t),z-(q.az+dz*t)); };
-  for(let i=0;i<pos.count;i++){ const x=pos.getX(i), z=pos.getZ(i);
-    let tr=0; for(const q of segs){ const d=dSeg(x,z,q); tr=Math.max(tr,clamp((q.w/2+.8-d)/1.6,0,1)); }
+  const corMata=(x,z,o)=>{ let tr=0; for(const q of segs){ const d=dSeg(x,z,q); tr=Math.max(tr,clamp((q.w/2+.8-d)/1.6,0,1)); }
     let cl=0; for(const c of Sim.CLAREIRAS){ const d=Math.hypot(x-c.x,z-c.z); cl=Math.max(cl,clamp((c.r+3-d)/6,0,1)); }
     const fora=clamp((Math.max(Math.abs(x)-HALF.x,Math.abs(z)-HALF.z))/12,0,1), var_=.85+.3*n.fbm(x*.05+50,z*.05+50,64,3);
     let r=.62*var_, g=.66*var_, b=.6*var_;                              // mata: escura, puxando para o verde-oliva
     r=lerp(r,.95,cl*.5); g=lerp(g,1.0,cl*.5); b=lerp(b,.78,cl*.5);         // clareira: musgo claro
     r=lerp(r,1.25,tr); g=lerp(g,1.02,tr); b=lerp(b,.78,tr);               // trilha: terra batida
-    r*=1-fora*.55; g*=1-fora*.55; b*=1-fora*.5;
-    cor[i*3]=r; cor[i*3+1]=g; cor[i*3+2]=b; }
-  geo.setAttribute('color',new THREE.BufferAttribute(cor,3));
+    r*=1-fora*.55; g*=1-fora*.55; b*=1-fora*.5; o[0]=r; o[1]=g; o[2]=b; };
+  // promontório: terra clara e capim ralo, mais escuro na sombra da catedral; no adro e perto das portas, pó de pedra
+  const corPlanalto=(x,z,o)=>{ const Z=Sim.zonaDe(x,z), sombra=Z&&Z.name==='Planalto'&&Z.luar<.3?.62:1, var_=.82+.32*n.fbm(x*.07+11,z*.07+3,64,3), capim=smooth(.45,.7,n.fbm(x*.11,z*.11,64,3));
+    let r=lerp(.74,.56,capim)*var_*sombra, g=lerp(.72,.66,capim)*var_*sombra, b=lerp(.68,.5,capim)*var_*sombra;
+    const adro=clamp(1-Math.max(Math.abs(x)/46,(z+27)/6),0,1); r=lerp(r,.95,adro*.6); g=lerp(g,.92,adro*.6); b=lerp(b,.86,adro*.6); o[0]=r; o[1]=g; o[2]=b; };
+  const regiao=(x1,x2,z1,z2,cor)=>{ const g=new THREE.PlaneGeometry(x2-x1,z2-z1,Math.max(1,Math.round((x2-x1)/3)),Math.max(1,Math.round((z2-z1)/3))); g.rotateX(-Math.PI/2); g.translate((x1+x2)/2,0,(z1+z2)/2);
+    const pos=g.attributes.position, c=new Float32Array(pos.count*3), o=[0,0,0]; for(let i=0;i<pos.count;i++){ cor(pos.getX(i),pos.getZ(i),o); c[i*3]=o[0]; c[i*3+1]=o[1]; c[i*3+2]=o[2]; } g.setAttribute('color',new THREE.BufferAttribute(c,3)); return g; };
+  const geo=THREE.BufferGeometryUtils.mergeBufferGeometries([regiao(-LX/2,LX/2,D.z2,LZ/2,corMata),regiao(-LX/2,D.x1,-LZ/2,D.z2,corMata),regiao(D.x2,LX/2,-LZ/2,D.z2,corMata),regiao(P.x1,P.x2,P.z1,P.z2,corPlanalto)].map(g=>g.toNonIndexed()),false);
   const mat=desgastar(new THREE.MeshStandardMaterial({...TEX.chao,vertexColors:true,roughness:1}),{mancha:.5,base:0,poca:.35});
-  ['map','normalMap','roughnessMap'].forEach(k=>{ mat[k]=mat[k].clone(); mat[k].needsUpdate=true; mat[k].repeat.set(LX/7,LZ/7); }); mat.normalScale.set(.8,.8);
+  ['map','normalMap','roughnessMap'].forEach(k=>{ mat[k]=mat[k].clone(); mat[k].needsUpdate=true; mat[k].repeat.set(1/7,1/7); }); mat.normalScale.set(.8,.8);
+  { const uv=geo.attributes.uv, pos=geo.attributes.position; for(let i=0;i<uv.count;i++) uv.setXY(i,pos.getX(i),-pos.getZ(i)); } // UV em metros: a textura não estica entre as regiões
   const chao=new THREE.Mesh(geo,mat); chao.position.y=-.04; chao.receiveShadow=true; chao.userData.dinamico=true; world.add(chao);
 
   // ---------- árvores: mata antiga no espírito do Shaded Woods ----------
@@ -1013,7 +989,7 @@ function buildFloresta(){
   const RREF=[1.2,.7,.58], RFAIXA=[[.95,1.45],[.55,.85],[.45,.7]];
   const lista=Sim.ARVORES.map(q=>({...q}));
   for(let t=0;t<9000&&lista.length<Sim.ARVORES.length+(PERF.minimo?140:PERF.leve?260:420);t++){ const x=(R()*2-1)*(HALF.x+32), z=(R()*2-1)*(HALF.z+32);
-    if(Math.abs(x)<HALF.x+2&&Math.abs(z)<HALF.z+2) continue; const u=R(), tipo=u<.3?0:u<.8?1:2, f=RFAIXA[tipo];
+    if(Math.abs(x)<HALF.x+2&&Math.abs(z)<HALF.z+2) continue; if(Math.abs(x)<Sim.DESFILADEIRO.x2+3&&z<0) continue; /* atrás do promontório é o abismo */ const u=R(), tipo=u<.3?0:u<.8?1:2, f=RFAIXA[tipo];
     lista.push({x,z,r:f[0]+R()*(f[1]-f[0]),tipo,s:.85+R()*.3,rot:R()*6.28,inc:(R()-.5)*.08}); }
   const naoIdx=g=>g.index?g.toNonIndexed():g;
   const limpa=g=>{ g=naoIdx(g); for(const k of Object.keys(g.attributes)) if(!['position','normal','uv'].includes(k)) g.deleteAttribute(k); return g; };
@@ -1089,8 +1065,8 @@ function buildFloresta(){
       g.position.set(C.x+Math.cos(a)*rr,0,C.z+Math.sin(a)*rr).addScaledVector(dir,L/2); g.userData.dinamico=true; world.add(g); } }); }
 
   // telhado da cabana do Ermitão
-  { const mad=WALLDEF.filter(w=>w.kind==='madeira'), cx=(Math.min(...mad.map(w=>w.x1))+Math.max(...mad.map(w=>w.x2)))/2, cz=(Math.min(...mad.map(w=>w.z1))+Math.max(...mad.map(w=>w.z2)))/2;
-    const tel=new THREE.Mesh(new THREE.ConeGeometry(8.2,3,4),MAT.tabuas); tel.position.set(cx,3.6+1.5,cz); tel.rotation.y=Math.PI/4; tel.scale.z=.85; tel.castShadow=true; world.add(tel);
+  { const erm=Sim.NPCS.find(n=>n.id==='ermitao'), mad=WALLDEF.filter(w=>w.kind==='madeira'&&Math.hypot((w.x1+w.x2)/2-erm.x,(w.z1+w.z2)/2-erm.z)<9), cx=(Math.min(...mad.map(w=>w.x1))+Math.max(...mad.map(w=>w.x2)))/2, cz=(Math.min(...mad.map(w=>w.z1))+Math.max(...mad.map(w=>w.z2)))/2;
+    const tel=new THREE.Mesh(new THREE.ConeGeometry(8.2,3,4),MAT.tabuas); tel.position.set(cx,3.6+1.5,cz); // v6: só as paredes da cabana (a carvoaria também tem tábuas) tel.rotation.y=Math.PI/4; tel.scale.z=.85; tel.castShadow=true; world.add(tel);
     const cham=new THREE.Mesh(boxGeo(.8,2.2,.8,1),MAT.wall); cham.position.set(cx-3,5.2,cz+2.5); world.add(cham); }
   // Círculo de Pedras: runas pintadas no chão
   { const d=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.MeshBasicMaterial({map:RT.rune,transparent:true,opacity:.22,color:0xa3203a,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
@@ -1149,96 +1125,55 @@ function texHera(){ return canvasTex(128,256,(c,W,H)=>{ c.clearRect(0,0,W,H); le
 
 const CORVOS=[]; let corvoCorpo=null, corvoAsaE=null, corvoAsaD=null, CHAMAS=null;
 function buildCatedralViva(){
-  const CT=CATEDRAL, cl=Sim.CLAUSTRO;
-  // ---------- nervuras das abóbadas: arcos que partem das paredes e se encontram sob o teto ----------
-  const arco=(w,alto,tubo)=>{ const s=alto, R=(w*w/4+s*s)/(2*s), f=Math.asin(Math.min(1,(w/2)/R)); const g=new THREE.TorusGeometry(R,tubo||.26,5,24,2*f); g.rotateZ(Math.PI/2-f); g.translate(0,-R,0); return g; };
-  const nerv=(w,x,z,girar)=>{ const m=new THREE.Mesh(arco(w,4.6),MAT.wallDark); m.position.set(x,14.7,z); if(girar) m.rotation.y=Math.PI/2; m.castShadow=false; world.add(m); };
-  for(let x=CT.x1+8;x<=CT.x2-8;x+=10){ nerv(cl.z1-CT.z1,x,(CT.z1+cl.z1)/2,true); nerv(CT.z2-cl.z2,x,(CT.z2+cl.z2)/2,true); }
-  for(let z=cl.z1+6;z<=cl.z2-6;z+=10){ nerv(cl.x1-CT.x1,(CT.x1+cl.x1)/2,z,false); nerv(CT.x2-cl.x2,(CT.x2+cl.x2)/2,z,false); }
-  meshBox(CT.x1,CT.x2,14.35,14.75,(CT.z1+cl.z1)/2-.2,(CT.z1+cl.z1)/2+.2,MAT.wallDark).castShadow=false; meshBox(CT.x1,CT.x2,14.35,14.75,(CT.z2+cl.z2)/2-.2,(CT.z2+cl.z2)/2+.2,MAT.wallDark).castShadow=false;
-  meshBox((CT.x1+cl.x1)/2-.2,(CT.x1+cl.x1)/2+.2,14.35,14.75,CT.z1,CT.z2,MAT.wallDark).castShadow=false; meshBox((CT.x2+cl.x2)/2-.2,(CT.x2+cl.x2)/2+.2,14.35,14.75,CT.z1,CT.z2,MAT.wallDark).castShadow=false;
-
-  // ---------- paredes: pilastras, cornijas, arcada do Claustro, estandartes ----------
-  // face = {eixo:'x'|'z' (ao longo de que eixo a parede corre), fixo (coordenada da face), n (+1/-1: para onde a face aponta), a, b}
-  const faces=[], quase=(u,v)=>Math.abs(u-v)<.01;
-  for(const w of Sim.WALLS){ if(w.kind!=='pedra') continue;
-    if(w.h===14){ if(quase(w.z2-w.z1,1)&&quase(w.z1,CT.z1-1)) faces.push({tipo:'fora',eixo:'x',fixo:CT.z1,n:1,a:w.x1,b:w.x2});
-      else if(quase(w.z2-w.z1,1)&&quase(w.z1,CT.z2)) faces.push({tipo:'fora',eixo:'x',fixo:CT.z2,n:-1,a:w.x1,b:w.x2});
-      else if(quase(w.x2-w.x1,1)&&quase(w.x1,CT.x1-1)) faces.push({tipo:'fora',eixo:'z',fixo:CT.x1,n:1,a:w.z1,b:w.z2});
-      else if(quase(w.x2-w.x1,1)&&quase(w.x1,CT.x2)) faces.push({tipo:'fora',eixo:'z',fixo:CT.x2,n:-1,a:w.z1,b:w.z2}); }
-    else if(w.h===9){ const cz=(w.z1+w.z2)/2, cx=(w.x1+w.x2)/2;
-      if(quase(w.z2-w.z1,1)&&(quase(cz,cl.z1)||quase(cz,cl.z2))&&w.x1>=cl.x1-.6&&w.x2<=cl.x2+.6){ const sg=Math.sign(cz); faces.push({tipo:'corredor',eixo:'x',fixo:cz+sg*.5,n:sg,a:w.x1,b:w.x2},{tipo:'patio',eixo:'x',fixo:cz-sg*.5,n:-sg,a:w.x1,b:w.x2}); }
-      else if(quase(w.x2-w.x1,1)&&(quase(cx,cl.x1)||quase(cx,cl.x2))&&w.z1>=cl.z1-.6&&w.z2<=cl.z2+.6){ const sg=Math.sign(cx); faces.push({tipo:'corredor',eixo:'z',fixo:cx+sg*.5,n:sg,a:w.z1,b:w.z2},{tipo:'patio',eixo:'z',fixo:cx-sg*.5,n:-sg,a:w.z1,b:w.z2}); } } }
-  // caixa encostada na face: u ao longo da parede, profundidade para dentro do ambiente
-  const naFace=(F,u1,u2,y1,y2,prof,mat,S)=>{ const f1=F.fixo, f2=F.fixo+F.n*prof; return F.eixo==='x'?meshBox(u1,u2,y1,y2,Math.min(f1,f2),Math.max(f1,f2),mat,S):meshBox(Math.min(f1,f2),Math.max(f1,f2),y1,y2,u1,u2,mat,S); };
-  const posFace=(F,u,y,d)=>F.eixo==='x'?new THREE.Vector3(u,y,F.fixo+F.n*d):new THREE.Vector3(F.fixo+F.n*d,y,u);
-  const giroFace=F=>F.eixo==='x'?(F.n>0?0:Math.PI):(F.n>0?Math.PI/2:-Math.PI/2); // plano voltado para dentro do ambiente
-  const bandeiras=[], velasChao=[];
-  for(const F of faces){ const L=F.b-F.a; if(L<2) continue;
-    if(F.tipo==='fora'){ naFace(F,F.a,F.b,10,10.4,.32,MAT.wallDark); naFace(F,F.a,F.b,13.3,13.6,.26,MAT.wallDark); naFace(F,F.a,F.b,0,.6,.22,MAT.wallDark);
-      const passo=F.eixo==='x'?16:8, base=F.eixo==='x'?-90:-52;
-      for(let u=base;u<=(F.eixo==='x'?90:52);u+=passo){ if(u<F.a+.9||u>F.b-.9) continue; naFace(F,u-.55,u+.55,0,13.3,.34,MAT.wall); naFace(F,u-.75,u+.75,0,.9,.42,MAT.wallDark,2); naFace(F,u-.7,u+.7,9.4,10,.42,MAT.wallDark,2);
-        if(((u-base)/passo)%2===0) velasChao.push(posFace(F,u+1.3,0,.8)); }
-      if(F.eixo==='z') for(const u of [-48,-32,-16,16,32,48]) if(u>F.a+1.2&&u<F.b-1.2) bandeiras.push({F,u,topo:12.4,alt:6.2,larg:2.1}); }
-    else if(F.tipo==='corredor'){ naFace(F,F.a,F.b,7.4,7.75,.28,MAT.wallDark); naFace(F,F.a,F.b,0,.5,.2,MAT.wallDark);
-      for(let u=-52;u<=52;u+=8){ if(u<F.a+.8||u>F.b-.8) continue; naFace(F,u-.45,u+.45,0,8.9,.3,MAT.wall); if(((u+52)/8)%2===1&&u+4<F.b-1&&u+4>F.a+1) bandeiras.push({F,u:u+4,topo:8.3,alt:4.4,larg:1.6}); } }
-    else { // pátio do Claustro: arcada cega, meias-colunas e arcos em relevo
-      naFace(F,F.a,F.b,6.9,7.3,.3,MAT.wallDark); const col=new THREE.CylinderGeometry(.28,.32,5.2,10);
-      for(let u=-54;u<=54;u+=5){ if(u<F.a+.5||u>F.b-.5) continue; const m=new THREE.Mesh(col,MAT.marble); m.position.copy(posFace(F,u,2.6,.05)); world.add(m);
-        const cap=new THREE.Mesh(boxGeo(.8,.3,.5,1),MAT.wallDark); cap.position.copy(posFace(F,u,5.3,.1)); cap.rotation.y=giroFace(F); world.add(cap);
-        if(u+5<=F.b-.5){ const a=new THREE.Mesh(new THREE.TorusGeometry(2.5,.2,5,14,Math.PI),MAT.wallDark); a.position.copy(posFace(F,u+2.5,5.3,.12)); a.rotation.y=giroFace(F); world.add(a); } } } }
-
-  // estandartes: todos numa malha só, balançando no vértice (a barra mexe mais que o topo)
-  { const geos=[]; bandeiras.forEach((B,k)=>{ const g=new THREE.PlaneGeometry(B.larg,B.alt,1,6), uv=g.attributes.uv, var_=k%2;
-      for(let i=0;i<uv.count;i++) uv.setX(i,uv.getX(i)*.5+var_*.5);
-      g.translate(0,-B.alt/2,0); g.rotateY(giroFace(B.F)); const p=posFace(B.F,B.u,B.topo,.4); g.translate(p.x,p.y,p.z); geos.push(g);
-      const barra=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,B.larg+.4,6),MAT.metal); barra.rotation.z=Math.PI/2; barra.rotation.y=giroFace(B.F); barra.position.copy(posFace(B.F,B.u,B.topo+.05,.4)); world.add(barra); });
-    if(geos.length){ const mat=new THREE.MeshStandardMaterial({map:texEstandarte(),alphaTest:.5,side:THREE.DoubleSide,roughness:.95});
-      mat.onBeforeCompile=sh=>{ sh.uniforms.uVento=VENTO; sh.vertexShader='uniform float uVento;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n float solto=(1.0-uv.y)*(1.0-uv.y); transformed+=objectNormal*sin(uVento*1.3+position.x*.37+position.z*.29)*solto*.2;'); };
-      const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos.map(g=>g.toNonIndexed()),false),mat); m.userData.dinamico=true; m.castShadow=false; m.receiveShadow=true; world.add(m); } }
-
-  // ---------- lustres de ferro com velas: luz quente e oscilante nos corredores ----------
-  const chamas=[];
-  const LUSTRES=[[-30,-44],[30,-45],[0,-37],[-65,-47],[64,-47],[-76,-18],[-76,18],[76,-22],[76,22],[-30,44],[28,44],[0,43],[-66,49],[66,50],[-20,-32],[20,-32]];
-  for(const [x,z] of LUSTRES){ const cad=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,6.4,4),MAT.metal); cad.position.set(x,11.8,z); world.add(cad);
-    const aro=new THREE.Mesh(new THREE.TorusGeometry(1.25,.06,6,24),MAT.metal); aro.rotation.x=Math.PI/2; aro.position.set(x,8.5,z); world.add(aro);
-    const aro2=new THREE.Mesh(new THREE.TorusGeometry(.7,.05,6,18),MAT.metal); aro2.rotation.x=Math.PI/2; aro2.position.set(x,8.1,z); world.add(aro2);
-    for(let k=0;k<4;k++){ const r=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.4,4),MAT.metal); r.position.set(x,8.5+.35,z); r.rotation.set(0,k*Math.PI/4,Math.PI/2-.5); world.add(r); }
-    for(let k=0;k<8;k++){ const a=k/8*Math.PI*2, cx=x+Math.cos(a)*1.25, cz=z+Math.sin(a)*1.25, h=.18+((k*7)%3)*.06; const ve=new THREE.Mesh(new THREE.CylinderGeometry(.04,.045,h,6),MAT.wax); ve.position.set(cx,8.56+h/2,cz); world.add(ve); chamas.push(cx,8.62+h,cz); }
-    FONTES.push({x,z,y:8,cor:0xffa050,int:1.5,alc:17}); }
-  // velas no chão: aos pés das pilastras e em volta dos altares da catedral
+  // v6: a cruz latina no promontório. A arquitetura vem de client/mundo.js; aqui fica o que dá vida: lustres e velas,
+  // estandartes que balançam, tapetes gastos nos eixos de passagem, a cor dos vitrais no chão, hera e corvos.
   let sd=606; const R=()=>((sd=(sd*16807)%2147483647)/2147483647);
+  const chamas=[];
+  // ---------- lustres de ferro com velas: a nave, o cruzeiro, os braços do transepto, o coro e a Sala do Capítulo ----------
+  const LUSTRES=[[0,-43,22],[0,-49,22],[0,-55,22],[0,-61,22],[0,-71,30],[-30,-71,20],[-12,-55,11],[12,-49,11],[0,-82,20],[-61,-55,10],[-21,-84,9],[0,-36,16]];
+  for(const [x,z,yc] of LUSTRES){ const y=yc-4, len=Math.max(2,yc+3-y); const cad=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,len,4),MAT.metal); cad.position.set(x,y+len/2,z); world.add(cad);
+    const R1=yc>25?2.1:1.25, aro=new THREE.Mesh(new THREE.TorusGeometry(R1,.06,6,28),MAT.metal); aro.rotation.x=Math.PI/2; aro.position.set(x,y,z); world.add(aro);
+    const aro2=new THREE.Mesh(new THREE.TorusGeometry(R1*.56,.05,6,18),MAT.metal); aro2.rotation.x=Math.PI/2; aro2.position.set(x,y-.4,z); world.add(aro2);
+    for(let k=0;k<4;k++){ const r=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,R1*1.1,4),MAT.metal); r.position.set(x,y+.35,z); r.rotation.set(0,k*Math.PI/4,Math.PI/2-.5); world.add(r); }
+    const n=yc>25?14:8; for(let k=0;k<n;k++){ const a=k/n*Math.PI*2, cx=x+Math.cos(a)*R1, cz=z+Math.sin(a)*R1, h=.18+((k*7)%3)*.06; const ve=new THREE.Mesh(new THREE.CylinderGeometry(.04,.045,h,6),MAT.wax); ve.position.set(cx,y+.06+h/2,cz); world.add(ve); chamas.push(cx,y+.12+h,cz); }
+    FONTES.push({x,z,y:y-.5,cor:0xffa050,int:yc>25?2.1:1.5,alc:yc>25?22:16}); }
+  // velas no chão: aos pés dos pilares da nave, em volta dos altares do promontório e na beira do jubé
   const grupoVelas=(x,z,n,raio)=>{ for(let k=0;k<n;k++){ const a=R()*6.283, r=R()*raio, cx=x+Math.cos(a)*r, cz=z+Math.sin(a)*r, h=.12+R()*.42, rr=.035+R()*.03;
     const ve=new THREE.Mesh(new THREE.CylinderGeometry(rr,rr*1.1,h,6),MAT.wax); ve.position.set(cx,h/2,cz); world.add(ve); chamas.push(cx,h+.06,cz); } };
-  velasChao.forEach(p=>grupoVelas(p.x,p.z,4+Math.floor(R()*4),.45));
-  Sim.ALTARS.filter(A=>Sim.naCatedral(A.x,A.z,0)).forEach(A=>{ for(let k=0;k<6;k++){ const a=k/6*Math.PI*2+.3; grupoVelas(A.x+Math.cos(a)*3.6,A.z+Math.sin(a)*3.6,3,.3); } });
+  for(const [x,z] of PILLARS) grupoVelas(x+(x>0?-1.1:1.1),z+.9,4+Math.floor(R()*4),.4);
+  Sim.ALTARS.filter(A=>Sim.zoneAt(A.x,A.z)!=='Floresta').forEach(A=>{ for(let k=0;k<6;k++){ const a=k/6*Math.PI*2+.3; grupoVelas(A.x+Math.cos(a)*3.6,A.z+Math.sin(a)*3.6,3,.3); } });
+  for(const x of [-10.5,-7.5,7.5,10.5]) grupoVelas(x,-76.6,5,.35);
   { const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(chamas,3));
     CHAMAS=new THREE.Points(g,new THREE.PointsMaterial({size:.24,map:RT.flame,color:0xffc070,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
     CHAMAS.frustumCulled=false; world.add(CHAMAS); }
-
-  // ---------- a cor dos vitrais derramada no chão ----------
-  { const geos=[], rosa=[];
-    for(let x=CT.x1+14;x<=CT.x2-14;x+=16) for(const sz of [-1,1]){ if(Sim.PORTAIS.some(p=>p.eixo==='x'&&Math.sign(p.fixo)===sz&&x>p.a-3.5&&x<p.b+3.5)||(sz>0&&Math.abs(x)<17)) continue;
-      const g=new THREE.PlaneGeometry(3.4,7.5); g.rotateX(-Math.PI/2); g.translate(x,.035,sz*(CT.z2-9)); geos.push(g); }
-    const mt=new THREE.MeshBasicMaterial({map:RT.win,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}); CEU.pocas=[mt];
+  // ---------- estandartes pendurados no clerestório e no transepto, balançando no vértice ----------
+  { const geos=[], ban=(x,z,ry,topo,alt,larg,k)=>{ const g=new THREE.PlaneGeometry(larg,alt,1,6), uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setX(i,uv.getX(i)*.5+(k%2)*.5);
+      g.translate(0,-alt/2,0); g.rotateY(ry); g.translate(x,topo,z); geos.push(g);
+      const barra=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,larg+.4,6),MAT.metal); barra.rotation.z=Math.PI/2; barra.rotation.y=ry; barra.position.set(x,topo+.05,z); world.add(barra); };
+    let k=0; for(const z of [-43,-49,-55,-61]) for(const s of [-1,1]) ban(s*7.3,z,s*Math.PI/2,MUNDO.ALT.lateral+11,6.5,2.2,k++);
+    for(const x of [-38,-24]) ban(x,-64.7,Math.PI,MUNDO.ALT.transepto-4,7,2.4,k++);
+    ban(0,-32.8,Math.PI,MUNDO.ALT.lateral+2,5,2.6,k++);
+    const mat=new THREE.MeshStandardMaterial({map:texEstandarte(),alphaTest:.5,side:THREE.DoubleSide,roughness:.95});
+    mat.onBeforeCompile=sh=>{ sh.uniforms.uVento=VENTO; sh.vertexShader='uniform float uVento;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n float solto=(1.0-uv.y)*(1.0-uv.y); transformed+=objectNormal*sin(uVento*1.3+position.x*.37+position.z*.29)*solto*.2;'); };
+    const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos.map(g=>g.toNonIndexed()),false),mat); m.userData.dinamico=true; m.castShadow=false; m.receiveShadow=true; world.add(m); }
+  // ---------- a cor dos vitrais derramada no chão, sob as janelas das naves laterais ----------
+  { const geos=[]; for(const s of [-1,1]) for(const z of [-37,-43,-49,-55,-61]){ if((s>0&&z===-49)||(s<0&&z===-55)) continue; const g=new THREE.PlaneGeometry(2.6,6); g.rotateX(-Math.PI/2); g.translate(s*12.6,.035,z); geos.push(g); }
+    const mt=new THREE.MeshBasicMaterial({map:RT.win,transparent:true,opacity:.18,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}); CEU.pocas=[mt];
     const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),mt); m.userData.dinamico=true; m.renderOrder=2; world.add(m);
-    for(const sx of [-1,1]){ const r=new THREE.Mesh(new THREE.CircleGeometry(3.4,32),new THREE.MeshBasicMaterial({map:RT.rose,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})); r.rotation.x=-Math.PI/2; r.position.set(sx*(CT.x2-10),.035,0); r.userData.dinamico=true; r.renderOrder=2; world.add(r); CEU.pocas.push(r.material); } }
-
+    const r=new THREE.Mesh(new THREE.CircleGeometry(3.4,32),new THREE.MeshBasicMaterial({map:RT.rose,transparent:true,opacity:.18,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})); r.rotation.x=-Math.PI/2; r.position.set(0,.035,-37); r.userData.dinamico=true; world.add(r); CEU.pocas.push(r.material); }
   // ---------- tapetes gastos nos eixos de passagem ----------
   { const tex=texTapete(), geos=[], tapete=(x1,z1,x2,z2,larg)=>{ const L=Math.hypot(x2-x1,z2-z1), g=new THREE.PlaneGeometry(larg,L), uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setY(i,uv.getY(i)*L/4);
       g.rotateX(-Math.PI/2); g.rotateY(Math.atan2(x2-x1,z2-z1)); g.translate((x1+x2)/2,.022,(z1+z2)/2); geos.push(g); };
-    tapete(-46,-31,46,-31,2.4); tapete(-44,32,44,32,2.4); tapete(-88,-21,-88,21,2.4); tapete(88,-21,88,21,2.4); tapete(-95,0,-71,0,2.2); tapete(78,0,95,0,2.2); tapete(0,50.5,0,57.5,2.6);
+    tapete(0,-33,0,-62,2.2); tapete(-40,-71,40,-71,2.2); tapete(0,-79,0,-84,2); tapete(-60,-49,-60,-61,1.8);
     const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),new THREE.MeshStandardMaterial({map:tex,roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
     m.receiveShadow=true; m.userData.dinamico=true; world.add(m); }
-
-  // ---------- hera subindo pelas brechas, pelo Claustro e pela capela desabada ----------
+  // ---------- hera subindo pela capela desabada, pela torre partida, pelo claustro e pelas ruínas do mosteiro ----------
   { const geos=[], planta=(x,z,ry,alt,larg)=>{ const g=new THREE.PlaneGeometry(larg,alt); g.translate(0,alt/2,0); g.rotateY(ry); g.translate(x,0,z); geos.push(g); };
-    const lugares=[[95.9,-26,-Math.PI/2],[95.9,-18,-Math.PI/2],[-26,57.9,Math.PI],[-18,57.9,Math.PI],[46,-28.6,0],[52,-28.6,0],[57,-33.6,0],[50.6,-40,Math.PI/2],[-95.9,26,Math.PI/2],[-95.9,32,Math.PI/2],[-50.6,-44,Math.PI/2]];
-    for(const [x,z,ry] of lugares) planta(x,z,ry,4+R()*5,2.5+R()*1.5);
-    for(const F of faces.filter(F=>F.tipo==='patio')) for(let k=0;k<4;k++){ const u=F.a+1+R()*(F.b-F.a-2), p=posFace(F,u,0,.06); planta(p.x,p.z,giroFace(F),2+R()*4.5,1.6+R()*1.5); }
+    const lugares=[[44.6,-66,Math.PI/2],[44.6,-76,Math.PI/2],[30,-63.4,0],[36,-63.4,0],[28.6,-36,Math.PI/2],[28.6,-41,Math.PI/2],[-44.6,-48,-Math.PI/2],[-44.6,-60,-Math.PI/2],[-28,-43.4,0],[-16.6,-62,Math.PI/2],
+      [-70.6,-50,-Math.PI/2],[-51.4,-60,Math.PI/2],[16.6,-50,Math.PI/2],[30.6,-86,Math.PI/2]];
+    for(const [x,z,ry] of lugares) planta(x,z,ry,4+R()*6,2.5+R()*1.5);
     const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),new THREE.MeshStandardMaterial({map:texHera(),color:0x9ab080,alphaTest:.45,side:THREE.DoubleSide,roughness:1}));
     m.userData.dinamico=true; m.receiveShadow=true; world.add(m); }
-
   // ---------- corvos: pousados em túmulos, colunas caídas, lápides, estátuas e arcos; voam quando alguém se aproxima ----------
   { const corpo=[new THREE.SphereGeometry(.12,8,6).scale(1,.85,1.8).translate(0,.15,0),new THREE.SphereGeometry(.075,8,6).translate(0,.25,-.17),
       new THREE.ConeGeometry(.024,.1,5).rotateX(-Math.PI/2).translate(0,.24,-.27),new THREE.BoxGeometry(.1,.02,.18).rotateX(.25).translate(0,.16,.24),
@@ -1313,7 +1248,7 @@ function atualizarCorvos(dt,agora){ if(!corvoCorpo) return;
   for(const im of [corvoCorpo,corvoAsaE,corvoAsaD]) im.instanceMatrix.needsUpdate=true;
   if(grito&&SFX.corvo){ SFX.corvo(grito[0],grito[1]); legenda('corvo',grito[0],grito[1]); }
   if(CHAMAS) CHAMAS.material.size=.22+Math.sin(agora*.013)*.015+Math.random()*.02;
-  VENTO.value=agora*.001; }
+  VENTO.value=agora*.001; if(MUNDO) MUNDO.quadro(1/60); }
 let AV=[];
 function buildAltars(){
   AV=Sim.ALTARS.map((d,i)=>{ const g=new THREE.Group(); g.position.set(d.x,0,d.z); world.add(g); const sgn=Math.sign(d.z||1);
@@ -1540,6 +1475,9 @@ function animateActor(m,a,x,z,yaw,dt,now){
       else { U.armL.rotation.set(-sw*.9,0,.08); U.armR.rotation.set(.35+sw*.5,0,-.08); U.gun.rotation.x=-.35; }
       if(U.rune) U.rune.material.color.setHex(a.runeT>0?0xffd0ff:0x9a4ad0);
     }
+    // v6: agachado. Um joelho quase no chão e o tronco à frente; andando, passo curto. Lê-se de longe como "abaixado".
+    if(a.ag&&a.sealing<0){ const sw2=moving?Math.sin(A.phase)*.22:0; B.position.y=-.5; U.legL.rotation.x=-1.35+sw2; U.legR.rotation.x=.35-sw2; U.torso.rotation.x+=-.32; U.head.rotation.x+=.25;
+      if(moving) m.position.y=Math.abs(Math.sin(A.phase))*.02; }
     if(a.stunT>0){ U.torso.rotation.z=Math.sin(t*14)*.12; U.head.rotation.z=Math.sin(t*11)*.2; }
     // reação ao golpe: o tronco cede na direção do tiro, o corpo dá meio passo para trás, a cabeça estala no tiro na
     // cabeça e os braços abrem; sobe em 35 ms e assenta em ~0,3 s. Só visual: a caixa de colisão é a do servidor.
@@ -1661,7 +1599,7 @@ function updateParticles(dt){
 }
 let vmH,vmFlash,vmC,vmOrb,vmMaoH,vmMaoC,vmCarabina,vmRevolver,vmCetro,vmRunas=[];
 // a primeira pessoa (armas, mãos, braços e as animações) fica em client/arma.js
-let ARMA=null; const FX0={x:0,y:0,z:0};
+let ARMA=null, MUNDO=null; const FX0={x:0,y:0,z:0};
 function buildViewmodels(){
   ARMA=window.RR_ARMA({nivel:()=>PERF.nivelAtual,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula:()=>ejetarCapsula()});
   ARMA.construir(); ({vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}=ARMA.vm); }
@@ -1746,7 +1684,8 @@ const SFX={
   sigil:(x,z,a,meu)=>{ if(tocar('sigilo',meu?{vol:.7,max:3}:{x,z,raio:35,vol:.85,max:5})) return; sfxTone(x,z,35,720,160,.35,'triangle',.35); sfxNoise(x,z,35,.3,'bandpass',2400,3,.25); },
   step:(x,z)=>passo(x,z,16,.55),
   passoForte:(x,z)=>passo(x,z,24,.75,true),
-  mystep:()=>passo(null,null,1,.12),
+  mystep:()=>passo(null,null,1,VM.agK>.5?.05:.12),
+  passoLeve:(x,z)=>passo(x,z,5,.22),
   hit:()=>{ tocar('impacto_corpo',{vol:.5,max:2}); sfxTone(null,null,1,1900,1500,.045,'sine',.07); }, // a confirmação de acerto leva o golpe gravado e um tique curto
   hurt:()=>{ if(!tocar('dor',{vol:.75,max:2})) sfxTone(null,null,1,220,90,.25,'sawtooth',.2); },
   bloqueio:()=>{ if(!tocar('impacto_pedra',{vol:.6,taxa:1.3,max:2})) sfxTone(null,null,1,2600,2300,.06,'square',.08); sfxTone(null,null,1,3100,2900,.09,'sine',.05); },
@@ -1796,17 +1735,19 @@ const SFX={
 };
 // Passos pelo chão de cada lugar: pedra na catedral e no Claustro, terra batida nas trilhas, folhas secas na mata
 // fechada; com chuva, todo passo fora do teto espirra.
-function superficie(x,z){ if(Sim.naCatedral(x,z)) return 'pedra';
+function superficie(x,z){ const zn=Sim.zoneAt(x,z); if(zn==='Catedral'||zn==='Claustro') return 'pedra';
+  if(zn==='Desfiladeiro') return x<-60?'terra':'pedra'; // Ponte Grande e Aqueduto de pedra; o tronco da Ponte Caída abafa
+  if(zn==='Planalto') return Math.abs(x)<46&&z>-32?'pedra':'terra'; // o adro é de lajes; o resto do promontório, terra batida
   for(const sg of Sim.SEG_TRILHA){ const dx=sg.bx-sg.ax,dz=sg.bz-sg.az,L=dx*dx+dz*dz; let t=L?((x-sg.ax)*dx+(z-sg.az)*dz)/L:0; t=clamp(t,0,1); if(Math.hypot(x-(sg.ax+dx*t),z-(sg.az+dz*t))<sg.w/2+.4) return 'terra'; }
   return 'folhas'; }
 function passo(x,z,raio,vol,forte){ const P=x==null?camera.position:{x,z}, sup=superficie(P.x,P.z), v=vol*(forte?1.1:1);
-  const molhado=CL.chuva>.2&&!(Sim.naCatedral(P.x,P.z)&&!naClaustro(P.x,P.z));
+  const molhado=CL.chuva>.2&&!Sim.coberto(P.x,P.z);
   if(tocar('passo_'+sup,x==null?{vol:v*(sup==='pedra'?1.5:1.25),max:3,varia:.06}:{x,z,raio,vol:v*(sup==='pedra'?1.6:1.35),max:6,varia:.06})){ // gravações de passo; na chuva, o barro por cima
     if(molhado) tocar('passo_lama',x==null?{vol:v*.9*CL.chuva,max:2}:{x,z,raio,vol:v*CL.chuva,max:4}); return; }
   if(sup==='pedra'){ sfxNoise(x,z,raio,.06,'bandpass',1900+rand(-200,200),2.2,v*.55); sfxNoise(x,z,raio,.08,'lowpass',300,.8,v*.6); }
   else if(sup==='terra') sfxNoise(x,z,raio,.09,'lowpass',520+rand(-60,60),.8,v);
   else { sfxNoise(x,z,raio,.11,'bandpass',2600+rand(-400,400),1.2,v*.5); setTimeout(()=>sfxNoise(x,z,raio,.07,'highpass',3200,1,v*.3),35); sfxNoise(x,z,raio,.08,'lowpass',380,.8,v*.5); }
-  if(CL.chuva>.2&&!(Sim.naCatedral(P.x,P.z)&&!naClaustro(P.x,P.z))) sfxNoise(x,z,raio,.12,'highpass',1800,1,v*.35*CL.chuva); }
+  if(CL.chuva>.2&&!Sim.coberto(P.x,P.z)) sfxNoise(x,z,raio,.12,'highpass',1800,1,v*.35*CL.chuva); }
 function naClaustro(x,z){ const C=Sim.CLAUSTRO; return x>C.x1&&x<C.x2&&z>C.z1&&z<C.z2; }
 
 // ================= CLIMA =================
@@ -1831,11 +1772,11 @@ function atualizarClima(dt,now){
   const jogo=V&&V.phase==='play', tipo=jogo?climaDe(chaveClima()+':'+(V.round||1)):'limpa', C=CLIMAS[tipo];
   if(tipo!==CL.tipo){ CL.tipo=tipo; CL.raioT=rand(12,30); }
   const k=Math.min(1,dt*.5); CL.nevoa=lerp(CL.nevoa,C.nevoa,k); CL.chuva=lerp(CL.chuva,C.chuva,k); CL.estrelas=lerp(CL.estrelas,C.estrelas,k);
-  const P=camera.position, coberto=Sim.naCatedral(P.x,P.z)&&!naClaustro(P.x,P.z);
+  const P=camera.position, coberto=Sim.coberto(P.x,P.z);
   if(CL.chuva>.02&&!CL.mesh) construirChuva();
   if(CL.mesh){ const N=CL.gotas.length/3, pos=CL.mesh.geometry.attributes.position.array, vy=17+CL.chuva*6, vx=2.5*CL.chuva, n=Math.round(N*Math.min(1,CL.chuva*1.2));
     for(let i=0;i<N;i++){ let y=CL.gotas[i*3+1]-vy*dt; if(y<0) y+=18; CL.gotas[i*3+1]=y; let x=P.x+CL.gotas[i*3], z=P.z+CL.gotas[i*3+2], yy=y;
-      if(i>=n||(Sim.naCatedral(x,z)&&!naClaustro(x,z))) yy=-60; // sob o telhado não chove
+      if(i>=n||Sim.coberto(x,z)) yy=-60; // sob o telhado não chove
       pos[i*6]=x; pos[i*6+1]=yy; pos[i*6+2]=z; pos[i*6+3]=x-vx*.04; pos[i*6+4]=yy+.55; pos[i*6+5]=z; }
     CL.mesh.geometry.attributes.position.needsUpdate=true; CL.mesh.material.opacity=.32*Math.min(1,CL.chuva*1.5); CL.mesh.visible=CL.chuva>.02; }
   chuvaSom(CL.chuva>.05&&jogo); if(CL.au){ const t=AU.ctx.currentTime; CL.au.g.gain.setTargetAtTime(.09*CL.chuva*(coberto?.55:1),t,.4); CL.au.lp.frequency.setTargetAtTime(coberto?650:4200,t,.3); }
@@ -1850,7 +1791,7 @@ const _branco=new THREE.Color(2.5,2.6,3);
 
 // Legendas sonoras: cada som importante vira uma linha com seta (para onde ele está em relação à câmera) e distância.
 // Só aparece o que de fato se ouve (mesmo ganho do som espacial, com o abafamento das paredes).
-const LEG_TXT={shot:['Tiro',55,''],sigil:['Sigilo',35,'cult'],step:['Passos',16,''],passoForte:['Passos pesados',24,''],collect:['Algo foi coletado',26,''],flare:['Sinalizador aceso',20,''],
+const LEG_TXT={shot:['Tiro',55,''],sigil:['Sigilo',35,'cult'],step:['Passos',16,''],passoForte:['Passos pesados',24,''],passoLeve:['Passos leves',5,''],collect:['Algo foi coletado',26,''],flare:['Sinalizador aceso',20,''],
   rune:['Runa conjurada',30,'cult'],arrasto:['Arrasto de ritual',45,'rit'],push:['Empurrão',28,'cult'],flash:['Clarão',30,''],purify:['Purificação',30,''],reload:['Recarga',18,''],estouro:['Sigilo estourou',22,'cult'],
   corvo:['Corvos levantam voo',40,''],whisper:['Sussurros',26,'cult'],evp:['Sussurros num altar',26,'cult'],hab:['Feitiço',34,'']};
 const LEG=new Map();
@@ -1961,8 +1902,8 @@ function evVisible(e,role,meId){
 }
 
 // ================= INPUT =================
-const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',inspecionar:'KeyI',map:'Tab',ping:'KeyZ',falas:'KeyV',caderno:'KeyJ'};
-const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',inspecionar:'Inspecionar a arma',map:'Planta da catedral',ping:'Marcar para a equipe',falas:'Frases rápidas',caderno:'Caderno dos altares'};
+const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',agachar:'KeyC',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',inspecionar:'KeyI',map:'Tab',ping:'KeyZ',falas:'KeyV',caderno:'KeyJ'};
+const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',agachar:'Agachar (segurar): devagar e quase sem som',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',inspecionar:'Inspecionar a arma',map:'Planta da catedral',ping:'Marcar para a equipe',falas:'Frases rápidas',caderno:'Caderno dos altares'};
 const KEYNAMES={Space:'Espaço',ShiftLeft:'Shift esq.',ShiftRight:'Shift dir.',ControlLeft:'Ctrl esq.',ControlRight:'Ctrl dir.',AltLeft:'Alt esq.',AltRight:'Alt dir.',Tab:'Tab',Enter:'Enter',Backquote:'`',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',CapsLock:'CapsLock',
   Mouse0:'Botão esq.',Mouse1:'Botão meio',Mouse2:'Botão dir.',Mouse3:'Mouse 4',Mouse4:'Mouse 5'};
 const keyLabel=c=>KEYNAMES[c]||(c||'').replace(/^Key/,'').replace(/^Digit/,'').replace(/^Numpad/,'Num ')||'—';
@@ -2085,7 +2026,7 @@ function olharToque(id,x,y){ const o=TQ.olhar[id]; if(!o) return; const dx=x-o.x
   document.querySelectorAll('#toque .tq[data-a]').forEach(b=>{ const a=b.dataset.a;
     b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); b.setPointerCapture(e.pointerId); const code=SET.binds[a];
       if(a==='map'){ const aberto=$('#tabMap').style.display==='grid'; if(aberto) released(code); else pressed(code); b.classList.toggle('on',!aberto); return; }
-      if(a==='sprint'){ if(TQ.btn.corre){ released(code); delete TQ.btn.corre; b.classList.remove('on'); } else { TQ.btn.corre=code; pressed(code); b.classList.add('on'); } return; }
+      if(a==='sprint'||a==='agachar'){ const k='tg_'+a; if(TQ.btn[k]){ released(code); delete TQ.btn[k]; b.classList.remove('on'); } else { TQ.btn[k]=code; pressed(code); b.classList.add('on'); } return; } // no toque, correr e agachar ligam e desligam
       TQ.btn['p'+e.pointerId]=code; pressed(code); b.classList.add('on'); if(a==='fire') inicioOlhar(e); });
     const fim=e=>{ const code=TQ.btn['p'+e.pointerId]; if(code){ released(code); delete TQ.btn['p'+e.pointerId]; b.classList.remove('on'); } fimOlhar(e); };
     b.addEventListener('pointermove',e=>{ if(a==='fire') movOlhar(e); });
@@ -2102,7 +2043,7 @@ function setBind(acao,code){
 // A interage, B transfere, X recarrega, Y lanterna, LB sensor, R3 marca (ping), cima abre as frases, baixo sinalizador,
 // Select planta, Start pausa. Nos menus: cima/baixo escolhe, A confirma, B volta.
 const PAD={ativo:false,mx:0,mz:0,ant:[],eixoAnt:0,repet:0};
-const PAD_BOTAO={0:'use',1:'use2',2:'reload',3:'lantern',4:'sensor',5:'abil',6:'sprint',7:'fire',8:'map',10:'sprint',11:'ping',13:'flare'};
+const PAD_BOTAO={0:'use',1:'agachar',14:'use2',2:'reload',3:'lantern',4:'sensor',5:'abil',6:'sprint',7:'fire',8:'map',10:'sprint',11:'ping',13:'flare'};
 function lerControle(dt){ const gps=navigator.getGamepads?navigator.getGamepads():[]; let gp=null; for(const g of gps) if(g&&g.connected){ gp=g; break; }
   if(!gp){ if(PAD.ativo){ PAD.ativo=false; PAD.mx=PAD.mz=0; } return; }
   const b=i=>!!(gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>.5)), ax=i=>{ const v=gp.axes[i]||0; return Math.abs(v)<.18?0:Math.sign(v)*(Math.abs(v)-.18)/.82; };
@@ -2132,7 +2073,7 @@ function readInput(dt){
   let mx=0,mz=0; if(act){ if(held('fwd')) mz-=1; if(held('back')) mz+=1; if(held('left')) mx-=1; if(held('right')) mx+=1;
     if(TQ.ativo){ mx=clamp(mx+TQ.mx,-1,1); mz=clamp(mz+TQ.mz,-1,1); }
     if(PAD.ativo){ mx=clamp(mx+PAD.mx,-1,1); mz=clamp(mz+PAD.mz,-1,1); } }
-  return {mx,mz,sp:act&&held('sprint'),yaw:LOOK.yaw,pitch:LOOK.pitch,fire:act&&held('fire'),use:act&&held('use'),use2:act&&held('use2'),c:{...C},dt,viewT:renderT()};
+  return {mx,mz,sp:act&&held('sprint'),ag:act&&held('agachar'),yaw:LOOK.yaw,pitch:LOOK.pitch,fire:act&&held('fire'),use:act&&held('use'),use2:act&&held('use2'),c:{...C},dt,viewT:renderT()};
 }
 
 // ================= NETWORK =================
@@ -2215,7 +2156,7 @@ function handleEvents(list,online){
     switch(e.type){
       case 'feed': feed(e.msg,e.cls); anotarCaderno(e.msg); break;
       case 'sfx': if(e.k==='sigil'&&e.a!==id){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.cast=1; }
-        if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z,e.a); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
+        if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte'||e.k==='passoLeve')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z,e.a); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
       case 'tracer': { const own=e.a===id; const p0=own?camera.localToWorld(new THREE.Vector3(.27,-.2,-.9)):new THREE.Vector3(e.x0,e.y0+.1,e.z0);
         const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0,new THREE.Vector3(e.x1,e.y1,e.z1)]),new THREE.LineBasicMaterial({color:0xffd9a0,transparent:true,opacity:.8,toneMapped:false})); world.add(l); tracers.push({l,t:.07});
         { const dx=e.x1-e.x0, dy=e.y1-e.y0, dz=e.z1-e.z0, L=Math.hypot(dx,dy,dz)||1, ux=dx/L, uy=dy/L, uz=dz/L;
@@ -2877,12 +2818,15 @@ function plantaFixa(X,Z,S){ if(PLANTA_FIXA) return PLANTA_FIXA;
   Sim.CLAREIRAS.forEach(c=>h+=`<circle cx="${f(X(c.x))}" cy="${f(Z(c.z))}" r="${f(c.r*S)}" fill="#18211a"/>`);
   Sim.TRILHAS.forEach(T=>h+=`<polyline points="${T.pts.map(([x,z])=>f(X(x))+','+f(Z(z))).join(' ')}" fill="none" stroke="#3b3326" stroke-width="${f(T.w*S)}" stroke-linecap="round" stroke-linejoin="round"/>`);
   Sim.ARVORES.forEach(q=>h+=`<circle cx="${f(X(q.x))}" cy="${f(Z(q.z))}" r="${f(Math.max(1,(q.tipo===0?4:q.tipo===1?2.6:1.2)*S))}" fill="${q.tipo===2?'#2a2620':'#1a261b'}"/>`);
-  h+=`<rect x="${X(CT.x1)}" y="${Z(CT.z1)}" width="${(CT.x2-CT.x1)*S}" height="${(CT.z2-CT.z1)*S}" fill="#15181c"/>`;
-  h+=`<rect x="${X(cl.x1)}" y="${Z(cl.z1)}" width="${(cl.x2-cl.x1)*S}" height="${(cl.z2-cl.z1)*S}" fill="#191d21"/>`;
-  h+=`<text x="${X(0)}" y="${Z(cl.z2)-5}" fill="#6d7e8e" font-size="11" text-anchor="middle" font-family="IM Fell English, Georgia, serif">Claustro</text>`;
+  // v6: o desfiladeiro (preto), o promontório, a cruz da catedral e as travessias
+  { const D=Sim.DESFILADEIRO, P=Sim.PROMONTORIO; h+=`<rect x="${f(X(D.x1))}" y="${f(Z(D.z1))}" width="${f((D.x2-D.x1)*S)}" height="${f((D.z2-D.z1)*S)}" fill="#030405"/>`;
+    h+=`<rect x="${f(X(P.x1))}" y="${f(Z(P.z1))}" width="${f((P.x2-P.x1)*S)}" height="${f((P.z2-P.z1)*S)}" fill="#1b1d20"/>`;
+    for(const Zn of Sim.ZONAS.slice().reverse()){ if(Zn.name==='Catedral'||Zn.name==='Claustro') h+=`<rect x="${f(X(Zn.x1))}" y="${f(Z(Zn.z1))}" width="${f((Zn.x2-Zn.x1)*S)}" height="${f((Zn.z2-Zn.z1)*S)}" fill="${Zn.name==='Claustro'?'#1d2620':'#23252b'}"/>`; }
+    h+=`<circle cx="${f(X(0))}" cy="${f(Z(-85))}" r="${f(11*S)}" fill="#23252b"/>`;
+    for(const T of Sim.TRAVESSIAS) h+=T.eixo==='z'?`<rect x="${f(X(T.a))}" y="${f(Z(T.de))}" width="${f((T.b-T.a)*S)}" height="${f((T.ate-T.de)*S)}" fill="#4a4438"/>`:`<rect x="${f(X(T.de))}" y="${f(Z(T.a))}" width="${f((T.ate-T.de)*S)}" height="${f((T.b-T.a)*S)}" fill="${T.nome==='Ponte Caída'?'#4a3a28':'#4a4438'}"/>`; }
   PEWS.forEach(p=>h+=`<rect x="${X(Math.min(p[0],p[1]))}" y="${Z(Math.min(p[2],p[3]))}" width="${Math.abs(p[1]-p[0])*S}" height="${Math.abs(p[3]-p[2])*S}" fill="#2a2119"/>`);
-  const COR={ruina:'#4e4e46',pilar_ruina:'#5e5e55',estatua:'#8a8a80',sebe:'#3a5a3c',ossos:'#8a7f68',menir:'#77746a',carvalho:'#4a3a2e',tenda:'#5a4c34',madeira:'#6a5040',mausoleu:'#58524a',torre:'#6a645a',limite:'#2b3328'};
-  Sim.WALLS.forEach(b=>{ if(b.kind==='arvore_f') return; if(b.kind==='espinheiro'){ h+=`<circle cx="${f(X((b.x1+b.x2)/2))}" cy="${f(Z((b.z1+b.z2)/2))}" r="${f(Math.max(1,(b.x2-b.x1)*.6*S))}" fill="#15201a"/>`; return; } const low=!b.tall; h+=`<rect x="${f(X(b.x1))}" y="${f(Z(b.z1))}" width="${f(Math.max(low?1.2:1.5,(b.x2-b.x1)*S))}" height="${f(Math.max(low?1.2:1.5,(b.z2-b.z1)*S))}" fill="${COR[b.kind]||(low?(b.kind==='sebe'?'#27402a':'#3a3630'):'#58524a')}"/>`; });
+  const COR={abismo:'none',catedral:'#6a645a',fachada:'#6a645a',torre_oeste:'#6a645a',torre_leste:'#5a554c',abside:'#6a645a',jube:'#5a554c',claustro:'#5a554c',parapeito:'#4a4438',penhasco:'#4e4a40',ruina:'#4e4e46',pilar_ruina:'#5e5e55',estatua:'#8a8a80',sebe:'#3a5a3c',ossos:'#8a7f68',menir:'#77746a',carvalho:'#4a3a2e',tenda:'#5a4c34',madeira:'#6a5040',mausoleu:'#58524a',torre:'#6a645a',limite:'#2b3328'};
+  Sim.WALLS.forEach(b=>{ if(b.kind==='arvore_f'||b.kind==='abismo') return; if(b.kind==='espinheiro'){ h+=`<circle cx="${f(X((b.x1+b.x2)/2))}" cy="${f(Z((b.z1+b.z2)/2))}" r="${f(Math.max(1,(b.x2-b.x1)*.6*S))}" fill="#15201a"/>`; return; } const low=!b.tall; h+=`<rect x="${f(X(b.x1))}" y="${f(Z(b.z1))}" width="${f(Math.max(low?1.2:1.5,(b.x2-b.x1)*S))}" height="${f(Math.max(low?1.2:1.5,(b.z2-b.z1)*S))}" fill="${COR[b.kind]||(low?(b.kind==='sebe'?'#27402a':'#3a3630'):'#58524a')}"/>`; });
   TALL.forEach(b=>{ if(Sim.WALLS.some(q=>q.x1===b.x1&&q.z1===b.z1&&q.x2===b.x2&&q.z2===b.z2)) return; h+=`<rect x="${f(X(b.x1))}" y="${f(Z(b.z1))}" width="${f(Math.max(1.5,(b.x2-b.x1)*S))}" height="${f(Math.max(1.5,(b.z2-b.z1)*S))}" fill="#58524a"/>`; }); // pilares
   if(LAB().economia) NPCS.forEach(n=>h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="#d2ad62"/><text x="${X(n.x)}" y="${Z(n.z)-7}" fill="#d2ad62" font-size="10" text-anchor="middle" font-family="Barlow Condensed, sans-serif">${n.nome.replace(/^(o|a) /,'')}</text>`);
   (Sim.LUGARES||[]).forEach(L=>h+=`<text x="${X(L.x)}" y="${Z(L.z)}" fill="#8a8272" font-size="10" font-style="italic" text-anchor="middle" font-family="IM Fell English, Georgia, serif">${L.name}</text>`);
@@ -3315,7 +3259,7 @@ function novidadesScreen(){ setScreen('novidades',`<h2 style="text-align:center"
     <div class="novidades">${NOVIDADES.map(([t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
     <div class="btnrow"><button class="go" id="bNovOk">Voltar</button></div>`,()=>{ $('#bNovOk').onclick=()=>{ novidadesAberto=false; screenKey=''; }; }); }
 // cola das teclas, na pausa
-function colaTeclas(){ const r=myRole()||'H', L=[['fwd','Andar'],['sprint','Correr'],['fire','Atacar'],['abil','Feitiço'],['use','Interagir'],...(r==='H'?[['sensor','Sensor'],['lantern','Lanterna'],['flare','Flare'],['reload','Recarregar']]:[['use2','Transferir']]),['map','Planta'],['caderno','Caderno'],['ping','Ping'],['falas','Frases']];
+function colaTeclas(){ const r=myRole()||'H', L=[['fwd','Andar'],['sprint','Correr'],['agachar','Agachar'],['fire','Atacar'],['abil','Feitiço'],['use','Interagir'],...(r==='H'?[['sensor','Sensor'],['lantern','Lanterna'],['flare','Flare'],['reload','Recarregar']]:[['use2','Transferir']]),['map','Planta'],['caderno','Caderno'],['ping','Ping'],['falas','Frases']];
   return `<div class="cola">${L.map(([a,n])=>`<span><kbd>${a==='fwd'?(SET.binds.fwd==='KeyW'&&SET.binds.left==='KeyA'&&SET.binds.back==='KeyS'&&SET.binds.right==='KeyD'?'WASD':['fwd','left','back','right'].map(kb).join(' ')):kb(a)}</kbd>${n}</span>`).join('')}${MODE==='online'?'<span><kbd>Enter</kbd>Chat</span>':''}</div>`; }
 let comoJogarAberto=false;
 function comoJogarScreen(){
@@ -3462,20 +3406,22 @@ function tick(now){
   habNotaT=Math.max(0,habNotaT-dt); if(habNotaT<=0) $('#habNota').classList.remove('on');
   atordT=Math.max(0,atordT-dt); $('#atordoado').style.opacity=(atordT*.9).toFixed(2);
   abateT=Math.max(0,abateT-dt); $('#abate').style.opacity=(abateT*4).toFixed(2);
+  { const ag=(VM.agK||0)>.5; if(ag!==VM.chipAg){ VM.chipAg=ag; $('#agachadoChip').classList.toggle('on',ag); } }
   for(let i=tracers.length-1;i>=0;i--){ const tr=tracers[i]; tr.t-=dt; tr.l.material.opacity=Math.max(0,tr.t/.07); if(tr.t<=0){ world.remove(tr.l); descartar(tr.l); tracers.splice(i,1); } }
   const m=V?me():null;
   if(V&&V.phase==='play'&&m){
     syncActors(dt); syncAltars(dt); syncNoite(dt,now/1000); amostrarNoite(); if(DES.feito) DES.feito=null;
     const pos=MODE==='online'&&NET.pred?NET.pred:m;
     const s=m.sanity, shake=s<40&&!SET.suave?(40-s)/40*.012:0, down=m.st==='down';
-    const I=ULT_INP||{mx:0,mz:0,sp:false}, correndo=I.sp&&I.mz<0&&pos.moving&&m.st==='alive';
+    const I=ULT_INP||{mx:0,mz:0,sp:false}, agachado=!!I.ag&&m.st==='alive', correndo=!agachado&&I.sp&&I.mz<0&&pos.moving&&m.st==='alive';
+    VM.agK=lerp(VM.agK||0,agachado?1:0,Math.min(1,dt*(agachado?9:7))); // desce em ~0,25 s e sobe um pouco mais devagar
     // passos e balanço no mesmo ciclo: dois passos por ciclo (andando 0,45 s, correndo 0,3 s, como os passos que os
     // outros ouvem); o passo toca no ponto mais baixo do balanço, e o balanço some suave ao parar
     const andando=pos.moving&&m.st==='alive'; VM.bobK=lerp(VM.bobK||0,andando?1:0,Math.min(1,dt*8));
-    if(andando){ const f0=VM.fase; VM.fase+=dt*Math.PI/(correndo?.3:.45); if(Math.floor(f0/Math.PI+.5)!==Math.floor(VM.fase/Math.PI+.5)){ SFX.mystep(); VM.passoLado=-VM.passoLado||1; } }
-    const bob=-Math.abs(Math.sin(VM.fase))*(correndo?.05:.034)*VM.bobK*(SET.suave?.5:1);
+    if(andando){ const f0=VM.fase; VM.fase+=dt*Math.PI/(correndo?.3:agachado?.6:.45); if(Math.floor(f0/Math.PI+.5)!==Math.floor(VM.fase/Math.PI+.5)){ SFX.mystep(); VM.passoLado=-VM.passoLado||1; } }
+    const bob=-Math.abs(Math.sin(VM.fase))*(correndo?.05:.034)*VM.bobK*(SET.suave?.5:1)*(1-VM.agK*.55);
     const suav=MODE==='online'?Math.exp(-dt*14):0; NET.erro.x*=suav; NET.erro.z*=suav;
-    camera.position.set(pos.x+NET.erro.x,down?.45:1.67+bob,pos.z+NET.erro.z); // sensação: campo de visão abre na corrida, câmera inclina ao andar de lado, coice volta sozinho
+    camera.position.set(pos.x+NET.erro.x,down?.45:lerp(1.67,1.0,VM.agK)+bob,pos.z+NET.erro.z); // sensação: campo de visão abre na corrida, câmera inclina ao andar de lado, coice volta sozinho
     FX.fovPunch=lerp(FX.fovPunch,0,Math.min(1,dt*10)); FX.rollImp=lerp(FX.rollImp,0,Math.min(1,dt*7));
     FX.fov=lerp(FX.fov,SET.fov+(correndo?7:0),.1); const fovAlvo=FX.fov+FX.fovPunch; if(Math.abs(camera.fov-fovAlvo)>.05){ camera.fov=fovAlvo; camera.updateProjectionMatrix(); }
     FX.roll=lerp(FX.roll,pos.moving&&!down?-I.mx*.022:0,.1); FX.kickP=lerp(FX.kickP,0,.14);
@@ -3490,7 +3436,7 @@ function tick(now){
     const fb=VM.fase, bk=VM.bobK, bx=Math.cos(fb)*.011*bk, by=Math.abs(Math.sin(fb))*.013*bk+(1-bk)*Math.sin(now*.002)*.003;
     // corpo da primeira pessoa (balanço, atraso do mouse e do passo); a arma, as mãos e os clipes ficam em client/arma.js
     { const altC=m.team==='C'?V.altars.find(A=>A.state==='active'&&Math.hypot(pos.x-A.x,pos.z-A.z)<CFG.circleR):null;
-      ARMA.quadro(dt,m,{agora:now/1000,andando,correndo,canalizando:!!altC&&!(m.hold&&m.hold.key),altar:altC,
+      ARMA.quadro(dt,m,{agora:now/1000,andando,correndo,agK:VM.agK,canalizando:!!altC&&!(m.hold&&m.hold.key),altar:altC,
         corpo:{x:-VM.sx+bx-VM.ix*.012,y:-VM.sy-by,z:VM.iz*-.008,rx:VM.iz*-.03,ry:VM.sx*1.4,rz:-VM.ix*.05}}); }
     // (o passo do jogador toca no ciclo do balanço, acima)
     // sanity fx (client side)
@@ -3500,7 +3446,7 @@ function tick(now){
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.25&&SFX.assombro(pos.x+Math.cos(a)*9,pos.z+Math.sin(a)*9)){} else if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
-    gotaT-=dt; if(gotaT<=0){ gotaT=rand(2.5,8); if(Sim.naCatedral(pos.x,pos.z)){ const a=rand(0,6.283), r=rand(2,7); SFX.gota(pos.x+Math.cos(a)*r,pos.z+Math.sin(a)*r); } } // pingos de água na nave
+    gotaT-=dt; if(gotaT<=0){ gotaT=rand(2.5,8); if(Sim.coberto(pos.x,pos.z)){ const a=rand(0,6.283), r=rand(2,7); SFX.gota(pos.x+Math.cos(a)*r,pos.z+Math.sin(a)*r); } } // pingos de água na nave
     updateHUD(dt,m); atualizarPings(dt); atualizarCaderno(); atualizarFalasBots(); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';

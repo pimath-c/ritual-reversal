@@ -23,7 +23,7 @@ const V=v=>{ if(v===null||v===undefined) return 'null'; if(typeof v==='boolean')
 const O=o=>'{'+Object.keys(o).filter(k=>o[k]!==undefined).sort().map(k=>k+':'+V(o[k])).join(',')+'}';
 function linha(Sim,g,nLog){
   const p=['t:'+H(g.t),'ph:'+g.phase,'rt:'+H(g.rt),'m:'+g.momento];
-  for(const a of g.actors) p.push([a.id,a.st,H(a.x),H(a.z),H(a.yaw),H(a.hp),a.reag,a.sealing,a.hold.key,H(a.hold.t),a.ai.goalKey,H(a.fervor),a.ammo,a.reserve,a.obolos,H(a.sanity),a.ai.path.length,a.cls,a.feitico].join(','));
+  for(const a of g.actors) p.push([a.id,a.st,H(a.x),H(a.z),H(a.yaw),H(a.hp),a.reag,a.sealing,a.hold.key,H(a.hold.t),a.ai.goalKey,H(a.fervor),a.ammo,a.reserve,a.obolos,H(a.sanity),a.ai.path.length,a.cls,a.feitico,a.ag?1:0].join(','));
   for(const A of g.altars) p.push([A.state,A.chosen?1:0,A.decoy?1:0,H(A.prog),H(A.seal),H(A.cp),A.localized?1:0].join(','));
   p.push(g.know.join(',')); p.push(g.reagents.map(R=>R.has?'1':'0').join(''));
   p.push(g.proj.map(q=>q.id+'@'+H(q.x)+','+H(q.y)+','+H(q.z)).join(';'));
@@ -52,13 +52,13 @@ function roteiro(Sim,g,D,r){
   const q=D.path[0]; let yaw=q?Math.atan2(-(q.x-m.x),-(q.z-m.z)):m.yaw, fire=false;
   let inimigo=null, bd=18; for(const e of g.actors){ if(e.team===m.team||e.st!=='alive') continue; const d=Math.hypot(e.x-m.x,e.z-m.z); if(d<bd&&Sim.losClear(m,e)){ bd=d; inimigo=e; } }
   if(inimigo){ yaw=Math.atan2(-(inimigo.x-m.x),-(inimigo.z-m.z)); fire=r()<.7; }
-  const mz=q?-1:0, mx=r()<.1?(r()<.5?-1:1):0, sp=r()<.3, use=r()>=.1, use2=r()<.5, pitch=(r()-.5)*.2;
+  const mz=q?-1:0, mx=r()<.1?(r()<.5?-1:1):0, sp=r()<.3, use=r()>=.1, use2=r()<.5, pitch=(r()-.5)*.2, ag=r()<.2;
   for(const k of ['q','f','g','r','ab']) if(r()<1/90) D.c[k]++;
   if(g.t>D.compraT){ D.compraT=g.t+10; let n=null, nd=1e9; for(const x of Sim.NPCS){ const d=Math.hypot(x.x-m.x,x.z-m.z); if(d<nd){ nd=d; n=x; } }
     Sim.act(g,'eu',{type:'comprar',npc:n.id,item:n.vende[Math.floor(r()*n.vende.length)]}); }
   if(r()<.01){ const k=['ponto','altar','inimigo'][Math.floor(r()*3)], px=m.x+(r()-.5)*40, pz=m.z+(r()-.5)*40, pi=Math.floor(r()*7)-1; Sim.act(g,'eu',{type:'ping',x:px,z:pz,k,i:pi}); }
   if(r()<.006){ const f=Math.floor(r()*7)-1; Sim.act(g,'eu',{type:'fala',i:f}); }
-  Sim.moveHuman(g,m,{mx,mz,sp,yaw,pitch,fire,use,use2,c:Object.assign({},D.c),viewT:g.t-.05},dt); Sim.step(g,dt);
+  Sim.moveHuman(g,m,{mx,mz,sp,ag,yaw,pitch,fire,use,use2,c:Object.assign({},D.c),viewT:g.t-.05},dt); Sim.step(g,dt);
 }
 
 // LAB=crepusculo=90,fogo=b,execucao=6,economia=0,formato=placar testa o laboratório de playtest
@@ -67,6 +67,8 @@ function labDoAmbiente(){ const s=process.env.LAB; if(!s) return undefined; cons
     o[k]=k==='crepusculo'||k==='execucao'?+v:k==='economia'?(v!=='0'&&v!=='false'):v; }
   return o; }
 
+// 0. a planta que o C# lê sai do sim.js atual (um simulacao.json velho dá diferença que não é do porte)
+require('child_process').execFileSync(process.execPath,[path.join(__dirname,'exportar-mapa.js')],{stdio:'ignore'});
 // 1. JS
 Math.random=mulberry32(semente);
 const Sim=require('../shared/sim.js');

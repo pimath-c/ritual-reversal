@@ -117,7 +117,7 @@ namespace RitualReversal
             }
             return new Entrada
             {
-                mx = mx, mz = mz, sp = ativo && EntradaUnity.Segurando(Tecla.Shift), yaw = lookYaw, pitch = lookPitch,
+                mx = mx, mz = mz, sp = ativo && EntradaUnity.Segurando(Tecla.Shift), ag = ativo && EntradaUnity.Segurando(Tecla.C), yaw = lookYaw, pitch = lookPitch,
                 fire = ativo && EntradaUnity.Atirando(), use = ativo && EntradaUnity.Segurando(Tecla.E), use2 = ativo && EntradaUnity.Segurando(Tecla.T),
                 c = botoes.Copia(), viewT = g.t
             };

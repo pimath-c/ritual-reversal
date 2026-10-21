@@ -705,9 +705,10 @@ function quadroAnim(dt,m,ctx){ if(!S.ok) return;
   luzNaMao(R,agora);
   // corpo: balanço do passo, atraso do mouse, atraso ao começar a andar, tranco de golpe (mola)
   S.joltV.addScaledVector(S.jolt,-dt*160).multiplyScalar(Math.exp(-dt*16)); S.jolt.addScaledVector(S.joltV,dt);
-  const b=ctx.corpo; const cor=R.corpo, h=cor===vmH;
-  cor.position.set((h?.2:.26)+b.x,(h?-.17:-.12)+b.y,(h?-.42:-.5)+b.z);
-  cor.rotation.set(b.rx+S.jolt.x*1.5,b.ry,b.rz+S.jolt.z*1.5);
+  const b=ctx.corpo; const cor=R.corpo, h=cor===vmH, ag=ctx.agK||0;
+  // agachado: a arma desce um pouco, chega para o centro e inclina (pronta baixa), sem cobrir a mira
+  cor.position.set((h?.2:.26)+b.x-ag*.012,(h?-.17:-.12)+b.y-ag*.022,(h?-.42:-.5)+b.z+ag*.018);
+  cor.rotation.set(b.rx+S.jolt.x*1.5+ag*.04,b.ry,b.rz+S.jolt.z*1.5+ag*.07);
   S.cam.set(S.jolt.x*.5,S.jolt.y*.5,S.jolt.z*.5);
   if(arma==='cetro'){ cetroVida(P2,m,dt,agora,ctx); rastroBrasa(); }
   vmFlash.position.copy(arma==='revolver'?vmRevolver.boca.clone().applyMatrix4(vmRevolver.base):vmCarabina.boca);

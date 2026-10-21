@@ -130,7 +130,7 @@ namespace RitualReversal
             seq++; dtDe[inp] = dt; seqDe[inp] = seq; enviadas[seq] = Time.realtimeSinceStartup; if (enviadas.Count > 400) enviadas.Clear();
             if (pred != null && g.phase == "play") { Sim.MoveHuman(g, pred, inp, dt); pendentes.Add(inp); while (pendentes.Count > 120) { dtDe.Remove(pendentes[0]); seqDe.Remove(pendentes[0]); pendentes.RemoveAt(0); } }
             var c = new JsonEscrita().Num("q", inp.c.q).Num("f", inp.c.f).Num("g", inp.c.g).Num("r", inp.c.r).Num("ab", inp.c.ab);
-            Enviar(new JsonEscrita().Txt("t", "in").Num("mx", inp.mx).Num("mz", inp.mz).Bool("sp", inp.sp).Num("yaw", inp.yaw).Num("pitch", inp.pitch).Bool("fire", inp.fire).Bool("use", inp.use).Bool("use2", inp.use2)
+            Enviar(new JsonEscrita().Txt("t", "in").Num("mx", inp.mx).Num("mz", inp.mz).Bool("sp", inp.sp).Bool("ag", inp.ag).Num("yaw", inp.yaw).Num("pitch", inp.pitch).Bool("fire", inp.fire).Bool("use", inp.use).Bool("use2", inp.use2)
                 .Obj("c", c).Num("dt", dt).Num("viewT", inp.viewT).Num("seq", seq));
             // correção da previsão some aos poucos
             float suav = Mathf.Exp(-(float)dt * 14); erroX *= suav; erroZ *= suav;

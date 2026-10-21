@@ -17,6 +17,7 @@ namespace RitualReversal.Simulacao
     public class Segmento { public double ax, az, bx, bz, w; public bool estreita; }
     public class Clareira { public double x, z, r; }
     public class NoNav { public double x, z; public List<int> viz = new List<int>(); public List<double> custo = new List<double>(); }
+    public class Zona { public string name; public double x1, x2, z1, z2, luar; public bool coberto; }
 
     // grade espacial de 6 m: cada checagem olha só as caixas das células por onde passa
     public class Grade
@@ -56,6 +57,7 @@ namespace RitualReversal.Simulacao
         public static List<Clareira> CLAREIRAS = new List<Clareira>();
         public static List<Segmento> SEG_TRILHA = new List<Segmento>();
         public static List<NoNav> WP = new List<NoNav>();
+        public static List<Zona> ZONAS = new List<Zona>();
         public static int navNos, navArestas, navPrincipalJS; // conferência exportada pelo JS
         public static bool Carregado;
 
@@ -66,6 +68,12 @@ namespace RitualReversal.Simulacao
             var half = Json.O(R["half"]); HX = Json.D(half["x"]); HZ = Json.D(half["z"]);
             var cat = Json.O(R["catedral"]); CAT_X1 = Json.D(cat["x1"]); CAT_X2 = Json.D(cat["x2"]); CAT_Z1 = Json.D(cat["z1"]); CAT_Z2 = Json.D(cat["z2"]);
             var cl = Json.O(R["claustro"]); CL_X1 = Json.D(cl["x1"]); CL_X2 = Json.D(cl["x2"]); CL_Z1 = Json.D(cl["z1"]); CL_Z2 = Json.D(cl["z2"]);
+            ZONAS.Clear();
+            foreach (var o in Json.L(R["zonas"]))
+            {
+                var q = Json.O(o); object cob;
+                ZONAS.Add(new Zona { name = Json.S(q["name"]), x1 = Json.D(q["x1"]), x2 = Json.D(q["x2"]), z1 = Json.D(q["z1"]), z2 = Json.D(q["z2"]), luar = Json.D(q["luar"]), coberto = q.TryGetValue("coberto", out cob) && cob is bool && (bool)cob });
+            }
             BOX.Clear(); TALL.Clear();
             foreach (var o in Json.L(R["caixas"]))
             {
@@ -103,9 +111,12 @@ namespace RitualReversal.Simulacao
         static void Pares(object v, List<Ponto> saida) { saida.Clear(); foreach (var o in Json.L(v)) { var p = Json.L(o); saida.Add(new Ponto(Json.D(p[0]), Json.D(p[1]))); } }
 
         // ---------- zonas ----------
-        public static bool NaCatedral(double x, double z, double m = 0) { return x > CAT_X1 - m && x < CAT_X2 + m && z > CAT_Z1 - m && z < CAT_Z2 + m; }
-        public static bool NoClaustro(double x, double z) { return x > CL_X1 && x < CL_X2 && z > CL_Z1 && z < CL_Z2; }
-        public static string ZoneAt(double x, double z) { return NoClaustro(x, z) ? "Claustro" : NaCatedral(x, z) ? "Catedral" : "Floresta"; }
+        // a primeira zona que contém o ponto vale; fora de todas é Floresta (igual a zonaDe/zoneAt de shared/sim.js)
+        public static Zona ZonaDe(double x, double z) { foreach (var Z in ZONAS) if (x > Z.x1 && x < Z.x2 && z > Z.z1 && z < Z.z2) return Z; return null; }
+        public static string ZoneAt(double x, double z) { var Z = ZonaDe(x, z); return Z != null ? Z.name : "Floresta"; }
+        public static bool NaCatedral(double x, double z) { var n = ZoneAt(x, z); return n == "Catedral" || n == "Claustro"; }
+        public static bool NoClaustro(double x, double z) { return ZoneAt(x, z) == "Claustro"; }
+        public static bool Coberto(double x, double z) { var Z = ZonaDe(x, z); return Z != null && Z.coberto; }
         public static double DistSeg(double x, double z, Segmento s)
         {
             double dx = s.bx - s.ax, dz = s.bz - s.az, L = dx * dx + dz * dz; double t = L != 0 ? ((x - s.ax) * dx + (z - s.az) * dz) / L : 0; t = JS.Clamp(t, 0, 1);
@@ -161,10 +172,11 @@ namespace RitualReversal.Simulacao
         }
         public static bool LosClear(Ponto a, Ponto b) { return SegClear(a.x, a.z, b.x, b.z, 0, GT); }
 
-        // primeira peça alta atingida por um raio; devolve a distância ao longo dele
-        public static double RaioParede(double ox, double oz, double dx, double dz, double alcance, double inf, Func<double, double> alturaEm = null)
+        // primeira peça alta atingida por um raio; devolve a distância ao longo dele. Com lista = GB, também as peças baixas
+        // (tiros: com alturaEm, só param quando passam abaixo da altura da peça)
+        public static double RaioParede(double ox, double oz, double dx, double dz, double alcance, double inf, Func<double, double> alturaEm = null, Grade lista = null)
         {
-            double best = alcance; var G = GT; int n = (int)Math.Ceiling(alcance / (G.c * .5)); G.vez++;
+            double best = alcance; var G = lista ?? GT; int n = (int)Math.Ceiling(alcance / (G.c * .5)); G.vez++;
             for (int k = 0; k <= n; k++)
             {
                 double px = ox + dx * alcance * k / n, pz = oz + dz * alcance * k / n; if ((double)k / n * alcance > best + G.c) break; double r = G.c * .5 + inf;

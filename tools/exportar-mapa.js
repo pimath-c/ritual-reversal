@@ -12,7 +12,8 @@ const mapa={
   sobre:'Ritual Reversal: planta gerada por shared/sim.js. Metros; chão no plano x-z, y para cima. '+
     'Unity: X=x, Y=y, Z=-z (rotação em y: -rot). Unreal: X=x*100, Y=z*100, Z=y*100. Godot: x, y, z direto. '+
     'Sem listas dentro de listas: pontos são objetos {x,z}, para o JsonUtility do Unity ler direto.',
-  limites:{meiaLargura:Sim.HALF, planoOriginal4v4:Sim.HALF0, catedral:Sim.CATEDRAL, claustro:Sim.CLAUSTRO},
+  limites:{meiaLargura:Sim.HALF, catedral:Sim.CATEDRAL, claustro:Sim.CLAUSTRO, promontorio:Sim.PROMONTORIO, desfiladeiro:Sim.DESFILADEIRO},
+  zonas:Sim.ZONAS, travessias:Sim.TRAVESSIAS,
   spawns:Sim.SPAWN,
   altares:Sim.ALTARS.map((A,i)=>({i,nome:A.name,x:r(A.x),z:r(A.z)})),
   reagentes:Sim.REAG.map(([x,z])=>({x,z})),
@@ -35,7 +36,7 @@ const mapa={
 // porque a ordem das caixas decide como a colisão empurra os personagens. O C# refaz a navegação a partir daqui.
 const simulacao={
   sobre:'Gerado por tools/exportar-mapa.js a partir de shared/sim.js. Lido por Scripts/Simulacao/Mapa.cs. Não edite à mão.',
-  half:Sim.HALF, catedral:Sim.CATEDRAL, claustro:Sim.CLAUSTRO,
+  half:Sim.HALF, catedral:Sim.CATEDRAL, claustro:Sim.CLAUSTRO, zonas:Sim.ZONAS,
   caixas:Sim.BOX.map(b=>[b.x1,b.x2,b.z1,b.z2,b.h,b.tall?1:0]),
   altares:Sim.ALTARS.map(A=>({nome:A.name,x:A.x,z:A.z})),
   spawns:Sim.SPAWN, reagentes:Sim.REAG, portas:Sim.PORTAS.map(p=>[p.x,p.z]), portais:Sim.PORTAIS,

@@ -86,7 +86,7 @@ namespace RitualReversal.Simulacao
                 {
                     if (b.reloadT > 0) return true; if (b.ammo <= 0) { Reload(g, b); return true; }
                     bool lit = LightAt(g, t.x, t.z) > .35; double p = Math.Min(.92, JS.Clamp(.78 - d / 55, .22, .78) * (t.moving ? .8 : 1) * (lit ? 1 : .72) * DifDe(g, b).mira); bool hit = Rnd() < p; double ex = hit ? 0 : Rand(-1.2, 1.2);
-                    FireBotAt(g, b, t.x + ex, Rand(.9, 1.6), t.z + ex, !hit);
+                    FireBotAt(g, b, t.x + ex, t.ag ? Rand(.5, 1.1) : Rand(.9, 1.6), t.z + ex, !hit);
                 }
                 else
                 {
@@ -94,12 +94,12 @@ namespace RitualReversal.Simulacao
                     // canalizando, só ataca quem sela, quem chega perto demais ou quando a vida aperta (atacar para a canalização)
                     if (CFG.ataqueCanal > 0) { var Ac = g.altars.FirstOrDefault(A => A.state == "active" && A.chosen && InCircle(b, A)); if (Ac != null && !(t.sealing == Ac.i || d < 8 || b.hp < b.maxHp * .5)) return true; }
                     double lead = d / CFG.sigilVel;
-                    double sd = .7 * DifDe(g, b).disp; CastSigilAt(g, b, t.x + Rand(-sd, sd) + t._vx * lead * .6, 1.2, t.z + Rand(-sd, sd) + t._vz * lead * .6);
+                    double sd = .7 * DifDe(g, b).disp; CastSigilAt(g, b, t.x + Rand(-sd, sd) + t._vx * lead * .6, t.ag ? .8 : 1.2, t.z + Rand(-sd, sd) + t._vz * lead * .6);
                 }
             }
             return true;
         }
-        static void CastSigilAt(Jogo g, Ator b, double tx, double ty, double tz) { double dx = tx - b.x, dy = ty - 1.62, dz = tz - b.z; double l = JS.Hypot(dx, dy, dz); if (l == 0 || double.IsNaN(l)) l = 1; CastSigil(g, b, dx / l, dy / l, dz / l); }
+        static void CastSigilAt(Jogo g, Ator b, double tx, double ty, double tz) { double dx = tx - b.x, dy = ty - AlturaOlho(b), dz = tz - b.z; double l = JS.Hypot(dx, dy, dz); if (l == 0 || double.IsNaN(l)) l = 1; CastSigil(g, b, dx / l, dy / l, dz / l); }
         static void BotHold(Jogo g, Ator b, string key, double time, double dt, Ctx ctx)
         {
             b._segurou = true; if (b.hold.key != key) b.hold = new Hold(key, 0, time);

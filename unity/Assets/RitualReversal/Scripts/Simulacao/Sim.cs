@@ -164,7 +164,7 @@ namespace RitualReversal.Simulacao
         public static void DropHuman(Jogo g, string cid)
         {
             var s = g.slots.FirstOrDefault(x => x.cid == cid); if (s == null) return; s.cid = null; if (g.phase != "final") LogE(g, "saiu", "who", s.name, "fase", g.phase);
-            var a = g.actors.FirstOrDefault(x => x.cid == cid); if (a != null) { a.cid = null; a.human = false; a.inp.fire = false; a.inp.use = false; }
+            var a = g.actors.FirstOrDefault(x => x.cid == cid); if (a != null) { a.cid = null; a.human = false; a.inp.fire = false; a.inp.use = false; a.inp.ag = false; a.ag = false; }
             g.ready.Remove(cid);
             if ((g.phase == "intro" || g.phase == "summary") && AllReady(g)) { if (g.phase == "intro") StartPlay(g); else AfterSummary(g); }
         }
@@ -306,8 +306,9 @@ namespace RitualReversal.Simulacao
         {
             double L = 0;
             foreach (var c in Mapa.CANDLES) { double d = JS.Hypot(x - c.x, z - c.z); if (d < 8.5) L += 1 - d / 8.5; }
-            if (Mapa.NoClaustro(x, z)) L += 0.55; // luar: o Claustro não tem teto
-            else if (!Mapa.NaCatedral(x, z))
+            var Z = Mapa.ZonaDe(x, z);
+            if (Z != null) L += Z.luar; // luar das zonas: o Claustro e a capela desabada não têm teto; o promontório e as pontes, céu aberto
+            else // na floresta, o luar só chega nas clareiras e ao longo das trilhas; a mata fechada é breu
             {
                 double lua = 0; foreach (var c in Mapa.CLAREIRAS) { double d = JS.Hypot(x - c.x, z - c.z); if (d < c.r + 2) lua = Math.Max(lua, .55 * JS.Clamp((c.r + 2 - d) / 4, 0, 1)); }
                 if (lua < .42) foreach (var sg in Mapa.SEG_TRILHA) { if (sg.estreita) continue; double d = Mapa.DistSeg(x, z, sg); if (d < sg.w / 2 + 1) { lua = Math.Max(lua, .42 * JS.Clamp((sg.w / 2 + 1 - d) / 1.5, 0, 1)); if (lua >= .42) break; } }
@@ -342,17 +343,17 @@ namespace RitualReversal.Simulacao
                 a.inp.mx = JS.Clamp(double.IsNaN(inp.mx) ? 0 : inp.mx, -1, 1); a.inp.mz = JS.Clamp(double.IsNaN(inp.mz) ? 0 : inp.mz, -1, 1); a.inp.sp = inp.sp;
                 if (inp.temYaw && !double.IsNaN(inp.yaw) && !double.IsInfinity(inp.yaw)) a.inp.yaw = inp.yaw;
                 if (inp.temPitch && !double.IsNaN(inp.pitch) && !double.IsInfinity(inp.pitch)) a.inp.pitch = JS.Clamp(inp.pitch, -1.5, 1.5);
-                a.inp.fire = inp.fire; a.inp.use = inp.use; a.inp.use2 = inp.use2; if (inp.temViewT && !double.IsNaN(inp.viewT) && !double.IsInfinity(inp.viewT)) a.inp.viewT = inp.viewT;
+                a.inp.fire = inp.fire; a.inp.use = inp.use; a.inp.use2 = inp.use2; a.inp.ag = inp.ag; if (inp.temViewT && !double.IsNaN(inp.viewT) && !double.IsInfinity(inp.viewT)) a.inp.viewT = inp.viewT;
                 if (inp.c != null) a.inp.c = inp.c.Copia();
             }
-            a.yaw = a.inp.yaw; a.pitch = a.inp.pitch;
+            a.yaw = a.inp.yaw; a.pitch = a.inp.pitch; a.ag = a.inp.ag && a.st == "alive";
             double mx = a.inp.mx, mz = a.inp.mz, len = JS.Hypot(mx, mz);
             a.moving = false;
             if (a.st == "dead" || a.stunT > 0 || len < 0.01) return;
             mx /= len; mz /= len;
             double sp = a.speed * (a.slowT > 0 ? .6 : 1);
             if (a.st == "down") sp = .8;
-            else { if (a.inp.sp && mz < 0 && a.sealing < 0) sp = CFG.sprint * (a.speed / CFG.speed); if (a.sealing >= 0) sp *= .4; if (a.hp < a.maxHp * .5) sp *= .9; }
+            else { if (a.inp.sp && mz < 0 && a.sealing < 0 && !a.ag) sp = CFG.sprint * (a.speed / CFG.speed); if (a.ag) sp *= CFG.agachadoVel; if (a.sealing >= 0) sp *= .4; if (a.hp < a.maxHp * .5) sp *= .9; }
             double s = JS.Sin(a.yaw), c = JS.Cos(a.yaw);
             MoverSeguro(a, a.x + (mx * c + mz * s) * sp * dt, a.z + (-mx * s + mz * c) * sp * dt, .4); a.moving = true;
         }
@@ -370,14 +371,14 @@ namespace RitualReversal.Simulacao
         {
             a.veuT = 0; a.lastShotT = g.t; a.ammo--; if (a.ammo <= 0) Reload(g, a);
             Ev(g, "sfx", "k", "shot", "x", R2(a.x), "z", R2(a.z), "a", a.id);
-            double tWall = Mapa.RaioParede(ox, oz, dx, dz, 90, 0, d => oy + dy * d);
+            double tWall = Mapa.RaioParede(ox, oz, dx, dz, 90, 0, d => oy + dy * d, Mapa.GB); // v6: a cobertura baixa para o tiro que passa abaixo dela
             if (dy < 0) { double tf = -oy / dy; if (tf < tWall) tWall = tf; }
             Ator best = null; double bt = tWall; bool head = false;
             if (!forceMiss) foreach (var e in EnemiesOf(g, a))
                 {
                     if (e.st == "dead") continue; var p = PosAt(e, T);
                     double fx = ox - p.x, fz = oz - p.z, A2 = dx * dx + dz * dz, B = 2 * (fx * dx + fz * dz), C = fx * fx + fz * fz - .45 * .45, disc = B * B - 4 * A2 * C; if (disc < 0 || A2 < 1e-9) continue;
-                    double t = (-B - Math.Sqrt(disc)) / (2 * A2); if (t < 0 || t > bt) continue; double y = oy + dy * t, top = e.st == "down" ? .6 : 1.95; if (y < 0 || y > top) continue; best = e; bt = t; head = e.st == "alive" && y > 1.5;
+                    double t = (-B - Math.Sqrt(disc)) / (2 * A2); if (t < 0 || t > bt) continue; double y = oy + dy * t, top = AlturaAlvo(e); if (y < 0 || y > top) continue; best = e; bt = t; head = e.st == "alive" && y > top - .45;
                 }
             Ev(g, "tracer", "a", a.id, "x0", R2(ox), "y0", R2(oy - .2), "z0", R2(oz), "x1", R2(ox + dx * bt), "y1", R2(oy + dy * bt), "z1", R2(oz + dz * bt), "alvo", best != null ? (object)best.id : null, "cab", head);
             if (best != null)
@@ -386,23 +387,26 @@ namespace RitualReversal.Simulacao
                 Damage(g, best, JS.Round((head ? 26 : CFG.quedaDano) * k), a);
             }
         }
+        // altura de quem leva o tiro: em pé, agachado (v6) ou caído; a cabeça são os 45 cm de cima
+        static double AlturaAlvo(Ator e) { return e.st == "down" ? .6 : e.ag ? CFG.agachadoAltura : 1.95; }
+        internal static double AlturaOlho(Ator a) { return a.ag ? CFG.agachadoOlho : 1.62; }
         static void FireHuman(Jogo g, Ator a)
         {
             a.fireCd = CADENCIA_HUMANA; double y = a.inp.yaw, p = a.inp.pitch; double dx = -JS.Sin(y) * JS.Cos(p), dy = JS.Sin(p), dz = -JS.Cos(y) * JS.Cos(p);
             double T = JS.Clamp(a.inp.viewT != 0 ? a.inp.viewT : g.t, g.t - CFG.compensacaoMax, g.t);
-            TraceShot(g, a, a.x, 1.62, a.z, dx, dy, dz, T, false);
+            TraceShot(g, a, a.x, AlturaOlho(a), a.z, dx, dy, dz, T, false);
         }
         static void FireBotAt(Jogo g, Ator a, double tx, double ty, double tz, bool miss)
         {
-            a.fireCd = (.55 + Rand(0, .2)) * DifDe(g, a).ritmo; double dx = tx - a.x, dy = ty - 1.62, dz = tz - a.z; double l = JS.Hypot(dx, dy, dz); if (l == 0 || double.IsNaN(l)) l = 1; dx /= l; dy /= l; dz /= l;
-            TraceShot(g, a, a.x, 1.62, a.z, dx, dy, dz, g.t, miss);
+            a.fireCd = (.55 + Rand(0, .2)) * DifDe(g, a).ritmo; double oy = AlturaOlho(a); double dx = tx - a.x, dy = ty - oy, dz = tz - a.z; double l = JS.Hypot(dx, dy, dz); if (l == 0 || double.IsNaN(l)) l = 1; dx /= l; dy /= l; dz /= l;
+            TraceShot(g, a, a.x, oy, a.z, dx, dy, dz, g.t, miss);
         }
         static void CastSigil(Jogo g, Ator a, double dx, double dy, double dz)
         {
             a.veuT = 0; a.lastShotT = g.t; a.ataqueT = g.t; a.fireCd = a.human ? CADENCIA_HUMANA : (1 + Rand(0, .3)) * DifDe(g, a).ritmo; a.fervor -= CFG.sigilCusto;
             Ev(g, "sfx", "k", "sigil", "x", R2(a.x), "z", R2(a.z), "a", a.id);
-            double rx = JS.Cos(a.yaw), rz = -JS.Sin(a.yaw); double ox = a.x + rx * .3, oy = 1.45, oz = a.z + rz * .3;
-            double tx = a.x + dx * 40, ty = 1.62 + dy * 40, tz = a.z + dz * 40; double vx = tx - ox, vy = ty - oy, vz = tz - oz; double l = JS.Hypot(vx, vy, vz); if (l == 0 || double.IsNaN(l)) l = 1; double sp = CFG.sigilVel;
+            double rx = JS.Cos(a.yaw), rz = -JS.Sin(a.yaw); double ox = a.x + rx * .3, oy = AlturaOlho(a) - .17, oz = a.z + rz * .3;
+            double tx = a.x + dx * 40, ty = AlturaOlho(a) + dy * 40, tz = a.z + dz * 40; double vx = tx - ox, vy = ty - oy, vz = tz - oz; double l = JS.Hypot(vx, vy, vz); if (l == 0 || double.IsNaN(l)) l = 1; double sp = CFG.sigilVel;
             g.proj.Add(new Projetil { id = PID++, x = ox, y = oy, z = oz, vx = vx / l * sp, vy = vy / l * sp, vz = vz / l * sp, owner = a.id, team = a.team, life = 2.5, dmg = CFG.sigilDano });
         }
         static void Reload(Jogo g, Ator a) { if (a.team != "H" || a.reloadT > 0 || a.ammo >= 8 || a.reserve <= 0) return; a.reloadT = 1.6; Ev(g, "reload", "a", a.id, "x", R2(a.x), "z", R2(a.z)); }
@@ -882,10 +886,10 @@ namespace RitualReversal.Simulacao
                 {
                     p.x += p.vx * dt / 3; p.y += p.vy * dt / 3; p.z += p.vz * dt / 3;
                     if (p.y < .05 || p.y > 14 || Math.Abs(p.x) > Mapa.HX || Math.Abs(p.z) > Mapa.HZ) dead = true;
-                    if (!dead && Mapa.Algum(Mapa.GT, p.x, p.z, p.x, p.z, b => p.x > b.x1 && p.x < b.x2 && p.z > b.z1 && p.z < b.z2 && p.y < b.h)) dead = true;
+                    if (!dead && Mapa.Algum(Mapa.GB, p.x, p.z, p.x, p.z, b => p.x > b.x1 && p.x < b.x2 && p.z > b.z1 && p.z < b.z2 && p.y < b.h)) dead = true; // v6: a cobertura baixa também segura sigilos
                     if (!dead) foreach (var e in g.actors)
                         {
-                            if (e.team == p.team || e.st == "dead") continue; double top = e.st == "down" ? .6 : 1.95;
+                            if (e.team == p.team || e.st == "dead") continue; double top = AlturaAlvo(e);
                             if (JS.Hypot(p.x - e.x, p.z - e.z) < .5 && p.y > 0 && p.y < top) { var src = g.actors.FirstOrDefault(x => x.id == p.owner); if (src != null) Damage(g, e, p.dmg, src); dead = true; break; }
                         }
                 }
@@ -936,7 +940,7 @@ namespace RitualReversal.Simulacao
                 if (a.human) HumanActions(g, a, dt);
                 else if (a.stunT <= 0)
                 {
-                    a._segurou = false; if (a.team == "H") AiHunter(g, a, dt); else AiCult(g, a, dt);
+                    a._segurou = false; a.ag = false; if (a.team == "H") AiHunter(g, a, dt); else AiCult(g, a, dt);
                     // como o jogador que solta o E: meio segundo sem segurar zera a contagem (antes ela travava o tiro do bot)
                     if (a._segurou) a._semSegurar = 0; else if (a.hold.key != "" && (a._semSegurar += dt) > .5) { a.hold = new Hold(); a._semSegurar = 0; }
                     // rede de segurança: bot parado 15 s sem estar ocupado tem a decisão reiniciada (não corrige a causa; limita o estrago)
@@ -951,7 +955,7 @@ namespace RitualReversal.Simulacao
                         LogE(g, "bot_reiniciado", "who", a.name, "team", a.team, "cls", a.cls, "objetivo", objetivoAntes, "combate", alvoAntes, "reag", a.reag, "x", R2(a.x), "z", R2(a.z));
                     }
                 }
-                if (a.moving && a.st == "alive") { a.stepT = a.stepT - dt; if (a.stepT <= 0) { bool corre = a.human && a.inp.sp && a.inp.mz < 0; a.stepT = corre ? .3 : .42; Ev(g, "sfx", "k", corre ? "passoForte" : "step", "x", R2(a.x), "z", R2(a.z), "a", a.id); } }
+                if (a.moving && a.st == "alive") { a.stepT = a.stepT - dt; if (a.stepT <= 0) { bool leve = a.ag, corre = !leve && a.human && a.inp.sp && a.inp.mz < 0; a.stepT = leve ? .6 : corre ? .3 : .42; Ev(g, "sfx", "k", leve ? "passoLeve" : corre ? "passoForte" : "step", "x", R2(a.x), "z", R2(a.z), "a", a.id); } }
                 if (g.t - a.hitT > 6 && a.hp < a.maxHp && a.st == "alive") a.hp = Math.Min(a.maxHp, a.hp + dt * 8);
                 if (a.team == "C" && a.st == "alive" && g.t - a.lastShotT > CFG.fervorEspera) a.fervor = Math.Min(100, a.fervor + dt * CFG.fervorRegen);
                 UpdateSanity(g, a, dt);

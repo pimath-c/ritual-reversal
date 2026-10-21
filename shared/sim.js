@@ -19,6 +19,9 @@ const CFG={
   sigilDano:17, sigilVel:48, sigilCusto:14, fervorRegen:8, fervorEspera:1.8, quedaDano:14, quedaPerto:26, quedaLonge:55, quedaMin:.75,
   compensacaoMax:.5, // quanto o servidor volta no tempo para julgar um tiro: ida e volta + 100 ms de interpolação, com folga
   regrow:40, sensorRaio:58, pegadaVida:20, visaoRede:75, /* além de ~75 m a névoa apaga qualquer vulto */ nevoaAlcance:26, respawn:[10,3,18], speed:4.6, sprint:6, botSpeed:3.9, spawnSafe:7,
+  // v6: andar agachado. Metade da velocidade, sem corrida, passos que só se ouvem de perto e um alvo mais baixo (a cobertura
+  // baixa passa a proteger quem se abaixa atrás dela). É a escolha entre chegar quieto e chegar rápido.
+  agachadoVel:.5, agachadoAltura:1.15, agachadoOlho:.95, // abaixado atrás de um túmulo (1,1 m) fica coberto; para atirar, levanta
   timers:{pick:35,intro:25,summary:15},
   // v5.5: o coro ecoa o setor do ritual (oeste, centro ou leste) quando ele passa deste progresso, antes de revelar o altar
   ecoProg:0.25,
@@ -32,7 +35,7 @@ const CFG={
   // v5.5: levar dano reinicia a execução de um caído
   danoInterrompeExecucao:true,
 };
-// setores do eco: cada setor tem dois altares (um dentro da catedral e um perto dela)
+// setores do eco: cada setor tem dois altares (um no promontório e um na mata)
 const SETORES=[{id:'oeste',nome:'a oeste',altares:[0,3]},{id:'centro',nome:'no centro',altares:[1,4]},{id:'leste',nome:'a leste',altares:[2,5]}];
 const setorDoAltar=i=>SETORES.find(s=>s.altares.includes(i));
 // Laboratório de playtest: variações que o anfitrião escolhe para comparar noites (o padrão é a regra normal).
@@ -67,158 +70,265 @@ const FEIT_BY_TEAM={H:['flash','purificacao','sal'],C:['runa','empurrao','veu']}
 const CLASS_BY_TEAM={H:['soldado','exorcista','rastreador'],C:['ritualista','guardiao']};
 
 // ============ MAPA ============
-// A catedral é o coração do mapa e a floresta a envolve por todos os lados. Os dois lados nascem na mata
-// (acampamento dos Caçadores a oeste, círculo de pedras dos Cultistas a leste) e entram pelas portas.
-// Dentro: o anel de capelas e o Claustro a céu aberto, onde ficam TODOS os reagentes.
-// Fora: trilhas iluminadas pelo luar, mata fechada e escura, dois altares em clareiras, tarefas e mercadores.
-// Mapa compacto para 2v2: a catedral fica igual e a faixa de floresta em volta encolhe (≈62% da área de mata).
-// As coordenadas da floresta continuam escritas na planta original (HALF0) e passam por mataXZ; estruturas
-// (acampamento, cabana, cemitério, ruínas...) se movem inteiras pelo seu centro, sem deformar.
-// Para um 4v4 futuro basta voltar HALF para HALF0.
-const HALF0={x:175,z:130}, HALF={x:155,z:108};
-const CATEDRAL={x1:-96,x2:96,z1:-58,z2:58};
-const CLAUSTRO={x1:-56,x2:56,z1:-28,z2:28};
-const ZONES=[{name:'Claustro',...CLAUSTRO},{name:'Catedral',...CATEDRAL},{name:'Floresta'}];
-const naCatedral=(x,z,m)=>{ m=m||0; return x>CATEDRAL.x1-m&&x<CATEDRAL.x2+m&&z>CATEDRAL.z1-m&&z<CATEDRAL.z2+m; };
-const KX=(HALF.x-CATEDRAL.x2)/(HALF0.x-CATEDRAL.x2), KZ=(HALF.z-CATEDRAL.z2)/(HALF0.z-CATEDRAL.z2);
-const mataX=x=>Math.abs(x)<=CATEDRAL.x2?x:Math.sign(x)*(CATEDRAL.x2+(Math.abs(x)-CATEDRAL.x2)*KX);
-const mataZ=z=>Math.abs(z)<=CATEDRAL.z2?z:Math.sign(z)*(CATEDRAL.z2+(Math.abs(z)-CATEDRAL.z2)*KZ);
-// centros das estruturas fixas da floresta: o que estiver perto de um deles se move junto, sem deformar
-const ANCORAS=[[-158,0],[158,0],[-50,-104],[40,106],[-142,-62],[132,90],[50,-100],[-114,-105]];
-function mataXZ(x,z,raio){ let m=null,md=raio||0; for(const a of ANCORAS){ const d=Math.hypot(x-a[0],z-a[1]); if(d<md){ md=d; m=a; } }
-  if(m) return [+(x+mataX(m[0])-m[0]).toFixed(2),+(z+mataZ(m[1])-m[1]).toFixed(2)];
-  return [+mataX(x).toFixed(2),+mataZ(z).toFixed(2)]; }
-const mataP=(x,z,raio)=>{ const [a,b]=mataXZ(x,z,raio); return {x:a,z:b}; };
-const zoneAt=(x,z)=>(x>CLAUSTRO.x1&&x<CLAUSTRO.x2&&z>CLAUSTRO.z1&&z<CLAUSTRO.z2)?'Claustro':naCatedral(x,z)?'Catedral':'Floresta';
+// v6: duas regiões com identidade própria, ligadas por travessias que dão peso à chegada.
+// Ao norte, o Promontório: um maciço de rocha cercado por um desfiladeiro em U. Nele, a catedral em cruz latina
+// (fachada ao sul com duas torres desiguais, nártex, nave com naves laterais, cruzeiro, transepto, coro atrás de um jubé
+// e abside na beira do penhasco), o Claustro, a Sala do Capítulo, a Sacristia, o Tesouro desabado, o Cemitério dos
+// Monges, o Ossuário e as ruínas do mosteiro.
+// A oeste, ao sul e a leste, a Floresta: trilhas de luar entre mata fechada e clareiras com função (Pedreira, Charco,
+// Encruzilhada, Calvário, mirantes), dois altares antigos (Menires e Encapuzados), a Portaria na cabeça da ponte e todos
+// os reagentes. Os dois lados nascem na mata: Caçadores a oeste, Cultistas a leste.
+// Três travessias, cada uma com seu custo: a Ponte Grande no eixo (larga, exposta, chega na fachada), a Ponte Caída a
+// oeste (um tronco gigante, sem cobertura, chega no mosteiro) e o Aqueduto a leste (entre muretas, chega no Ossuário).
+// O desfiladeiro bloqueia a passagem, mas não a visão nem os tiros.
+// Coordenadas: x para leste, z para o sul (o norte é z negativo). Metros. Sem espelhamento: os papéis trocam a cada
+// rodada e cada papel nasce sempre do mesmo lado, então as duas equipes vivem o mesmo mapa.
+const HALF={x:145,z:100};
+const PROMONTORIO={x1:-82,x2:82,z1:-100,z2:-22};   // o maciço da catedral (dentro do desfiladeiro)
+const DESFILADEIRO={x1:-98,x2:98,z1:-100,z2:-6};   // promontório + desfiladeiro: tudo que não é mata
+const CATEDRAL={x1:-44,x2:44,z1:-97,z2:-32};       // caixa que envolve a cruz (para o cliente e a planta)
+const CLAUSTRO={x1:-39,x2:-21,z1:-59,z2:-49};      // o jardim a céu aberto no meio do Claustro
+// Zonas: a primeira que contém o ponto vale; fora de todas é Floresta. luar: quanto o céu ilumina ali (a mata calcula o
+// seu pelas clareiras e trilhas); coberto: tem teto (não chove, passos ecoam).
+const ZONAS=[
+  {name:'Claustro',...CLAUSTRO,luar:.55},
+  {name:'Catedral',x1:16,x2:44,z1:-78,z2:-64,luar:.45},                // braço leste do transepto: o teto desabou
+  {name:'Catedral',x1:-16.5,x2:16.5,z1:-64,z2:-31.5,luar:0,coberto:true},  // nártex, nave e naves laterais
+  {name:'Catedral',x1:-44.5,x2:16,z1:-78.5,z2:-64,luar:0,coberto:true},    // braço oeste e cruzeiro
+  {name:'Catedral',x1:-12.5,x2:12.5,z1:-97,z2:-78,luar:0,coberto:true},    // coro e abside
+  {name:'Catedral',x1:-44.5,x2:-16,z1:-64,z2:-43.5,luar:0,coberto:true},   // galerias do Claustro
+  {name:'Catedral',x1:-70.5,x2:-51.5,z1:-64.5,z2:-45.5,luar:0,coberto:true}, // Sala do Capítulo
+  {name:'Catedral',x1:-30.5,x2:-12,z1:-90.5,z2:-78,luar:0,coberto:true},   // Sacristia
+  // a lua vem do sudeste: a catedral (24 m) deixa na sombra o mosteiro a noroeste e o ossuário ao norte do transepto, e a
+  // passagem dos monges fica entre paredes altas. São as aproximações escuras dos altares do promontório.
+  {name:'Planalto',x1:-82,x2:-44.5,z1:-100,z2:-64.5,luar:.12},          // ruínas do mosteiro
+  {name:'Planalto',x1:-51.5,x2:-44.5,z1:-64.5,z2:-45.5,luar:.1},        // passagem dos monges
+  {name:'Planalto',x1:44.5,x2:82,z1:-100,z2:-78,luar:.15},              // ossuário
+  {name:'Planalto',x1:12.5,x2:44.5,z1:-90.5,z2:-78.5,luar:.12},         // Tesouro desabado, na sombra do transepto
+  {name:'Planalto',x1:44.5,x2:51.5,z1:-78,z2:-64,luar:.1},              // beco entre o transepto e o ossuário
+  {name:'Planalto',x1:-44.5,x2:44.5,z1:-100,z2:-90.5,luar:.08},         // atrás da abside, na beira do penhasco
+  {name:'Planalto',...PROMONTORIO,luar:.42},
+  {name:'Desfiladeiro',...DESFILADEIRO,luar:.5}];
+const ZONES=[{name:'Claustro',...CLAUSTRO},{name:'Catedral',...CATEDRAL},{name:'Planalto',...PROMONTORIO},{name:'Floresta'}]; // compatibilidade
+const zonaDe=(x,z)=>{ for(const Z of ZONAS) if(x>Z.x1&&x<Z.x2&&z>Z.z1&&z<Z.z2) return Z; return null; };
+const zoneAt=(x,z)=>{ const Z=zonaDe(x,z); return Z?Z.name:'Floresta'; };
+const naCatedral=(x,z)=>{ const n=zoneAt(x,z); return n==='Catedral'||n==='Claustro'; };
+const coberto=(x,z)=>{ const Z=zonaDe(x,z); return !!(Z&&Z.coberto); };
+const foraDaMata=(x,z,m)=>{ m=m||0; return x>DESFILADEIRO.x1-m&&x<DESFILADEIRO.x2+m&&z<DESFILADEIRO.z2+m; };
 
-// Sem espelhamento: os papéis trocam a cada rodada e cada papel sempre nasce do mesmo lado,
-// então as duas equipes vivem o mesmo mapa. Assimetria não é injusta aqui; ela dá a cada altar uma personalidade.
+// Seis altares, dois por setor do eco (oeste, centro, leste): em cada setor, um no promontório e um na mata.
 const ALTARS=[
-  {name:'Capela Oeste',x:-66,z:-45},   // apertada, duas portas estreitas, bancos caídos por dentro
-  {name:'Abside',x:0,z:-47},           // colunata em meia-lua, frente aberta: arena exposta
-  {name:'Capela Leste',x:64,z:-46},    // desabou: parede sul virou brecha com escombros
-  {name:'Menires',...mataP(-50,-104)},        // clareira ao norte, anel de pedras com três vãos: aberta ao luar, cercada de mata
-  {name:'Nártex',x:0,z:48},            // salão de entrada, logo atrás da grande porta sul
-  {name:'Carvalho Oco',...mataP(40,106)}];    // ao sul, sob um carvalho gigante: raízes como cobertura, mata escura em volta
-const SPAWN={H:{...mataP(-158,0),yaw:-Math.PI/2},C:{...mataP(158,0),yaw:Math.PI/2}};
+  {name:'Sala do Capítulo',x:-61,z:-55},  // sala de pedra apertada, três portas, bancos de pedra: briga de perto
+  {name:'Abside',x:0,z:-87},             // o altar-mor, no fundo do coro: atrás do jubé, colunata em meia-lua e deambulatório
+  {name:'Capela Desabada',x:31,z:-71},   // braço leste do transepto sem teto: luar, escombros e uma brecha para o cemitério
+  {name:'Menires',x:-82,z:64},           // anel de pedras numa clareira a sudoeste, três vãos, mata fechada em volta
+  {name:'Portaria',x:14,z:9},             // pátio da portaria na cabeça da ponte, fora do eixo: as torres o escondem da fachada
+  {name:'Encapuzados',x:82,z:66}];       // capela em ruínas a sudeste, vigiada por fiéis encapuzados de pedra
+// nascem olhando para a torre do cruzeiro, do outro lado do desfiladeiro
+const SPAWN={H:{x:-120,z:-24,yaw:-1.2},C:{x:120,z:-24,yaw:1.2}};
 const LUGARES=[ // nomes que aparecem na planta
-  {name:'Sacristia',x:-66,z:-8},{name:'Nave em ruínas',x:72,z:-16},{name:'Coro',x:-34,z:40},{name:'Poço',x:6,z:-4},{name:'Jardim',x:30,z:16},
-  {name:'Cripta',x:-66,z:52},{name:'Ossuário',x:66,z:52},
-  {name:'Acampamento',x:-158,z:-17},{name:'Círculo de Pedras',x:158,z:-17},{name:'Cabana do Ermitão',x:-142,z:-74},
-  {name:'Cemitério',x:132,z:72},{name:'Encruzilhada',x:30,z:-106},{name:'Ruínas Sombrias',x:-118,z:-120},{name:'Brecha Norte',x:-35.5,z:-54}];
-LUGARES.forEach(L=>{ if(!naCatedral(L.x,L.z)) Object.assign(L,mataP(L.x,L.z,25)); });
+  {name:'Nave',x:0,z:-50},{name:'Cruzeiro',x:0,z:-71},{name:'Claustro',x:-30,z:-54},{name:'Sacristia',x:-21,z:-84},{name:'Tesouro',x:21,z:-84},
+  {name:'Cemitério dos Monges',x:54,z:-48},{name:'Ossuário',x:63,z:-84},{name:'Mosteiro',x:-63,z:-84},{name:'Adro',x:0,z:-26},
+  {name:'Ponte Grande',x:0,z:-14},{name:'Ponte Caída',x:-90,z:-82},{name:'Aqueduto',x:90,z:-82},
+  {name:'Acampamento',x:-120,z:-10},{name:'Círculo de Pedras',x:120,z:-10},{name:'Cabana do Ermitão',x:-123,z:-70},{name:'Oratório',x:123,z:-70},
+  {name:'Ruínas Sombrias',x:-120,z:-96},{name:'Carvoaria',x:120,z:-96},{name:'Pedreira',x:-46,z:20},{name:'Charco',x:46,z:24},
+  {name:'Encruzilhada',x:-10,z:40},{name:'Carvalho Oco',x:14,z:70},{name:'Calvário',x:0,z:95},{name:'Mirante Oeste',x:-58,z:-1},{name:'Mirante Leste',x:58,z:-1}];
 
 const WALLS=[];
-let DESL=[0,0]; // deslocamento aplicado por junto(): estruturas da floresta escritas na planta original
-function W(x1,x2,z1,z2,h,kind,extra){ x1+=DESL[0]; x2+=DESL[0]; z1+=DESL[1]; z2+=DESL[1]; const w={x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h:h||9,tall:(h||9)>2.2,kind:kind||'pedra'}; if(extra) Object.assign(w,extra); WALLS.push(w); return w; }
+function W(x1,x2,z1,z2,h,kind,extra){ const w={x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h:h||9,tall:(h||9)>2.2,kind:kind||'pedra'}; if(extra) Object.assign(w,extra); WALLS.push(w); return w; }
 const PORTAS=[];
 function muro(eixo,fixo,de,ate,vaos,h,kind){
   const t=1, pts=[de]; (vaos||[]).flat().forEach(v=>pts.push(v)); pts.push(ate);
-  (vaos||[]).forEach(([a,b])=>{ const c=(a+b)/2; const [ox,oz]=DESL; if(eixo==='x') PORTAS.push({x:c+ox,z:fixo-2+oz},{x:c+ox,z:fixo+2+oz}); else PORTAS.push({x:fixo-2+ox,z:c+oz},{x:fixo+2+ox,z:c+oz}); });
+  (vaos||[]).forEach(([a,b])=>{ const c=(a+b)/2; if(eixo==='x') PORTAS.push({x:c,z:fixo-2},{x:c,z:fixo+2}); else PORTAS.push({x:fixo-2,z:c},{x:fixo+2,z:c}); });
   for(let i=0;i<pts.length;i+=2){ const a=pts[i],b=pts[i+1]; if(b-a<=0.2) continue;
     if(eixo==='x') W(a,b,fixo-t/2,fixo+t/2,h,kind); else W(fixo-t/2,fixo+t/2,a,b,h,kind); }
 }
 // sorteio determinístico: o mapa é igual para todos os jogadores e em todas as partidas
-function junto(cx,cz,fn){ DESL=[mataX(cx)-cx,mataZ(cz)-cz]; fn(); DESL=[0,0]; }
 let _sem=917; const sorte=()=>((_sem=(_sem*16807)%2147483647)/2147483647);
 function escombros(cx,cz,raio,n,alt){ for(let k=0;k<n;k++){ const a=sorte()*Math.PI*2, r=Math.sqrt(sorte())*raio, w=.9+sorte()*1.6, d=.9+sorte()*1.6;
   const x=cx+Math.cos(a)*r, z=cz+Math.sin(a)*r; W(x-w/2,x+w/2,z-d/2,z+d/2,(alt||1.3)*(.6+sorte()*.7),'escombro'); } }
 function colunaCaida(x1,z1,x2,z2){ W(x1,x2,z1,z2,1.35,'coluna_caida'); }
 function coluna(x,z,h){ W(x-.8,x+.8,z-.8,z+.8,h,'coluna'); }
+const ESTATUA=(x,z,pose,rot)=>W(x-.45,x+.45,z-.45,z+.45,2.4,'estatua',{pose,rot:r2(rot)});
+// portas com batente e lintel para o cliente desenhar; o muro abre o vão com os mesmos números
+const PORTAIS=[];
+function porta(nome,eixo,fixo,a,b,brecha){ PORTAIS.push(brecha?{nome,eixo,fixo,a,b,brecha:true}:{nome,eixo,fixo,a,b}); return [a,b]; }
 
-// limite do mapa: muro velho de pedra, com a mata continuando do lado de fora
+// limite do mapa: muro velho de pedra na mata; no promontório, a beira do penhasco
 W(-HALF.x-1,HALF.x+1,-HALF.z-1,-HALF.z,5,'limite'); W(-HALF.x-1,HALF.x+1,HALF.z,HALF.z+1,5,'limite');
 W(-HALF.x-1,-HALF.x,-HALF.z,HALF.z,5,'limite'); W(HALF.x,HALF.x+1,-HALF.z,HALF.z,5,'limite');
 
-// ---- paredes da catedral: portas principais nos quatro lados e duas brechas ----
-// Oeste: porta dos Caçadores e uma porta lateral para o Coro. Leste: porta dos Cultistas e uma brecha para a Nave.
-// Sul: a grande porta do Nártex e uma brecha. Norte: uma porta estreita para a Encruzilhada e, desde a v5.5, uma
-// brecha a noroeste que liga a ala oeste aos Menires (antes eram 191 m andando da Capela Oeste até lá).
-const PORTAIS=[ // para o cliente desenhar batentes, lintéis e lanternas
-  {nome:'Porta Oeste',eixo:'z',fixo:-96.5,a:-4,b:4},{nome:'Porta do Coro',eixo:'z',fixo:-96.5,a:27,b:31},
-  {nome:'Porta Leste',eixo:'z',fixo:96.5,a:-4,b:4},{nome:'Brecha Leste',eixo:'z',fixo:96.5,a:-24,b:-20,brecha:true},
-  {nome:'Grande Porta',eixo:'x',fixo:58.5,a:-4,b:4},{nome:'Brecha Sul',eixo:'x',fixo:58.5,a:-24,b:-20,brecha:true},
-  {nome:'Porta Norte',eixo:'x',fixo:-58.5,a:33,b:38},{nome:'Brecha Norte',eixo:'x',fixo:-58.5,a:-38,b:-33,brecha:true}];
-const vaosDe=(eixo,fixo)=>PORTAIS.filter(p=>p.eixo===eixo&&p.fixo===fixo).map(p=>[p.a,p.b]).sort((u,v)=>u[0]-v[0]);
-muro('x',-58.5,-97,97,vaosDe('x',-58.5),14); muro('x',58.5,-97,97,vaosDe('x',58.5),14);
-muro('z',-96.5,-58,58,vaosDe('z',-96.5),14); muro('z',96.5,-58,58,vaosDe('z',96.5),14);
-W(-14,-8,59,62,14,'torre'); W(8,14,59,62,14,'torre'); // campanários flanqueando a grande porta
-escombros(97.5,-25,1.6,4,1.2); escombros(-25,59.8,1.6,4,1.2); escombros(-31.5,-60.5,1.2,3,1.1); // pedras que caíram para fora das brechas
+// ---------- o desfiladeiro ----------
+// Fatias de 4 m com as bordas irregulares; os vãos são os tabuleiros das travessias. Baixo (não bloqueia visão nem tiro).
+const TRAVESSIAS=[ // ao longo (de..ate) e largura (a..b) de cada tabuleiro
+  {nome:'Ponte Grande',eixo:'z',a:-4,b:4,de:-22,ate:-6},
+  {nome:'Ponte Caída',eixo:'x',a:-79,b:-75,de:-98,ate:-82},
+  {nome:'Aqueduto',eixo:'x',a:-79,b:-75,de:82,ate:98}];
+const ABISMO=[];
+// Bordas retas (a irregularidade fica no visual: rocha do paredão e pedras soltas na beira), para que o chão que se vê e o
+// chão onde se anda coincidam ao centímetro. Os vãos são os tabuleiros das travessias.
+{ const fenda=(x1,x2,z1,z2)=>ABISMO.push(W(x1,x2,z1,z2,.6,'abismo'));
+  for(const [x1,x2] of [[-98,-82],[82,98]]){ fenda(x1,x2,-100,-79); fenda(x1,x2,-75,-22); }
+  fenda(-98,-5,-22,-6); fenda(5,98,-22,-6); }
+// Ponte Grande: muretas baixas (cobertura de corpo inteiro só agachado atrás das estátuas), quatro estátuas em pedestais e
+// uma estátua tombada no meio do tabuleiro, que obriga a desviar e serve de cobertura baixa
+W(-5,-4,-22,-6,1.1,'parapeito'); W(4,5,-22,-6,1.1,'parapeito');
+for(const z of [-18,-10]) for(const sx of [-1,1]) W(sx*4.5-.8,sx*4.5+.8,z-.8,z+.8,3.4,'estatua_ponte',{rot:sx>0?Math.PI/2:-Math.PI/2});
+W(-1.2,1.6,-14.7,-13.3,1.2,'coluna_caida');
+// Aqueduto: o canal velho virou passarela entre muretas; arcos nas duas cabeceiras
+W(82,98,-80,-79,1.2,'parapeito'); W(82,98,-75,-74,1.2,'parapeito');
+for(const x of [81,99]) for(const z of [-80.9,-73.1]) W(x-.8,x+.8,z-.8,z+.8,8,'pilar_ruina');
 
-// ---- Claustro: entradas de larguras e posições diferentes, um canto desabado que deixa ver mas não passar ----
-muro('x',CLAUSTRO.z1,CLAUSTRO.x1,44,[[-40,-33],[22,25]]);          // norte: uma larga, uma estreita
-W(44,56,-28.6,-27.4,1.5,'escombro'); W(55.4,56.6,-28,-22,1.5,'escombro'); // canto nordeste caído: janela de escombros, sem passagem
-muro('x',CLAUSTRO.z2,CLAUSTRO.x1,CLAUSTRO.x2,[[-24,-19],[30,38]]);  // sul
-muro('z',CLAUSTRO.x1,CLAUSTRO.z1,CLAUSTRO.z2,[[-8,-5],[8,14]]);     // oeste: passagem apertada da Sacristia e uma porta larga
-muro('z',CLAUSTRO.x2,-22,CLAUSTRO.z2,[[4,10]]);                     // leste
-// dentro do Claustro: poço no centro, jardim de sebes, criptas soltas, colunata quebrada, árvore morta
-W(3,9,-7,-1,1.1,'poco');
-[[20,34,10,11.4],[33,34.4,11.4,22],[24,30,18,19.4],[14,20,-18,-16.6]].forEach(([a,b,c,d])=>W(a,b,c,d,2.6,'sebe'));
-[[-50,-44,20,21.2],[40,46,18,19.2],[-8,-2,22,23.2]].forEach(([a,b,c,d])=>W(a,b,c,d,1.2,'sebe'));
-[[-46,-38,-16,-8],[-30,-22,6,14],[-12,-2,12,19],[40,48,-15,-7],[-20,-12,-24,-19]].forEach(([a,b,c,d])=>W(a,b,c,d,6,'cripta'));
-[[-40,5],[-32,2.8],[-24,4.2],[-8,6],[0,3.1]].forEach(([x,h])=>coluna(x,-20,h));   // colunata do lado norte, uma faltando
-colunaCaida(-18,-14,-17,-8);
-W(-19,-18,-4,-3,8,'arvore');
-[[-40,-36,17,19],[12,16,-23,-21],[46,50,23,25]].forEach(([a,b,c,d])=>W(a,b,c,d,1.1,'tumba'));
+// ---------- a catedral ----------
+// Fachada ao sul, voltada para a ponte. Torre oeste inteira (com a agulha), torre leste quebrada.
+muro('x',-32,-16.5,16.5,[porta('Grande Porta','x',-32,-4,4)],26,'fachada');
+W(-28,-16.5,-44,-31.5,52,'torre_oeste'); W(16.5,28,-44,-31.5,26,'torre_leste');
+escombros(31,-37,3.2,7,1.6); escombros(31,-27,2.4,4,1.2); // a torre leste perdeu o topo: pedras no adro e no cemitério
+// nártex: três arcos para a nave; o do meio fica no eixo da Grande Porta
+muro('x',-40,-15.5,15.5,[porta('Arco Oeste','x',-40,-12,-8),porta('Arco Central','x',-40,-4,4),porta('Arco Leste','x',-40,8,12)],24,'catedral');
+// nave: paredes altas com porta para o Claustro e a brecha da torre que caiu para o cemitério
+muro('z',-16,-64,-32,[porta('Porta do Claustro','z',-16,-56,-52)],24,'catedral');
+muro('z',16,-64,-32,[porta('Brecha da Torre','z',16,-53,-49,true)],24,'catedral');
+// transepto: braço oeste inteiro, braço leste desabado (o teto caiu e levou parte da parede sul)
+muro('x',-64,-44.5,-15.5,[porta('Porta da Galeria','x',-64,-34,-30)],22,'catedral');
+muro('x',-64,15.5,44.5,[porta('Brecha da Capela','x',-64,26,34,true)],22,'catedral');
+muro('x',-78,-44.5,-11.5,[porta('Porta da Sacristia','x',-78,-24,-20)],22,'catedral');
+muro('x',-78,11.5,44.5,[porta('Porta do Tesouro','x',-78,20,24)],22,'catedral');
+muro('z',-44,-78,-64,[porta('Porta do Mosteiro','z',-44,-73,-69)],22,'catedral');
+muro('z',44,-78,-64,[porta('Porta do Ossuário','z',44,-73,-69)],22,'catedral');
+// cruzeiro: quatro pilares que sustentam a torre do cruzeiro
+for(const [x,z] of [[-8,-64],[8,-64],[-8,-78],[8,-78]]) W(x-1.3,x+1.3,z-1.3,z+1.3,24,'pilar_cruzeiro');
+// coro: o jubé (anteparo de pedra com o crucifixo) fecha o eixo; passa-se pelas portas dos lados
+muro('x',-78,-11.5,11.5,[porta('Jubé Oeste','x',-78,-6,-1.5),porta('Jubé Leste','x',-78,1.5,6)],9,'jube'); // entre os pilares do cruzeiro; o meio (com o crucifixo) fecha o eixo
+muro('z',-12,-85,-78,[porta('Coro Oeste','z',-12,-83,-80)],22,'catedral');
+muro('z',12,-85,-78,[porta('Coro Leste','z',12,-83,-80)],22,'catedral');
+// abside: meia-volta de muro na beira do penhasco e, dentro, a colunata em meia-lua atrás do altar (deambulatório)
+for(let k=0;k<=15;k++){ const a=Math.PI*(1+k/15), x=Math.cos(a)*11, z=-85+Math.sin(a)*11; W(x-1.2,x+1.2,z-1.2,z+1.2,22,'abside'); }
+for(let k=0;k<7;k++){ const a=Math.PI*(1.12+k*.127), x=Math.cos(a)*6.6, z=-86+Math.sin(a)*6.2; W(x-.75,x+.75,z-.75,z+.75,12,'coluna_abside'); }
+// Sacristia (oeste do coro): três portas; Tesouro (leste): desabado, só escombros e uma parede de pé
+muro('z',-30,-90,-78,[porta('Sacristia Oeste','z',-30,-87,-83)],14,'pedra'); muro('x',-90,-30.5,-8.5,null,14,'pedra');
+W(-29,-26,-89,-87.5,1.1,'tumba'); W(-16,-14.5,-88,-85,1.2,'arca');
+muro('z',30,-90,-78,[porta('Tesouro Leste','z',30,-88,-84,true)],7,'ruina'); muro('x',-90,8.5,30.5,[[18,23]],5,'ruina');
+escombros(24,-85,2.4,5,1.4);
+// nave por dentro: bancos em dois blocos de cada lado do corredor central, alguns tombados
+const PILLARS=[[-8,-46],[8,-46],[-8,-52],[8,-52],[-8,-58],[8,-58]];
+const PEWS=[[-8,-1.8,-50,-47],[1.8,8,-50,-47],[-8,-1.8,-56,-53],[1.8,8,-56,-53],[-8,-1.8,-62,-59.2],[-42,-36,-75,-72],[-66.5,-63.5,-62,-59]];
+escombros(4,-60.5,1.6,3,1); escombros(-12,-47,1.2,2,1); colunaCaida(10,-61,14.6,-59.8);
+// braço oeste: túmulos de bispos como cobertura baixa
+[[-38,-34,-68.5,-67],[-28,-24,-75.5,-74],[-24,-20,-68.5,-67]].forEach(([a,b,c,d])=>W(a,b,c,d,1.1,'tumba'));
+// braço leste (Capela Desabada): o teto caído no chão e uma coluna tombada
+escombros(24,-68,2.6,6,1.5); escombros(38,-75,2.2,5,1.4); escombros(40,-66,1.6,3,1.2); colunaCaida(20,-76,27,-74.8);
 
-// ---- Capela Oeste: sala apertada, porta estreita ao sul e porta lateral a leste ----
-muro('x',-34,-80,-50,[[-61,-58]]); muro('z',-80,-58,-34); muro('z',-50,-58,-34,[[-51,-47]]);
-// ---- Abside: meia-lua de colunas atrás do altar, frente aberta com túmulos como cobertura ----
-for(let k=0;k<9;k++){ const a=Math.PI*(1.08+k*0.105), x=Math.cos(a)*12.5, z=-47+Math.sin(a)*10.5; W(x-1.2,x+1.2,z-1.2,z+1.2,12,'pedra'); }
-[[-8,-5,-37,-35.6],[4,7.5,-38,-36.6],[-2,1,-31,-29.8]].forEach(([a,b,c,d])=>W(a,b,c,d,1.1,'tumba'));
-// ---- Capela Leste: o lado sul desabou; sobrou a porta oeste e uma brecha cheia de escombros ----
-muro('z',50,-58,-34,[[-50,-46]]); muro('z',80,-58,-34); muro('x',-34,50,54); muro('x',-34,64,80); // brecha de 10 m; o resto da parede ficou em pé
-escombros(59,-36,3,6,1.4); escombros(69,-39,2.4,5,1.3); escombros(58,-53,2.2,4,1.1); colunaCaida(55,-43,66,-42);
-// ---- Cripta (sudoeste): sala sem janelas, entrada por um corredor em L. Perdeu o altar para a floresta; virou esconderijo ----
-muro('x',40,-80,-52); muro('z',-80,40,58); muro('z',-52,40,58,[[44,48]]);
-muro('z',-48,34,52); muro('z',-52,34,40); muro('x',52,-52,-48); // boca do corredor abre para o anel, com folga
-// ---- Nártex: salão de entrada; a grande porta sul se abre direto nele ----
-muro('x',36,-16,16); muro('z',-16,36,58,[[41,45]]); muro('z',16,36,58,[[50,54]]);
-[[-9,-6,49,51],[5,8,41,43],[-2,1,53,55]].forEach(([a,b,c,d])=>W(a,b,c,d,1.1,'tumba'));
-// ---- Ossuário (sudeste): duas portas e uma pilha de ossos no meio para dar a volta ----
-muro('x',34,50,80,[[54,58]]); muro('z',50,34,58,[[48,52]]); muro('z',80,34,58);
-W(58,63,41,47,4.5,'ossos');
+// ---------- Claustro: galeria coberta em volta de um jardim a céu aberto ----------
+muro('x',-44,-44.5,-28,[porta('Porta do Adro','x',-44,-38,-34)],12,'claustro');
+muro('z',-44,-64,-44,[porta('Porta dos Monges','z',-44,-56,-52)],12,'claustro');
+for(const x of [-39,-34.5,-30,-25.5,-21]) for(const z of [-59,-49]){ if(x===-30&&z===-49) continue; W(x-.45,x+.45,z-.45,z+.45,6,'coluna_claustro'); }
+for(const z of [-54]) for(const x of [-39,-21]) W(x-.45,x+.45,z-.45,z+.45,6,'coluna_claustro');
+W(-31.5,-28.5,-55.5,-52.5,1.1,'poco');
+[[-37,-34,-57.6,-57],[-26,-23,-51,-50.4]].forEach(([a,b,c,d])=>W(a,b,c,d,1,'sebe'));
 
-// ---- o anel entre o Claustro e as capelas ----
-// Sacristia (oeste, lado dos Caçadores): atalho estreito da porta oeste para dentro do Claustro
-muro('x',-12,-70,-60); muro('x',-4,-70,-60); muro('z',-70,-12,-4,[[-9,-6]]); muro('z',-60,-12,-4,[[-8,-5]]);
-// Nave em ruínas (leste, lado dos Cultistas): desabamento que força desvio
-escombros(72,-17,4.2,10,1.7); colunaCaida(66,13,80,14.4); coluna(76,-6,3.5);
-// biombos soltos quebrando as linhas longas de visão
-[[-30,-29,-58,-48],[28,29,-58,-50],[-89,-80,-24,-23],[82,90,24,25],[34,35,40,50],[-89,-80,22,23]].forEach(([a,b,c,d])=>W(a,b,c,d,9,'biombo'));
+// ---------- Sala do Capítulo (altar), passagem dos monges e ruínas do mosteiro ----------
+muro('z',-52,-64.5,-45.5,[porta('Capítulo Leste','z',-52,-57,-53)],14,'pedra');
+muro('z',-70,-64.5,-45.5,[porta('Capítulo Oeste','z',-70,-53,-49)],14,'pedra');
+muro('x',-46,-70.5,-51.5,null,14,'pedra'); muro('x',-64,-70.5,-51.5,[porta('Capítulo Norte','x',-64,-63,-59)],14,'pedra');
+W(-69,-68,-62,-56,.6,'banco'); W(-55,-54,-50,-47,.6,'banco');
+// mosteiro: dormitório sem teto, paredes partidas e colunas que sobraram
+muro('x',-70,-80,-74,[[-78,-76]],5,'ruina'); muro('z',-74,-96,-84,[[-92,-89]],4.5,'ruina'); muro('x',-92,-60,-44,[[-55,-51]],6,'ruina');
+muro('z',-56,-92,-80,[[-87,-84]],3.5,'ruina'); coluna(-62,-80,5.5); coluna(-50,-84,3.2); colunaCaida(-68,-97,-60,-95.8); escombros(-76,-60,2,4,1.2);
+// adro: o largo diante da fachada, com o cruzeiro de pedra fora do eixo e dois tanques secos
+W(-12.5,-11.5,-27.5,-26.5,5,'cruz'); W(-27,-22,-28,-25,1,'tanque'); W(22,27,-28,-25,1,'tanque');
+ESTATUA(-38,-30,1,.8); ESTATUA(38,-30,3,-.8);
 
-const PILLARS=[[-40,-50],[-22,-40],[20,-40],[38,-52],[-44,38],[24,40],[42,52],[-78,-26],[-76,26],[88,-30],[88,34],[-80,-9],[-80,9],[80,-11],[80,11]];
-const PEWS=[[-44,-26,42,45],[-44,-28,47,50],[-40,-26,52,55],[-77,-69,-55,-52],[-63,-55,-40,-37]];
-// reagentes: todos no Claustro, espalhados de forma irregular (dois no poço, os mais disputados)
-const REAG=[[1,-4],[11,-5],[18,-12],[29,21],[48,0],[-40,-4],[-48,24],[-36,-24],[-20,24],[-6,9]];
+// ---------- Cemitério dos Monges e Ossuário (leste) ----------
+const LAPIDES=[];
+for(const z of [-58,-52,-46,-40]) for(let x=36;x<=74;x+=5){ if(sorte()<.22) continue; const ox=(sorte()-.5)*1.4, oz=(sorte()-.5)*.8; LAPIDES.push(W(x+ox-.6,x+ox+.6,z+oz-.2,z+oz+.2,1.1,'lapide')); }
+W(66,72,-64,-59,5,'mausoleu'); W(46,47,-62,-61,7,'arvore'); muro('z',33,-58,-36,[[-52,-48],[-44,-40]],1.1,'mureta');
+muro('x',-66,52,80,[[60,64]],4,'ruina'); muro('z',52,-96,-66,[[-82,-78]],4,'ruina');
+W(56,61,-90,-85,4.5,'ossos'); W(68,72,-76,-72,3,'ossos'); escombros(74,-92,2.2,4,1.1);
 
-// ============ A FLORESTA ============
-// Trilhas principais: faixas de chão batido onde o luar atravessa as copas. Fora delas a mata é fechada:
-// árvores e espinheiros formam paredes, e só trilhas estreitas e escuras levam às tarefas e às ruínas.
+// ---------- a Floresta: estruturas fixas ----------
+// Faixa oeste (entre o limite e o desfiladeiro): Acampamento dos Caçadores, Cabana do Ermitão, Ruínas Sombrias e a
+// cabeceira da Ponte Caída. Faixa leste, o espelho do culto: Círculo de Pedras, Oratório, Carvoaria e o Aqueduto.
+// Ao sul, em três fileiras: o Caminho da Borda com os mirantes e a Portaria; a Pedreira, a Encruzilhada e o Charco; os
+// Menires, o Carvalho Oco e os Encapuzados. No fundo, o Calvário e a mata velha.
+const FIXAS_ANTES=WALLS.length;
+const MEN=[-82,64], ENC=[82,66], PED=[-46,38], CHA=[46,40], ENCR=[0,46], CARV=[14,61], CALV=[0,88], RUI=[-120,-86], CARVO=[120,-86], CAB=[-123,-60], ORA=[123,-60];
+// Acampamento dos Caçadores: barracas, caixotes e fogueira
+{ const [cx,cz]=[SPAWN.H.x,SPAWN.H.z]; [[-8,-10,3.4,3],[-10,7,3.4,3],[6,-12,3,3.2],[-6,12,3,2.6]].forEach(([x,z,w,d])=>W(cx+x-w/2,cx+x+w/2,cz+z-d/2,cz+z+d/2,2.6,'tenda'));
+  [[8,9,1.2,1.2],[9.4,10.4,1,1],[4,-15,1.4,1]].forEach(([x,z,w,d])=>W(cx+x-w/2,cx+x+w/2,cz+z-d/2,cz+z+d/2,1,'caixote')); }
+// Círculo de Pedras dos Cultistas: menires em anel, aberto para o noroeste (para a catedral)
+for(let k=0;k<10;k++){ const a=k/10*Math.PI*2; if(Math.cos(a-Math.PI*1.15)>.55||k===3||k===7) continue; const x=SPAWN.C.x+Math.cos(a)*10, z=SPAWN.C.z+Math.sin(a)*10; W(x-.7,x+.7,z-.7,z+.7,3.6+((k*7)%3)*.5,'menir'); }
+// Menires (altar): anel de pedras altas com três vãos (norte, oeste e sudeste)
+for(let k=0;k<12;k++){ if(k===1||k===5||k===8) continue; const a=k/12*Math.PI*2+.2, x=MEN[0]+Math.cos(a)*8.5, z=MEN[1]+Math.sin(a)*8.5; W(x-.8,x+.8,z-.8,z+.8,4.2+((k*5)%4)*.4,'menir'); }
+// Encapuzados (altar): capela sem teto e seis fiéis encapuzados de pedra em duas fileiras voltadas para o altar
+{ const [cx,cz]=ENC; muro('x',cz-11,cx-10,cx+10,[[cx-4,cx]],3.2,'ruina'); muro('x',cz+11,cx-10,cx+10,[[cx+2,cx+6]],4.6,'ruina');
+  muro('z',cx-10,cz-11,cz+11,[[cz-4,cz+2]],5.2,'ruina'); muro('z',cx+10,cz-11,cz+11,[[cz+2,cz+6]],3.8,'ruina');
+  for(const [dx,dz,r] of [[-5,-6,.6],[-5,0,.9],[-5,6,1.2],[5,-6,-.6],[5,0,-.9],[5,6,-1.2]]) ESTATUA(cx+dx,cz+dz,4,Math.PI/2*(dx<0?-1:1)+r*.3);
+  escombros(cx-8,cz+9,1.6,3,1.1); }
+// Portaria (altar): duas torres na cabeça da ponte e um pátio murado; o altar fica fora do eixo, atrás da torre leste
+W(-11,-5,-6,1,12,'torre_portaria'); W(5,11,-6,1,12,'torre_portaria');
+// a passagem da ponte segue murada até a estrada; o pátio do altar fica a leste, com porta para a passagem
+muro('z',-5,1,15,null,5,'ruina'); muro('z',5,1,15,[[8,12]],5,'ruina');
+muro('x',1,11,23,null,5,'ruina'); muro('z',23,1,17,[[6,10]],4,'ruina'); muro('x',17,5,23,[[13,17]],5,'ruina');
+escombros(-12,8,2,3,1.1); W(18,20.6,13,14.2,1.1,'tumba'); W(-16,-12,2,3,4,'ruina');
+// Pedreira: paredões de pedra em ferradura abertos para o norte e o leste, blocos cortados no chão e o guindaste
+{ const [cx,cz]=PED; muro('z',cx-14,cz-12,cz+14,[[cz-1,cz+3]],7,'penhasco'); muro('x',cz+14,cx-14,cx+12,[[cx-2,cx+2]],6,'penhasco'); muro('x',cz-12,cx-14,cx-4,null,6,'penhasco');
+  [[-8,-6,3,2],[4,10,3,2.5],[-4,6,2.5,2],[8,-4,2.5,2]].forEach(([dx,dz,w,d])=>W(cx+dx-w/2,cx+dx+w/2,cz+dz-d/2,cz+dz+d/2,1.2,'bloco'));
+  W(cx-.4,cx+.4,cz-.4,cz+.4,9,'guindaste'); }
+// Charco: árvores mortas em pé dentro d'água e uma passarela velha
+{ const [cx,cz]=CHA; [[-8,-6],[-2,-10],[8,-4],[4,8],[-10,6],[12,4],[-4,0]].forEach(([dx,dz])=>W(cx+dx-.4,cx+dx+.4,cz+dz-.4,cz+dz+.4,7,'arvore'));
+  W(cx,cx+10,cz+1,cz+1.8,.5,'passarela'); }
+// Encruzilhada e Carvalho Oco: o marco no cruzamento e o carvalho gigante, com raízes como cobertura
+W(ENCR[0]-4.5,ENCR[0]-3.5,ENCR[1]-4.5,ENCR[1]-3.5,2.4,'marco');
+{ const [cx,cz]=CARV; W(cx-3,cx+3,cz-2.5,cz+2,14,'carvalho'); [[-7,-3,-5,-3.8],[7,11.5,-5.5,-4.3],[-4.5,-3,-1,3],[7,8.3,-1.5,3]].forEach(([a,b,c,d])=>W(cx+a,cx+b,cz+c,cz+d,1.1,'raiz')); }
+// Calvário: três cruzes num morro ao sul, visíveis de longe
+for(const x of [-4,0,4]) W(CALV[0]+x-.35,CALV[0]+x+.35,CALV[1]-2.4,CALV[1]-1.6,x?5:7,'cruz');
+// Cabana do Ermitão (mercador dos Caçadores) e Oratório da Carpideira (mercadora do culto)
+{ const [cx,cz]=CAB; muro('x',cz-5,cx-5,cx+5,null,3.6,'madeira'); muro('x',cz+5,cx-5,cx+5,null,3.6,'madeira'); muro('z',cx-5,cz-5,cz+5,null,3.6,'madeira'); muro('z',cx+5,cz-5,cz+5,[[cz-2,cz+2]],3.6,'madeira'); }
+{ const [cx,cz]=ORA; muro('x',cz-5,cx-4,cx+5,null,3.4,'ruina'); muro('x',cz+5,cx-4,cx+5,null,3.4,'ruina'); muro('z',cx+5,cz-5,cz+5,null,3.4,'ruina'); }
+// Ruínas Sombrias (noroeste): capela sem teto engolida pela mata, paredes desabadas e fiéis petrificados
+{ const [cx,cz]=RUI; muro('x',cz-7,cx-12,cx+12,[[cx-9,cx-5],[cx+2,cx+5]],6.5,'ruina'); muro('x',cz+7,cx-12,cx+12,[[cx-4,cx+1]],5,'ruina');
+  muro('z',cx-12,cz-7,cz+7,[[cz-2,cz+1]],4.5,'ruina'); muro('z',cx+12,cz-7,cz+7,[[cz-3,cz+3]],3,'ruina'); escombros(cx+9,cz,2,4,1.2);
+  coluna(cx-6,cz,3.2); coluna(cx+4,cz+1,5.5); colunaCaida(cx-8,cz+1,cx-6.8,cz+5);
+  [[-7,-3,1,.3],[0,4,0,2.5],[3,-4,2,4]].forEach(([dx,dz,p,r])=>ESTATUA(cx+dx,cz+dz,p,r)); }
+// Carvoaria (nordeste): fornos de carvão cobertos de terra, lenha empilhada e um telheiro
+{ const [cx,cz]=CARVO; [[-6,-4],[2,-6],[7,2]].forEach(([dx,dz])=>W(cx+dx-2,cx+dx+2,cz+dz-2,cz+dz+2,2.4,'forno'));
+  W(cx-5,cx+1,cz+5,cz+6.2,1.2,'tronco'); W(cx-4,cx+1,cz+7.2,cz+8.4,1.2,'tronco'); muro('x',cz-11,cx-2,cx+8,null,3.2,'madeira'); }
+
+// reagentes: todos na mata, em lugares escolhidos. Dois na Pedreira e dois no Charco (no meio do caminho entre os lados),
+// dois no Carvalho Oco e na Encruzilhada (o centro) e quatro na última mata antes de cada travessia: ao lado da Portaria,
+// nas duas cabeças da Ponte Grande, e nas cabeceiras da Ponte Caída e do Aqueduto. Quem vai celebrar no promontório
+// pega o reagente ali e atravessa carregando; a caça sabe disso e queima. (Medido em 400 noites de bots: com os reagentes
+// longe das travessias, a Sala do Capítulo quase nunca era usada pelo culto.)
+const REAG=[[PED[0]-6,PED[1]-2],[PED[0]+4,PED[1]+8],[CHA[0]+6,CHA[1]-4],[CHA[0]-4,CHA[1]+8],[CARV[0]+9,CARV[1]+4],[ENCR[0]-12,ENCR[1]+4],[-24,-1],[24,-1],[-106,-70],[106,-70]];
+
+// Trilhas principais: faixas de chão batido onde o luar atravessa as copas. Fora delas a mata é fechada.
 const TRILHAS=[
-  {w:5,pts:[[-158,0],[-97,0]]},                                   // acampamento → porta oeste
-  {w:5,pts:[[158,0],[97,0]]},                                     // círculo de pedras → porta leste
-  {w:3.5,pts:[[-122,-84],[-64,-90],[0,-82],[64,-90],[122,-84],[128,-30],[120,30],[124,84],[64,90],[0,84],[-64,92],[-124,84],[-118,30],[-128,-30],[-122,-84]]}, // perímetro sinuoso
-  {w:3.5,pts:[[-135,-62],[-130,-40],[-128,-12],[-118,-2]]},       // cabana do Ermitão
-  {w:4,pts:[[35.5,-59],[38,-76],[50,-100]]},                      // porta norte → encruzilhada
-  {w:3.5,pts:[[50,-100],[10,-112],[-37,-106]]},                   // encruzilhada → Menires
-  {w:3.5,pts:[[50,-100],[96,-112],[124,-88]]},
-  {w:4.5,pts:[[0,59],[14,80],[33,99]]},                           // grande porta → Carvalho Oco
-  {w:3,pts:[[-22,59],[-36,90]]},{w:3,pts:[[-96,29],[-120,32]]},{w:3,pts:[[97,-22],[126,-28]]},
-  {w:3.5,pts:[[123,62],[124,74]]},                                // perímetro → cemitério
-  {w:3,pts:[[-35.5,-59],[-37,-72],[-40,-87]]}];                   // brecha norte → perímetro (para os Menires)
-TRILHAS.forEach(T=>{ T.pts=T.pts.map(([x,z])=>mataXZ(x,z,12)); });
+  {w:5,pts:[[SPAWN.H.x,SPAWN.H.z],[-116,-48],[-110,-66],[-99,-77]]},                         // 0 acampamento → Ponte Caída
+  {w:5,pts:[[SPAWN.C.x,SPAWN.C.z],[116,-48],[110,-66],[99,-77]]},                            // 1 círculo → Aqueduto
+  {w:4.5,pts:[[SPAWN.H.x,SPAWN.H.z],[-108,-6],[-90,5],[-56,9],[-28,15],[-14,23],[14,23],[28,15],[56,9],[90,5],[108,-6],[SPAWN.C.x,SPAWN.C.z]]}, // 2 Caminho da Borda
+  {w:5,pts:[[0,17],[ENCR[0],ENCR[1]],[0,CALV[1]-8]]},                                       // 3 Estrada dos Peregrinos
+  {w:3.5,pts:[[MEN[0]+7,MEN[1]+6],[-66,60],[-40,56],[-18,50],[ENCR[0],ENCR[1]],[18,50],[40,56],[66,62],[ENC[0]-12,ENC[1]-1]]}, // 4 volta do sul
+  {w:4,pts:[[-108,-6],[-108,24],[MEN[0]-3,MEN[1]-10]]},                                      // 5 acampamento → Menires
+  {w:4,pts:[[108,-6],[108,24],[ENC[0]-2,ENC[1]-14]]},                                        // 6 círculo → Encapuzados
+  {w:3,pts:[[-110,-66],[RUI[0]-1.5,RUI[1]+9]]},{w:3,pts:[[110,-66],[CARVO[0],CARVO[1]+10]]}, // 7, 8 ruínas e carvoaria
+  {w:3,pts:[[-56,9],[PED[0]+2,PED[1]-18]]},{w:3,pts:[[56,9],[CHA[0],CHA[1]-14]]},             // 9, 10 Borda → Pedreira, Charco
+  {w:3.5,pts:[[-116,-48],[CAB[0]+7,CAB[1]]]},{w:3.5,pts:[[116,-48],[ORA[0]-6,ORA[1]]]},       // 11, 12 cabana e oratório
+  {w:3,pts:[[-17,9],[-28,15]]},{w:3,pts:[[17,7],[28,15]]},                                   // 13, 14 portões laterais da Portaria
+  {w:3,pts:[[PED[0],PED[1]+16],[-40,56]]},{w:3,pts:[[CHA[0],CHA[1]+14],[40,56]]}];           // 15, 16 Pedreira e Charco → volta do sul
 // Clareiras: abertas ao céu. O luar ilumina (bom para os Caçadores) e a mata em volta esconde quem chega.
-const CLAREIRAS=[{x:-158,z:0,r:15},{x:158,z:0,r:15},{x:-50,z:-104,r:14},{x:40,z:105,r:13},{x:132,z:90,r:20},{x:50,z:-100,r:9},{x:-142,z:-62,r:10}].map(c=>({...c,...mataP(c.x,c.z,12)}));
+const CLAREIRAS=[{x:SPAWN.H.x,z:SPAWN.H.z,r:15},{x:SPAWN.C.x,z:SPAWN.C.z,r:15},{x:MEN[0],z:MEN[1],r:14},{x:ENC[0],z:ENC[1],r:15},{x:PED[0],z:PED[1],r:15},{x:CHA[0],z:CHA[1],r:15},
+  {x:ENCR[0]+2,z:ENCR[1],r:11},{x:CALV[0],z:CALV[1]-3,r:10},{x:-56,z:0,r:8},{x:56,z:0,r:8},{x:RUI[0],z:RUI[1],r:11},{x:CARVO[0],z:CARVO[1],r:10},{x:CAB[0],z:CAB[1],r:8},{x:ORA[0],z:ORA[1],r:8},
+  {x:0,z:9,r:15},{x:CARV[0]+2,z:CARV[1],r:9}];
 // pontos de tarefa da floresta (fixos; a mata é gerada em volta deles)
-const PISTA_PTS=[[-150,-104],[-86,-72],[0,-120],[100,-122],[152,-54],[-156,70],[-80,118],[88,120]].map(([x,z])=>mataXZ(x,z));
-const ERVA_PTS=[[-104,-120],[-24,-70],[86,-72],[150,-116],[152,44],[76,108],[-10,118],[-130,108]].map(([x,z])=>mataXZ(x,z));
-const SENTINELA_PTS=[[-58,-30],[16,-34],[50,-30],[0,31],[-50,-88],[30,92]].map(([x,z])=>mataXZ(x,z));
+const PISTA_PTS=[[-136,-96],[-108,-38],[-80,24],[-36,82],[36,82],[80,24],[108,-38],[136,-96]];
+const ERVA_PTS=[[-136,8],[-122,86],[-74,86],[-24,66],[30,72],[74,86],[122,86],[136,8]];
+const SENTINELA_PTS=[[-48,-58],[0,-71],[31,-56],[MEN[0]-4,MEN[1]-22],[0,26],[ENC[0]+4,ENC[1]-22]];
 // trilhas estreitas (2,4 m, sem luar): de cada ponto de tarefa até a trilha principal mais próxima, com curvas,
 // e mais algumas vielas que entram na mata e voltam. Todas geradas com a mesma semente.
 { const segs=[]; TRILHAS.forEach(T=>{ for(let i=1;i<T.pts.length;i++) segs.push([T.pts[i-1],T.pts[i]]); });
   const maisPerto=(x,z)=>{ let best=null,bd=1e9; for(const [A,B] of segs){ const dx=B[0]-A[0],dz=B[1]-A[1],L=dx*dx+dz*dz, t=clamp(L?((x-A[0])*dx+(z-A[1])*dz)/L:0,0,1), px=A[0]+dx*t, pz=A[1]+dz*t, d=Math.hypot(px-x,pz-z); if(d<bd){ bd=d; best=[px,pz]; } } return best; };
-  const dentro=(x,z)=>Math.abs(x)<HALF.x-4&&Math.abs(z)<HALF.z-4&&!naCatedral(x,z,5);
+  const dentro=(x,z)=>Math.abs(x)<HALF.x-4&&Math.abs(z)<HALF.z-4&&!foraDaMata(x,z,5);
   const curva=(A,B,n)=>{ const pts=[A]; const dx=B[0]-A[0],dz=B[1]-A[1],L=Math.hypot(dx,dz)||1, nx=-dz/L, nz=dx/L;
     for(let k=1;k<n;k++){ const t=k/n, j=(sorte()-.5)*Math.min(10,L*.35); let p=[A[0]+dx*t+nx*j,A[1]+dz*t+nz*j]; if(!dentro(p[0],p[1])) p=[A[0]+dx*t,A[1]+dz*t]; pts.push(p); } pts.push(B); return pts.map(([x,z])=>[r2(x),r2(z)]); };
   for(const [x,z] of PISTA_PTS.concat(ERVA_PTS)){ const q=maisPerto(x,z); TRILHAS.push({w:2.4,estreita:true,pts:curva([x,z],q,Math.max(2,Math.round(Math.hypot(q[0]-x,q[1]-z)/9)))}); }
@@ -227,50 +337,24 @@ const SENTINELA_PTS=[[-58,-30],[16,-34],[50,-30],[0,31],[-50,-88],[30,92]].map((
 const SEG_TRILHA=[]; TRILHAS.forEach(T=>{ for(let i=1;i<T.pts.length;i++) SEG_TRILHA.push({ax:T.pts[i-1][0],az:T.pts[i-1][1],bx:T.pts[i][0],bz:T.pts[i][1],w:T.w,estreita:!!T.estreita}); });
 function distSeg(x,z,s){ const dx=s.bx-s.ax,dz=s.bz-s.az,L=dx*dx+dz*dz; let t=L?((x-s.ax)*dx+(z-s.az)*dz)/L:0; t=clamp(t,0,1); return Math.hypot(x-(s.ax+dx*t),z-(s.az+dz*t)); }
 const naTrilha=(x,z,folga)=>SEG_TRILHA.some(s=>distSeg(x,z,s)<s.w/2+(folga||0));
-
-const FIXAS_ANTES=WALLS.length; // tudo que vier daqui até a mata gerada é estrutura fixa da floresta
-// Acampamento dos Caçadores: barracas, caixotes e fogueira
-junto(-158,0,()=>{ [[-166,-10,3.4,3],[-168,7,3.4,3],[-152,-12,3,3.2],[-164,12,3,2.6]].forEach(([x,z,w,d])=>W(x-w/2,x+w/2,z-d/2,z+d/2,2.6,'tenda'));
-[[-150,9,1.2,1.2],[-148.6,10.4,1,1],[-154,-15,1.4,1]].forEach(([x,z,w,d])=>W(x-w/2,x+w/2,z-d/2,z+d/2,1,'caixote')); });
-// Círculo de Pedras dos Cultistas: menires em anel, aberto para o oeste (a porta leste da catedral)
-junto(158,0,()=>{ for(let k=0;k<10;k++){ const a=k/10*Math.PI*2; if(Math.cos(a)<-.55||k===3||k===7) continue; const x=158+Math.cos(a)*10, z=Math.sin(a)*10; W(x-.7,x+.7,z-.7,z+.7,3.6+((k*7)%3)*.5,'menir'); } });
-// Menires (altar): anel de nove pedras altas com três vãos
-junto(-50,-104,()=>{ for(let k=0;k<12;k++){ if(k===1||k===5||k===8) continue; const a=k/12*Math.PI*2+.2, x=-50+Math.cos(a)*8.5, z=-104+Math.sin(a)*8.5; W(x-.8,x+.8,z-.8,z+.8,4.2+((k*5)%4)*.4,'menir'); } });
-// Carvalho Oco (altar): tronco gigante atrás do altar e raízes que servem de cobertura baixa
-junto(40,106,()=>{ W(37,43,109.5,114,14,'carvalho');
-[[31,35,107,108.2],[45,49.5,106.5,107.7],[33.5,35,111,115],[45,46.3,110.5,115]].forEach(([a,b,c,d])=>W(a,b,c,d,1.1,'raiz')); });
-// Cabana do Ermitão
-junto(-142,-62,()=>{ muro('x',-67,-147,-137,null,3.6,'madeira'); muro('x',-57,-147,-137,null,3.6,'madeira'); muro('z',-147,-67,-57,null,3.6,'madeira'); muro('z',-137,-67,-57,[[-64,-60]],3.6,'madeira'); });
-// Cemitério: lápides em fileiras tortas, um mausoléu e uma árvore morta
-const LAPIDES=[]; junto(132,90,()=>{ for(const z of [80,86,92,98]) for(let x=120;x<=144;x+=5){ if(sorte()<.25) continue; const ox=(sorte()-.5)*1.4, oz=(sorte()-.5)*.8; LAPIDES.push(W(x+ox-.6,x+ox+.6,z+oz-.2,z+oz+.2,1.1,'lapide')); }
-W(140,146,102,108,5,'mausoleu'); W(119,120,103,104,7,'arvore'); });
-// Encruzilhada: marco de pedra no cruzamento das trilhas
-junto(50,-100,()=>W(47.5,48.5,-97.5,-96.5,2.4,'marco'));
 PISTA_PTS.forEach(([x,z])=>W(x-.8,x+.8,z+1.2,z+2.2,1.3,'santuario')); // santuário em ruínas; o sinal fica na frente dele
-// ---- Ruínas Sombrias (noroeste): capela sem teto engolida pela mata, paredes desabadas e fiéis petrificados ----
-junto(-114,-105,()=>{ muro('x',-112,-130,-106,[[-123,-119],[-112,-109]],6.5,'ruina'); muro('x',-98,-130,-106,[[-120,-115]],5,'ruina');
-muro('z',-130,-112,-98,[[-107,-104]],4.5,'ruina'); muro('z',-106,-112,-98,[[-108,-102]],3,'ruina'); escombros(-103.5,-105,2.5,5,1.2);
-coluna(-124,-105,3.2); coluna(-112,-104,5.5); colunaCaida(-122,-102,-116,-100.8); });
-// Arcos de pedra sobre as trilhas: portais do que já foi uma estrada de peregrinos (pilares fora da faixa da trilha)
+// Arcos de pedra sobre as trilhas: portais do que já foi a estrada dos peregrinos (pilares fora da faixa da trilha)
 const ARCOS=[];
-[[2,0,.5],[2,1,.5],[2,5,.5],[2,9,.5],[2,12,.5],[0,0,.25],[11,0,.5],[7,0,.4]].forEach(([ti,si,t])=>{ const P=TRILHAS[ti].pts, A=P[si], B=P[si+1], dx=B[0]-A[0], dz=B[1]-A[1], L=Math.hypot(dx,dz), nx=-dz/L, nz=dx/L, cx=A[0]+dx*t, cz=A[1]+dz*t, o=TRILHAS[ti].w/2+1.3;
+[[3,0,.45],[3,1,.55],[2,3,.5],[2,7,.5],[0,1,.5],[1,1,.5],[4,1,.5],[4,6,.5]].forEach(([ti,si,t])=>{ const P=TRILHAS[ti].pts, A=P[si], B=P[si+1], dx=B[0]-A[0], dz=B[1]-A[1], L=Math.hypot(dx,dz), nx=-dz/L, nz=dx/L, cx=A[0]+dx*t, cz=A[1]+dz*t, o=TRILHAS[ti].w/2+1.3;
   ARCOS.push([r2(cx+nx*o),r2(cz+nz*o),r2(cx-nx*o),r2(cz-nz*o)]); });
 ARCOS.forEach(([x1,z1,x2,z2])=>{ W(x1-.65,x1+.65,z1-.65,z1+.65,7.5,'pilar_ruina'); W(x2-.65,x2+.65,z2-.65,z2+.65,7.5,'pilar_ruina'); });
-// estátuas: fiéis petrificados. Nunca falsificam sinais do objetivo; só confundem a vista na névoa.
-const ESTATUA=(x,z,pose,rot)=>W(x-.45,x+.45,z-.45,z+.45,2.4,'estatua',{pose,rot:r2(rot)});
-[[-121,-108,1,.3],[-115,-101,0,2.5],[-110,-109,2,4],[-62,-114,3,1],[-37,-116,0,5.2],[-65,-96,2,2.2],[-36,-94,1,3.6]].forEach(([x,z,p,r])=>{ const [mx,mz]=mataXZ(x,z,25); ESTATUA(mx,mz,p,r); });
-const FIXAS=WALLS.slice(FIXAS_ANTES).concat(WALLS.filter(w=>w.kind==='limite'||w.kind==='torre'));
+const FIXAS=WALLS.slice(FIXAS_ANTES).concat(WALLS.filter(w=>w.kind==='limite'));
 
 // Mata: árvores enormes, espinheiros no meio delas e pouco espaço entre uma coisa e outra.
-// Gerada com a mesma semente, então todos veem a mesma floresta.
+// Gerada com a mesma semente, então todos veem a mesma floresta. Nada nasce no promontório nem no desfiladeiro.
 const ARVORES=[], ARBUSTOS=[];
 {
   const livreDeTudo=(x,z,folga)=>{
-    if(naCatedral(x,z,4+folga)) return false;
+    if(foraDaMata(x,z,3+folga)) return false;
     if(Math.abs(x)>HALF.x-1.5||Math.abs(z)>HALF.z-1.5) return false;
     if(naTrilha(x,z,.9+folga)) return false;
     for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r+folga) return false;
-    for(const [px,pz] of PISTA_PTS.concat(ERVA_PTS,SENTINELA_PTS)) if(Math.hypot(x-px,z-pz)<3.5+folga) return false;
+    for(const [px,pz] of PISTA_PTS.concat(ERVA_PTS,SENTINELA_PTS,REAG)) if(Math.hypot(x-px,z-pz)<3.5+folga) return false;
     for(const w of FIXAS) if(x>w.x1-1.5-folga&&x<w.x2+1.5+folga&&z>w.z1-1.5-folga&&z<w.z2+1.5+folga) return false;
     return true; };
   // grade de ocupação para manter espaçamento entre peças sem O(n²)
@@ -279,20 +363,20 @@ const ARVORES=[], ARBUSTOS=[];
   const guarda=q=>{ const k=chave(q.x,q.z); let L=ocup.get(k); if(!L) ocup.set(k,L=[]); L.push(q); };
   const aleat=m=>[(sorte()*2-1)*(HALF.x-m),(sorte()*2-1)*(HALF.z-m)];
   // muros quebrados soltos: uns baixos (cobertura), outros altos (cortam a visão)
-  for(let t=0,n=0;t<3000&&n<18;t++){ const [x,z]=aleat(6), len=3+sorte()*5, aoX=sorte()<.5, alto=sorte()<.6;
+  for(let t=0,n=0;t<3000&&n<16;t++){ const [x,z]=aleat(6), len=3+sorte()*5, aoX=sorte()<.5, alto=sorte()<.6;
     const x1=aoX?x-len/2:x-.5, x2=aoX?x+len/2:x+.5, z1=aoX?z-.5:z-len/2, z2=aoX?z+.5:z+len/2;
     let ok=true; for(let k=0;k<=4&&ok;k++){ const px=lerp(x1,x2,k/4), pz=lerp(z1,z2,k/4); if(!livreDeTudo(px,pz,1)||perto(px,pz,.6,3)) ok=false; }
     if(!ok) continue; for(let k=0;k<=4;k++) guarda({x:lerp(x1,x2,k/4),z:lerp(z1,z2,k/4),r:.6}); W(x1,x2,z1,z2,alto?3+sorte()*3:1.2+sorte()*.6,'ruina'); n++; }
   // estátuas à beira das trilhas estreitas e no meio da mata
-  for(let t=0,n=0;t<5000&&n<28;t++){ const [x,z]=aleat(4);
-    if(!livreDeTudo(x,z,.3)||perto(x,z,.5,2.5)) continue; guarda({x,z,r:.5}); ESTATUA(x,z,Math.floor(sorte()*4),sorte()*6.283); n++; }
+  for(let t=0,n=0;t<5000&&n<20;t++){ const [x,z]=aleat(4);
+    if(!livreDeTudo(x,z,.3)||perto(x,z,.5,2.5)) continue; guarda({x,z,r:.5}); ESTATUA(x,z,Math.floor(sorte()*5),sorte()*6.283); n++; }
   // árvores caídas primeiro: precisam de um corredor livre comprido
-  for(let t=0,n=0;t<4000&&n<24;t++){ const [x,z]=aleat(5), len=6+sorte()*5, aoX=sorte()<.5;
+  for(let t=0,n=0;t<4000&&n<22;t++){ const [x,z]=aleat(5), len=6+sorte()*5, aoX=sorte()<.5;
     const x1=aoX?x-len/2:x-.6, x2=aoX?x+len/2:x+.6, z1=aoX?z-.6:z-len/2, z2=aoX?z+.6:z+len/2;
     let ok=true; for(let k=0;k<=5&&ok;k++){ const px=lerp(x1,x2,k/5), pz=lerp(z1,z2,k/5); if(!livreDeTudo(px,pz,.6)||perto(px,pz,.6,1.6)) ok=false; }
     if(!ok) continue; for(let k=0;k<=5;k++) guarda({x:lerp(x1,x2,k/5),z:lerp(z1,z2,k/5),r:.6}); W(x1,x2,z1,z2,1.2,'tronco'); n++; }
   // árvores: vão de 1,4 a 3 m entre troncos, então a mata vira um labirinto de passagens estreitas
-  for(let t=0;t<30000&&ARVORES.length<880;t++){
+  for(let t=0;t<30000&&ARVORES.length<860;t++){
     const [x,z]=aleat(2);
     const u=sorte(), tipo=u<.3?0:u<.76?1:2; // 0 anciã (tronco enorme), 1 alta de copa fechada, 2 morta retorcida
     const r=tipo===0?.95+sorte()*.5:tipo===1?.55+sorte()*.3:.45+sorte()*.25;
@@ -302,23 +386,24 @@ const ARVORES=[], ARBUSTOS=[];
   }
   ARVORES.forEach(q=>{ const h=q.r*.85; W(q.x-h,q.x+h,q.z-h,q.z+h,12,'arvore_f'); });
   // pedras cobertas de musgo
-  for(let t=0,n=0;t<3000&&n<46;t++){ const [x,z]=aleat(3), w=1.2+sorte()*1.8, d=1+sorte()*1.6;
+  for(let t=0,n=0;t<3000&&n<44;t++){ const [x,z]=aleat(3), w=1.2+sorte()*1.8, d=1+sorte()*1.6;
     if(!livreDeTudo(x,z,Math.max(w,d)*.6)||perto(x,z,Math.max(w,d)/2,1.2)) continue; guarda({x,z,r:Math.max(w,d)/2}); W(x-w/2,x+w/2,z-d/2,z+d/2,.9+sorte()*.9,'rocha'); n++; }
   // espinheiros: fecham boa parte dos vãos entre as árvores. Não dá para passar por eles nem ver através.
-  for(let t=0,n=0;t<30000&&n<980;t++){ const [x,z]=aleat(2), r=.8+sorte()*.8;
+  for(let t=0,n=0;t<30000&&n<940;t++){ const [x,z]=aleat(2), r=.8+sorte()*.8;
     if(!livreDeTudo(x,z,r*.9)||perto(x,z,r,.45+sorte()*.5)) continue; guarda({x,z,r}); const h=r*.9; W(x-h,x+h,z-h,z+h,2.6,'espinheiro',{rot:r2(sorte()*6.283)}); n++; }
   // vegetação rasteira: samambaias e montes de musgo, só visual (não bloqueia)
   for(let t=0;t<9000&&ARBUSTOS.length<1300;t++){ const [x,z]=aleat(1);
-    if(naCatedral(x,z,1.5)||naTrilha(x,z,-.3)) continue; let dentro=false; for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r*.6) dentro=true; if(dentro) continue;
+    if(foraDaMata(x,z,1.5)||naTrilha(x,z,-.3)) continue; let dentro=false; for(const c of CLAREIRAS) if(Math.hypot(x-c.x,z-c.z)<c.r*.6) dentro=true; if(dentro) continue;
     ARBUSTOS.push({x:r2(x),z:r2(z),s:r2(.6+sorte()*.8),rot:r2(sorte()*6.283),tipo:sorte()<.62?0:1}); }
 }
 
 // Luzes: velas dentro da catedral; lanternas, fogueiras e braseiros lá fora. [x, z, tipo]
-const CANDLES=[[-58,-40],[-73,-50],[5,-40],[-6,-54],[58,-40],[73,-51],[-60,52],[-73,44],[-10,40],[10,55],[62,38],[75,53],
-  [-84,-4],[-84,4],[84,-4],[84,4],[-65,-6],[-30,-44],[34,46],[76,-30],
-  [-162,0,'fogueira'],[154,-6,'braseiro'],[154,6,'braseiro'],[-139,-59,'lanterna'],[-133,-62,'lanterna'],[118,72,'lanterna'],[135,86,'lanterna'],
-  [48,-94,'lanterna'],[-100,-6,'lanterna'],[-100,6,'lanterna'],[100,-6,'lanterna'],[100,6,'lanterna'],[-6,62,'lanterna'],[6,62,'lanterna'],[31,-62,'lanterna']]
-  .map(c=>c[2]?[...mataXZ(c[0],c[1],25),c[2]]:c);
+const CANDLES=[[-10,-36],[10,-36],[-12,-48],[12,-56],[-12,-60],[-13,-70],[13,-70],[-3,-81],[3,-81],[-5,-92],[5,-92],[-22,-84],
+  [-66,-50],[-56,-61],[-42,-46],[-18,-62],[-37,-70],[-30,-76],[40,-68],
+  [-6,-24,'lanterna'],[6,-24,'lanterna'],[-12.5,-3,'lanterna'],[12.5,-3,'lanterna'],[-80,-82,'lanterna'],[79,-83,'lanterna'],[-101,-82,'lanterna'],[101,-82,'lanterna'],
+  [SPAWN.H.x,SPAWN.H.z-4,'fogueira'],[SPAWN.C.x-4,SPAWN.C.z-6,'braseiro'],[SPAWN.C.x-4,SPAWN.C.z+6,'braseiro'],[CAB[0]+6.5,CAB[1]-3,'lanterna'],[CAB[0]+6.5,CAB[1]+3,'lanterna'],
+  [ORA[0]-5,ORA[1]-2,'lanterna'],[ENC[0]+2,ENC[1]-4,'lanterna'],[ENC[0]-2,ENC[1]+6,'lanterna'],[ENCR[0]-4,ENCR[1]-2,'lanterna'],[-18,27,'lanterna'],[18,27,'lanterna'],
+  [CALV[0]-2,CALV[1]-6,'lanterna'],[-60,-28,'lanterna'],[60,-28,'lanterna']];
 const BOX=[];
 function addCol(x1,x2,z1,z2,h,tall){ BOX.push({x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h,tall}); }
 WALLS.forEach(w=>addCol(w.x1,w.x2,w.z1,w.z2,w.h,w.tall));
@@ -359,7 +444,8 @@ function segClear(ax,az,bx,bz,inf,list){ const G=grade(list);
 const losClear=(a,b)=>segClear(a.x,a.z,b.x,b.z,0,TALL);
 function occlusion(ax,az,bx,bz){ let n=0; algum(grade(TALL),Math.min(ax,bx),Math.min(az,bz),Math.max(ax,bx),Math.max(az,bz),b=>{ if(segBox(ax,az,bx,bz,b,0)>=0){ n++; if(n>=3) return true; } return false; }); return Math.pow(0.55,n); }
 // primeira peça alta atingida por um raio (tiros, sinalizadores). Devolve a distância ao longo do raio.
-function raioParede(ox,oz,dx,dz,alcance,inf,alturaEm){ let best=alcance; const G=grade(TALL), n=Math.ceil(alcance/(G.c*.5)); G.vez++;
+// lista: TALL (padrão) ou BOX, para tiros que também param na cobertura baixa (com alturaEm, só quando passam abaixo dela)
+function raioParede(ox,oz,dx,dz,alcance,inf,alturaEm,lista){ let best=alcance; const G=grade(lista||TALL), n=Math.ceil(alcance/(G.c*.5)); G.vez++;
   for(let k=0;k<=n;k++){ const px=ox+dx*alcance*k/n, pz=oz+dz*alcance*k/n; if(k/n*alcance>best+G.c) break; const r=G.c*.5+inf;
     for(let cx=Math.floor((px-r)/G.c);cx<=Math.floor((px+r)/G.c);cx++) for(let cz=Math.floor((pz-r)/G.c);cz<=Math.floor((pz+r)/G.c);cz++){ const a=G.m.get(cx*1000+cz); if(!a) continue;
       for(const i of a){ if(G.marca[i]===G.vez) continue; G.marca[i]=G.vez; const b=G.list[i], t=segBox(ox,oz,ox+dx*alcance,oz+dz*alcance,b,inf); if(t<0) continue; const d=t*alcance;
@@ -491,7 +577,7 @@ function makeActor(g,slot,si,role,cls,feit){
     x:0,z:0,yaw:0,pitch:0,st:'alive',downT:0,respawnT:0,deaths:0,dc:0,revUsed:false,reag:0,hitT:-9,att:{},fireCd:0,ammo:8,reserve:48,reloadT:0,
     fervor:100,sanity:100,invuln:0,sealing:-1,hold:{key:'',t:0,max:0},lantern:false,carga:100,flares:2,sensorCd:0,abilCd:0,lastShotT:-9,ataqueT:-9,moving:false,
     panicT:-9,blindT:0,stunT:0,runeT:0,shield:0,shieldT:0,pushedT:-9,pingT:-9,hist:[],feitico:feit,obolos:g.lab.economia?CFG.obolosInicio:0,veuT:0,slowT:0,revelT:0,curaT:0,amuleto:false,
-    inp:{mx:0,mz:0,sp:false,yaw:0,pitch:0,fire:false,use:false,use2:false,viewT:0,c:{q:0,f:0,g:0,r:0,ab:0}},lc:{q:0,f:0,g:0,r:0,ab:0},
+    inp:{mx:0,mz:0,sp:false,ag:false,yaw:0,pitch:0,fire:false,use:false,use2:false,viewT:0,c:{q:0,f:0,g:0,r:0,ab:0}},lc:{q:0,f:0,g:0,r:0,ab:0},ag:false,
     ai:{path:[],goal:null,goalKey:'',repath:0,stuckT:0,lx:0,lz:0,alert:null,target:null,wait:0,decoyUsed:false,strafe:1,strafeT:0,patrol:null,patrolT:0}};
 }
 function spawn(g,a,first,k){
@@ -533,7 +619,7 @@ function act(g,cid,a){
 }
 function dropHuman(g,cid){
   const s=g.slots.find(s=>s.cid===cid); if(!s) return; s.cid=null; if(g.phase!=='final') logE(g,'saiu',{who:s.name,fase:g.phase});
-  const a=g.actors.find(a=>a.cid===cid); if(a){ a.cid=null; a.human=false; a.inp.fire=false; a.inp.use=false; }
+  const a=g.actors.find(a=>a.cid===cid); if(a){ a.cid=null; a.human=false; a.inp.fire=false; a.inp.use=false; a.inp.ag=false; a.ag=false; }
   delete g.ready[cid];
   if((g.phase==='intro'||g.phase==='summary')&&allReady(g)){ if(g.phase==='intro') startPlay(g); else afterSummary(g); }
 }
@@ -542,7 +628,7 @@ function reclaimHuman(g,slotIdx,cid,name){
   const s=g.slots[slotIdx]; if(!s||s.cid) return false;
   s.cid=cid; if(name) s.name=name;
   const a=g.actors.find(a=>a.slot===slotIdx);
-  if(a){ a.cid=cid; a.human=true; if(name) a.name=name; a.inp={mx:0,mz:0,sp:false,yaw:a.yaw,pitch:0,fire:false,use:false,use2:false,viewT:0,c:{q:0,f:0,g:0,r:0,ab:0}}; a.lc={q:0,f:0,g:0,r:0,ab:0}; a.hold={key:'',t:0,max:0};
+  if(a){ a.cid=cid; a.human=true; if(name) a.name=name; a.inp={mx:0,mz:0,sp:false,ag:false,yaw:a.yaw,pitch:0,fire:false,use:false,use2:false,viewT:0,c:{q:0,f:0,g:0,r:0,ab:0}}; a.lc={q:0,f:0,g:0,r:0,ab:0}; a.hold={key:'',t:0,max:0};
     g.cls[cid]=a.cls; }
   else { const role=roleOf(g,s.team); g.cls[cid]=CLASS_BY_TEAM[role][0]; }
   logE(g,'reconnect',{who:s.name});
@@ -565,9 +651,9 @@ const PONTOS_DEF={
   tumulo:TUMBAS,
 };
 const NPCS=[
-  {id:'ermitao',nome:'o Ermitão',...pontoNav(...mataXZ(-143,-62,25)),time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
-  {id:'carpideira',nome:'a Carpideira',...pontoNav(...mataXZ(114,74,25)),time:'C',vende:['reagente','cinza','pocao','amuleto']},
-  {id:'mercador',nome:'o Mercador sem Rosto',...pontoNav(...mataXZ(52,-102,25)),time:null,vende:['reagente','municao','pocao']}];
+  {id:'ermitao',nome:'o Ermitão',...pontoNav(CAB[0]-1,CAB[1]),time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
+  {id:'carpideira',nome:'a Carpideira',...pontoNav(ORA[0]+1,ORA[1]),time:'C',vende:['reagente','cinza','pocao','amuleto']},
+  {id:'mercador',nome:'o Mercador sem Rosto',...pontoNav(ENCR[0]+6,ENCR[1]-4),time:null,vende:['reagente','municao','pocao']}];
 const ITENS={
   reagente:{nome:'Reagente',preco:3,time:'C',desc:'Um frasco para consagrar ou iniciar um ritual.'},
   cinza:{nome:'Cinza de Chamariz',preco:3,time:'C',desc:'Mais um Chamariz para a equipe.'},
@@ -668,8 +754,9 @@ const semAura=k=>k==='?'||k==='visto'||k==='descartado'||k==='purgado'; // nada 
 function lightAt(g,x,z){
   let L=0;
   for(const [cx,cz] of CANDLES){ const d=Math.hypot(x-cx,z-cz); if(d<8.5) L+=1-d/8.5; }
-  if(x>CLAUSTRO.x1&&x<CLAUSTRO.x2&&z>CLAUSTRO.z1&&z<CLAUSTRO.z2) L+=0.55; // luar: o Claustro não tem teto
-  else if(!naCatedral(x,z)){ // na floresta, o luar só chega nas clareiras e ao longo das trilhas; a mata fechada é breu
+  const Z=zonaDe(x,z);
+  if(Z) L+=Z.luar; // luar das zonas: o Claustro e a capela desabada não têm teto; o promontório e as pontes, céu aberto
+  else { // na floresta, o luar só chega nas clareiras e ao longo das trilhas; a mata fechada é breu
     let lua=0; for(const c of CLAREIRAS){ const d=Math.hypot(x-c.x,z-c.z); if(d<c.r+2) lua=Math.max(lua,.55*clamp((c.r+2-d)/4,0,1)); }
     if(lua<.42) for(const sg of SEG_TRILHA){ if(sg.estreita) continue; const d=distSeg(x,z,sg); if(d<sg.w/2+1){ lua=Math.max(lua,.42*clamp((sg.w/2+1-d)/1.5,0,1)); if(lua>=.42) break; } }
     L+=lua; }
@@ -692,13 +779,13 @@ function updateSanity(g,a,dt){
 // ============ MOVIMENTO (também usado na predição do cliente) ============
 function moveHuman(g,a,inp,dt){
   if(inp){ a.inp.mx=clamp(+inp.mx||0,-1,1); a.inp.mz=clamp(+inp.mz||0,-1,1); a.inp.sp=!!inp.sp; if(isFinite(inp.yaw)) a.inp.yaw=+inp.yaw; if(isFinite(inp.pitch)) a.inp.pitch=clamp(+inp.pitch,-1.5,1.5);
-    a.inp.fire=!!inp.fire; a.inp.use=!!inp.use; a.inp.use2=!!inp.use2; if(isFinite(inp.viewT)) a.inp.viewT=+inp.viewT; if(inp.c) a.inp.c=inp.c; }
-  a.yaw=a.inp.yaw; a.pitch=a.inp.pitch;
+    a.inp.fire=!!inp.fire; a.inp.use=!!inp.use; a.inp.use2=!!inp.use2; a.inp.ag=!!inp.ag; if(isFinite(inp.viewT)) a.inp.viewT=+inp.viewT; if(inp.c) a.inp.c=inp.c; }
+  a.yaw=a.inp.yaw; a.pitch=a.inp.pitch; a.ag=!!a.inp.ag&&a.st==='alive';
   let mx=a.inp.mx, mz=a.inp.mz; const len=Math.hypot(mx,mz);
   a.moving=false;
   if(a.st==='dead'||a.stunT>0||len<0.01) return;
   mx/=len; mz/=len;
-  let sp=a.speed*(a.slowT>0?.6:1); if(a.st==='down') sp=.8; else { if(a.inp.sp&&mz<0&&a.sealing<0) sp=CFG.sprint*(a.speed/CFG.speed); if(a.sealing>=0) sp*=.4; if(a.hp<a.maxHp*.5) sp*=.9; }
+  let sp=a.speed*(a.slowT>0?.6:1); if(a.st==='down') sp=.8; else { if(a.inp.sp&&mz<0&&a.sealing<0&&!a.ag) sp=CFG.sprint*(a.speed/CFG.speed); if(a.ag) sp*=CFG.agachadoVel; if(a.sealing>=0) sp*=.4; if(a.hp<a.maxHp*.5) sp*=.9; }
   const s=Math.sin(a.yaw),c=Math.cos(a.yaw);
   moverSeguro(a,a.x+(mx*c+mz*s)*sp*dt,a.z+(-mx*s+mz*c)*sp*dt,.4); a.moving=true;
 }
@@ -710,37 +797,40 @@ function posAt(a,T){ const h=a.hist; if(!h.length||T>=h[h.length-1][0]) return {
 function traceShot(g,a,ox,oy,oz,dx,dy,dz,T,forceMiss){ a.veuT=0;
   a.lastShotT=g.t; a.ammo--; if(a.ammo<=0) reload(g,a);
   ev(g,{type:'sfx',k:'shot',x:r2(a.x),z:r2(a.z),a:a.id});
-  let tWall=raioParede(ox,oz,dx,dz,90,0,d=>oy+dy*d);
+  let tWall=raioParede(ox,oz,dx,dz,90,0,d=>oy+dy*d,BOX); // v6: túmulos, muretas, bancos e pedras param o tiro que passa abaixo deles
   if(dy<0){ const tf=-oy/dy; if(tf<tWall) tWall=tf; }
   let best=null,bt=tWall,head=false;
   if(!forceMiss) for(const e of enemiesOf(g,a)){ if(e.st==='dead') continue; const p=posAt(e,T);
     const fx=ox-p.x,fz=oz-p.z,A2=dx*dx+dz*dz,B=2*(fx*dx+fz*dz),C=fx*fx+fz*fz-.45*.45,disc=B*B-4*A2*C; if(disc<0||A2<1e-9) continue;
-    const t=(-B-Math.sqrt(disc))/(2*A2); if(t<0||t>bt) continue; const y=oy+dy*t, top=e.st==='down'?.6:1.95; if(y<0||y>top) continue; best=e; bt=t; head=e.st==='alive'&&y>1.5; }
+    const t=(-B-Math.sqrt(disc))/(2*A2); if(t<0||t>bt) continue; const y=oy+dy*t, top=alturaAlvo(e); if(y<0||y>top) continue; best=e; bt=t; head=e.st==='alive'&&y>top-.45; }
   ev(g,{type:'tracer',a:a.id,x0:r2(ox),y0:r2(oy-.2),z0:r2(oz),x1:r2(ox+dx*bt),y1:r2(oy+dy*bt),z1:r2(oz+dz*bt),alvo:best?best.id:null,cab:!!head});
   if(best){ const d=bt, k=clamp(1-(d-CFG.quedaPerto)/(CFG.quedaLonge-CFG.quedaPerto)*(1-CFG.quedaMin),CFG.quedaMin,1);
     damage(g,best,Math.round((head?26:CFG.quedaDano)*k),a); }
 }
+// altura de quem leva o tiro: em pé, agachado (v6) ou caído. A cabeça são os 45 cm de cima.
+function alturaAlvo(e){ return e.st==='down'?.6:e.ag?CFG.agachadoAltura:1.95; }
+const alturaOlho=a=>a.ag?CFG.agachadoOlho:1.62;
 // intervalo entre tiros do jogador (Caçador e Cultista); o cliente usa o mesmo número para prever o tiro
 const CADENCIA_HUMANA=.42;
 function fireHuman(g,a){
   a.fireCd=CADENCIA_HUMANA; const y=a.inp.yaw,p=a.inp.pitch; const dx=-Math.sin(y)*Math.cos(p),dy=Math.sin(p),dz=-Math.cos(y)*Math.cos(p);
   const T=clamp(a.inp.viewT||g.t,g.t-CFG.compensacaoMax,g.t);
-  traceShot(g,a,a.x,1.62,a.z,dx,dy,dz,T,false);
+  traceShot(g,a,a.x,alturaOlho(a),a.z,dx,dy,dz,T,false);
 }
 // dificuldade dos bots (só no jogo local): mira, dispersão dos sigilos, ritmo de tiro e alcance da vista. Normal = 1 em tudo.
 const DIF={treino:{mira:.12,disp:3.2,ritmo:2.4,vista:.45},facil:{mira:.6,disp:1.7,ritmo:1.4,vista:.75},normal:{mira:1,disp:1,ritmo:1,vista:1},dificil:{mira:1.22,disp:.6,ritmo:.85,vista:1.15}};
 // vale só para os bots do lado contrário ao dos jogadores humanos: o aliado bot continua no normal
 function difDe(g,b){ const d=DIF[g&&g.opts&&g.opts.dificuldade]; if(!d||d===DIF.normal) return DIF.normal; return b&&g.actors.some(o=>o.human&&o.team===b.team)?DIF.normal:d; }
 function fireBotAt(g,a,tx,ty,tz,miss){
-  a.fireCd=(.55+rand(0,.2))*difDe(g,a).ritmo; let dx=tx-a.x,dy=ty-1.62,dz=tz-a.z; const l=Math.hypot(dx,dy,dz)||1; dx/=l; dy/=l; dz/=l;
-  traceShot(g,a,a.x,1.62,a.z,dx,dy,dz,g.t,miss);
+  a.fireCd=(.55+rand(0,.2))*difDe(g,a).ritmo; const oy=alturaOlho(a); let dx=tx-a.x,dy=ty-oy,dz=tz-a.z; const l=Math.hypot(dx,dy,dz)||1; dx/=l; dy/=l; dz/=l;
+  traceShot(g,a,a.x,oy,a.z,dx,dy,dz,g.t,miss);
 }
 let PID=1;
 function castSigil(g,a,dx,dy,dz){ a.veuT=0;
   a.lastShotT=g.t; a.ataqueT=g.t; a.fireCd=a.human?CADENCIA_HUMANA:(1+rand(0,.3))*difDe(g,a).ritmo; a.fervor-=CFG.sigilCusto;
   ev(g,{type:'sfx',k:'sigil',x:r2(a.x),z:r2(a.z),a:a.id});
-  const rx=Math.cos(a.yaw), rz=-Math.sin(a.yaw); const ox=a.x+rx*.3, oy=1.45, oz=a.z+rz*.3;
-  const tx=a.x+dx*40, ty=1.62+dy*40, tz=a.z+dz*40; let vx=tx-ox,vy=ty-oy,vz=tz-oz; const l=Math.hypot(vx,vy,vz)||1; const sp=CFG.sigilVel;
+  const rx=Math.cos(a.yaw), rz=-Math.sin(a.yaw); const ox=a.x+rx*.3, oy=alturaOlho(a)-.17, oz=a.z+rz*.3;
+  const tx=a.x+dx*40, ty=alturaOlho(a)+dy*40, tz=a.z+dz*40; let vx=tx-ox,vy=ty-oy,vz=tz-oz; const l=Math.hypot(vx,vy,vz)||1; const sp=CFG.sigilVel;
   g.proj.push({id:PID++,x:ox,y:oy,z:oz,vx:vx/l*sp,vy:vy/l*sp,vz:vz/l*sp,owner:a.id,team:a.team,life:2.5,dmg:CFG.sigilDano});
 }
 function reload(g,a){ if(a.team!=='H'||a.reloadT>0||a.ammo>=8||a.reserve<=0) return; a.reloadT=1.6; ev(g,{type:'reload',a:a.id,x:r2(a.x),z:r2(a.z)}); }
@@ -1077,8 +1167,8 @@ function updateProjectiles(g,dt){
   for(let i=g.proj.length-1;i>=0;i--){ const p=g.proj[i]; let dead=false;
     for(let s=0;s<3&&!dead;s++){ p.x+=p.vx*dt/3; p.y+=p.vy*dt/3; p.z+=p.vz*dt/3;
       if(p.y<.05||p.y>14||Math.abs(p.x)>HALF.x||Math.abs(p.z)>HALF.z) dead=true;
-      if(!dead&&algum(grade(TALL),p.x,p.z,p.x,p.z,b=>p.x>b.x1&&p.x<b.x2&&p.z>b.z1&&p.z<b.z2&&p.y<b.h)) dead=true;
-      if(!dead) for(const e of g.actors){ if(e.team===p.team||e.st==='dead') continue; const top=e.st==='down'?.6:1.95;
+      if(!dead&&algum(grade(BOX),p.x,p.z,p.x,p.z,b=>p.x>b.x1&&p.x<b.x2&&p.z>b.z1&&p.z<b.z2&&p.y<b.h)) dead=true; // v6: a cobertura baixa também segura sigilos
+      if(!dead) for(const e of g.actors){ if(e.team===p.team||e.st==='dead') continue; const top=alturaAlvo(e);
         if(Math.hypot(p.x-e.x,p.z-e.z)<.5&&p.y>0&&p.y<top){ const src=g.actors.find(x=>x.id===p.owner); if(src) damage(g,e,p.dmg,src); dead=true; break; } } }
     p.life-=dt; if(p.life<=0) dead=true;
     if(dead){ ev(g,{type:'burst',x:r2(p.x),y:r2(Math.max(.1,p.y)),z:r2(p.z),team:p.team}); g.proj.splice(i,1); }
@@ -1148,15 +1238,15 @@ function botCombat(g,b,dt){
   if(b.fireCd<=0&&b.sealing<0&&b.hold.t<=0){ const d=dist(b,t);
     if(b.team==='H'){ if(b.reloadT>0) return true; if(b.ammo<=0){ reload(g,b); return true; }
       const lit=lightAt(g,t.x,t.z)>.35, p=Math.min(.92,clamp(.78-d/55,.22,.78)*(t.moving?.8:1)*(lit?1:.72)*difDe(g,b).mira), hit=Math.random()<p, ex=hit?0:rand(-1.2,1.2);
-      fireBotAt(g,b,t.x+ex,rand(.9,1.6),t.z+ex,!hit);
+      fireBotAt(g,b,t.x+ex,t.ag?rand(.5,1.1):rand(.9,1.6),t.z+ex,!hit);
     } else { if(b.fervor<CFG.sigilCusto) return true;
       // canalizando, só ataca quem sela, quem chega perto demais ou quando a vida aperta (atacar para a canalização)
       if(CFG.ataqueCanal>0){ const A=g.altars.find(A=>A.state==='active'&&A.chosen&&inCircle(b,A)); if(A&&!(t.sealing===A.i||d<8||b.hp<b.maxHp*.5)) return true; }
-      const lead=d/CFG.sigilVel; const sd=.7*difDe(g,b).disp; castSigilAt(g,b,t.x+rand(-sd,sd)+(t._vx||0)*lead*.6,1.2,t.z+rand(-sd,sd)+(t._vz||0)*lead*.6); }
+      const lead=d/CFG.sigilVel; const sd=.7*difDe(g,b).disp; castSigilAt(g,b,t.x+rand(-sd,sd)+(t._vx||0)*lead*.6,t.ag?.8:1.2,t.z+rand(-sd,sd)+(t._vz||0)*lead*.6); }
   }
   return true;
 }
-function castSigilAt(g,b,tx,ty,tz){ let dx=tx-b.x,dy=ty-1.62,dz=tz-b.z; const l=Math.hypot(dx,dy,dz)||1; castSigil(g,b,dx/l,dy/l,dz/l); }
+function castSigilAt(g,b,tx,ty,tz){ let dx=tx-b.x,dy=ty-alturaOlho(b),dz=tz-b.z; const l=Math.hypot(dx,dy,dz)||1; castSigil(g,b,dx/l,dy/l,dz/l); }
 function botHold(g,b,key,time,dt,ctx){ b._segurou=true; if(b.hold.key!==key){ b.hold={key,t:0,max:time}; } b.hold.t+=dt; if(b.hold.t>=time){ doAction(g,b,ctx); b.hold={key:'',t:0,max:0}; } }
 const inEnemySpawn=(b,p)=>{ const s=SPAWN[b.team==='H'?'C':'H']; return Math.hypot(p.x-s.x,p.z-s.z)<CFG.spawnSafe+2; };
 function botHelpDowned(g,b,dt,fighting){
@@ -1360,7 +1450,7 @@ function playStep(g,dt){
       else if(g.rt-ai.vigia.t>15){ const objetivoAntes=ai.goalKey, alvoAntes=ai.target?ai.target.name:null, segurando=a.hold.key; ai.goal=null; ai.goalKey=''; ai.path=[]; ai.ignora={}; ai.wait=0; ai.decoyUsed=true; ai.progKey=''; ai.vigia={x:a.x,z:a.z,t:g.rt};
         const q=pontoDesvio(a); ai.goal=q; ai.goalKey='desvio'; ai.path=[q]; ai.repath=g.t+3;
         logE(g,'bot_reiniciado',{who:a.name,team:a.team,cls:a.cls,objetivo:objetivoAntes,combate:alvoAntes,reag:a.reag,x:r2(a.x),z:r2(a.z)}); } }
-    if(a.moving&&a.st==='alive'){ a.stepT=(a.stepT||0)-dt; if(a.stepT<=0){ const corre=a.human&&a.inp.sp&&a.inp.mz<0; a.stepT=corre?.3:.42; ev(g,{type:'sfx',k:corre?'passoForte':'step',x:r2(a.x),z:r2(a.z),a:a.id}); } }
+    if(a.moving&&a.st==='alive'){ a.stepT=(a.stepT||0)-dt; if(a.stepT<=0){ const leve=a.ag, corre=!leve&&a.human&&a.inp.sp&&a.inp.mz<0; a.stepT=leve?.6:corre?.3:.42; ev(g,{type:'sfx',k:leve?'passoLeve':corre?'passoForte':'step',x:r2(a.x),z:r2(a.z),a:a.id}); } }
     if(g.t-a.hitT>6&&a.hp<a.maxHp&&a.st==='alive') a.hp=Math.min(a.maxHp,a.hp+dt*8);
     if(a.team==='C'&&a.st==='alive'&&g.t-a.lastShotT>CFG.fervorEspera) a.fervor=Math.min(100,a.fervor+dt*CFG.fervorRegen);
     updateSanity(g,a,dt);
@@ -1450,7 +1540,7 @@ function winner(g){
 // O servidor passa cada evento por aqui antes de mandar a um cliente. Esconder no HUD não basta: o que chega no
 // cliente pode ser lido por quem modificar o jogo. Sons e efeitos com posição só chegam a quem estaria perto o
 // bastante para ouvir ou ver (ou se o emissor está à vista da equipe); informação de equipe só chega à equipe.
-const ALCANCE_SOM={shot:55,sigil:35,step:16,passoForte:24,collect:26,flare:20,rune:30,arrasto:45,push:28,flash:30,purify:30};
+const ALCANCE_SOM={shot:55,sigil:35,step:16,passoForte:24,passoLeve:5,collect:26,flare:20,rune:30,arrasto:45,push:28,flash:30,purify:30};
 const visivelPara=(g,a,role)=>!!(a._visto&&a._visto[role]>g.t);
 function eventoPara(g,e,me,role){
   const t=e.type;
@@ -1474,7 +1564,7 @@ function eventoPara(g,e,me,role){
 }
 
 // ============ SNAPSHOT (servidor → cliente) ============
-const ACT_FIELDS=['feitico','amuleto','id','cid','human','name','team','cls','maxHp','st','reag','sealing','ammo','reserve','fervor','lantern','flares','moving','deaths','revUsed'];
+const ACT_FIELDS=['feitico','amuleto','id','cid','human','name','team','cls','maxHp','st','reag','sealing','ammo','reserve','fervor','lantern','flares','moving','deaths','revUsed','ag'];
 const ACT_NUM=['ataqueT','obolos','veuT','slowT','revelT','curaT','x','z','yaw','pitch','hp','downT','respawnT','reloadT','sanity','carga','sensorCd','abilCd','lastShotT','blindT','stunT','runeT','shield','invuln','speed'];
 function snapshot(g,role){
   const hide=role==='H';
@@ -1511,6 +1601,6 @@ function snapshot(g,role){
     scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT,lab:g.lab,eco:g.eco};
 }
 
-return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,mataXZ,HALF0,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,CADENCIA_HUMANA,SETORES,damage,_botHold:botHold,_doAction:doAction,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,ZONAS,zonaDe,coberto,foraDaMata,PROMONTORIO,DESFILADEIRO,TRAVESSIAS,ABISMO,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
+  DIF,LAB_OPCOES,labDe,relatorio,CADENCIA_HUMANA,SETORES,damage,_botHold:botHold,_doAction:doAction,_traceShot:traceShot,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
 });

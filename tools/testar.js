@@ -53,10 +53,10 @@ console.log('3. Visibilidade no snapshot');
   const h=g.actors.find(a=>a.team==='H'), outroH=g.actors.find(a=>a.team==='H'&&a!==h), c=g.actors.find(a=>a.team==='C'), c2=g.actors.find(a=>a.team==='C'&&a!==c);
   h.human=true; outroH.st='dead'; c2.x=140; c2.z=90; // o segundo Cultista fica longe, fora de qualquer vista
   const ver=(x,z,cx,cz)=>{ h.x=x; h.z=z; c.x=cx; c.z=cz; c.revelT=0; g.t+=1; const s=Sim.snapshot(g,'H').actors.find(a=>a.id===c.id); return !s.hidden&&Math.abs(s.x-cx)<.01; };
-  if(!ver(-20,0,-10,0)) falha('inimigo a 10 m em campo aberto no Claustro deveria aparecer');
-  if(!ver(-40,0,20,0)) falha('inimigo a 60 m em campo aberto no Claustro deveria aparecer');
-  if(ver(-40,0,-40,-45)) falha('inimigo atrás da parede da Capela Oeste não deveria aparecer');
-  if(ver(0,0,0,100)) falha('inimigo a 100 m não deveria aparecer');
+  if(!ver(-30,-24,-20,-24)) falha('inimigo a 10 m em campo aberto no Adro deveria aparecer');
+  if(!ver(-40,-24,20,-24)) falha('inimigo a 60 m em campo aberto no Adro deveria aparecer');
+  if(ver(-36,-24,-61,-55)) falha('inimigo atrás da parede da Sala do Capítulo não deveria aparecer');
+  if(ver(0,-24,0,76)) falha('inimigo a 100 m não deveria aparecer');
   const s2=Sim.snapshot(g,'H').actors.find(a=>a.id===c2.id); if(!s2.hidden||s2.x!==0) falha('inimigo longe vazou a posição');
   if(Sim.snapshot(g,'C').actors.find(a=>a.id===c.id).hidden) falha('aliado nunca deveria ser escondido');
   c.revelT=3; h.x=0; h.z=0; c.x=0; c.z=100; if(Sim.snapshot(g,'H').actors.find(a=>a.id===c.id).hidden) falha('Sal deveria revelar a posição');
@@ -77,7 +77,7 @@ console.log('4. Regras do círculo e bots');
   { const g=nova(), c=g.actors.find(a=>a.team==='C'), h=g.actors.find(a=>a.team==='H'); Object.assign(c,{st:'alive',hp:c.maxHp,invuln:0}); c.hold={key:'exe'+h.id,t:3,max:4.5};
     Sim.damage(g,c,5,h); if(c.hold.t!==0||c.hold.key!=='') falha('dano não interrompeu a execução'); if(!g.log.some(e=>e.ev==='execucao_interrompida')) falha('execução interrompida fora do registro'); }
   // o Caçador que decidiu ir ao Ermitão chega lá (antes empacava a 55 m em linha reta, onde o caminho se afasta)
-  { const g=nova(), h=g.actors.find(a=>a.team==='H'); Object.assign(h,{st:'alive',hp:h.maxHp,x:-88.1,z:-30.6,reserve:8,obolos:5}); h.ai.goal=null; h.ai.goalKey=''; // a 52 m em linha reta; o caminho passa a 67 m antes de chegar
+  { const g=nova(), h=g.actors.find(a=>a.team==='H'); Object.assign(h,{st:'alive',hp:h.maxHp,x:-76,z:-50,reserve:8,obolos:5}); h.ai.goal=null; h.ai.goalKey=''; // no promontório, a 49 m em linha reta; o caminho dá a volta pela Ponte Caída (~70 m)
     for(let i=0;i<30*60&&!g.log.some(e=>e.ev==='compra');i++){ h.reserve=Math.min(h.reserve,8); Sim.step(g,1/30); }
     if(!g.log.some(e=>e.ev==='compra')) falha(`Caçador não chegou ao Ermitão (parou em ${h.x.toFixed(1)}, ${h.z.toFixed(1)})`); }
   // um bot que largou o E não fica travado sem atirar (a contagem pendurada impedia o tiro com o inimigo a 4 m)
@@ -193,7 +193,31 @@ console.log('8. Interrupções, lances e disputa no círculo');
     Sim.act(g,'eu',{type:'comprar',npc:n.id,item:'municao'}); Sim.step(g,1/30);
     if(h.obolos!==5) falha('comprar munição com a reserva cheia não pode cobrar'); } }
 console.log('   ok');
-console.log(`9. ${N} partidas só de bots com invariantes`);
+// 9. v6: a cobertura baixa protege de verdade e o agachado se move devagar e em silêncio
+console.log('9. Cobertura baixa e andar agachado');
+{ const nova=()=>{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:j===0?'eu':null,name:'b'+j})),matchId:'cob'}); for(let i=0;i<3000&&g.phase!=='play';i++){ Sim.act(g,'eu',{type:'ready'}); Sim.step(g,1/30); }
+    g.rt=300; for(const a of g.actors){ a.st='dead'; a.respawnT=999; } return g; };
+  const viva=(a,x,z)=>Object.assign(a,{st:'alive',hp:a.maxHp,invuln:0,x,z,hist:[],ag:false});
+  // túmulo no braço oeste do transepto: x -28..-24, z -75,5..-74, 1,1 m de altura; o atirador fica no mesmo braço
+  const tum=Sim.WALLS.find(w=>w.kind==='tumba'&&w.x1===-28&&w.z1===-75.5); if(!tum) falha('túmulo do teste não existe');
+  const tiro=(alvoY,ag)=>{ const g=nova(), h=g.actors.find(a=>a.team==='H'), c=g.actors.find(a=>a.team==='C'); viva(h,-26,-65); viva(c,-26,-76.5); c.ag=!!ag;
+    const d=Math.hypot(0,c.z-h.z), dy=(alvoY-1.62)/d, L=Math.hypot(1,dy); Sim._traceShot(g,h,h.x,1.62,h.z,0/L,dy/L,-1/L,g.t,false); return c.hp<c.maxHp; };
+  if(tiro(.5)) falha('tiro na altura das pernas atravessou um túmulo de 1,1 m');
+  if(!tiro(1.45)) falha('tiro no peito por cima do túmulo deveria acertar quem está em pé');
+  if(tiro(.6,true)||tiro(1.45,true)) falha('quem está agachado atrás do túmulo deveria estar coberto');
+  // sigilo baixo para na cobertura
+  { const g=nova(), h=g.actors.find(a=>a.team==='H'), c=g.actors.find(a=>a.team==='C'); viva(h,-26,-76.5); viva(c,-26,-66);
+    g.proj.push({id:9999,x:-26,y:.8,z:-67,vx:0,vy:0,vz:-48,owner:c.id,team:'C',life:2.5,dmg:17}); for(let i=0;i<30&&g.proj.length;i++) Sim.step(g,1/30);
+    const b=g.events.find(e=>e.type==='burst'); if(h.hp<h.maxHp) falha('sigilo baixo atravessou o túmulo'); else if(!b||Math.abs(b.z+74)>.8) falha('sigilo deveria estourar no túmulo ('+JSON.stringify(b)+')'); }
+  // agachado: metade da velocidade, sem corrida, passos que só se ouvem de perto
+  { const g=nova(), h=g.actors.find(a=>a.cid==='eu'), c=g.actors.find(a=>a.team!==h.team); viva(h,0,-50); viva(c,0,-46); h.human=true; g.events.length=0;
+    for(let i=0;i<30;i++){ Sim.moveHuman(g,h,{mx:0,mz:-1,sp:true,ag:true,yaw:Math.PI,pitch:0,fire:false,use:false,use2:false,c:{q:0,f:0,g:0,r:0,ab:0}},1/30); Sim.step(g,1/30); }
+    const andou=Math.abs(h.z+50), esperado=h.speed*Sim.CFG.agachadoVel; if(Math.abs(andou-esperado)>.35) falha(`agachado andou ${andou.toFixed(2)} m em 1 s (esperado ${esperado.toFixed(2)}, sem corrida)`);
+    const p=g.events.find(e=>e.type==='sfx'&&e.a===h.id&&(e.k==='passoLeve'||e.k==='step'||e.k==='passoForte'));
+    if(!p||p.k!=='passoLeve') falha('agachado deveria fazer passos leves, não '+(p&&p.k));
+    else { const perto=Sim.eventoPara(g,{...p,x:c.x+3,z:c.z},c,'C'), longe=Sim.eventoPara(g,{...p,x:c.x+9,z:c.z},c,'C'); if(!perto||longe) falha('passos leves: deveriam chegar a 3 m e não a 9 m'); } }
+  console.log('   túmulo para tiro e sigilo baixos, agachado fica coberto, anda a metade e quase não se ouve'); }
+console.log(`10. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};
 for(let m=0;m<N;m++){
