@@ -39,11 +39,14 @@ namespace RitualReversal.Visual
         static M4 TRS(float px, float py, float pz, float rx = 0, float ry = 0, float rz = 0, float sx = 1, float sy = 1, float sz = 1) { return M4.TRS(px, py, pz, rx, ry, rz, sx, sy, sz); }
 
         // peça parada: vai para o balde do seu material (e região)
+        readonly System.Collections.Generic.Dictionary<Material, int> idMat = new System.Collections.Generic.Dictionary<Material, int>();
         public void Est(Geo g, Material m, M4 t, bool sombra = true)
         {
             if (g == null || g.p.Count == 0 || m == null) return;
             if (facetados.Contains(m)) g = g.Facetar();
-            var c = t.Ponto(g.p[0]); string k = m.GetInstanceID() + "|" + Mathf.FloorToInt(c.x / 64) + "|" + Mathf.FloorToInt(c.z / 64) + "|" + sombra;
+            // número próprio de cada material (GetInstanceID virou erro no Unity 6.x)
+            int idm; if (!idMat.TryGetValue(m, out idm)) { idm = idMat.Count; idMat[m] = idm; }
+            var c = t.Ponto(g.p[0]); string k = idm + "|" + Mathf.FloorToInt(c.x / 64) + "|" + Mathf.FloorToInt(c.z / 64) + "|" + sombra;
             Balde b; if (!baldes.TryGetValue(k, out b)) { b = new Balde { m = m, sombra = sombra }; baldes[k] = b; }
             b.g.Juntar(g, t);
         }

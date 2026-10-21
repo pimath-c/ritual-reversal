@@ -26,7 +26,11 @@ namespace RitualReversal.Visual
 
         public static Som Criar(GameObject onde)
         {
+#if UNITY_2023_1_OR_NEWER
+            if (FindAnyObjectByType<AudioListener>() == null) onde.AddComponent<AudioListener>();
+#else
             if (FindObjectOfType<AudioListener>() == null) onde.AddComponent<AudioListener>();
+#endif
             if (Atual != null) return Atual;
             // objeto próprio: o filtro de áudio não pode ficar no mesmo objeto do AudioListener (pegaria a mixagem inteira)
             var go = new GameObject("Som (síntese)"); go.transform.SetParent(onde.transform, false); go.AddComponent<AudioSource>();

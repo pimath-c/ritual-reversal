@@ -31,7 +31,12 @@ namespace RitualReversal.Visual
             mLua2 = Mat.Brilho(Mat.Hex(0x6f88c8, .35f), Tex.Brilho(), Mat.Mistura.Aditiva, true, false, 0, false, 1004); lua2 = Sprite(raiz, mLua2, 64, 64, "halo da lua").transform;
             // luzes
             luar = LuzPonto(raiz, 0x8fa8e0, .9f, 70, 1.5f, "luar"); luar.transform.localPosition = new Vector3(0, 26, 0);
-            foreach (var l in FindObjectsOfType<Light>()) if (l.type == LightType.Directional && l.transform.root != raiz.root) l.enabled = false;
+#if UNITY_2023_1_OR_NEWER
+            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) if
+#else
+            foreach (var l in FindObjectsOfType<Light>()) if
+#endif
+                 (l.type == LightType.Directional && l.transform.root != raiz.root) l.enabled = false;
             var sg = new GameObject("Lua (sol)"); sol = sg.AddComponent<Light>(); sol.type = LightType.Directional; sol.color = Mat.Hex(0x8aa2d6); sol.intensity = .42f;
             sol.shadows = Qualidade.nivel >= 2 ? LightShadows.Soft : LightShadows.None; sol.shadowBias = .05f; sol.shadowNormalBias = .4f;
             sol.transform.rotation = Quaternion.LookRotation(Unity(-DIR_LUA));

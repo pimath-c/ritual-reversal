@@ -65,7 +65,7 @@ namespace RitualReversal.Visual
             }
         }
         public Action<string, float, float> AoSom;   // a partida liga ao Som (impactos, ritual)
-        public Jogo ultimoJogo;                       // último estado visto (para saber se o alvo tinha escudo)
+        [System.NonSerialized] public Jogo ultimoJogo;                       // último estado visto (para saber se o alvo tinha escudo)
         // onde a bala bateu: chão de pedra ou de terra, paredes da catedral, troncos e madeira lá fora
         public static string SuperficieImpacto(float x, float y, float z) { if (y < .1f) return Som.Superficie(x, z) == "pedra" ? "pedra" : "terra"; return Mapa.NaCatedral(x, z) ? "pedra" : "madeira"; }
         void ImpactoMundo(Vector3 p, Vector3 u)
