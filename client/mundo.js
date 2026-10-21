@@ -302,7 +302,8 @@ const PECAS={
   // altura da caixa (a colisão vai até w.h e uma parede alta para tiro e visão): o que se vê nunca é mais baixo do que
   // o que bloqueia. Blocos só faltam acima de w.h; abaixo, o miolo fecha qualquer fresta.
   ruina(w){ const aoX=(w.x2-w.x1)>=(w.z2-w.z1), L=Math.max(w.x2-w.x1,w.z2-w.z1), T=Math.min(w.x2-w.x1,w.z2-w.z1), cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2;
-    const blocos=[], miolo=[]; const caixa=(u1,u2,y1,y2,t1,t2,lista)=>{ const g=new THREE.BoxGeometry(u2-u1,y2-y1,t2-t1), uv=g.attributes.uv;
+    // a caixa segue o eixo do muro (u ao longo, t na espessura): num muro ao longo de z, u vai em z
+    const blocos=[], miolo=[]; const caixa=(u1,u2,y1,y2,t1,t2,lista)=>{ const g=new THREE.BoxGeometry(aoX?u2-u1:t2-t1,y2-y1,aoX?t2-t1:u2-u1), uv=g.attributes.uv;
       for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*(u2-u1)/2.5+vr(),uv.getY(i)*(y2-y1)/2.5+vr()); // cada bloco pega outro pedaço da textura
       const um=(u1+u2)/2-L/2, tm=(t1+t2)/2; g.translate(aoX?um:tm,(y1+y2)/2,aoX?tm:um); lista.push(g); };
     // topo: uma linha quebrada entre h e 1,35h, mais baixa nas pontas (as pontas caíram primeiro)

@@ -72,6 +72,22 @@ namespace RitualReversal.Visual
                 List<Gravacao> L; if (!grav.TryGetValue(nome, out L)) grav[nome] = L = new List<Gravacao>(); L.Add(new Gravacao { d = mono, sr = c.frequency });
             }
             List<Gravacao> z, co; if (grav.TryGetValue("zumbido_laco", out z) && grav.TryGetValue("coro_laco", out co)) { lacoZ = z[0]; lacoC = co[0]; }
+            for (int i = 0; i < AMB_LACOS.Length; i++) { List<Gravacao> L; if (grav.TryGetValue(AMB_LACOS[i], out L)) { lacoAmb[i] = L[0]; pAmb[i] = rnd.NextDouble() * L[0].d.Length; } }
+        }
+        // ---------- v6: ambiente por lugar ----------
+        // Os fundos se misturam conforme onde o ouvinte está (dentro da catedral a noite lá fora fica abafada); na mata, de vez
+        // em quando, uma coruja ou um galho rangendo, longe e de um lado. A mesma informação para os dois lados.
+        static readonly string[] AMB_LACOS = { "mata_laco", "noite_laco", "cripta_laco", "charco_laco", "fogo_laco" };
+        readonly Gravacao[] lacoAmb = new Gravacao[5]; readonly double[] pAmb = new double[5]; readonly float[] gAmb = new float[5], alvoAmb = new float[5];
+        List<Vector2> fornos; float ambProx = 20;
+        public void Ambiente(bool jogo, Vector3 P, float dt)
+        {
+            if (fornos == null && MapaVisual.Carregado) { fornos = new List<Vector2>(); foreach (var w in MapaVisual.WALLS) if (w.kind == "forno") fornos.Add(new Vector2((w.x1 + w.x2) / 2, (w.z1 + w.z2) / 2)); }
+            bool dentro = Mapa.Carregado && Mapa.Coberto(P.x, P.z), mata = Mapa.Carregado && Mapa.ZoneAt(P.x, P.z) == "Floresta";
+            float cha = Mathf.Sqrt((P.x - 46) * (P.x - 46) + (P.z - 40) * (P.z - 40)), forno = 99; if (fornos != null) foreach (var f in fornos) forno = Mathf.Min(forno, Vector2.Distance(f, new Vector2(P.x, P.z)));
+            alvoAmb[0] = jogo ? (dentro ? 0 : mata ? .5f : .18f) : 0; alvoAmb[1] = jogo ? (dentro ? .06f : mata ? .22f : .38f) : 0; alvoAmb[2] = jogo && dentro ? .55f : 0;
+            alvoAmb[3] = jogo && !dentro ? Mathf.Clamp01(1 - (cha - 10) / 35) * .6f : 0; alvoAmb[4] = jogo && !dentro ? Mathf.Clamp01(1 - (forno - 3) / 20) * .5f : 0;
+            if (jogo && mata && !dentro) { ambProx -= dt; if (ambProx <= 0) { ambProx = Random.Range(18f, 42f); float a = Random.Range(0, Mathf.PI * 2), d = Random.Range(18f, 34f); Amostra(Random.value < .55f ? "coruja" : "rangido", P.x + Mathf.Cos(a) * d, P.z + Mathf.Sin(a) * d, 60, .45f); } }
         }
         Gravacao lacoZ, lacoC; // sussurros e coro gravados dos rituais em andamento
         public bool Tem(string nome) { return grav.ContainsKey(nome); }
@@ -138,6 +154,16 @@ namespace RitualReversal.Visual
                 case "selando": return Amostra("selando", x, z, 400, .9f, 1, .04f, 1);
                 case "selando_perto": return Amostra("selando", x, z, 50, .45f, 1, .04f, 1);
                 case "evp": return Amostra("evp", x, z, 30, .8f);
+                // v6: os sons novos com o alcance e o volume do navegador
+                case "queda_corpo": return Amostra(k, x, z, 32, .75f, 1, .05f, 3);
+                case "estalo_fogo": return Amostra(k, x, z, 22, .5f, 1, .06f, 3);
+                case "folhas": return Amostra(k, x, z, 18, .5f);
+                case "sino": return Amostra(k, x, z, 60, .55f, 1, .01f, 1);
+                case "selo_quebra": return Amostra(k, x, z, 40, .5f);
+                case "canal_quebra": return Amostra(k, x, z, 40, .6f);
+                case "assombro": return Amostra(k, x, z, 40, .45f);
+                case "sussurro": return Amostra(k, x, z, 30, .6f);
+                case "coruja": case "rangido": return Amostra(k, x, z, 60, .45f);
                 case "reload":
                     {
                         List<Gravacao> L; if (!grav.TryGetValue("recarga", out L) || L.Count < 3) return false;   // abrir, cartuchos, fechar: no ritmo da recarga (1,6 s)
@@ -340,6 +366,7 @@ namespace RitualReversal.Visual
                 if (O.alvoOut == 0 && O.out_ < .0005f) O.ligado = false;
             }
             coroBp.Ajustar(Tipo.PassaFaixa, 720, 2.2, sr);
+            for (int i = 0; i < gAmb.Length; i++) gAmb[i] += (alvoAmb[i] - gAmb[i]) * (1 - Mathf.Exp(-kBloco / .8f));
             grande += (grandeAlvo - grande) * (1 - Mathf.Exp(-kBloco / (grandeAlvo > grande ? 1.5f : .8f)));
             for (int s = 0; s < n; s++)
             {
@@ -347,6 +374,12 @@ namespace RitualReversal.Visual
                 double ruido = rnd.NextDouble() * 2 - 1;
                 // vento da noite
                 double a = ambLp.Passo(ruido) * amb; L += a; R += a;
+                // v6: fundos por lugar
+                for (int ia = 0; ia < lacoAmb.Length; ia++)
+                {
+                    var lg = lacoAmb[ia]; if (lg == null || gAmb[ia] < .0005f) continue;
+                    pAmb[ia] += (double)lg.sr / sr; if (pAmb[ia] >= lg.d.Length - 1) pAmb[ia] -= lg.d.Length - 1; double am = lg.d[(int)pAmb[ia]] * gAmb[ia]; L += am; R += am;
+                }
                 // rituais
                 foreach (var O in AV)
                 {

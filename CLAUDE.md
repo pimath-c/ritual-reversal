@@ -37,6 +37,7 @@ commits em português.
     node tools/build-mobile.js && NODE_PATH=$(npm root -g) node tools/app.js     # app sem internet + servidor
     node tools/comparar-cs.js 2 1 40000 H   # porte C# (Unity) igual ao sim.js, bit a bit (precisa do Mono)
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-ver.js [pasta] [regex]   # mundo do Unity ao lado do oficial, sem o Unity (Mono)
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v6)
@@ -154,7 +155,16 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   (Volume do URP), `Som.cs` (todos os SFX e laços sintetizados em OnAudioFilterRead). Menu "Criar cena do jogo".
   Online: `Rede.cs` (WebSocket, snapshot -> Jogo) e `PartidaOnline.cs` (lobby, previsão, interpolação, reconexão),
   mesmo protocolo do navegador; `Ator.hidden` só existe no cliente. Ajustes na pausa e no título (PlayerPrefs).
-  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE e a luz de recorte (RIMLUZ).
+  v6 no Unity: `MundoV6.cs` é o `client/mundo.js` (catedral, interior, pontes, desfiladeiro, pisos, peças novas, mesma
+  ordem de `vr()`), `MundoReagentes.cs` (reagentes por tipo, relógio de velas, fecho da execução), poses de ajoelhar/
+  executar/agachar e a recarga em terceira pessoa no `Boneco`, véu da vítima no HUD, ambiente por lugar no `Som.cs`,
+  shader `Resources/RitualReversalMarco.shader` (torres e telhados com 0,07 da névoa; sem ele, URP/Lit).
+  Sem abrir o Unity: `tools/unity-ver.js` compila o visual contra `tools/cs/UnityFalso.cs` (UnityEngine de mentira),
+  roda `Mundo.Construir()` (`tools/cs/ExportarMundo.cs`), desenha a exportação no three com a câmera, névoa e luzes de
+  cada vista do oficial e grava oficial | Unity lado a lado em `dist/unity-ver/`. Também pega exceções na montagem.
+  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE e a luz de recorte (RIMLUZ); clima (chuva, raios); mãos e
+  clipes da v5.9 (`client/arma.js`), skins e Arsenal; a maior parte da interface da v5.3 em diante (bússola, legendas,
+  espectador, caderno, replay, perfil, tutorial, laboratório, relatório, mostrador do círculo, lances).
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
@@ -162,8 +172,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - Sons: ouvir em fones e acertar volumes; trocar o tiro montado por gravação de arma quando Freesound/OpenGameArt/
   Kenney/Sonniss estiverem liberados na rede do ambiente.
 - Playtests com 4 pessoas antes de mais conteúdo.
-- Unity: o visual (`Scripts/Visual/Mundo*.cs`) ainda monta o mapa antigo; a simulação, a navegação e o mapa.json já são os
-  da v6. Faltam no Unity: a catedral da v6 (`client/mundo.js`), as skins, as inspeções novas, a execução, os reagentes e as velas.
+- Unity igual ao oficial (pedido do dono): feito o mundo da v6, reagentes, velas, execução e ambiente; falta a lista em
+  "Visual do protótipo no Unity" (primeira pessoa da v5.9, skins, Arsenal, GRADE/RIMLUZ, clima e a interface).
 - v6 sem gente: equilíbrio entre bots ficou em 38–40% para o culto; os sons novos não foram ouvidos (ambiente sem áudio).
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
   As mãos e animações da v5.9 (`client/arma.js`) ainda não foram portadas para o Unity.

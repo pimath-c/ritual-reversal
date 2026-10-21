@@ -1,6 +1,6 @@
-// O mundo visual do protótipo (buildWorld): piso, paredes com a aparência de cada tipo de peça (PECAS), tetos e
-// telhados, pilares, bancos, vitrais com raios de luz, portas com arcos, velas, fogueira, braseiros e lanternas,
-// reagentes, poeira, luzes e céu. Tudo nas coordenadas do protótipo, sob a raiz espelhada (1, 1, -1).
+// O mundo visual do protótipo (buildWorld): paredes com a aparência de cada tipo de peça (PECAS), bancos, velas,
+// fogueira, braseiros e lanternas, reagentes, poeira, luzes e céu. A catedral da v6, o desfiladeiro e as pontes ficam em
+// MundoV6.cs (client/mundo.js). Tudo nas coordenadas do protótipo, sob a raiz espelhada (1, 1, -1).
 // As peças paradas são fundidas por material e por região de 64 m (fundirEstaticos): poucas chamadas de desenho.
 // A floresta está em MundoFloresta.cs, a catedral viva em MundoCatedral.cs e os altares em MundoAltares.cs.
 using System;
@@ -107,8 +107,9 @@ namespace RitualReversal.Visual
             MAT["casca"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6258), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo, repetir = new Vector2(2, 5) });
             MAT["estatua"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x8e8c84), relevo = Tex.floor.relevo }); facetados.Add(MAT["estatua"]);
             MAT["madeiraCorte"] = Mat.Padrao(0x8a6a48);
-            MAT["rocha"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5c5e56), relevo = Tex.floor.relevo, repetir = new Vector2(1.5f, 1.5f) }); facetados.Add(MAT["rocha"]);
-            MAT["pedraVelha"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6a66), relevo = Tex.floor.relevo, repetir = new Vector2(1.5f, 1.5f) }); facetados.Add(MAT["pedraVelha"]);
+            // v6: rocha de verdade (Tex.rocha), sem as juntas das lajes do piso que antes apareciam nas pedras
+            MAT["rocha"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5c5e56), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["rocha"]);
+            MAT["pedraVelha"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6a66), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["pedraVelha"]);
             MAT["lona"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5a4c34), mapa = Tex.cloth.mapa, relevo = Tex.cloth.relevo, duplaFace = true });
             MAT["tabuas"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a5040), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo });
             MAT["lapide"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x8a8a86), mapa = Tex.marble.mapa, relevo = Tex.marble.relevo });
@@ -117,32 +118,20 @@ namespace RitualReversal.Visual
             MAT["sebe"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x223020), mapa = Tex.cloth.mapa, relevo = Tex.leather.relevo });
             MAT["agua"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x05080c), rugosidade = .05f, metal = .6f });
             MAT["cascaClaustro"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x2a221c), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo });
+            MAT["lajes"] = Mat.Pbr(Tex.floor, 0xffffff, 1, null, .55f); // o piso com a repetição na geometria (pisos da v6)
+            MAT["metalDupla"] = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.metal.mapa, relevo = Tex.metal.relevo, metal = .85f, duplaFace = true });
             foreach (var kv in MAT) kv.Value.name = kv.Key;
+            CriarMateriaisV6();
         }
 
         // ---------- PECAS: a aparência de cada tipo de peça (a colisão continua a caixa da simulação) ----------
         void Peca(PecaV w)
         {
+            if (PecaV6(w)) return; // as peças da v6 (client/mundo.js) valem antes das antigas
             float x = (w.x1 + w.x2) / 2, z = (w.z1 + w.z2) / 2, L = w.x2 - w.x1, D = w.z2 - w.z1;
             switch (w.kind)
             {
                 case "arvore_f": case "espinheiro": return; // floresta
-                case "ruina":
-                    {
-                        bool aoX = L >= D; float LL = Math.Max(L, D); int n = Math.Max(1, (int)JS.Round(LL / 1.3));
-                        for (int k = 0; k < n; k++)
-                        {
-                            float a = (float)k / n * LL, b = (float)(k + 1) / n * LL, h = w.h * (k == 0 || k == n - 1 ? .55f + vr() * .35f : .7f + vr() * .3f);
-                            if (aoX) Caixa(w.x1 + a, w.x1 + b, 0, h, w.z1, w.z2, M("pedraVelha"), 3); else Caixa(w.x1, w.x2, 0, h, w.z1 + a, w.z1 + b, M("pedraVelha"), 3);
-                        }
-                        for (int k = 0; k < Math.Ceiling(LL / 3); k++)
-                        {
-                            var g = Geo.Dodecaedro(.35f + vr() * .35f); float t = vr() * LL, lado = vr() < .5f ? -1 : 1, px, pz;
-                            if (aoX) { px = w.x1 + t; pz = z + lado * (1 + vr()); } else { px = x + lado * (1 + vr()); pz = w.z1 + t; }
-                            float rx = vr() * 3, ry = vr() * 3; Est(g, M("pedraVelha"), TRS(px, .25f, pz, rx, ry, 0));
-                        }
-                        return;
-                    }
                 case "pilar_ruina":
                     Est(Geo.Cilindro(.55f, .62f, w.h, 8), M("pedraVelha"), x, w.h / 2, z);
                     Caixa(x - .8f, x + .8f, 0, .6f, z - .8f, z + .8f, M("pedraVelha"), 2); Caixa(x - .75f, x + .75f, w.h - .2f, w.h + .3f, z - .75f, z + .75f, M("pedraVelha"), 2); return;
@@ -207,7 +196,6 @@ namespace RitualReversal.Visual
                         Est(Geo.Cone(.9f, .6f, 4), M("wallDark"), TRS(x, w.h * .55f + 1.35f, z + .1f, 0, PI / 4, 0));
                         Est(Geo.Cilindro(.05f, .05f, .25f, 6), M("wax"), x, w.h * .55f + .2f, z - .1f); return;
                     }
-                case "limite": Caixa(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wall")); Caixa(w.x1 - .15f, w.x2 + .15f, w.h, w.h + .3f, w.z1 - .15f, w.z2 + .15f, M("wallDark"), 4, false); return;
                 case "torre":
                     {
                         float H = 30; Caixa(w.x1, w.x2, 0, H, w.z1, w.z2, M("wall")); Caixa(w.x1 - .3f, w.x2 + .3f, H, H + .6f, w.z1 - .3f, w.z2 + .3f, M("wallDark"));
@@ -283,7 +271,10 @@ namespace RitualReversal.Visual
         void Estatua(PecaV w, float x, float z)
         {
             var MT = M("estatua"); int pose = w.pose; bool ajoelha = pose == 1 || pose == 3; float alt = ajoelha ? .62f : 1;
-            float gx = pose == 0 ? .12f : 0, gz = pose == 3 ? .1f : 0; var G = TRS(x, 0, z, gx, w.rot, gz);
+            // v6: pedestal de pedra. A caixa da estátua é alta (bloqueia visão e tiro até 2,4 m); sem pedestal, a figura ajoelhada
+            // ficava abaixo do olho e dava para ver por cima do que bloqueia (tools/alturas.js)
+            float ped = ajoelha ? 1.05f : .7f; Caixa(x - .42f, x + .42f, 0, ped, z - .42f, z + .42f, M("pedraVelha"), 1.5f); Caixa(x - .5f, x + .5f, ped - .08f, ped, z - .5f, z + .5f, M("pedraVelha"), 1.5f);
+            float gx = pose == 0 ? .12f : 0, gz = pose == 3 ? .1f : 0; var G = TRS(x, ped, z, gx, w.rot, gz);
             Est(Geo.Torno(new float[,] { { .42f, 0 }, { .38f, .3f }, { .3f, .8f * alt + .2f }, { .25f, 1.25f * alt + .1f }, { .14f, 1.42f * alt + .1f }, { 0, 1.45f * alt + .1f } }, 9), MT, G);
             float cabRx = pose == 0 ? .5f : pose == 1 ? .7f : pose == 2 ? -.35f : .55f;
             Est(Geo.Esfera(.17f, 8, 6), MT, G * TRS(0, 1.62f * alt + .1f, -.03f, cabRx, 0, 0, 1, 1.15f, 1));
@@ -293,7 +284,7 @@ namespace RitualReversal.Visual
             else if (pose == 1) { braco(-1, -1.3f, .1f); braco(1, -1.3f, -.1f); }
             else if (pose == 2) { braco(-1, .2f, .3f); braco(1, -2.9f, -.2f); }
             else { braco(-1, -2.4f, .55f); braco(1, -2.4f, -.55f); }
-            for (int k = 0; k < 3; k++) { var g = Geo.Dodecaedro(.12f + vr() * .12f); float px = (vr() - .5f) * 1.2f, pz = (vr() - .5f) * 1.2f; Est(g, MT, x + px, .08f, z + pz); }
+            for (int k = 0; k < 3; k++) { var g = Geo.Dodecaedro(.12f + vr() * .12f); float px = (vr() - .5f) * 1.4f, pz = (vr() - .5f) * 1.4f; Est(g, MT, x + px, .08f, z + pz); }
         }
 
         void Ossos(PecaV w, float x, float z)
@@ -345,36 +336,11 @@ namespace RitualReversal.Visual
         public readonly List<Fonte> FONTES = new List<Fonte>();
         public class Fonte { public float x, y, z, i, alc; public int cor; }
         public Material winMat, roseMat, winFora; public Color winCor, roseCor, winForaCor;
-        public class Reag { public GameObject jar, halo; public float x; }
-        public readonly List<Reag> reagentes = new List<Reag>();
 
         void BuildWorld()
         {
-            var CT = MapaVisual.CATEDRAL; var cl0 = MapaVisual.CLAUSTRO;
-            Est(Geo.Plano(CT.width, CT.height), M("floor"), TRS(CT.center.x, 0, CT.center.y, -PI / 2, 0, 0));
-            var tetoMat = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x2a2a32), mapa = Tex.wall.mapa, relevo = Tex.wall.relevo, duplaFace = true }); tetoMat.name = "teto";
-            Action<float, float, float, float> teto = (x1, x2, z1, z2) => Est(Geo.Plano(x2 - x1, z2 - z1), tetoMat, TRS((x1 + x2) / 2, 15, (z1 + z2) / 2, PI / 2, 0, 0));
-            teto(CT.xMin - 1, CT.xMax + 1, CT.yMin - 1, cl0.yMin); teto(CT.xMin - 1, CT.xMax + 1, cl0.yMax, CT.yMax + 1); teto(CT.xMin - 1, cl0.xMin, cl0.yMin, cl0.yMax); teto(cl0.xMax, CT.xMax + 1, cl0.yMin, cl0.yMax);
-            // telhados de duas águas nas quatro alas
-            var telha = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x3a3438), mapa = Tex.wall.mapa, relevo = Tex.wall.relevo, duplaFace = true }); telha.name = "telha";
-            var empena = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.wall.mapa, relevo = Tex.wall.relevo, duplaFace = true }); empena.name = "empena";
-            Action<float, float, float, float, bool> telhado = (x1, x2, z1, z2, aoLongoX) =>
-            {
-                float larg = (aoLongoX ? z2 - z1 : x2 - x1) / 2, comp = aoLongoX ? x2 - x1 : z2 - z1, alt = larg * .62f, lado = Mathf.Sqrt(alt * alt + larg * larg), inc = Mathf.Atan2(alt, larg);
-                var G = TRS((x1 + x2) / 2, 15, (z1 + z2) / 2, 0, aoLongoX ? 0 : PI / 2, 0);
-                foreach (int sz in new[] { -1, 1 }) Est(Geo.Plano(comp, lado), telha, G * TRS(0, alt / 2, sz * larg / 2, -PI / 2 + sz * inc, 0, 0));
-                var tri = new List<Vector2> { new Vector2(-larg, 0), new Vector2(larg, 0), new Vector2(0, alt) };
-                foreach (int sx in new[] { -1, 1 }) Est(Geo.Forma(tri), empena, G * TRS(sx * comp / 2, 0, 0, 0, PI / 2, 0));
-            };
-            telhado(CT.xMin - 1, CT.xMax + 1, CT.yMin - 1, cl0.yMin, true); telhado(CT.xMin - 1, CT.xMax + 1, cl0.yMax, CT.yMax + 1, true);
-            telhado(CT.xMin - 1, cl0.xMin, cl0.yMin, cl0.yMax, false); telhado(cl0.xMax, CT.xMax + 1, cl0.yMin, cl0.yMax, false);
-            // piso do Claustro
-            var piso = Mat.Pbr(Tex.floor, 0x6a6256, 1, new Vector2(14, 7)); piso.name = "pisoClaustro";
-            Est(Geo.Plano(cl0.width, cl0.height), piso, TRS(cl0.center.x, .02f, cl0.center.y, -PI / 2, 0, 0));
+            // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de MundoV6.cs (client/mundo.js)
             foreach (var w in MapaVisual.WALLS) Peca(w);
-            // pilares
-            var pg = Geo.Cilindro(.72f, .85f, 15, 14).EscalarUV(1.2f, 3.6f); var baseG = Geo.Cilindro(1.05f, 1.15f, .7f, 14); var capG = Geo.Cilindro(1.15f, .8f, .8f, 14);
-            foreach (var p in MapaVisual.PILLARS) { Est(pg, M("wall"), p.x, 7.5f, p.y); Est(baseG, M("marble"), p.x, .35f, p.y); Est(capG, M("wallDark"), p.x, 12.9f, p.y); }
             foreach (var P in MapaVisual.PEWS)
                 for (float x = P.x + .3f; x < P.y - .5f; x += 3.1f) foreach (float zz in new[] { P.z + .4f, P.z + 2.1f })
                     {
@@ -382,39 +348,12 @@ namespace RitualReversal.Visual
                         Caixa(x, x + 2.7f, .42f, .52f, zz, zz + .55f, M("wood"), 2); Caixa(x, x + 2.7f, .52f, 1, zz + .5f, zz + .62f, M("wood"), 2);
                         Caixa(x, x + .1f, 0, .95f, zz, zz + .6f, M("wood"), 2); Caixa(x + 2.6f, x + 2.7f, 0, .95f, zz, zz + .6f, M("wood"), 2);
                     }
-            // vitrais e raios de luz
-            winCor = Mat.Lin(new Color(1.35f, 1.35f, 1.6f)); roseCor = Mat.Lin(new Color(1.5f, 1.4f, 1.6f)); winForaCor = Mat.Lin(new Color(.55f, .5f, .7f));
-            winMat = Mat.Brilho(winCor, Tex.Vitral(false), Mat.Mistura.Alfa, false, false, .1f, true, 2460); winMat.name = "vitral";
-            roseMat = Mat.Brilho(roseCor, Tex.Vitral(true), Mat.Mistura.Alfa, false, false, .1f, true, 2460); roseMat.name = "rosacea";
-            winFora = Mat.Brilho(winForaCor, Tex.Vitral(false), Mat.Mistura.Alfa, false, false, .1f, true, 2460); winFora.name = "vitralFora";
-            var shaftMat = Mat.Brilho(Mat.Hex(0x8fa6d8, .085f), Tex.RaioLuz(), Mat.Mistura.Aditiva, false, false); shaftMat.name = "raioVitral";
-            var janelas = new List<float>(); for (float x = CT.xMin + 14; x <= CT.xMax - 14; x += 16) janelas.Add(x);
-            Func<float, int, bool> noVao = (x, sz) => { foreach (var p in MapaVisual.PORTAIS) if (p.eixo == "x" && Math.Sign(p.fixo) == sz && x > p.a - 3.5f && x < p.b + 3.5f) return true; return sz > 0 && Math.Abs(x) < 17; };
-            foreach (float x in janelas) foreach (int sz in new[] { -1, 1 })
-                {
-                    if (noVao(x, sz)) continue;
-                    Est(Geo.Plano(3, 7), winMat, TRS(x, 8, sz * (CT.yMax - .06f), 0, sz > 0 ? PI : 0, 0), false);
-                    Est(Geo.Plano(3, 7), winFora, TRS(x, 8, sz * (CT.yMax + 1.06f), 0, sz < 0 ? PI : 0, 0), false);
-                    var v = new Vector3(0, 7.5f, -sz * 11).normalized; var q = Quaternion.FromToRotation(new Vector3(0, -1, 0), -v);
-                    var G = M4Q(new Vector3(x, 8 - 3.75f, sz * (CT.yMax - 5.6f)), q);
-                    Est(Geo.Plano(3, 13.8f), shaftMat, G, false); Est(Geo.Plano(3, 13.8f), shaftMat, G * M4.RY(PI / 2), false);
-                }
-            foreach (int sx in new[] { -1, 1 }) foreach (int lado in new[] { 0, 1 }) Est(Geo.Circulo(3.6f, 40), lado == 1 ? winFora : roseMat, TRS(sx * (CT.xMax + (lado == 1 ? 1.06f : -.06f)), 10.2f, 0, 0, (lado == 1 ? 1 : -1) * sx * PI / 2, 0), false);
-            // portas: lintel e batentes; as brechas ficam com a borda quebrada
-            foreach (var P in MapaVisual.PORTAIS)
-            {
-                bool ax = P.eixo == "x"; float f = P.fixo;
-                Action<float, float, float, float, float, float, Material> box = (a, b, y1, y2, e1, e2, m) => { if (ax) Caixa(a, b, y1, y2, f + e1, f + e2, m); else Caixa(f + e1, f + e2, y1, y2, a, b, m); };
-                if (P.brecha) { for (int k = 0; k < 4; k++) { float a = P.a + (P.b - P.a) * k / 4, b = a + (P.b - P.a) / 4; box(a, b, 8 + vr() * 3, 14, -.5f, .5f, M("wall")); } continue; }
-                box(P.a, P.b, 5.6f, 14, -.5f, .5f, M("wall")); box(P.a - .5f, P.b + .5f, 5.3f, 5.7f, -.8f, .8f, M("wallDark"));
-                foreach (float e in new[] { P.a - .45f, P.b - .05f }) box(e, e + .5f, 0, 5.6f, -.75f, .75f, M("wallDark"));
-                float c = (P.a + P.b) / 2; Est(Geo.Toro((P.b - P.a) / 2, .28f, 8, 20, PI), M("wallDark"), ax ? TRS(c, 5.6f, f) : TRS(f, 5.6f, c, 0, PI / 2, 0));
-            }
+            ConstruirV6();
             // velas, fogueira, braseiros e lanternas
             var chama = Mat.Brilho(Mat.Hex(0xffc070), Tex.Chama(), Mat.Mistura.Aditiva, true); chama.name = "chama";
             var chamaVerm = Mat.Brilho(Mat.Hex(0xff5a4a), Tex.Chama(), Mat.Mistura.Aditiva, true); chamaVerm.name = "chamaVermelha";
             var vidro = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xffc070), rugosidade = .4f, emissao = Mat.Hex(0xff9030), emissaoK = 1.6f }); vidro.name = "lanternaVidro";
-            var metalDupla = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.metal.mapa, relevo = Tex.metal.relevo, metal = .85f, duplaFace = true }); metalDupla.name = "metalDupla";
+            var metalDupla = M("metalDupla");
             foreach (var cd in MapaVisual.CANDLES)
             {
                 float x = cd.x, z = cd.z; var fonte = new Fonte { x = x, z = z, y = 2.1f, cor = 0xff8a36, i = 1.6f, alc = 14 };
@@ -445,18 +384,8 @@ namespace RitualReversal.Visual
                 }
                 FONTES.Add(fonte);
             }
-            // reagentes: pedestal parado; o frasco e o halo aparecem e somem
-            var jarMat = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x2a1016), rugosidade = .3f, metal = .2f, emissao = Mat.Hex(0xb0142e), emissaoK = 1.4f }); jarMat.name = "frasco";
-            var haloR = Mat.Brilho(Mat.Hex(0xff3355, .55f), Tex.Brilho(), Mat.Mistura.Aditiva, true); haloR.name = "haloReagente";
-            var jarG = Geo.Cilindro(.13f, .16f, .34f, 10);
-            foreach (var R in Mapa.REAG)
-            {
-                float x = (float)R.x, z = (float)R.z; Est(Geo.Caixa(.7f, .9f, .7f, 1.5f), M("wall"), x, .45f, z);
-                var g = Grupo(raiz, "Reagente"); g.localPosition = new Vector3(x, 0, z);
-                var jar = Malha(jarG, jarMat, g, "frasco"); Pos(jar, 0, 1.08f, 0);
-                var halo = Sprite(g, haloR, 1.1f, 1.1f, "halo"); Pos(halo, 0, 1.1f, 0);
-                reagentes.Add(new Reag { jar = jar, halo = halo, x = x });
-            }
+            // v6: reagentes com forma própria por subárea da mata (MundoReagentes.cs)
+            for (int i = 0; i < Mapa.REAG.Count; i++) reagentes.Add(ModeloReagente(i < REAG_TIPOS.Length ? REAG_TIPOS[i] : "sal", (float)Mapa.REAG[i].x, (float)Mapa.REAG[i].z));
             // poeira no ar
             { int N = Qualidade.nivel == 0 ? 500 : Qualidade.nivel <= 1 ? 1200 : 2400; var dust = Mat.Brilho(Mat.Hex(0xcdbb96, .5f), Tex.Brilho(), Mat.Mistura.Aditiva, true); dust.name = "poeira"; var rnd = new System.Random(9);
                 for (int i = 0; i < N; i++) SpriteEst((float)(rnd.NextDouble() * 2 - 1) * MapaVisual.HX, .3f + (float)rnd.NextDouble() * 11.7f, (float)(rnd.NextDouble() * 2 - 1) * MapaVisual.HZ, .05f, .05f, dust); }

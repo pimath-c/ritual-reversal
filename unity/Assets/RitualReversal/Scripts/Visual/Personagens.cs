@@ -312,9 +312,9 @@ namespace RitualReversal.Visual
             float v = Mathf.Sqrt((x - px.Value) * (x - px.Value) + (z - pz.Value) * (z - pz.Value)) / Mathf.Max(dt, 1e-3f); px = x; pz = z;
             spd = Lerp(spd, Mathf.Min(v, 8), .18f);
             string st = a.st;
-            if (st == "dead" && prevSt != "dead") { dieT = 0; deitado = prevSt == "down"; }
+            if (st == "dead" && prevSt != "dead") { dieT = 0; deitado = prevSt == "down"; if (prevSt == "down") { var E = W.ExecRecente(a.id); if (E != null && E.k > .6f) W.FxExecucao(x, z, a.team, E); } } // v6: o fecho da execução
             if (st != "dead" && dieT >= 0) { dieT = -1; Fade(1); }
-            if (st == "down" && prevSt == "alive") { quedaT = 0; reac = null; } else if (st == "alive" && prevSt == "down") levantaT = 0;
+            if (st == "down" && prevSt == "alive") { quedaT = 0; reac = null; W.Depois(.28f, () => { if (W.AoSom != null) W.AoSom("queda_corpo", x, z); }); } else if (st == "alive" && prevSt == "down") levantaT = 0; // v6: o corpo bate no chão com som
             if (st != "alive" && st != "down") { quedaT = levantaT = null; reac = null; }
             prevSt = st;
             pausa = Mathf.Max(0, pausa - dt); float dtA = pausa > 0 ? 0 : dt; desloc = Vector2.zero; // pausa de impacto: o passo congela por um instante no golpe
@@ -394,12 +394,33 @@ namespace RitualReversal.Visual
                 torso.r.x = pitch * .3f + Mathf.Sin(t * 1.7f + a.id) * .015f - (moving ? .08f : 0) - flinch * .25f;
                 torso.r.z = Mathf.Sin(phase) * amp * .08f; head.r.x = pitch * .4f;
                 abaX = -sw * .06f; robeZ = Mathf.Sin(phase) * amp * .05f;
+                string hk = a.hold != null && a.hold.key != null ? a.hold.key : ""; float hkK = a.hold != null && a.hold.max > 0 ? (float)(a.hold.t / a.hold.max) : 0;
+                bool executa = hk.StartsWith("exe"), noChao = hk.StartsWith("col") || hk.StartsWith("burn") || hk.StartsWith("rev");
                 if (a.team == "H")
                 {
                     float mira = PI / 2 + pitch * .7f;
                     if (a.sealing >= 0) { bodyY = -.38f; legL.r.x = -1.5f; legR.r.x = .25f; torso.r.x = -.35f; armR.r = new Vector3(1.1f, 0, 0); armL.r = new Vector3(1.2f + Mathf.Sin(t * 3) * .08f, 0, .2f); }
-                    else if (a.reloadT > 0) { float p = 1 - (float)a.reloadT / 1.6f; armR.r = new Vector3(.9f + Mathf.Sin(p * PI) * .4f, 0, -.3f); armL.r = new Vector3(.9f + Mathf.Sin(p * PI * 3) * .4f, 0, .4f); gun.r.z = Mathf.Sin(p * PI) * .8f; }
-                    else { armR.r = new Vector3(mira - kick * .45f, 0, 0); armL.r = new Vector3(mira - .1f - kick * .3f, 0, .45f); torso.r.x += kick * .08f; }
+                    // v6: executando: de pé sobre o corpo, inclinado, a arma apontada para baixo e a outra mão estendida, tremendo mais perto do fim
+                    else if (executa) { bodyY = -.14f; legL.r.x = -.55f; legR.r.x = .25f; torso.r.x = -.55f; head.r.x = .4f; armR.r = new Vector3(1.25f, 0, 0); armL.r = new Vector3(1.4f + Mathf.Sin(t * (9 + hkK * 18)) * (.03f + hkK * .07f), 0, .18f); }
+                    // coletando, queimando ou reanimando: ajoelhado, a mão no chão (de longe se lê "ocupado com algo no chão")
+                    else if (noChao) { bodyY = -.42f; legL.r.x = -1.45f; legR.r.x = .3f; torso.r.x = -.5f; head.r.x = .35f; armR.r = new Vector3(.7f, 0, 0); armL.r = new Vector3(1.05f + Mathf.Sin(t * 6) * .06f, 0, .15f); }
+                    else if (a.reloadT > 0)
+                    {
+                        // a mesma coreografia da primeira pessoa (client/arma.js), em ponto grande para quem vê de longe
+                        float T = 1.6f - (float)a.reloadT; System.Func<float, float, float, float> en = (q, b0, c0) => Mathf.Clamp01((q - b0) / (c0 - b0));
+                        if (a.cls == "exorcista")
+                        {
+                            float cima = Suave(en(T, .08f, .34f)) * (1 - Suave(en(T, .42f, .58f))), baixo = Suave(en(T, .42f, .58f)) * (1 - Suave(en(T, 1.1f, 1.3f)));
+                            armL.r = new Vector3(1.05f + cima * .5f - baixo * .1f, 0, .45f); armR.r = new Vector3(mira * .55f + cima * .2f - baixo * .3f + (T > .4f && T < 1.05f ? Mathf.Sin((T - .4f) * 5) * .25f : 0), 0, -.25f);
+                            gun.r = new Vector3(cima * -1.1f + baixo * .9f, 0, (cima + baixo) * -.5f);
+                        }
+                        else
+                        {
+                            float rola = Suave(en(T, 0, .2f)) * (1 - Suave(en(T, 1.05f, 1.25f))), ciclo = T > .15f && T < 1.1f ? Mathf.Max(0, Mathf.Sin((T - .15f) / .29f * PI * 2)) : 0;
+                            armL.r = new Vector3(1.0f + rola * .15f, 0, .4f); armR.r = new Vector3(.85f + ciclo * .45f - rola * .1f, 0, -.35f - ciclo * .25f); gun.r = new Vector3(0, rola * .5f, rola * 1.0f);
+                        }
+                    }
+                    else { armR.r = new Vector3(mira - kick * .45f, 0, 0); armL.r = new Vector3(mira - .1f - kick * .3f, 0, .45f); torso.r.x += kick * .08f; gun.r = Vector3.zero; }
                     if (mFlash != null) Mat.Opacidade(mFlash, kick > .7f ? 1 : 0);
                 }
                 else
@@ -411,11 +432,17 @@ namespace RitualReversal.Visual
                         for (int i = 0; i < orb.Count; i++) { float an = t * 1.4f + i / 5f * PI * 2; orb[i].transform.localPosition = new Vector3(Mathf.Cos(an) * .95f, 1.1f + Mathf.Sin(t * 2 + i) * .18f, Mathf.Sin(an) * .95f); mOrb[i].SetFloat("_Giro", an * 2); Mat.Opacidade(mOrb[i], .55f + .35f * Mathf.Sin(t * 3 + i)); }
                         if (Random.value < dt * 14) W.Particulas(x + Random.Range(-.4f, .4f), .25f, z + Random.Range(-.4f, .4f), 1, 0xb050ff, .2f, 1.3f, -1.8f, .2f);
                     }
-                    if (noCirculo && !moving) { float s2 = Mathf.Sin(t * 2.5f + a.id) * .15f; armL.r = new Vector3(2.7f + s2, 0, .35f); armR.r = new Vector3(2.7f - s2, 0, -.35f); gun.r.x = -2.7f; head.r.x = .35f; }
+                    // v6: culto executando um Caçador: de pé sobre o corpo, o cetro erguido apontado para baixo, a garra tremendo até o fim
+                    if (executa) { bodyY = -.1f; torso.r.x = -.5f; head.r.x = .45f; armR.r = new Vector3(2.2f, 0, -.2f); gun.r.x = -1.0f; armL.r = new Vector3(1.4f + Mathf.Sin(t * (9 + hkK * 18)) * (.03f + hkK * .08f), 0, .2f); }
+                    // coletando ou reanimando: ajoelhado, a mão no chão
+                    else if (noChao) { bodyY = -.42f; legL.r.x = -1.45f; legR.r.x = .3f; torso.r.x = -.5f; head.r.x = .35f; armR.r = new Vector3(.6f, 0, -.1f); gun.r.x = -.5f; armL.r = new Vector3(1.05f + Mathf.Sin(t * 6) * .06f, 0, .15f); }
+                    else if (noCirculo && !moving) { float s2 = Mathf.Sin(t * 2.5f + a.id) * .15f; armL.r = new Vector3(2.7f + s2, 0, .35f); armR.r = new Vector3(2.7f - s2, 0, -.35f); gun.r.x = -2.7f; head.r.x = .35f; }
                     else if (cast > 0) { float ang = PI / 2 + pitch * .7f + cast * .2f; armR.r = new Vector3(ang, 0, 0); gun.r.x = -ang - 1.05f; armL.r = new Vector3(-sw * .8f, 0, .1f); }
                     else { armL.r = new Vector3(-sw * .9f, 0, .08f); armR.r = new Vector3(.35f + sw * .5f, 0, -.08f); gun.r.x = -.35f; }
                     if (mRune != null) Mat.Cor(mRune, Mat.Hex(a.runeT > 0 ? 0xffd0ff : 0x9a4ad0));
                 }
+                // v6: agachado. Um joelho quase no chão e o tronco à frente; andando, passo curto. Lê-se de longe como "abaixado".
+                if (a.ag && a.sealing < 0) { float sw2 = moving ? Mathf.Sin(phase) * .22f : 0; bodyY = -.5f; legL.r.x = -1.35f + sw2; legR.r.x = .35f - sw2; torso.r.x += -.32f; head.r.x += .25f; gy = moving ? Mathf.Abs(Mathf.Sin(phase)) * .02f : 0; }
                 if (a.stunT > 0) { torso.r.z = Mathf.Sin(t * 14) * .12f; head.r.z = Mathf.Sin(t * 11) * .2f; }
                 // reação: o tronco cede na direção do tiro, meio passo para trás, a cabeça estala no tiro na cabeça, os braços
                 // abrem; sobe em 35 ms e assenta em ~0,3 s. Só visual: a colisão é a da simulação.

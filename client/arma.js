@@ -899,7 +899,9 @@ function pedirInspecao(){ if(S.est&&S.est.nome==='pronta') S.pedidoInspecao=true
 function executou(){ const f=camFx(); S.joltV.z-=.5*f; S.joltV.y-=.3*f; VM.pausa=.1; S.brilho=1; }
 function tiroVitrine(){ disparoForcado(S.forca&&S.forca.arma); }
 function trocarSkin(arma,id){ if(!SKINS||!SKINS.escolher(arma,id)) return false; vestir(arma,id); return true; }
-return {construir,quadro:quadroAnim,camVista,hab,tiro,sigilo,acerto,golpe,pedirInspecao,trocarSkin,tiroVitrine,executou,S,DEDOS,
+// para tools/exportar-primeira-pessoa.js (o Unity carrega as mesmas mãos, armas e clipes): constantes calculadas na montagem
+function exportar(){ return {PALMA_CENTRO:PALMA_CENTRO.toArray(),qPinca:qPinca.toArray(),qMunMao:qMunMao.toArray(),MUN_NA_MAO:MUN_NA_MAO.toArray(),ESC_MAO,ND,P,PADRAO_C}; }
+return {construir,quadro:quadroAnim,camVista,hab,tiro,sigilo,acerto,golpe,pedirInspecao,trocarSkin,tiroVitrine,executou,S,DEDOS,exportar,
   // vitrine: força uma arma e um clipe; t (0 a 1) fixa o instante, vel muda a velocidade
   forcar:forcarAPI,painel,
   get cam(){ return S.cam; },get vm(){ return {vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}; }};

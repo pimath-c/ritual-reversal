@@ -16,6 +16,8 @@ namespace RitualReversal
 
         Mundo mundo; PrimeiraPessoa fp; Pos pos; Som som;
         Entrada ultimaEntrada; float localCd, alucT = 8, coracaoT, sinoT = 45; bool ultimoTiroCab;
+        // v6: sendo executado: o mundo fecha (veuExe, desenhado no HUD), o coração acelera e a câmera vira para quem executa
+        float veuExe, virarYaw, virarT; int exeVirou = -1;
 
         void CriarVisual()
         {
@@ -58,6 +60,7 @@ namespace RitualReversal
             mundo.AtualizarEfeitosQuadro(dt);
             // som: ouvinte, rituais, passos, alucinações, coração, sino
             som.ouvinte = c; som.yawOuvinte = yawCam; som.Rituais(jogando ? g : null, papel, mundo.GRk, dt);
+            som.Ambiente(jogando, c, dt); // v6: fundos por lugar
             if (jogando)
             {
                 float s = (float)m.sanity;
@@ -65,10 +68,21 @@ namespace RitualReversal
                 ProgressoInvestigacao(papel);
                 if (s < 40) { alucT -= dt; if (alucT <= 0) { alucT = Random.Range(6f, 12f); float an = Random.Range(0, Mathf.PI * 2); if (Random.value < .5f) som.Tocar("whisper", (float)m.x + Mathf.Cos(an) * 6, (float)m.z + Mathf.Sin(an) * 6, 1); else som.Tocar("alucinacao"); } }
                 if (s < 15) { coracaoT -= dt; if (coracaoT <= 0) { coracaoT = .85f; som.Tocar("heart"); } }
+                {
+                    var E = m.st == "down" ? mundo.ExecRecente(m.id) : null; veuExe = Mathf.Lerp(veuExe, E != null ? .3f + E.k * .7f : 0, Mathf.Min(1, dt * 6));
+                    if (E != null)
+                    {
+                        coracaoT -= dt; if (coracaoT <= 0) { coracaoT = .95f - .62f * E.k; som.Tocar("heart"); }
+                        if (exeVirou != E.por) { foreach (var p in g.actors) if (p.id == E.por && !p.hidden) { virarYaw = Mathf.Atan2(-(float)(p.x - m.x), -(float)(p.z - m.z)); virarT = .6f; exeVirou = E.por; } }
+                    }
+                    else if (m.st != "down") exeVirou = -1;
+                    // a câmera vira devagar para quem executa (só caído; o jogador pode olhar de novo depois)
+                    if (virarT > 0) { if (m.st != "down") virarT = 0; else { virarT -= dt; float d = virarYaw - (float)lookYaw; d = Mathf.Atan2(Mathf.Sin(d), Mathf.Cos(d)); lookYaw += d * Mathf.Min(1, dt * 7); if (Mathf.Abs(d) < .02f) virarT = 0; } }
+                }
                 sinoT -= dt; if (sinoT <= 0) { sinoT = Random.Range(45f, 80f); som.Tocar("bell"); }
                 if (pos != null) pos.Atualizar(s, mundo.GRk, Mathf.Clamp01(hurtT / .35f), Mathf.Clamp01(blindT / 1.5f));
             }
-            else if (pos != null) pos.Atualizar(100, 0, 0, 0);
+            else { if (pos != null) pos.Atualizar(100, 0, 0, 0); veuExe = 0; }
         }
 
         // retorno imediato da arma (predictFire): som, clarão e coice antes da simulação confirmar

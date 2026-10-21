@@ -12,6 +12,9 @@ namespace RitualReversal.Visual
     public class TrilhaV { public float w; public bool estreita; public List<Vector2> pts = new List<Vector2>(); }
     public class LuzV { public float x, z; public string tipo; }
     public class PortalV { public string nome, eixo; public float fixo, a, b; public bool brecha; }
+    // v6: tabuleiro de uma travessia do desfiladeiro: ao longo (de..ate) e largura (a..b)
+    public class TravessiaV { public string nome, eixo; public float a, b, de, ate; }
+    public struct Caixa2 { public float x1, x2, z1, z2; }
 
     public static class MapaVisual
     {
@@ -25,17 +28,23 @@ namespace RitualReversal.Visual
         public static List<Vector4> PEWS = new List<Vector4>(); // x1, x2, z1, z2
         public static List<LuzV> CANDLES = new List<LuzV>();
         public static List<PortalV> PORTAIS = new List<PortalV>();
-        public static float HX, HZ, H0X, H0Z;
+        public static float HX, HZ;
         public static Rect CATEDRAL, CLAUSTRO; // x = x1, y = z1, width, height
+        public static Caixa2 PROMONTORIO, DESFILADEIRO; // v6
+        public static List<TravessiaV> TRAVESSIAS = new List<TravessiaV>();
+        public static List<PecaV> ABISMO = new List<PecaV>();
         public static bool Carregado;
 
         static float F(object v) { return (float)(double)v; }
         public static void Carregar(string json)
         {
             var R = Json.O(Json.Ler(json)); var lim = Json.O(R["limites"]);
-            var mw = Json.O(lim["meiaLargura"]); HX = F(mw["x"]); HZ = F(mw["z"]); var m0 = Json.O(lim["planoOriginal4v4"]); H0X = F(m0["x"]); H0Z = F(m0["z"]);
+            var mw = Json.O(lim["meiaLargura"]); HX = F(mw["x"]); HZ = F(mw["z"]); // (a v6 tirou o planoOriginal4v4 do mapa.json)
             System.Func<string, Rect> ret = k => { var o = Json.O(lim[k]); float x1 = F(o["x1"]), x2 = F(o["x2"]), z1 = F(o["z1"]), z2 = F(o["z2"]); return new Rect(x1, z1, x2 - x1, z2 - z1); };
             CATEDRAL = ret("catedral"); CLAUSTRO = ret("claustro");
+            System.Func<string, Caixa2> cx2 = k => { var o = Json.O(lim[k]); return new Caixa2 { x1 = F(o["x1"]), x2 = F(o["x2"]), z1 = F(o["z1"]), z2 = F(o["z2"]) }; };
+            PROMONTORIO = cx2("promontorio"); DESFILADEIRO = cx2("desfiladeiro");
+            TRAVESSIAS.Clear(); foreach (var o in Json.L(R["travessias"])) { var p = Json.O(o); TRAVESSIAS.Add(new TravessiaV { nome = Json.S(p["nome"]), eixo = Json.S(p["eixo"]), a = F(p["a"]), b = F(p["b"]), de = F(p["de"]), ate = F(p["ate"]) }); }
             WALLS.Clear();
             foreach (var o in Json.L(R["pecas"]))
             {
@@ -45,6 +54,7 @@ namespace RitualReversal.Visual
                 if (p.TryGetValue("pose", out v) && v != null) w.pose = (int)F(v);
                 WALLS.Add(w);
             }
+            ABISMO.Clear(); foreach (var w in WALLS) if (w.kind == "abismo") ABISMO.Add(w);
             ARVORES.Clear();
             foreach (var o in Json.L(R["arvores"]))
             {

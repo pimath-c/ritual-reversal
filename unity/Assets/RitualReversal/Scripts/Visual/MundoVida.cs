@@ -30,7 +30,7 @@ namespace RitualReversal.Visual
             mLua = Mat.Brilho(Mat.Hex(0xdfe8ff), Tex.Brilho(), Mat.Mistura.Alfa, true, false, 0, false, 1003); lua = Sprite(raiz, mLua, 22, 22, "lua").transform;
             mLua2 = Mat.Brilho(Mat.Hex(0x6f88c8, .35f), Tex.Brilho(), Mat.Mistura.Aditiva, true, false, 0, false, 1004); lua2 = Sprite(raiz, mLua2, 64, 64, "halo da lua").transform;
             // luzes
-            luar = LuzPonto(raiz, 0x8fa8e0, .9f, 70, 1.5f, "luar"); luar.transform.localPosition = new Vector3(0, 26, 0);
+            luar = LuzPonto(raiz, 0x8fa8e0, .9f, 70, 1.5f, "luar"); luar.transform.localPosition = new Vector3(-30, 26, -54); // sobre o jardim do Claustro, a céu aberto
 #if UNITY_2023_1_OR_NEWER
             foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) if
 #else
@@ -95,7 +95,7 @@ namespace RitualReversal.Visual
             if (winMat != null) { Mat.Cor(winMat, Color.Lerp(winCor, sangueV, kk * pul)); Mat.Cor(roseMat, Color.Lerp(roseCor, sangueV, kk * pul)); Mat.Cor(winFora, Color.Lerp(winForaCor, sangueV, kk * pul)); }
             foreach (var m in pocas) Mat.Opacidade(m, .2f + .4f * kk * pul);
             // reagentes e sinalizadores
-            for (int i = 0; i < g.reagents.Count && i < reagentes.Count; i++) { bool tem = g.reagents[i].has; reagentes[i].jar.SetActive(tem); reagentes[i].halo.SetActive(tem); }
+            AtualizarReagentes(g, dt);
             for (int i = 0; i < g.flares.Count && i < flares.Count; i++)
             {
                 var f = g.flares[i]; var o = flares[i];

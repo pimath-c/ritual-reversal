@@ -198,7 +198,7 @@ namespace RitualReversal.Visual
         static float Sm(float a, float b, float x) { float t = Mathf.Clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
         static float L(float a, float b, float t) { return a + (b - a) * t; }
         static Pbr.Saida S(float h, float r, float g, float b, float ro) { return new Pbr.Saida { h = h, r = r, g = g, b = b, ro = ro }; }
-        public static Pbr floor, wall, wood, marble, metal, cloth, leather, chao;
+        public static Pbr floor, wall, wood, marble, metal, cloth, leather, chao, rocha;
         public static int Tam(int t) { return Qualidade.nivel <= 1 ? Math.Max(128, t >> 1) : t; }
 
         public static void Construir()
@@ -233,7 +233,14 @@ namespace RitualReversal.Visual
                 float f = n3.Fbm(u * 8, v * 8, 8, 5), fol = Sm(.52f, .66f, n3.Fbm(u * 16 + 9, v * 16 + 2, 16, 3)), musgo = Sm(.5f, .72f, n3.Fbm(u * 4 + 5, v * 4 + 1, 4, 4)), gr = n3.Fbm(u * 32, v * 32, 32, 2);
                 float k = .62f + .5f * f; return S(f * .45f + fol * .35f + gr * .2f, L(L(58, 40, musgo), 84, fol * .7f) * k, L(L(46, 54, musgo), 56, fol * .7f) * k, L(L(36, 32, musgo), 30, fol * .7f) * k, .96f);
             }, 2.4f);
-            foreach (var p in new[] { floor, wall, wood, marble, metal, cloth, leather, chao }) p.Texturas();
+            // v6: rocha de verdade (ruído em camadas, veios e estratos), sem as juntas das lajes do piso que antes apareciam nas pedras
+            var n4 = new Ruido(4404);
+            rocha = Pbr.Criar(Tam(256), (u, v) =>
+            {
+                float f = n4.Fbm(u * 6, v * 6, 6, 5), veio = Math.Abs((float)Math.Sin((v * 9 + n4.Fbm(u * 3, v * 3, 3, 3) * 3) * Math.PI)), estr = Sm(.55f, 1, veio) * .3f, k = .55f + .55f * f;
+                return S(f * .8f + estr * .4f, (70 + 30 * f - 25 * estr) * k, (70 + 28 * f - 24 * estr) * k, (66 + 26 * f - 22 * estr) * k, .92f);
+            }, 3.4f);
+            foreach (var p in new[] { floor, wall, wood, marble, metal, cloth, leather, chao, rocha }) p.Texturas();
         }
 
         // ---------- desenhadas ----------
@@ -281,9 +288,9 @@ namespace RitualReversal.Visual
         public static Texture2D Vitral(bool rosa)
         {
             if (rosa && _rose != null) return _rose; if (!rosa && _win != null) return _win;
-            int W = 256, H = rosa ? 256 : 512; var g = new Tela(W, H); var pal = new[] { "#1d3f8f", "#5a2a91", "#8f1d3a", "#1f6b7a", "#c99a2e", "#2a2f8f", "#3d1768" };
+            int W = 256, H = rosa ? 256 : 512; var g = new Tela(W, H); var pal = new[] { "#14306e", "#3e1f6a", "#7a1430", "#17505c", "#a87a24", "#1e2468", "#2e1250", "#5a1a20" }; // v6: vidro mais escuro e miúdo
             g.Iniciar(); if (rosa) g.Arco(W / 2f, H / 2f, W / 2f - 4, 0, PI * 2); else { g.Mover(8, H); g.Linha(8, H * .32f); g.Curva(10, 40, W / 2f, 4); g.Curva(W - 10, 40, W - 8, H * .32f); g.Linha(W - 8, H); g.Fechar(); }
-            g.Recortar(); sd = 11; int cel = rosa ? 20 : 28;
+            g.Recortar(); sd = 11; int cel = rosa ? 12 : 16;
             for (int y = 0; y < H; y += cel) for (int x = 0; x < W; x += cel) { g.preencher = Tela.Cor(pal[(int)Math.Floor(R() * pal.Length)]); g.alfaGlobal = .75f + R() * .25f; g.Retangulo(x, y, cel, cel); }
             g.alfaGlobal = 1; g.contorno = Tela.Cor("#07070a"); g.largura = 3;
             for (int y = 0; y <= H; y += cel) { g.Iniciar(); g.Mover(0, y + (R() - .5f) * 4); g.Linha(W, y + (R() - .5f) * 4); g.Contornar(); }

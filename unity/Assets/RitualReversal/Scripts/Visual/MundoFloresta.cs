@@ -1,7 +1,8 @@
 // A floresta do protótipo (buildFloresta): chão da mata com trilhas e clareiras pintadas, árvores em três formas
 // (anciã, alta e morta: tronco torneado e torcido, raízes, galhos, copa e musgo pendurado), samambaias, moitas,
 // espinheiros, arcos de pedra, raios de luar nas clareiras, telhado da cabana e as runas do Círculo de Pedras.
-// O chão usa a cor pintada como textura base e a textura da mata como detalhe repetido (o three usava cor por vértice).
+// O chão usa a cor pintada como textura base e a textura da mata como detalhe repetido (o three usava cor por vértice);
+// na v6 ele é montado por regiões (a mata em volta do desfiladeiro e o promontório), com o abismo vazio.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,6 +12,7 @@ namespace RitualReversal.Visual
 {
     public partial class Mundo
     {
+        static float Sm(float a, float b, float x) { float t = Mathf.Clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
         void BuildFloresta()
         {
             var n = new Ruido(9091);
@@ -36,10 +38,18 @@ namespace RitualReversal.Visual
                 int j0 = Mathf.Max(0, Mathf.FloorToInt((C.y - ext + LZ / 2) * TH / LZ)), j1 = Mathf.Min(TH - 1, Mathf.CeilToInt((C.y + ext + LZ / 2) * TH / LZ));
                 for (int j = j0; j <= j1; j++) for (int i = i0; i <= i1; i++) { float d = Mathf.Sqrt((PX(i) - C.x) * (PX(i) - C.x) + (PZ(j) - C.y) * (PZ(j) - C.y)); float v = Mathf.Clamp01((C.z + 3 - d) / 6); if (v > cl[j * TW + i]) cl[j * TW + i] = v; }
             }
-            var px = new Color32[TW * TH];
+            var px = new Color32[TW * TH]; var PR = MapaVisual.PROMONTORIO; var DF = MapaVisual.DESFILADEIRO;
             for (int j = 0; j < TH; j++) for (int i = 0; i < TW; i++)
                 {
                     float x = PX(i), z = PZ(j), trv = tr[j * TW + i], clv = cl[j * TW + i];
+                    // v6: promontório: terra clara e capim ralo, mais escuro na sombra da catedral; no adro e perto das portas, pó de pedra
+                    if (x > PR.x1 - .5f && x < PR.x2 + .5f && z > PR.z1 - .5f && z < PR.z2 + .5f)
+                    {
+                        var Z = Mapa.ZonaDe(x, z); float sombra = Z != null && Z.name == "Planalto" && Z.luar < .3 ? .62f : 1, vp = .82f + .32f * n.Fbm(x * .07f + 11, z * .07f + 3, 64, 3), capim = Sm(.45f, .7f, n.Fbm(x * .11f, z * .11f, 64, 3));
+                        float pr = Mathf.Lerp(.74f, .56f, capim) * vp * sombra, pg = Mathf.Lerp(.72f, .66f, capim) * vp * sombra, pb = Mathf.Lerp(.68f, .5f, capim) * vp * sombra;
+                        float adro = Mathf.Clamp01(1 - Math.Max(Math.Abs(x) / 46, (z + 27) / 6)); pr = Mathf.Lerp(pr, .95f, adro * .6f); pg = Mathf.Lerp(pg, .92f, adro * .6f); pb = Mathf.Lerp(pb, .86f, adro * .6f);
+                        px[j * TW + i] = new Color32((byte)Mathf.Clamp(pr * 127.5f, 0, 255), (byte)Mathf.Clamp(pg * 127.5f, 0, 255), (byte)Mathf.Clamp(pb * 127.5f, 0, 255), 255); continue;
+                    }
                     float fora = Mathf.Clamp01(Mathf.Max(Mathf.Abs(x) - MapaVisual.HX, Mathf.Abs(z) - MapaVisual.HZ) / 12), var_ = .85f + .3f * n.Fbm(x * .05f + 50, z * .05f + 50, 64, 3);
                     float r = .62f * var_, g = .66f * var_, b = .6f * var_;
                     r = Mathf.Lerp(r, .95f, clv * .5f); g = Mathf.Lerp(g, 1, clv * .5f); b = Mathf.Lerp(b, .78f, clv * .5f);
@@ -48,12 +58,25 @@ namespace RitualReversal.Visual
                     // a textura de detalhe (x2) dobra: a cor base vai pela metade. Linha j (z crescente) é gravada de cima para baixo, como no canvas
                     px[j * TW + i] = new Color32((byte)Mathf.Clamp(r * 127.5f, 0, 255), (byte)Mathf.Clamp(g * 127.5f, 0, 255), (byte)Mathf.Clamp(b * 127.5f, 0, 255), 255);
                 }
-            var pint = Tela.Tex2D(TW, TH, px, true, "chaoPintado"); pint.wrapMode = TextureWrapMode.Clamp;
+            // linear (não sRGB): faz o papel da cor por vértice do navegador, que multiplica a textura sem conversão; o detalhe
+            // do URP (_DETAIL_MULX2) dobra o valor, por isso a cor vai pela metade
+            var pint = Tela.Tex2D(TW, TH, px, false, "chaoPintado"); pint.wrapMode = TextureWrapMode.Clamp;
             var chaoMat = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = pint, rugosidade = 1 }); chaoMat.name = "chaoMata";
             chaoMat.SetTexture("_DetailAlbedoMap", Tex.chao.mapa); chaoMat.SetTextureScale("_DetailAlbedoMap", new Vector2(LX / 7, LZ / 7)); chaoMat.SetFloat("_DetailAlbedoMapScale", 1);
             if (Qualidade.nivel >= 2) { chaoMat.SetTexture("_DetailNormalMap", Tex.chao.relevo); chaoMat.SetTextureScale("_DetailNormalMap", new Vector2(LX / 7, LZ / 7)); chaoMat.SetFloat("_DetailNormalMapScale", .8f); }
             chaoMat.EnableKeyword("_DETAIL_MULX2");
-            var chao = Malha(Geo.Plano(LX, LZ), chaoMat, raiz, "Chão da mata", false); Pos(chao, 0, -.04f, 0); Rot(chao, -PI / 2, 0, 0);
+            // v6: o chão é feito por regiões, com bordas exatamente onde o desfiladeiro começa (x = ±98, z = -6) e onde o
+            // promontório termina (x = ±82, z = -22): o chão que se vê e o chão onde se anda coincidem. Fora do mapa, a mata
+            // continua por 40 m. A textura pintada cobre tudo; cada região pega o seu pedaço dela.
+            var geoChao = new Geo();
+            Action<float, float, float, float> regiao = (x1, x2, z1, z2) =>
+            {
+                var g = Geo.Plano(x2 - x1, z2 - z1, Math.Max(1, Mathf.RoundToInt((x2 - x1) / 12)), Math.Max(1, Mathf.RoundToInt((z2 - z1) / 12))).GirarX(-PI / 2).Mover((x1 + x2) / 2, 0, (z1 + z2) / 2);
+                for (int i = 0; i < g.p.Count; i++) g.uv[i] = new Vector2((g.p[i].x + LX / 2) / LX, (LZ / 2 - g.p[i].z) / LZ);
+                geoChao.Juntar(g);
+            };
+            regiao(-LX / 2, LX / 2, DF.z2, LZ / 2); regiao(-LX / 2, DF.x1, -LZ / 2, DF.z2); regiao(DF.x2, LX / 2, -LZ / 2, DF.z2); regiao(PR.x1, PR.x2, PR.z1, PR.z2);
+            var chao = Malha(geoChao, chaoMat, raiz, "Chão da mata", false); Pos(chao, 0, -.04f, 0);
             chao.GetComponent<MeshRenderer>().receiveShadows = true;
 
             // ---------- árvores ----------
@@ -64,7 +87,7 @@ namespace RitualReversal.Visual
             for (int t = 0; t < 9000 && lista.Count < MapaVisual.ARVORES.Count + extra; t++)
             {
                 float x = (R() * 2 - 1) * (MapaVisual.HX + 32), z = (R() * 2 - 1) * (MapaVisual.HZ + 32);
-                if (Math.Abs(x) < MapaVisual.HX + 2 && Math.Abs(z) < MapaVisual.HZ + 2) continue; float u = R(); int tipo = u < .3f ? 0 : u < .8f ? 1 : 2;
+                if (Math.Abs(x) < MapaVisual.HX + 2 && Math.Abs(z) < MapaVisual.HZ + 2) continue; if (Math.Abs(x) < MapaVisual.DESFILADEIRO.x2 + 3 && z < 0) continue; /* atrás do promontório é o abismo */ float u = R(); int tipo = u < .3f ? 0 : u < .8f ? 1 : 2;
                 float r = RFAIXA[tipo, 0] + R() * (RFAIXA[tipo, 1] - RFAIXA[tipo, 0]), s = .85f + R() * .3f, rot = R() * 6.28f, inc = (R() - .5f) * .08f;
                 lista.Add(new ArvoreV { x = x, z = z, r = r, tipo = tipo, s = s, rot = rot, inc = inc });
             }
@@ -136,7 +159,10 @@ namespace RitualReversal.Visual
             }
             // ---------- telhado da cabana do Ermitão ----------
             {
-                float x1 = 1e9f, x2 = -1e9f, z1 = 1e9f, z2 = -1e9f; foreach (var w in MapaVisual.WALLS) if (w.kind == "madeira") { x1 = Math.Min(x1, w.x1); x2 = Math.Max(x2, w.x2); z1 = Math.Min(z1, w.z1); z2 = Math.Max(z2, w.z2); }
+                // v6: só as paredes da cabana (a carvoaria também tem tábuas)
+                Npc erm = null; foreach (var q in Mapa.NPCS) if (q.id == "ermitao") erm = q;
+                float x1 = 1e9f, x2 = -1e9f, z1 = 1e9f, z2 = -1e9f;
+                foreach (var w in MapaVisual.WALLS) if (w.kind == "madeira" && erm != null && Mathf.Sqrt(((w.x1 + w.x2) / 2 - (float)erm.x) * ((w.x1 + w.x2) / 2 - (float)erm.x) + ((w.z1 + w.z2) / 2 - (float)erm.z) * ((w.z1 + w.z2) / 2 - (float)erm.z)) < 9) { x1 = Math.Min(x1, w.x1); x2 = Math.Max(x2, w.x2); z1 = Math.Min(z1, w.z1); z2 = Math.Max(z2, w.z2); }
                 if (x1 < x2) { float cx = (x1 + x2) / 2, cz = (z1 + z2) / 2; Est(Geo.Cone(8.2f, 3, 4), M("tabuas"), TRS(cx, 5.1f, cz, 0, PI / 4, 0, 1, 1, .85f)); Est(Geo.Caixa(.8f, 2.2f, .8f, 1), M("wall"), cx - 3, 5.2f, cz + 2.5f); }
             }
             // ---------- runas no Círculo de Pedras ----------

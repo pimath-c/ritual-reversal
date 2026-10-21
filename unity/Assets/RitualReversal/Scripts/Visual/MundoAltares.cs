@@ -17,6 +17,7 @@ namespace RitualReversal.Visual
             public Mesh brasas; public Vector3[] ep; public float[] es; public List<Vector3> ev = new List<Vector3>(); public float opC = .05f, opF, opE, opR, escF = 1;
             // v5.8: oito runas em volta do círculo (acendem, pulsam, tremem sob o selo, convergem no Farol, estouram na Fenda)
             public RunaR[] ru = new RunaR[8]; public string rvSt; public float rvProg, rvSeal, contest; public bool somSelo;
+            public VelaR[] velas; // v6: o relógio de velas (MundoReagentes.cs)
         }
         public class RunaR { public GameObject go; public Material m; public float bx, bz, flash, choque, op; public float? acende, converge, explode; }
         public Action<float> AoTremor; Vector3 camRit;   // empurrão de câmera nos grandes momentos, se o jogador está perto
@@ -58,6 +59,7 @@ namespace RitualReversal.Visual
                     float an = k / 8f * PI * 2 + .2f; var mr = Pecas.Aditivo(0xff3a5a, Tex.Runa(), true, 0); var sp = Sprite(A.g, mr, .5f, .5f, "runa do ritual");
                     var ru = new RunaR { go = sp, m = mr, bx = Mathf.Cos(an) * (R + .25f), bz = Mathf.Sin(an) * (R + .25f) }; sp.transform.localPosition = new Vector3(ru.bx, .4f, ru.bz); sp.SetActive(false); A.ru[k] = ru;
                 }
+                A.velas = CriarVelas(A.g);
             }
         }
 
@@ -181,7 +183,7 @@ namespace RitualReversal.Visual
                     if (d < 17) { float fx = -Mathf.Sin(lookYaw), fz = -Mathf.Cos(lookYaw), cos = (((float)A.x - cam.x) * fx + ((float)A.z - cam.z) * fz) / Mathf.Max(d, .1f); rv = Mathf.Clamp01((cos - .8f) * 5) * (1 - d / 17); }
                 }
                 O.opR = Mathf.Lerp(O.opR, rv * .9f, .2f); Mat.Cor(O.mRunas, HexA(0xf0d8ff, O.opR));
-                AnimarRitual(i, A, O, st, papel, dt, t);
+                AnimarRitual(i, A, O, st, papel, dt, t); AnimarVelas(g, A, O, st, dt, t);
             }
         }
     }

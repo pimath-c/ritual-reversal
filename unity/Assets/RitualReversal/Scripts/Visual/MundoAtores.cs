@@ -176,6 +176,7 @@ namespace RitualReversal.Visual
             if (alvos != null) foreach (var o in alvos) { Boneco b; if (o != null && bonecos.TryGetValue(Convert.ToInt32(o), out b)) { b.flinch = 1; b.reac = new Boneco.Reacao { forte = F == "empurrao" ? 1.6f : .7f, de = new Vector2(x, z) }; b.pausa = .05f; } }
         }
         static System.Collections.IEnumerator Depois(float s, Action f) { yield return new WaitForSeconds(s); f(); }
+        public void Depois(float s, Action f, bool _ = true) { StartCoroutine(Depois(s, f)); }
 
         // rastro do tiro (p0 e p1 no protótipo)
         public void Tracer(Vector3 p0, Vector3 p1)
@@ -219,7 +220,7 @@ namespace RitualReversal.Visual
         // ---------- bonecos, sigilos, coletáveis, rastros, sal ----------
         public void SyncActors(Jogo g, string papel, Ator eu, Vector3 cam, float lookYaw, float dt)
         {
-            GarantirAtores(); ultimoJogo = g; float t = Time.time; var vistos = new HashSet<int>();
+            GarantirAtores(); ultimoJogo = g; float t = Time.time; var vistos = new HashSet<int>(); euId = eu != null ? eu.id : -1; LerExecucoes(g);
             foreach (var a in g.actors)
             {
                 if (a == eu) continue; vistos.Add(a.id); Boneco b;
@@ -398,7 +399,7 @@ namespace RitualReversal.Visual
         }
 
         // chamado a cada quadro, com ou sem partida
-        public void AtualizarEfeitosQuadro(float dt) { GarantirAtores(); AtualizarParticulas(dt); AtualizarEfeitos(dt); }
+        public void AtualizarEfeitosQuadro(float dt) { GarantirAtores(); AtualizarParticulas(dt); AtualizarEfeitos(dt); QuadroV6(dt); }
         public void MostrarPartida(bool on) { if (atoresRaiz != null) atoresRaiz.gameObject.SetActive(on); }
     }
 }

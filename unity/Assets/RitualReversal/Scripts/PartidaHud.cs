@@ -211,9 +211,28 @@ namespace RitualReversal
         }
 
         // ---------- HUD ----------
+        // o véu da execução: o centro limpo, a borda fechando em sangue escuro (o #exeVeu do navegador)
+        Texture2D texVeuExe;
+        void VeuExecucao()
+        {
+            if (veuExe < .01f) return;
+            if (texVeuExe == null)
+            {
+                int N = 128; texVeuExe = new Texture2D(N, N, TextureFormat.RGBA32, false); var px = new Color32[N * N];
+                for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
+                    {
+                        float dx = (x + .5f) / N * 2 - 1, dy = (y + .5f) / N * 2 - 1, d = Mathf.Sqrt(dx * dx + dy * dy) / 1.4142f; Color c;
+                        if (d < .18f) c = new Color(0, 0, 0, 0); else if (d < .62f) c = Color.Lerp(new Color(30 / 255f, 0, 6 / 255f, 0), new Color(30 / 255f, 0, 6 / 255f, .75f), (d - .18f) / .44f); else c = Color.Lerp(new Color(30 / 255f, 0, 6 / 255f, .75f), new Color(0, 0, 0, .98f), (d - .62f) / .38f);
+                        px[y * N + x] = c;
+                    }
+                texVeuExe.SetPixels32(px); texVeuExe.Apply(); texVeuExe.wrapMode = TextureWrapMode.Clamp;
+            }
+            var o = GUI.color; GUI.color = new Color(1, 1, 1, veuExe); GUI.DrawTexture(new Rect(0, 0, W, H), texVeuExe, ScaleMode.StretchToFill); GUI.color = o;
+        }
         void Hud()
         {
             var m = Eu(); if (m == null) return; string papel = MeuPapel(); float agora = Time.unscaledTime;
+            VeuExecucao();
             // relógio e momento
             int mi = System.Math.Max(0, g.momento); string prox = mi + 1 < CFG.momentoNome.Length ? CFG.momentoNome[mi + 1] : null;
             var GA = g.altars.FirstOrDefault(A => A.state == "active" && A.grande);
