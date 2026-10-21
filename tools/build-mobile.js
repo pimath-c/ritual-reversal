@@ -19,6 +19,7 @@ for(const rel of usados){ const de=path.join(THREE,rel), para=path.join(WWW,'ven
 html=html.split(CDN).join('vendor/three/')
   .replace(tag,()=>'<script>\n'+sim+'\n</script>')
   .replace('<script src="sons.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','sons.js'),'utf8')+'</script>') // as gravações vão dentro do app
+  .replace('<script src="arma.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','arma.js'),'utf8')+'\n</script>') // armas, mãos e animação da primeira pessoa
   .replace('<head>','<head>\n<script>window.RR_APP=true;</script>');
 if(!html.includes('window.RR_APP=true')) throw new Error('não achei <head> para marcar o app');
 fs.writeFileSync(path.join(WWW,'index.html'),html);

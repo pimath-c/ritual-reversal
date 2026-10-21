@@ -551,7 +551,7 @@ function reclaimHuman(g,slotIdx,cid,name){
 
 
 // versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
-const VERSAO='5.8b', REGISTRO=3;
+const VERSAO='5.9', REGISTRO=3;
 
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.

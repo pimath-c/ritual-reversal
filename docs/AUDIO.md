@@ -62,6 +62,18 @@ Gerado por `python3 tools/montar-sons.py` (não edite à mão as tabelas). As gr
 | `descoberta` | descoberta da investigação e lances da noite | perc_bell2.flac | CC0 1.0 |
 | `chamariz_desfeito` | Lanterna desmascara um Chamariz | ambi_glass_hum.flac, mcl_mobs_mob_poof.ogg | CC0 1.0 |
 | `transferencia` | Transferência | mcl_portals_teleport.ogg, perc_door.flac | CC BY 3.0, CC0 1.0 |
+| `cartucho` | cartucho entrando pela portinhola da carabina | default_dig_metal.ogg, mcl_armor_equip_chainmail.ogg, perc_snap.flac | CC BY 3.0, CC0 1.0 |
+| `cartucho_fim` | último cartucho assentado no tubo | default_dug_metal.1.ogg, perc_snap.flac | CC0 1.0 |
+| `tambor_abre` | tambor do revólver abrindo | default_place_node_metal.2.ogg, perc_snap.flac | CC0 1.0 |
+| `tambor_fecha` | tambor do revólver fechando | default_dug_metal.2.ogg, mcl_armor_equip_chainmail.ogg, perc_snap.flac | CC0 1.0 |
+| `extrator` | extrator do revólver | default_dig_metal.ogg, mcl_armor_equip_chainmail.ogg | CC BY 3.0, CC0 1.0 |
+| `capsulas` | cápsulas caindo no chão | default_dig_metal.ogg, perc_bell2.flac | CC BY 3.0, CC0 1.0 |
+| `municiador` | municiador do revólver entrando e girando | default_dig_metal.ogg, mcl_armor_equip_chainmail.ogg, perc_snap.flac | CC BY 3.0, CC0 1.0 |
+| `roupa` | braço e roupa se mexendo | perc_swash.flac | CC0 1.0 |
+| `empunhar` | mão firmando a pegada | mcl_armor_equip_chainmail.ogg, perc_impact1.flac | CC0 1.0 |
+| `cetro_sacar` | cetro acordando ao sacar | ambi_dark_woosh.flac, ambi_glass_hum.flac | CC0 1.0 |
+| `runa_volta` | runa voltando a orbitar o cetro | ambi_glass_rub.flac, perc_bell2.flac | CC0 1.0 |
+| `bencao` | Exorcista toca a cruz do revólver | ambi_glass_hum.flac, perc_bell2.flac | CC0 1.0 |
 
 ## Créditos (gravações usadas)
 

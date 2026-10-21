@@ -429,6 +429,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="sim.js"></script>
 <script src="sons.js"></script>
+<script src="arma.js"></script>
 <script>
 (function(){
 'use strict';
@@ -1519,8 +1520,14 @@ function animateActor(m,a,x,z,yaw,dt,now){
     if(a.team==='H'){
       const mira=Math.PI/2+pitch*.7;
       if(a.sealing>=0){ B.position.y=-.38; U.legL.rotation.x=-1.5; U.legR.rotation.x=.25; U.torso.rotation.x=-.35; U.armR.rotation.set(1.1,0,0); U.armL.rotation.set(1.2+Math.sin(t*3)*.08,0,.2); }
-      else if(a.reloadT>0){ const p=1-a.reloadT/1.6; U.armR.rotation.set(.9+Math.sin(p*Math.PI)*.4,0,-.3); U.armL.rotation.set(.9+Math.sin(p*Math.PI*3)*.4,0,.4); U.gun.rotation.z=Math.sin(p*Math.PI)*.8; }
-      else { U.armR.rotation.set(mira-A.kick*.45,0,0); U.armL.rotation.set(mira-.1-A.kick*.3,0,.45); U.torso.rotation.x+=A.kick*.08; }
+      else if(a.reloadT>0){ const T=1.6-a.reloadT, en=(x,b,c)=>clamp((x-b)/(c-b),0,1), suv=x=>x*x*(3-2*x);
+        // a mesma coreografia da primeira pessoa (client/arma.js), em ponto grande para quem vê de longe
+        if(a.cls==='exorcista'){ const cima=suv(en(T,.08,.34))*(1-suv(en(T,.42,.58))), baixo=suv(en(T,.42,.58))*(1-suv(en(T,1.1,1.3)));
+          U.armL.rotation.set(1.05+cima*.5-baixo*.1,0,.45); U.armR.rotation.set(mira*.55+cima*.2-baixo*.3+(T>.4&&T<1.05?Math.sin((T-.4)*5)*.25:0),0,-.25);
+          U.gun.rotation.set(cima*-1.1+baixo*.9,0,(cima+baixo)*-.5); }
+        else { const rola=suv(en(T,0,.2))*(1-suv(en(T,1.05,1.25))), ciclo=T>.15&&T<1.1?Math.max(0,Math.sin((T-.15)/.29*Math.PI*2)):0;
+          U.armL.rotation.set(1.0+rola*.15,0,.4); U.armR.rotation.set(.85+ciclo*.45-rola*.1,0,-.35-ciclo*.25); U.gun.rotation.set(0,rola*.5,rola*1.0); } }
+      else { U.armR.rotation.set(mira-A.kick*.45,0,0); U.armL.rotation.set(mira-.1-A.kick*.3,0,.45); U.torso.rotation.x+=A.kick*.08; U.gun.rotation.set(0,0,0); }
       U.flash.material.opacity=A.kick>.7?1:0;
     } else {
       const noCirculo=V.altars.some(Al=>Al.state==='active'&&Math.hypot(Al.x-x,Al.z-z)<=CFG.circleR);
@@ -1653,28 +1660,11 @@ function updateParticles(dt){
   if(luzImpacto) luzImpacto.intensity=Math.max(0,luzImpacto.intensity-dt*28);
 }
 let vmH,vmFlash,vmC,vmOrb,vmMaoH,vmMaoC,vmCarabina,vmRevolver,vmCetro,vmRunas=[];
+// a primeira pessoa (armas, mãos, braços e as animações) fica em client/arma.js
+let ARMA=null; const FX0={x:0,y:0,z:0};
 function buildViewmodels(){
-  const luva=matCouro(0x2a1c14), manga=matPano(0x384858), mangaC=matPano(0x581320), peleC=new THREE.MeshStandardMaterial({color:0x2e1c1e,roughness:.8});
-  const mao=(pai,x,y,z,rx)=>{ const h=new THREE.Mesh(new THREE.SphereGeometry(.036,16,12),luva); h.scale.set(1,1.2,1.35); h.position.set(x,y,z); h.rotation.x=rx||0; pai.add(h); return h; };
-  const braco=(pai,x,y,z,rx,ry,mat)=>{ const b=new THREE.Mesh(new THREE.CylinderGeometry(.042,.052,.4,16),mat); b.position.set(x,y,z); b.rotation.set(rx,ry||0,0); pai.add(b); return b; };
-  vmH=new THREE.Group(); camera.add(vmH);
-  vmCarabina=armaCarabina(); vmH.add(vmCarabina.g);
-  mao(vmCarabina.g,0,-.06,.03,.4); braco(vmCarabina.g,.02,-.13,.2,1.2,0,manga);
-  mao(vmCarabina.g,-.01,-.035,-.25,.1);
-  vmRevolver=armaRevolver(); vmH.add(vmRevolver.g); vmRevolver.g.position.set(-.03,.075,-.13);
-  mao(vmRevolver.g,0,-.07,.02,.3); braco(vmRevolver.g,.02,-.15,.2,1.15,0,manga); mao(vmRevolver.g,-.03,-.09,.03,.2);
-  vmFlash=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.flame,color:0xffd08a,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0})); vmFlash.scale.set(.3,.3,1); vmH.add(vmFlash);
-  vmH.position.set(.2,-.17,-.42); vmH.scale.setScalar(.72);
-  vmC=new THREE.Group(); camera.add(vmC);
-  vmCetro=cetroOsso(0xb050ff); vmC.add(vmCetro.g); vmCetro.g.position.set(0,-.95,0);
-  vmOrb=vmCetro.halo;
-  // As runas em órbita são a munição: uma por sigilo disponível.
-  for(let k=0;k<7;k++){ const r=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.rune,color:0xe0a0ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.9})); r.scale.set(.035,.035,1); vmCetro.cab.add(r); vmRunas.push(r); }
-  vmMaoC=new THREE.Group(); vmCetro.g.add(vmMaoC); vmMaoC.position.set(0,.62,0);
-  const mc=new THREE.Mesh(new THREE.SphereGeometry(.04,16,12),peleC); mc.scale.set(1.2,1.4,1.2); vmMaoC.add(mc);
-  const bc=new THREE.Mesh(new THREE.CylinderGeometry(.06,.1,.46,18,1,true),mangaC); bc.material.side=THREE.DoubleSide; bc.position.set(.06,-.2,.08); bc.rotation.set(.5,0,-.35); vmMaoC.add(bc);
-  vmC.position.set(.26,-.12,-.5); vmC.rotation.set(-.3,0,.18); vmC.scale.setScalar(.6);
-}
+  ARMA=window.RR_ARMA({nivel:()=>PERF.nivelAtual,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula:()=>ejetarCapsula()});
+  ARMA.construir(); ({vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}=ARMA.vm); }
 
 // ================= AUDIO =================
 const AU={ctx:null,ok:false};
@@ -1971,8 +1961,8 @@ function evVisible(e,role,meId){
 }
 
 // ================= INPUT =================
-const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',map:'Tab',ping:'KeyZ',falas:'KeyV',caderno:'KeyJ'};
-const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',map:'Planta da catedral',ping:'Marcar para a equipe',falas:'Frases rápidas',caderno:'Caderno dos altares'};
+const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',sprint:'ShiftLeft',fire:'Mouse0',abil:'Mouse2',use:'KeyE',use2:'KeyT',sensor:'KeyQ',lantern:'KeyF',flare:'KeyG',reload:'KeyR',inspecionar:'KeyI',map:'Tab',ping:'KeyZ',falas:'KeyV',caderno:'KeyJ'};
+const BIND_LABEL={fwd:'Andar para frente',back:'Andar para trás',left:'Passo à esquerda',right:'Passo à direita',sprint:'Correr',fire:'Atacar',abil:'Habilidade da classe',use:'Interagir (segurar)',use2:'Transferência (segurar)',sensor:'Sensor Áurico',lantern:'Lanterna',flare:'Flare',reload:'Recarregar',inspecionar:'Inspecionar a arma',map:'Planta da catedral',ping:'Marcar para a equipe',falas:'Frases rápidas',caderno:'Caderno dos altares'};
 const KEYNAMES={Space:'Espaço',ShiftLeft:'Shift esq.',ShiftRight:'Shift dir.',ControlLeft:'Ctrl esq.',ControlRight:'Ctrl dir.',AltLeft:'Alt esq.',AltRight:'Alt dir.',Tab:'Tab',Enter:'Enter',Backquote:'`',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',CapsLock:'CapsLock',
   Mouse0:'Botão esq.',Mouse1:'Botão meio',Mouse2:'Botão dir.',Mouse3:'Mouse 4',Mouse4:'Mouse 5'};
 const keyLabel=c=>KEYNAMES[c]||(c||'').replace(/^Key/,'').replace(/^Digit/,'').replace(/^Numpad/,'Num ')||'—';
@@ -2033,6 +2023,8 @@ function pressed(code,e){
   if(SET.binds.lantern===code) C.f++;
   if(SET.binds.flare===code) C.g++;
   if(SET.binds.reload===code) C.r++;
+  if(SET.binds.inspecionar===code&&ARMA) ARMA.pedirInspecao();
+  if(code==='F9'&&ARMA&&MODE==='local'&&V&&V.phase==='play') ARMA.painel();   // vitrine das animações (ferramenta, não menu do jogo)
   if(SET.binds.ping===code) fazerPing();
   if(SET.binds.caderno===code){ CAD.aberto=!CAD.aberto; CAD.h=''; }
   if(code==='KeyN'&&TUT.ativo) pularPassoTutorial();
@@ -2235,13 +2227,13 @@ function handleEvents(list,online){
       case 'hit': if(e.a===id){ const cls=e.escudo?'escudo':e.derrubou?'kill':ultimoTiroCab?'head':''; marcaAcerto(cls);
           if(e.escudo) SFX.bloqueio(); else if(e.derrubou) SFX.derrubou(); else if(ultimoTiroCab) SFX.cabeca(); else SFX.hit();
           VM.pausa=e.escudo?.02:e.derrubou?.075:ultimoTiroCab?.055:.04; FX.fovPunch-=(e.derrubou?1.5:e.escudo?.2:.55)*camFx(); if(e.derrubou) flashAbate();
-          const mm=actorMeshes.get(e.alvo); if(mm) mm.userData.anim.pausa=e.derrubou?.09:.05; ultimoTiroCab=false; } break;
-      case 'hurt': if(e.a===id){ hurtT=.35; SFX.hurt(); if(e.sx!=null){ direcaoDano(e.sx,e.sz); const lado=Math.sign((e.sx-camera.position.x)*Math.cos(LOOK.yaw)-(e.sz-camera.position.z)*Math.sin(LOOK.yaw))||1; FX.rollImp+=lado*.025*camFx(); }
+          const mm=actorMeshes.get(e.alvo); if(mm) mm.userData.anim.pausa=e.derrubou?.09:.05; ultimoTiroCab=false; ARMA.acerto(e); } break;
+      case 'hurt': if(e.a===id){ hurtT=.35; SFX.hurt(); if(e.sx!=null){ direcaoDano(e.sx,e.sz); const lado=Math.sign((e.sx-camera.position.x)*Math.cos(LOOK.yaw)-(e.sz-camera.position.z)*Math.sin(LOOK.yaw))||1; FX.rollImp+=lado*.025*camFx(); ARMA.golpe(lado); } else ARMA.golpe(0);
           FX.kickP+=rand(-.02,.02)*camFx(); ESP.golpe={s:e.s,x:e.sx,z:e.sz,t:performance.now()}; }
         else { const mm=actorMeshes.get(e.a); if(mm){ const A=mm.userData.anim; A.flinch=1; if(e.sx!=null) A.golpe={x:e.sx,z:e.sz}; if(!A.reac||A.reac.t>.12) A.reac={t:0,x0:e.sx,z0:e.sz,forte:.8}; } } break;
       case 'burst': particulas(e.x,e.y,e.z,18,0xb050ff,3,.5,3,.8); particulas(e.x,e.y,e.z,8,0xff4a70,1.5,.7,1,.3); clarao(e.x,e.y,e.z,0xb050ff,2.2); SFX.estouro(e.x,e.z); legenda('estouro',e.x,e.z);
         esferaChoque(e.x,e.y,e.z,0xc070ff,1.4,.28); if(e.y<.6) anelChao(e.x,e.z,1.6,0x9a40ff,.45); break;
-      case 'reload': if(e.a===id) SFX.reload(null,null,e.a,true); else { SFX.reload(e.x,e.z,e.a); const em=V.actors.find(b=>b.id===e.a); if(!(em&&m&&em.team===m.team)) legenda('reload',e.x,e.z); } break;
+      case 'reload': if(e.a===id){ /* os sons da própria recarga saem dos eventos do clipe (client/arma.js) */ } else { SFX.reload(e.x,e.z,e.a); const em=V.actors.find(b=>b.id===e.a); if(!(em&&m&&em.team===m.team)) legenda('reload',e.x,e.z); } break;
       case 'ping': receberPing(e); break;
       case 'fala': receberFala(e); break;
       case 'presage': SFX.presage(); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); break;
@@ -2258,7 +2250,7 @@ function handleEvents(list,online){
       case 'stun': atordT=1; notaHab('Você foi atordoado','var(--gold-hi)'); FX.kickP+=.03; break;
       case 'momento': anunciar(e.nome,e.i===1?'Os altares despertam':'Os rituais aceleram e a névoa se fecha'); SFX.bell(); marcoLT('momento',e.nome); legenda('bell',null,null,'O sino da catedral'); break;
       case 'grande': iniciarGrande(e); break;
-      case 'hab': efeitoHabilidade(e,e.a===id); SFX.hab&&SFX.hab(e.cls,e.x,e.z); if(e.a!==id) legenda('hab',e.x,e.z,FEITICOS[e.f]?FEITICOS[e.f].nome:'Feitiço',FEIT_BY_TEAM.C.includes(e.f)?'cult':'');
+      case 'hab': efeitoHabilidade(e,e.a===id); if(e.a===id&&ARMA) ARMA.hab(e.f); SFX.hab&&SFX.hab(e.cls,e.x,e.z); if(e.a!==id) legenda('hab',e.x,e.z,FEITICOS[e.f]?FEITICOS[e.f].nome:'Feitiço',FEIT_BY_TEAM.C.includes(e.f)?'cult':'');
         if(e.a===id){ const n=(e.alvos||[]).length; notaHab(HAB_TXT[e.f](n),n||['runa','veu','sal'].includes(e.f)?'var(--gold-hi)':'var(--muted)'); const t=$('#tAb'); if(t){ t.classList.remove('pulso'); void t.offsetWidth; t.classList.add('pulso'); } if(e.f==='empurrao') FX.kickP+=.02; }
         break;
       case 'doom': { SFX.doom(); ritualFenda(e.altar); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
@@ -2287,9 +2279,9 @@ function predictFire(dt,m){
     if(m.ammo<=0){ localCd=.35; SFX.vazio(); if(m.reserve>0) C.r++; return; } // recarrega sozinho ao puxar o gatilho vazio
     // a cadência é a do servidor (Sim.CADENCIA_HUMANA): antes o cliente previa um tiro a cada 0,3 s e o servidor só
     // atirava a cada 0,42 s, e segurando o gatilho um em cada quatro tiros vistos e ouvidos não existia
-    const exo=m.cls==='exorcista'; localCd=Sim.CADENCIA_HUMANA; SFX.shot(null,null,null,true); muzzle.intensity=exo?3.6:3; vmFlash.material.opacity=1; VM.k=1; VM.tT=0; VM.som=false; VM.tiros++;
+    const exo=m.cls==='exorcista'; localCd=Sim.CADENCIA_HUMANA; SFX.shot(null,null,null,true); muzzle.intensity=exo?3.6:3; vmFlash.material.opacity=1; VM.k=1; VM.tT=0; VM.som=false; VM.tiros++; ARMA.tiro(exo);
     FX.kickP+=(exo?.03:.018)*Math.max(.35,camFx()); FX.spread=Math.min(1,FX.spread+(exo?.45:.35));
-  } else { if(m.fervor<CFG.sigilCusto){ localCd=.35; SFX.vazio(); return; } localCd=Sim.CADENCIA_HUMANA; SFX.sigil(null,null,null,true); VM.cast=1; VM.tT=0; VM.som=false; FX.spread=Math.min(1,FX.spread+.2); }
+  } else { if(m.fervor<CFG.sigilCusto){ localCd=.35; SFX.vazio(); return; } localCd=Sim.CADENCIA_HUMANA; SFX.sigil(null,null,null,true); VM.cast=1; VM.tT=0; ARMA.sigilo(); VM.som=false; FX.spread=Math.min(1,FX.spread+.2); }
 }
 
 // ================= VIEW SYNC =================
@@ -3308,7 +3300,9 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Do primeiro playtest (v5.8b)','Salvar um ritual que chegou a 85% ou mais vira o lance "Selo no último instante", mesmo que o progresso recue enquanto você sela. A loja não cobra munição com a reserva cheia. O registro baixado diz a dificuldade dos bots.'],
+const NOVIDADES=[['Mãos de verdade (v5.9)','As armas agora são seguradas por mãos com dedos e braços que se dobram. A carabina recarrega cartucho por cartucho pela portinhola (e aciona a alavanca quando estava vazia); o revólver abre o tambor, ejeta as cápsulas e usa um municiador de oito.'],
+  ['Sacar, inspecionar, gesticular','Cada arma tem seu jeito de sacar (a alavanca, a bênção na cruz do revólver, as vértebras do cetro acendendo). Tecla I inspeciona a arma; as habilidades têm um gesto da mão livre.'],
+  ['Do primeiro playtest (v5.8b)','Salvar um ritual que chegou a 85% ou mais vira o lance "Selo no último instante", mesmo que o progresso recue enquanto você sela. A loja não cobra munição com a reserva cheia. O registro baixado diz a dificuldade dos bots.'],
   ['Sons gravados','Tiros, impactos, passos por chão, sino, corvos, coro e o ritual inteiro agora usam gravações reais de bibliotecas abertas, com variação a cada vez. Créditos em Ajustes.'],
   ['Cada arma tem seu peso','A carabina coiceia curto e abre a alavanca a cada tiro; o revólver sobe mais e gira o tambor; o cetro recolhe as runas e as solta.'],
   ['Acerto que se sente','O acerto confirmado pelo servidor tem marca, som, uma pausa curta no coice e um empurrão leve na câmera. Golpe no escudo de osso aparece como bloqueio.'],
@@ -3485,7 +3479,7 @@ function tick(now){
     FX.fovPunch=lerp(FX.fovPunch,0,Math.min(1,dt*10)); FX.rollImp=lerp(FX.rollImp,0,Math.min(1,dt*7));
     FX.fov=lerp(FX.fov,SET.fov+(correndo?7:0),.1); const fovAlvo=FX.fov+FX.fovPunch; if(Math.abs(camera.fov-fovAlvo)>.05){ camera.fov=fovAlvo; camera.updateProjectionMatrix(); }
     FX.roll=lerp(FX.roll,pos.moving&&!down?-I.mx*.022:0,.1); FX.kickP=lerp(FX.kickP,0,.14);
-    viraParaGolpe(m,dt); camera.rotation.set(LOOK.pitch+FX.kickP+rand(-shake,shake),LOOK.yaw+rand(-shake,shake),FX.roll+FX.rollImp);
+    viraParaGolpe(m,dt); const ac=ARMA?ARMA.cam:FX0; camera.rotation.set(LOOK.pitch+FX.kickP+ac.x+rand(-shake,shake),LOOK.yaw+ac.y+rand(-shake,shake),FX.roll+FX.rollImp+ac.z);
     if(m.st==='dead') espectar(m,dt); else ESP.alvo=null;
     camera.updateMatrixWorld(); $('#cross').style.visibility=m.st==='dead'?'hidden':'';
     lantern.intensity=m.team==='H'&&m.lantern&&m.st==='alive'?3.2:0;
@@ -3494,27 +3488,10 @@ function tick(now){
     VM.sx=lerp(VM.sx,clamp(VM.mdx*.0009,-.05,.05),.2); VM.sy=lerp(VM.sy,clamp(VM.mdy*.0009,-.05,.05),.2); VM.mdx*=.7; VM.mdy*=.7;
     VM.ix=lerp(VM.ix,andando?I.mx:0,Math.min(1,dt*6)); VM.iz=lerp(VM.iz,andando?I.mz:0,Math.min(1,dt*5)); // a arma atrasa um pouco quando você começa a andar ou muda de lado
     const fb=VM.fase, bk=VM.bobK, bx=Math.cos(fb)*.011*bk, by=Math.abs(Math.sin(fb))*.013*bk+(1-bk)*Math.sin(now*.002)*.003;
-    const rl=m.reloadT>0?Math.sin((1-m.reloadT/1.6)*Math.PI):0; VM.spr=lerp(VM.spr,correndo?1:0,.12);
-    const exo=m.cls==='exorcista', arma=exo?vmRevolver:vmCarabina, P=PERFIL_ARMA[m.team==='C'?'cetro':exo?'revolver':'carabina'];
-    if(VM.pausa>0) VM.pausa=Math.max(0,VM.pausa-dt); else VM.tT+=dt;     // pausa de impacto: quando o tiro acerta, o coice segura no auge por um instante
-    const kc=coice(VM.tT,P), cy=cicloDe(VM.tT,P);
-    if(!VM.som&&VM.tT>=(P.somT||0)){ VM.som=true; if(P.som&&m.team==='H') tocar(P.som,{vol:.5,max:2,varia:.05}); if(P.capsula&&m.team==='H') ejetarCapsula(); }
-    vmH.position.set(.2-VM.sx+bx+VM.spr*.03-VM.ix*.012+cy*.008,-.17-VM.sy-by-rl*.12-VM.spr*.05-cy*.022,-.42+kc*P.recuoZ+VM.iz*-.008);
-    vmH.rotation.set(kc*P.sobe+rl*.25-VM.spr*.25+VM.iz*-.03,VM.spr*.6+VM.sx*2,rl*.9+kc*P.giro-cy*(exo?.06:.2)-VM.ix*.05);
-    vmCarabina.g.visible=!exo; vmRevolver.g.visible=exo;
-    if(vmCarabina.alav) vmCarabina.alav.rotation.x=exo?0:cy*.95;                                         // a alavanca abre e fecha
-    if(vmCarabina.cao) vmCarabina.cao.rotation.x=VM.tT<.03?-.15:-.5-cy*.35;                              // o cão cai no tiro e é armado pela alavanca
-    if(vmRevolver.tambor){ const a=clamp((VM.tT-P.ciclo[0])/(P.ciclo[1]-P.ciclo[0]),0,1); vmRevolver.tambor.rotation.z=(VM.tiros-1+(exo?suave(a):1))*Math.PI/3; }
-    if(vmRevolver.cao) vmRevolver.cao.rotation.x=exo?(VM.tT<.04?-.15:-.6-cy*.45):-.6;
-    vmFlash.position.copy(arma.boca).add(arma.g.position);
-    const kC=m.team==='C'?kc:0;
-    vmC.position.set(.26-VM.sx+bx+VM.spr*.02-VM.ix*.012,-.12-VM.sy-by-VM.spr*.08,-.5+kC*P.recuoZ); vmC.rotation.set(-.3+kC*P.sobe-VM.spr*.3,VM.sx*1.5,.18+VM.spr*.25+kC*P.giro-VM.ix*.05);
-    const cargas=Math.floor(m.fervor/CFG.sigilCusto), giro=now*.0015*(1+VM.cast*6);
-    // as runas em órbita se recolhem para a brasa no lançamento e voltam abrindo
-    const recolhe=m.team==='C'?(VM.tT<.06?VM.tT/.06:Math.max(0,1-(VM.tT-.06)/.22)):0, raioR=.085*(1-.8*recolhe)+.03*cy;
-    vmRunas.forEach((r,k)=>{ const on=k<cargas; r.visible=on; const a=giro+k/7*Math.PI*2; r.position.set(Math.cos(a)*raioR,.1+Math.sin(a*2+k)*.012,Math.sin(a)*raioR); r.material.rotation=a*2; });
-    vmOrb.material.opacity=.3+.5*(m.fervor/100)+VM.cast*.5; vmCetro.brasa.scale.setScalar(1+VM.cast*.5+recolhe*.6+Math.sin(now*.006)*.05); vmCetro.runa.material.rotation+=dt*(1.5+VM.cast*12);
-    vmH.visible=m.team==='H'&&m.st==='alive'; vmC.visible=m.team==='C'&&m.st==='alive';
+    // corpo da primeira pessoa (balanço, atraso do mouse e do passo); a arma, as mãos e os clipes ficam em client/arma.js
+    { const altC=m.team==='C'?V.altars.find(A=>A.state==='active'&&Math.hypot(pos.x-A.x,pos.z-A.z)<CFG.circleR):null;
+      ARMA.quadro(dt,m,{agora:now/1000,andando,correndo,canalizando:!!altC&&!(m.hold&&m.hold.key),altar:altC,
+        corpo:{x:-VM.sx+bx-VM.ix*.012,y:-VM.sy-by,z:VM.iz*-.008,rx:VM.iz*-.03,ry:VM.sx*1.4,rz:-VM.ix*.05}}); }
     // (o passo do jogador toca no ciclo do balanço, acima)
     // sanity fx (client side)
     const k=clamp((70-s)/70,0,1); $('#vignette').style.opacity=k.toFixed(2);
@@ -3527,7 +3504,7 @@ function tick(now){
     updateHUD(dt,m); atualizarPings(dt); atualizarCaderno(); atualizarFalasBots(); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
   } else {
     $('#vignette').style.opacity=0; renderer.domElement.style.filter='';
-    if(vmH){ vmH.visible=false; vmC.visible=false; } // fora da partida, nada de arma na mão
+    if(vmH){ vmH.visible=false; vmC.visible=false; ARMA.S.visivel=false; ARMA.S.recarga=null; } // fora da partida, nada de arma na mão
     const a=now*.00004; camera.position.set(6+Math.sin(a)*17,3.4,-4+Math.cos(a)*13); camera.lookAt(6,4.5,-4); camera.rotateY(-.28);
     if(V&&V.altars) syncAltars(dt);
   }
@@ -3536,7 +3513,9 @@ function tick(now){
     camera.updateMatrixWorld(); GRADE.uniforms.uCamMundo.value.copy(camera.matrixWorld); const tv=Math.tan(camera.fov*Math.PI/360); GRADE.uniforms.uTan.value.set(tv*camera.aspect,tv); GRADE.uniforms.uT.value=now*.001; }
   seguirLua(); // depois de a câmera andar neste quadro: céu, lua e sombra ficam centrados nela
   const tRq=performance.now();
-  renderer.info.reset(); if(composer&&USAR_POS) composer.render(); else renderer.render(scene,camera); INFO_QUADRO={chamadas:renderer.info.render.calls,triangulos:renderer.info.render.triangles};
+  // vitrine de animações: pode olhar a arma de lado, de cima ou de frente (ARMA.vista); o jogo não muda
+  const camR=(ARMA&&ARMA.camVista(camera))||camera; if(composer&&composer.passes[0]) composer.passes[0].camera=camR;
+  renderer.info.reset(); if(composer&&USAR_POS) composer.render(); else renderer.render(scene,camR); INFO_QUADRO={chamadas:renderer.info.render.calls,triangulos:renderer.info.render.triangles};
   const t1q=performance.now(); cpuMs=cpuMs*.9+(t1q-t0q)*.1; if(AUTOTEST) amostraQuadro(tRq-t0q,t1q-tRq);
 }
 function show(id,on){ document.getElementById(id).classList.toggle('on',on); }
@@ -3551,10 +3530,13 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 { const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">Esculpindo a catedral…<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
+// #vitrine: abre direto numa partida local com a vitrine das animações
+if(location.hash.startsWith('#vitrine')){ const iv=setInterval(()=>{ try{ if(!ARMA) return; if(!game) startLocal(); else if(game.phase==='intro') sendAct({type:'ready'});
+  if(V&&V.phase==='play'){ clearInterval(iv); ARMA.painel(true); } }catch(e){ console.error(e); clearInterval(iv); } },500); }
 })();
 </script>
 </body>

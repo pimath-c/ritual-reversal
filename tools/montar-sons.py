@@ -275,9 +275,102 @@ def _():
     d = fade(ler('perc_door.flac', 0, 1.6, .8), sai=.8)
     return [pico(mix((t, 0, 0), (d, .1, -6)), -2)]
 
+# ---------- mecânica das armas na mão (v5.9: recargas, sacar, inspeção) ----------
+@receita('cartucho')        # cartucho entrando pela portinhola da carabina: mola da portinhola e latão raspando
+def _():
+    out = []
+    for tx in [1.55, 1.7, 1.45]:
+        a = fade(ler('default_dig_metal.ogg', 0, .07, tx, 'highpass=f=1100'), sai=.04)
+        b = fade(ler('perc_snap.flac', 0, .05, 1.9, 'highpass=f=2600'), sai=.03)
+        c = fade(ler('mcl_armor_equip_chainmail.ogg', .02, .07, 1.9, 'highpass=f=1800'), sai=.05)
+        out.append(pico(mix((a, 0, 0), (b, .004, -7), (c, .01, -12)), -6))
+    return out
+
+@receita('cartucho_fim')    # o polegar assenta o último cartucho no tubo: mais grave e seco
+def _():
+    a = fade(ler('default_dug_metal.1.ogg', 0, .1, 1.3, 'highpass=f=600'), sai=.06)
+    b = fade(ler('perc_snap.flac', 0, .05, 1.5, 'highpass=f=1800'), sai=.03)
+    return [pico(mix((a, 0, 0), (b, 0, -6)), -5)]
+
+@receita('tambor_abre')     # o tambor do revólver sai para o lado
+def _():
+    a = fade(ler('default_place_node_metal.2.ogg', 0, .12, 1.55, 'highpass=f=700'), sai=.07)
+    b = fade(ler('perc_snap.flac', 0, .05, 1.3, 'highpass=f=1500'), sai=.03)
+    return [pico(mix((b, 0, -4), (a, .012, 0)), -5)]
+
+@receita('tambor_fecha')    # o tambor volta com um tapa, a trava estala e ele ainda gira um pouco
+def _():
+    a = fade(ler('default_dug_metal.2.ogg', 0, .14, 1.35, 'highpass=f=500'), sai=.08)
+    b = fade(ler('perc_snap.flac', 0, .06, 1.15, 'highpass=f=1200'), sai=.04)
+    giro = fade(ler('mcl_armor_equip_chainmail.ogg', 0, .22, 2.2, 'highpass=f=2500'), sai=.16)
+    return [pico(mix((b, 0, -3), (a, 0, 0), (giro, .03, -14)), -3)]
+
+@receita('extrator')        # a vareta do extrator empurra as cápsulas para fora do tambor
+def _():
+    a = fade(ler('mcl_armor_equip_chainmail.ogg', 0, .16, 1.65, 'highpass=f=1200'), sai=.1)
+    b = fade(ler('default_dig_metal.ogg', 0, .06, 1.8, 'highpass=f=1500'), sai=.04)
+    return [pico(mix((b, 0, -3), (a, .01, 0)), -6)]
+
+@receita('capsulas')        # cápsulas de latão caindo e quicando no chão
+def _():
+    out = []
+    for semente in [3, 11]:
+        r = np.random.RandomState(semente); camadas = []
+        for k in range(7):
+            tx = 2.6 + r.rand() * 1.4; at = k * .045 + r.rand() * .05 + (.12 if k > 3 else 0)
+            p = fade(ler('perc_bell2.flac', 0, .09, tx, 'highpass=f=2200'), sai=.07, curva=3)
+            camadas.append((p, at, -2 - r.rand() * 8))
+        camadas.append((fade(ler('default_dig_metal.ogg', 0, .05, 2.1, 'highpass=f=2000'), sai=.03), .02, -6))
+        out.append(pico(mix(*camadas), -8))
+    return out
+
+@receita('municiador')      # os oito cartuchos do municiador entram nas câmaras; o botão gira e solta
+def _():
+    a = fade(ler('mcl_armor_equip_chainmail.ogg', 0, .12, 1.25, 'highpass=f=900'), sai=.08)
+    b = fade(ler('default_dig_metal.ogg', 0, .06, 1.5, 'highpass=f=1200'), sai=.04)
+    c = fade(ler('perc_snap.flac', 0, .05, 1.7, 'highpass=f=2200'), sai=.03)
+    return [pico(mix((a, 0, 0), (b, .02, -2), (c, .11, -4)), -5)]
+
+@receita('roupa')           # tecido e couro: o braço se mexe para a recarga ou para sacar
+def _():
+    out = []
+    for tx in [1.0, 1.15]:
+        w = fade(janela_pico('perc_swash.flac', .06, .16, taxa=tx, af='lowpass=f=2200,highpass=f=180'), ent=.02, sai=.1)
+        out.append(pico(w, -14))
+    return out
+
+@receita('empunhar')        # mão de luva batendo na arma ao firmar a pegada
+def _():
+    a = fade(ler('perc_impact1.flac', 0, .09, 1.6, 'lowpass=f=2600,highpass=f=220'), sai=.06)
+    b = fade(ler('mcl_armor_equip_chainmail.ogg', .03, .06, 1.2, 'highpass=f=1600'), sai=.04)
+    return [pico(mix((a, 0, 0), (b, .005, -12)), -9)]
+
+@receita('cetro_sacar')     # o cetro acorda: ar puxado e as vértebras zumbindo
+def _():
+    w = fade(janela_pico('ambi_dark_woosh.flac', .3, .35, taxa=1.15, af='highpass=f=120'), ent=.02, sai=.25)
+    h = fade(ler('ambi_glass_hum.flac', 0, .7, 1.4, 'highpass=f=300'), ent=.2, sai=.4)
+    return [pico(mix((w, 0, 0), (h, .15, -8)), -5)]
+
+@receita('runa_volta')      # uma runa volta a orbitar o cetro (o fervor recarregou um sigilo)
+def _():
+    a = fade(ler('ambi_glass_rub.flac', .2, .35, 1.8, 'highpass=f=900'), ent=.03, sai=.25)
+    b = fade(ler('perc_bell2.flac', 0, .3, 2.2, 'highpass=f=1500'), sai=.25, curva=3)
+    return [pico(mix((a, 0, 0), (b, .02, -10)), -14)]
+
+@receita('bencao')          # o Exorcista toca a cruz do cabo: prata cantando baixinho
+def _():
+    h = fade(ler('ambi_glass_hum.flac', .3, .8, 1.2, 'highpass=f=400'), ent=.08, sai=.5)
+    b = fade(ler('perc_bell2.flac', 0, .6, 1.6, 'highpass=f=900'), sai=.5, curva=3)
+    return [pico(mix((h, 0, 0), (b, .04, -9)), -12)]
+
 USO = {   # para que serve cada som no jogo (vai para docs/AUDIO.md)
   'tiro_carabina': 'tiro da carabina de alavanca (Soldado, Rastreador)', 'tiro_revolver': 'tiro do revólver (Exorcista)',
   'alavanca': 'ciclo da alavanca depois do tiro', 'cao': 'cão do revólver e tambor', 'recarga': 'recarga (abrir, cartuchos, fechar)',
+  'cartucho': 'cartucho entrando pela portinhola da carabina', 'cartucho_fim': 'último cartucho assentado no tubo',
+  'tambor_abre': 'tambor do revólver abrindo', 'tambor_fecha': 'tambor do revólver fechando', 'extrator': 'extrator do revólver',
+  'capsulas': 'cápsulas caindo no chão', 'municiador': 'municiador do revólver entrando e girando', 'roupa': 'braço e roupa se mexendo',
+  'empunhar': 'mão firmando a pegada', 'cetro_sacar': 'cetro acordando ao sacar', 'runa_volta': 'runa voltando a orbitar o cetro',
+  'bencao': 'Exorcista toca a cruz do revólver',
   'sigilo': 'sigilo lançado pelo cetro', 'estouro': 'sigilo estourando', 'impacto_pedra': 'bala na pedra', 'impacto_madeira': 'bala na madeira e nos troncos',
   'impacto_terra': 'bala no chão de terra', 'impacto_corpo': 'acerto confirmado (golpe em alguém)', 'derrubou': 'queda confirmada (para quem derrubou)',
   'dor': 'você levou dano', 'empurrao': 'Empurrão', 'passo_pedra': 'passos na catedral e no Claustro', 'passo_terra': 'passos nas trilhas',

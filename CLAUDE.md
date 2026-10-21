@@ -27,12 +27,13 @@ commits em português.
     node tools/build.js             # gera dist/ritual-reversal.html
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador.js   # Chromium, 13 vistas, sem erros
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/celular.js     # celular emulado com toque
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/vitrine.js [pasta] [regex]   # folhas de quadros das animações
     node tools/build-mobile.js && NODE_PATH=$(npm root -g) node tools/app.js     # app sem internet + servidor
     node tools/comparar-cs.js 2 1 40000 H   # porte C# (Unity) igual ao sim.js, bit a bit (precisa do Mono)
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.8b)
+## Estado atual (v5.9)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -109,6 +110,15 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - v5.8b (notas em `notas/v5.8b.md`, do primeiro registro de playtest humano): lance 'selo_limite' usa `A.maxProg`
   (o progresso recua até a etapa enquanto se sela sem canalização); `comprar` nega munição cheia (80) e 4 sinalizadores;
   registro baixado/servidor levam `dificuldade` (e `lab`, `papel` no cliente); `analisar.js` aceita um arquivo só.
+- v5.9 (notas em `notas/v5.9.md`, sistema em `docs/ANIMACAO.md`): primeira pessoa em `client/arma.js` (fábrica
+  `RR_ARMA(dependências)`, chamada em `buildViewmodels`; embutido por build.js/build-mobile.js e servido pelo servidor).
+  Mãos com esqueleto (16 ossos, 1 malha), braços por IK de dois ossos, clipes com chaves em quadros (corpo, arma,
+  alavanca, guindaste, tambor), mistura entre estados, camadas (PERFIL_ARMA, respiração, passo, tranco), luz de leitura
+  no shader dos materiais da primeira pessoa. Recargas: carabina pela portinhola (vazia com alavanca, tática sem),
+  revólver de 8 câmaras com guindaste, extrator e municiador; sacar, inspeção (tecla I), ajuste, gesto de habilidade,
+  corrida, selar, canalizar. Vitrine: F9 numa partida local ou `#vitrine`; `tools/vitrine.js` faz folhas de quadros
+  (`ESTUDIO=1`, `QUADROS=`, `VISTAS=jogador,lado,peca`). 12 sons novos em `montar-sons.py`. Terceira pessoa: recarga com a
+  mesma coreografia. Sem regra nova.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
@@ -136,4 +146,5 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Kenney/Sonniss estiverem liberados na rede do ambiente.
 - Playtests com 4 pessoas antes de mais conteúdo.
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
+  As mãos e animações da v5.9 (`client/arma.js`) ainda não foram portadas para o Unity.
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

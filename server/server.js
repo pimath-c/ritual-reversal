@@ -11,7 +11,7 @@ const LOGDIR=path.join(ROOT,'logs'); fs.mkdirSync(LOGDIR,{recursive:true});
 const TICK=1/30, SNAP_EVERY=1.5; // 30 Hz de simulação, 20 Hz de snapshots
 const RESERVA_MS=120000; // quanto tempo a vaga de quem caiu fica guardada
 
-const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8'],'/sons.js':['client/sons.js','application/javascript; charset=utf-8']};
+const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8'],'/sons.js':['client/sons.js','application/javascript; charset=utf-8'],'/arma.js':['client/arma.js','application/javascript; charset=utf-8']};
 const server=http.createServer((req,res)=>{
   const url=req.url.split('?')[0];
   if(url==='/api/salas'){ // salas públicas que ainda não começaram, para a lista da tela inicial
