@@ -14,6 +14,10 @@ commits em português.
 - `shared/sim.js` — simulação compartilhada (navegador e servidor): regras, mapa, navegação A* em grade, bots,
   snapshot. Mapa compacto: coordenadas da floresta escritas na planta original (`HALF0`) e mapeadas por `mataXZ`.
 - `client/index.html` — cliente inteiro (render, HUD, áudio, rede, controles de toque, níveis de qualidade).
+- `client/mundo.js` — a catedral, as pontes, o desfiladeiro e as peças do mapa da v6 (`RR_MUNDO`); `client/arma.js` — primeira
+  pessoa (mãos, clipes, inspeções); `client/skins.js` — skins das armas (`RR_SKINS`, ver `docs/SKINS.md`). Os três são
+  embutidos por build.js/build-mobile.js e servidos pelo servidor.
+- `docs/DIRECAO.md` — avaliação de direção da v6 (problemas por impacto, decisões, medições).
 - `server/server.js` — servidor autoritativo (30 Hz, snapshots a 20 Hz), salas de 4 letras.
 - `mobile/` — app Android (Capacitor 8). `.github/workflows/android.yml` compila o APK a cada envio
   (Actions → "APK Android" → Artifacts).
@@ -25,7 +29,9 @@ commits em português.
     node tools/protocolo.js         # servidor + clientes falsos
     python3 tools/montar-sons.py    # só se mudar uma gravação ou receita (precisa de ffmpeg ou pip install imageio-ffmpeg numpy)
     node tools/build.js             # gera dist/ritual-reversal.html
-    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador.js   # Chromium, 13 vistas, sem erros
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador.js   # Chromium, 17 vistas, Arsenal, velas, reagente, execução
+    node tools/fluxo.js                     # mapa: distâncias pelo A*, exposição, invariantes do design (grava dist/fluxo)
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/alturas.js     # nenhuma peça alta parece mais baixa do que bloqueia
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/celular.js     # celular emulado com toque
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/vitrine.js [pasta] [regex]   # folhas de quadros das animações
     node tools/build-mobile.js && NODE_PATH=$(npm root -g) node tools/app.js     # app sem internet + servidor
@@ -33,7 +39,7 @@ commits em português.
     node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v5.9)
+## Estado atual (v6)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -119,6 +125,17 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   corrida, selar, canalizar. Vitrine: F9 numa partida local ou `#vitrine`; `tools/vitrine.js` faz folhas de quadros
   (`ESTUDIO=1`, `QUADROS=`, `VISTAS=jogador,lado,peca`). 12 sons novos em `montar-sons.py`. Terceira pessoa: recarga com a
   mesma coreografia. Sem regra nova.
+- v6 (notas em `notas/v6.md`, avaliação em `docs/DIRECAO.md`): mapa novo em duas regiões (catedral em cruz no promontório,
+  `PROMONTORIO`/`CATEDRAL`; desfiladeiro `ABISMO` com três `TRAVESSIAS`: Ponte Grande, Ponte Caída, Aqueduto; mata com subáreas
+  e os reagentes nela), `ZONAS` com `luar`/`coberto` (`zonaDe`, `coberto`). Cobertura baixa bloqueia tiros e sigilos abaixo da
+  altura da peça (`raioParede` com BOX, `alturaAlvo`: 1,95/1,15/0,6; cabeça nos últimos 45 cm). Agachar (`inp.ag`, C/botão B,
+  ×0,5, `passoLeve` a 5 m; bots não agacham). Tudo portado ao C# e bit a bit no comparar-cs. Cliente: `client/mundo.js`
+  (catedral, pontes, paredões), muros arruinados nunca mais baixos que a colisão (`node tools/alturas.js` confere), execução
+  com pose/tremor/fecho por lado (`EXE`, `fxExecucao`, `#exeVeu`), reagentes por subárea (`REAG_TIPOS`, `modeloReagente`,
+  `atualizarReagentes`), velas-relógio no altar (`animarVelas`: vermelho-escuro = etapa garantida), ajoelhar em coleta/queima/
+  reanimar, Arsenal no menu (`ARS`, `startArsenal`), skins (`client/skins.js`, 9, três por arma; `vis` no hello e no lobby),
+  três inspeções novas (mecânica, exibição, inquietante), 12 sons novos CC0 via conquest e ambiente por lugar (`ambientePorLugar`).
+  `VERSAO` 6.0. Bots, 400 noites: culto 38–40% (alvo do design 45–55%).
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
@@ -145,6 +162,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - Sons: ouvir em fones e acertar volumes; trocar o tiro montado por gravação de arma quando Freesound/OpenGameArt/
   Kenney/Sonniss estiverem liberados na rede do ambiente.
 - Playtests com 4 pessoas antes de mais conteúdo.
+- Unity: o visual (`Scripts/Visual/Mundo*.cs`) ainda monta o mapa antigo; a simulação, a navegação e o mapa.json já são os
+  da v6. Faltam no Unity: a catedral da v6 (`client/mundo.js`), as skins, as inspeções novas, a execução, os reagentes e as velas.
+- v6 sem gente: equilíbrio entre bots ficou em 38–40% para o culto; os sons novos não foram ouvidos (ambiente sem áudio).
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
   As mãos e animações da v5.9 (`client/arma.js`) ainda não foram portadas para o Unity.
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

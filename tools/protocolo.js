@@ -18,10 +18,13 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
 (async()=>{
   for(let i=0;i<50&&!saida.includes('rodando');i++) await espera(100);
   const A=cliente('Ana'), B=cliente('Beto'); await A.pronto; await B.pronto;
-  A.envia({t:'hello',create:true,name:'Ana',token:'tokA',publica:true});
+  A.envia({t:'hello',create:true,name:'Ana',token:'tokA',publica:true,vis:{carabina:'tempera',revolver:'<script>',cetro:'x'.repeat(40),lixo:'y'}});
   const w=await A.ate(m=>m.t==='welcome'); if(!w) return fim('sem welcome');
   B.envia({t:'hello',code:w.code,name:'Beto',token:'tokB'});
   if(!await B.ate(m=>m.t==='welcome')) return fim('segundo cliente não entrou');
+  // v6: a skin de cada jogador chega aos outros pelo lobby; só nomes curtos em minúsculas passam, o resto some
+  { const lb=await B.ate(m=>m.t==='lobby'&&m.players&&m.players.length===2), ana=lb&&lb.players.find(p=>p.name==='Ana');
+    if(!ana||JSON.stringify(ana.vis)!=='{"carabina":"tempera"}') falha('skins no lobby: '+JSON.stringify(ana&&ana.vis)); else console.log('  skins no lobby: '+JSON.stringify(ana.vis)+' (o resto descartado)'); }
   // sala pública aparece na lista; chat chega a todos da sala, sem tags e com limite de tamanho
   { const l=await (await fetch(`http://localhost:${PORT}/api/salas`)).json(); if(!l.some(r=>r.code===w.code&&r.jogadores===2&&r.anfitriao==='Ana')) falha('sala pública fora da lista: '+JSON.stringify(l)); else console.log('  lista de salas: '+l.map(r=>r.code+' ('+r.jogadores+')').join(', ')); }
   A.envia({t:'chat',msg:'<b>oi</b> '+'x'.repeat(300)}); const ch=await B.ate(m=>m.t==='chat'); if(!ch) falha('chat não chegou'); else if(ch.msg.includes('<')||ch.msg.length>140||ch.de!=='Ana') falha('chat sem limpeza: '+JSON.stringify(ch).slice(0,80)); else console.log('  chat: chegou limpo ('+ch.msg.length+' caracteres)');
@@ -51,7 +54,7 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
   while(Date.now()-t0<6000){ seq++; for(const C of [A,B]) C.envia({t:'in',seq,dt:1/30,mx:0,mz:-1,sp:true,yaw:Math.sin(seq/20),pitch:0,fire:seq%10===0,use:false,use2:false,c:{q:0,f:0,g:0,r:0,ab:0}}); await espera(33); }
   const taxa=(A.snaps-s0)/6; console.log(`  snapshots: ${taxa.toFixed(1)}/s (meta 20)`); if(taxa<15) falha('poucos snapshots');
   const eu=A.ultimo.s.actors.find(a=>a.id===A.ultimo.you); if(!eu) falha('snapshot sem o próprio personagem');
-  else { console.log(`  Ana andou até (${eu.x.toFixed(1)}, ${eu.z.toFixed(1)}) no papel ${eu.team}`); if(Math.hypot(eu.x-(eu.team==='H'?-132:132),eu.z)<3) falha('personagem não se moveu'); }
+  else { console.log(`  Ana andou até (${eu.x.toFixed(1)}, ${eu.z.toFixed(1)}) no papel ${eu.team}`); const sp=Sim.SPAWN[eu.team]; if(sp&&Math.hypot(eu.x-sp.x,eu.z-sp.z)<3) falha('personagem não se moveu'); }
   // integridade: o que chegou a cada cliente durante a partida respeita a equipe e o alcance dos sons
   { for(const C of [A,B]){ const S=C.msgs.filter(m=>m.t==='snap'); if(!S.length) continue; const meuId=C.ultimo.you, papel=C.ultimo.s.actors.find(a=>a.id===meuId).team;
       let ruins=0, vistos=0;

@@ -11,7 +11,7 @@ const LOGDIR=path.join(ROOT,'logs'); fs.mkdirSync(LOGDIR,{recursive:true});
 const TICK=1/30, SNAP_EVERY=1.5; // 30 Hz de simulação, 20 Hz de snapshots
 const RESERVA_MS=120000; // quanto tempo a vaga de quem caiu fica guardada
 
-const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8'],'/sons.js':['client/sons.js','application/javascript; charset=utf-8'],'/arma.js':['client/arma.js','application/javascript; charset=utf-8'],'/mundo.js':['client/mundo.js','application/javascript; charset=utf-8']};
+const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8'],'/sons.js':['client/sons.js','application/javascript; charset=utf-8'],'/arma.js':['client/arma.js','application/javascript; charset=utf-8'],'/mundo.js':['client/mundo.js','application/javascript; charset=utf-8'],'/skins.js':['client/skins.js','application/javascript; charset=utf-8']};
 const server=http.createServer((req,res)=>{
   const url=req.url.split('?')[0];
   if(url==='/api/salas'){ // salas públicas que ainda não começaram, para a lista da tela inicial
@@ -28,7 +28,9 @@ let CID=1;
 function code(){ const L='ABCDEFGHJKLMNPQRSTUVWXYZ'; let c; do{ c=''; for(let i=0;i<4;i++) c+=L[Math.floor(Math.random()*L.length)]; }while(rooms.has(c)); return c; }
 function newRoom(){ const r={code:code(),clients:new Map(),host:null,slots:[0,1,2,3].map(i=>({team:i<2?'A':'B',cid:null,name:Sim.BOT_NAMES[i<2?'A':'B'][i%2]})),game:null,acc:0,snapAcc:0,logFile:null,logN:0,emptyT:0,reservas:new Map(),listada:false}; rooms.set(r.code,r); return r; }
 const send=(ws,o)=>{ if(ws.readyState===1) ws.send(JSON.stringify(o)); };
-function lobbyState(r){ return {t:'lobby',code:r.code,host:r.host,inGame:!!r.game,publica:r.listada,dif:r.dif||'normal',lab:r.lab||null,slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name}))}; }
+function lobbyState(r){ return {t:'lobby',code:r.code,host:r.host,inGame:!!r.game,publica:r.listada,dif:r.dif||'normal',lab:r.lab||null,slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name,vis:c.vis||null}))}; }
+// skins escolhidas no Arsenal (só aparência): só nomes curtos em minúsculas por arma; o cliente confere contra o catálogo
+function limparVis(v){ const o={}; if(v&&typeof v==='object') for(const k of ['carabina','revolver','cetro']) if(typeof v[k]==='string'&&/^[a-z]{1,16}$/.test(v[k])) o[k]=v[k]; return o; }
 function broadcastLobby(r){ const m=lobbyState(r); r.clients.forEach(c=>send(c.ws,m)); }
 function seat(r,c){
   const hA=r.slots.filter(s=>s.cid&&s.team==='A').length, hB=r.slots.filter(s=>s.cid&&s.team==='B').length;
@@ -46,7 +48,7 @@ wss.on('connection',ws=>{
     if(!m||typeof m!=='object'||Array.isArray(m)||typeof m.t!=='string') return; // null, números, listas: ignorados
     if(m.t==='hello'){ if(c.room) return; // já está numa sala: ignora o segundo pedido
       c.name=String(m.name||'Jogador').replace(/[<>]/g,'').slice(0,16)||'Jogador';
-      c.token=typeof m.token==='string'?m.token.slice(0,40):null;
+      c.token=typeof m.token==='string'?m.token.slice(0,40):null; c.vis=limparVis(m.vis);
       let r;
       if(m.create){ r=newRoom(); r.listada=m.publica===true; } else { r=rooms.get(String(m.code||'').toUpperCase()); if(!r) return send(ws,{t:'error',msg:'Sala não encontrada. Confira o código.'}); }
       if(r.game){

@@ -10,6 +10,7 @@ const W=Sim.WALLS, PI=Math.PI;
 // alturas visuais (as da prancha docs/conceito/catedral.svg)
 const ALT={lateral:15,clerestorio:27,cumeeira:38,transepto:27,empena:34,torreO:54,agulhaO:98,lanterna:48,agulhaC:88,torreL:30,abside:27};
 const merge=gs=>THREE.BufferGeometryUtils.mergeBufferGeometries(gs.map(g=>g.index?g.toNonIndexed():g),false);
+const _mats2={}, mA2=(k,f)=>_mats2[k]||(_mats2[k]=f());
 const add=(m,sombra)=>{ m.castShadow=sombra!==false; m.receiveShadow=true; world.add(m); return m; };
 // ---------------- materiais próprios ----------------
 const M={};
@@ -297,6 +298,26 @@ const nada=()=>{};
 const PECAS={
   catedral:nada, fachada:nada, torre_oeste:nada, torre_leste:nada, abside:nada, jube:nada, pilar_cruzeiro:nada, coluna_claustro:nada, coluna_abside:nada, abismo:nada, tanque:nada,
   claustro(w){ B(w.x1,w.x2,0,9.5,w.z1,w.z2,M.pedra,4); B(w.x1-.15,w.x2+.15,9.5,10,w.z1-.15,w.z2+.15,M.pedraEsc,2); },
+  // muro arruinado da mata: fiadas de blocos desencontrados sobre um miolo de pedra. O topo quebrado fica sempre ACIMA da
+  // altura da caixa (a colisão vai até w.h e uma parede alta para tiro e visão): o que se vê nunca é mais baixo do que
+  // o que bloqueia. Blocos só faltam acima de w.h; abaixo, o miolo fecha qualquer fresta.
+  ruina(w){ const aoX=(w.x2-w.x1)>=(w.z2-w.z1), L=Math.max(w.x2-w.x1,w.z2-w.z1), T=Math.min(w.x2-w.x1,w.z2-w.z1), cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2;
+    const blocos=[], miolo=[]; const caixa=(u1,u2,y1,y2,t1,t2,lista)=>{ const g=new THREE.BoxGeometry(u2-u1,y2-y1,t2-t1), uv=g.attributes.uv;
+      for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*(u2-u1)/2.5+vr(),uv.getY(i)*(y2-y1)/2.5+vr()); // cada bloco pega outro pedaço da textura
+      const um=(u1+u2)/2-L/2, tm=(t1+t2)/2; g.translate(aoX?um:tm,(y1+y2)/2,aoX?tm:um); lista.push(g); };
+    // topo: uma linha quebrada entre h e 1,35h, mais baixa nas pontas (as pontas caíram primeiro)
+    const topo=u=>{ const borda=Math.min(u,L-u)/Math.max(1,L*.25); return w.h*(1+.35*Math.min(1,borda)*(.35+.65*Math.abs(Math.sin(u*1.7+cx*.3)*Math.cos(u*.9+cz*.2)))); };
+    caixa(.04,L-.04,0,w.h,-T/2+.09,T/2-.09,miolo);
+    for(let y=0, fil=0; y<w.h*1.36; fil++){ const hr=.42+vr()*.16; let u=fil%2?-.4*vr():0;
+      while(u<L){ const lb=.8+vr()*.7, u1=Math.max(0,u), u2=Math.min(L,u+lb), um=(u1+u2)/2; u+=lb; if(u2-u1<.25) continue;
+        const tp=topo(um); if(y>=tp) continue; const y2=Math.min(y+hr,tp+.2); if(y>w.h&&vr()<.25) continue;
+        const ins=(vr()-.5)*.08, ins2=(vr()-.5)*.08; caixa(u1+.015,u2-.015,y+.012,y2-.012,-T/2+ins,T/2+ins2,blocos); }
+      y+=hr; }
+    const mm=new THREE.Mesh(merge(miolo),M.pedraEsc), mb=new THREE.Mesh(merge(blocos),M.pedra);
+    for(const m of [mm,mb]){ m.position.set(cx,0,cz); add(m); }
+    // entulho na base, dos dois lados (pedras soltas não entram na colisão: ficam rentes ao muro e baixas)
+    for(let k=0;k<Math.ceil(L/2.5);k++){ const bl=new THREE.Mesh(new THREE.DodecahedronGeometry(.25+vr()*.3,0),M.rocha); const t=vr()*L-L/2, lado=vr()<.5?-1:1, d=T/2+.25+vr()*.35;
+      bl.position.set(aoX?cx+t:cx+lado*d,.12,aoX?cz+lado*d:cz+t); bl.scale.y=.6; bl.rotation.set(vr()*3,vr()*3,0); add(bl); } },
   limite(w){ const norte=w.z2<=-Sim.HALF.z+.01, D0=Sim.DESFILADEIRO; const muro=(x1,x2)=>{ B(x1,x2,0,w.h,w.z1,w.z2,MAT.wall); B(x1-.15,x2+.15,w.h,w.h+.3,w.z1-.15,w.z2+.15,MAT.wallDark); };
     if(norte){ muro(w.x1,D0.x1); muro(D0.x2,w.x2); } else muro(w.x1,w.x2); },
   pedra(w){ B(w.x1,w.x2,0,w.h,w.z1,w.z2,M.pedra,4); if(w.h>2.2) B(w.x1-.1,w.x2+.1,w.h,w.h+.35,w.z1-.1,w.z2+.1,M.pedraEsc,2); },
@@ -323,7 +344,11 @@ const PECAS={
     const pedra=new THREE.Mesh(new THREE.BoxGeometry(1.1,.8,1.1),M.pedraClara); pedra.position.set(x,w.h-6.2,z+5.7); add(pedra); },
   passarela(w){ const aoX=(w.x2-w.x1)>=(w.z2-w.z1), L=Math.max(w.x2-w.x1,w.z2-w.z1); for(let t=.2;t<L;t+=.45){ const tb=new THREE.Mesh(new THREE.BoxGeometry(aoX?.34:1.6,.08,aoX?1.6:.34),MAT.tabuas); tb.position.set(aoX?w.x1+t:(w.x1+w.x2)/2,.3+(vr()-.5)*.06,aoX?(w.z1+w.z2)/2:w.z1+t); tb.rotation.y=(vr()-.5)*.08; world.add(tb); }
     for(let t=1;t<L;t+=2.5) for(const s of [-1,1]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,1,5),MAT.wood); p.position.set(aoX?w.x1+t:(w.x1+w.x2)/2+s*.8,.2,aoX?(w.z1+w.z2)/2+s*.8:w.z1+t); world.add(p); } },
-  forno(w){ const x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2, r=(w.x2-w.x1)/2; const d=new THREE.Mesh(new THREE.SphereGeometry(r*1.05,14,8,0,PI*2,0,PI/2),new THREE.MeshStandardMaterial({color:0x2a241e,roughness:1,map:TEX.wall.map})); d.scale.y=w.h/r; d.position.set(x,0,z); add(d);
+  // forno de carvão em colmeia: parede reta até 1,6 m e cúpula por cima, para o ombro do forno ficar acima do olho
+  // (a caixa da simulação é alta; um domo baixo deixaria ver por cima do que bloqueia o tiro)
+  forno(w){ const x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2, r=(w.x2-w.x1)/2, mt=mA2('forno',()=>new THREE.MeshStandardMaterial({color:0x2a241e,roughness:1,map:TEX.wall.map}));
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(r*1.06,r*1.12,1.6,16),mt); base.position.set(x,.8,z); add(base);
+    const d=new THREE.Mesh(new THREE.SphereGeometry(r*1.06,16,8,0,PI*2,0,PI/2),mt); d.scale.y=(w.h+.5-1.6)/(r*1.06); d.position.set(x,1.6,z); add(d);
     const boca=new THREE.Mesh(new THREE.CircleGeometry(.45,10),new THREE.MeshBasicMaterial({color:0xff6a2a})); boca.position.set(x,.4,z+r*1.02); world.add(boca); FONTES.push({x,z:z+r+.5,y:.6,cor:0xff5a20,int:1.1,alc:7}); },
   cruz(w){ const x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2, madeira=w.h>5.5||Math.abs(z+27)>1; const mat=madeira?MAT.wood:M.pedraClara;
     const h=new THREE.Mesh(new THREE.BoxGeometry(.34,w.h,.34),mat); h.position.set(x,w.h/2,z); add(h); const v=new THREE.Mesh(new THREE.BoxGeometry(w.h*.42,.3,.3),mat); v.position.set(x,w.h*.74,z); add(v);

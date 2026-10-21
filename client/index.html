@@ -25,6 +25,21 @@ html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
 body{ height:100%; margin:0; background:var(--bg); color:var(--bone); overflow:hidden; font-family:var(--cond); -webkit-font-smoothing:antialiased; }
 #view{ position:fixed; inset:0; } #view canvas{ display:block; width:100%; height:100%; transition:filter .4s linear; }
 #hud{ position:fixed; inset:0; pointer-events:none; display:none; } #hud.on{ display:block; }
+/* Arsenal: a arma da primeira pessoa no meio da nave, o painel à direita */
+body.arsenal #hud, body.arsenal #scr{ display:none!important; }
+#arsenal{ position:fixed; top:0; right:0; bottom:0; width:min(400px,100vw); overflow:auto; z-index:40; padding:22px 20px 18px; box-sizing:border-box;
+  background:linear-gradient(to right,rgba(5,5,6,0),rgba(5,5,6,.86) 14%,rgba(5,5,6,.94)); color:var(--bone); font-family:var(--sans,system-ui,sans-serif); }
+#arsenal h2{ font-family:var(--serif,Georgia,serif); font-weight:400; font-size:30px; margin:0; color:var(--bone); letter-spacing:.02em; }
+#arsenal .col{ color:var(--gold); font-size:13px; margin:2px 0 12px; } #arsenal .txt{ color:var(--muted); font-size:13px; line-height:1.45; margin:0 0 12px; }
+#arsenal .abas{ display:flex; gap:6px; margin:0 0 12px; } #arsenal .abas button, #arsenal .acoes button{ flex:1; padding:8px 6px; background:rgba(255,255,255,.04); color:var(--bone); border:1px solid rgba(210,173,98,.35); border-radius:6px; cursor:pointer; font:inherit; font-size:13px; }
+#arsenal .abas button.sel{ background:rgba(210,173,98,.18); border-color:var(--gold); color:var(--gold-hi); }
+#arsenal .skin{ border:1px solid rgba(232,224,208,.14); border-radius:8px; padding:10px 12px; margin:0 0 8px; cursor:pointer; background:rgba(255,255,255,.02); }
+#arsenal .skin.sel{ border-color:var(--gold); background:rgba(210,173,98,.08); } #arsenal .skin:hover{ border-color:rgba(210,173,98,.6); }
+#arsenal .skin b{ font-family:var(--serif,Georgia,serif); font-weight:400; font-size:18px; } #arsenal .skin .of{ float:right; font-size:11px; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px; border-radius:10px; border:1px solid currentColor; }
+#arsenal .skin p{ margin:6px 0 0; font-size:12.5px; line-height:1.45; color:var(--muted); } #arsenal .skin.sel p{ color:#cfc6b6; }
+#arsenal .acoes{ display:flex; flex-direction:row; align-items:stretch; flex-wrap:wrap; gap:6px; margin:10px 0 6px; } #arsenal .acoes button{ flex:1 1 30%; width:auto; }
+#arsenal .rot{ color:var(--muted); font-size:12px; margin:10px 0 4px; } #arsenal .sair{ width:100%; margin-top:14px; }
+@media (max-width:700px){ #arsenal{ top:auto; height:58vh; width:100vw; background:rgba(5,5,6,.92); } }
 #hud{ left:env(safe-area-inset-left,0px); right:env(safe-area-inset-right,0px); } /* celular com entalhe: nada do HUD fica embaixo dele */
 .plate{ background:linear-gradient(180deg, rgba(38,43,50,.84), rgba(18,21,25,.88)); border:1px solid rgba(140,98,57,.45);
   clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px); }
@@ -166,6 +181,7 @@ body.toque #dica{ top:auto; bottom:14px; right:auto; left:calc(50% - 150px); wid
 #hurt{ background:radial-gradient(ellipse at center, transparent 45%, rgba(170,10,30,.55) 100%); }
 #blind{ background:#fff8ec; }
 /* Grande Ritual: vinheta carmim que pulsa, relógio em sangue, clarão ao começar */
+#exeVeu{ position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, rgba(0,0,0,0) 18%, rgba(30,0,6,.75) 62%, rgba(0,0,0,.98) 100%); }
 #grandeVinheta{ position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, transparent 42%, rgba(120,0,16,.55) 78%, rgba(40,0,6,.9) 100%); }
 #grandeClarao{ position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at 50% 45%, rgba(255,200,190,.95), rgba(190,20,40,.8) 55%, rgba(60,0,8,.9)); }
 body.grande #clock{ color:#ff5a6e; text-shadow:0 0 18px rgba(224,67,94,.85),0 2px 10px #000; }
@@ -374,7 +390,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 </head>
 <body>
 <div id="view"></div>
-<div id="vignette"></div><div id="grandeVinheta"></div><div id="hurt"></div><div id="blind"></div><div id="grandeClarao"></div>
+<div id="vignette"></div><div id="exeVeu"></div><div id="grandeVinheta"></div><div id="hurt"></div><div id="blind"></div><div id="grandeClarao"></div>
 <div id="loading">Esculpindo a catedral…</div>
 <div id="hud">
   <div id="top" class="plate">
@@ -434,6 +450,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 <script src="sons.js"></script>
 <script src="arma.js"></script>
 <script src="mundo.js"></script>
+<script src="skins.js"></script>
 <script>
 (function(){
 'use strict';
@@ -577,6 +594,7 @@ function buildTexturasExtras(){
 const matPano=(cor,r)=>new THREE.MeshStandardMaterial({color:cor,map:TEX.cloth.map,normalMap:TEX.cloth.normalMap,roughness:r||.95,emissive:0x000000});
 const matCouro=cor=>new THREE.MeshStandardMaterial({color:cor,map:TEX.leather.map,normalMap:TEX.leather.normalMap,roughness:.68,emissive:0x000000});
 const matMetal=(cor,r,m)=>new THREE.MeshStandardMaterial({color:cor,roughness:r==null?.35:r,metalness:m==null?.9:m,normalMap:TEX.metal.normalMap,emissive:0x000000});
+const papel=(m,p)=>{ m.userData.papel=p; return m; };   // papel do material nas skins (client/skins.js)
 const V2=(x,y)=>new THREE.Vector2(x,y), V3=(x,y,z)=>new THREE.Vector3(x,y,z);
 // Perfil torneado: a silhueta girada em volta do eixo vertical (túnicas, capuzes, chapéus, casacos).
 function torno(pts,mat,segs){ return new THREE.Mesh(new THREE.LatheGeometry(pts.map(q=>V2(q[0],q[1])),segs||28),mat); }
@@ -593,23 +611,26 @@ const cilZ=(r1,r2,len,mat,segs)=>{ const m=new THREE.Mesh(new THREE.CylinderGeom
 // ---------- armas ----------
 function armaCarabina(){ // Soldado: carabina de alavanca, nogueira e aço escurecido
   const g=new THREE.Group(), aco=matMetal(0x34373c,.4), latao=matMetal(0xb58c48,.28,1), mad=new THREE.MeshStandardMaterial({color:0x7a4626,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:.5,emissive:0});
-  const rec=lateral([[-.06,-.034],[.1,-.034],[.1,.05],[.03,.062],[-.05,.058],[-.06,.04]],.042,.006,aco); g.add(rec);
+  // papéis dos materiais para as skins (client/skins.js): a caixa, a alavanca e o cão têm acabamento próprio; cano e tubo, outro
+  const caixa=papel(aco.clone(),'caixa'); papel(aco,'aco'); papel(latao,'latao'); papel(mad,'madeira');
+  const rec=lateral([[-.06,-.034],[.1,-.034],[.1,.05],[.03,.062],[-.05,.058],[-.06,.04]],.042,.006,caixa); g.add(rec);
   const cano=cilZ(.015,.017,.64,aco); cano.position.set(0,.036,-.42); g.add(cano);
   const tubo=cilZ(.011,.011,.52,aco,16); tubo.position.set(0,.004,-.36); g.add(tubo);
   const fuste=lateral([[.1,-.028],[.38,-.022],[.4,-.008,.39,.014],[.1,.018]],.04,.007,mad); g.add(fuste);
   const coronha=lateral([[-.06,.04],[-.2,.026],[-.43,.034],[-.46,.03,-.465,.0],[-.46,-.105],[-.43,-.125,-.39,-.12],[-.2,-.068],[-.06,-.034]],.044,.009,mad); g.add(coronha);
   for(const z of [-.3,-.62]){ const b=new THREE.Mesh(new THREE.TorusGeometry(.021,.005,8,20),latao); b.position.set(0,.02,z); g.add(b); }
   // a alavanca gira presa na frente do guarda-mato: abre para baixo e volta a cada tiro
-  const alav=new THREE.Mesh(new THREE.TorusGeometry(.036,.0065,8,24,Math.PI*1.35),aco); alav.rotation.y=Math.PI/2; alav.rotation.x=Math.PI*.55;
+  const alav=new THREE.Mesh(new THREE.TorusGeometry(.036,.0065,8,24,Math.PI*1.35),caixa); alav.rotation.y=Math.PI/2; alav.rotation.x=Math.PI*.55;
   const pivo=new THREE.Group(); pivo.position.set(0,-.034,-.02); g.add(pivo); alav.position.set(0,-.028,.035); pivo.add(alav);
   const gat=new THREE.Mesh(new THREE.BoxGeometry(.006,.028,.008),latao); gat.position.set(0,-.045,.0); gat.rotation.x=.3; g.add(gat);
-  const cao=new THREE.Mesh(new THREE.BoxGeometry(.012,.03,.018),aco); cao.position.set(0,.07,.045); cao.rotation.x=-.5; g.add(cao);
+  const cao=new THREE.Mesh(new THREE.BoxGeometry(.012,.03,.018),caixa); cao.position.set(0,.07,.045); cao.rotation.x=-.5; g.add(cao);
   const mira=new THREE.Mesh(new THREE.BoxGeometry(.006,.018,.012),latao); mira.position.set(0,.058,-.73); g.add(mira);
   const alca=new THREE.Mesh(new THREE.BoxGeometry(.03,.014,.01),aco); alca.position.set(0,.06,-.13); g.add(alca);
   return {g,boca:V3(0,.036,-.755),alav:pivo,cao,janela:V3(.02,.045,.03)};
 }
 function armaRevolver(){ // Exorcista: revólver de prata gravada, cabo escuro com cruz
   const g=new THREE.Group(), prata=matMetal(0xc8ccd2,.22,1), escuro=matMetal(0x1c1d20,.45), mad=new THREE.MeshStandardMaterial({color:0x2e1a12,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:.45,emissive:0});
+  papel(prata,'prata'); papel(escuro,'escuro'); papel(mad,'madeira'); const cruzM=papel(prata.clone(),'cruz');
   const arm=lateral([[-.05,-.022],[.075,-.022],[.085,.042],[-.02,.05],[-.05,.03]],.03,.005,prata); g.add(arm);
   const cano=cilZ(.013,.014,.2,prata,20); cano.position.set(0,.03,-.17); g.add(cano);
   const nerv=new THREE.Mesh(new THREE.BoxGeometry(.012,.012,.2),prata); nerv.position.set(0,.045,-.17); g.add(nerv);
@@ -618,14 +639,14 @@ function armaRevolver(){ // Exorcista: revólver de prata gravada, cabo escuro c
   const tambor=cilZ(.036,.036,.066,prata,28); tamborG.add(tambor);
   for(let k=0;k<6;k++){ const a=k/6*Math.PI*2; const f=cilZ(.006,.006,.068,escuro,8); f.position.set(Math.cos(a)*.034,Math.sin(a)*.034,0); tamborG.add(f); }
   const cabo=lateral([[-.05,.012],[.012,-.015],[.0,-.1],[-.012,-.14,-.05,-.135],[-.075,-.07],[-.07,-.005]],.034,.007,mad); g.add(cabo);
-  for(const sx of [-1,1]){ const v=new THREE.Mesh(new THREE.BoxGeometry(.002,.05,.009),prata); v.position.set(sx*.021,-.07,.04); g.add(v); const h=new THREE.Mesh(new THREE.BoxGeometry(.002,.009,.03),prata); h.position.set(sx*.021,-.058,.04); g.add(h); }
+  for(const sx of [-1,1]){ const v=new THREE.Mesh(new THREE.BoxGeometry(.002,.05,.009),cruzM); v.position.set(sx*.021,-.07,.04); g.add(v); const h=new THREE.Mesh(new THREE.BoxGeometry(.002,.009,.03),cruzM); h.position.set(sx*.021,-.058,.04); g.add(h); }
   const guarda=new THREE.Mesh(new THREE.TorusGeometry(.025,.005,8,20,Math.PI*1.2),prata); guarda.rotation.y=Math.PI/2; guarda.rotation.x=Math.PI*.6; guarda.position.set(0,-.036,.0); g.add(guarda);
   const cao=new THREE.Mesh(new THREE.BoxGeometry(.01,.03,.016),escuro); cao.position.set(0,.058,.035); cao.rotation.x=-.6; g.add(cao);
   const mira=new THREE.Mesh(new THREE.BoxGeometry(.004,.014,.01),prata); mira.position.set(0,.05,-.265); g.add(mira);
   return {g,boca:V3(0,.03,-.28),tambor:tamborG,cao};
 }
 function cetroOsso(cor){ // Cultistas: cetro de vértebras com uma brasa presa em garras de osso
-  const g=new THREE.Group(), osso=new THREE.MeshStandardMaterial({color:0xd8caa6,roughness:.62,normalMap:TEX.wall.normalMap,emissive:0}), ferro=matMetal(0x2a2226,.5,.8);
+  const g=new THREE.Group(), osso=papel(new THREE.MeshStandardMaterial({color:0xd8caa6,roughness:.62,normalMap:TEX.wall.normalMap,emissive:0}),'osso'), ferro=papel(matMetal(0x2a2226,.5,.8),'ferro');
   const pts=[]; for(let i=0;i<=14;i++){ const t=i/14; pts.push(V3(Math.sin(t*9)*.012,t*1.0,Math.cos(t*7)*.01)); }
   const curva=new THREE.CatmullRomCurve3(pts);
   g.add(new THREE.Mesh(new THREE.TubeGeometry(curva,56,.016,12),osso));
@@ -694,6 +715,9 @@ const PECAS={
   estatua(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, g=new THREE.Group(), M=MAT.estatua; g.position.set(x,0,z); g.rotation.y=w.rot||0; world.add(g);
     const put=(geo,px,py,pz,rx,rz)=>{ const m=new THREE.Mesh(geo,M); m.position.set(px,py,pz); m.rotation.set(rx||0,0,rz||0); m.castShadow=true; g.add(m); return m; };
     const pose=w.pose|0, ajoelha=pose===1||pose===3, alt=ajoelha?.62:1;
+    /* v6: pedestal de pedra. A caixa da estátua é alta (bloqueia visão e tiro até 2,4 m); sem pedestal, a figura ajoelhada
+       ficava abaixo do olho e dava para ver por cima do que bloqueia (tools/alturas.js) */
+    const ped=ajoelha?1.05:.7; g.position.y=ped; meshBox(x-.42,x+.42,0,ped,z-.42,z+.42,MAT.pedraVelha||MAT.wall,1.5); meshBox(x-.5,x+.5,ped-.08,ped,z-.5,z+.5,MAT.pedraVelha||MAT.wall,1.5);
     const manto=torno([[.42,0],[.38,.3],[.3,.8*alt+.2],[.25,1.25*alt+.1],[.14,1.42*alt+.1],[0,1.45*alt+.1]],M,9); manto.castShadow=true; g.add(manto);
     const cab=put(new THREE.SphereGeometry(.17,8,6),0,1.62*alt+.1,-.03); cab.scale.set(1,1.15,1);
     const capuz=put(new THREE.ConeGeometry(.22,.42,8),0,1.72*alt+.12,.03); capuz.rotation.x=-.25;
@@ -702,7 +726,7 @@ const PECAS={
     else if(pose===1){ braco(-1,-1.3,.1); braco(1,-1.3,-.1); cab.rotation.x=.7; }                               // ajoelhado
     else if(pose===2){ braco(-1,.2,.3); braco(1,-2.9,-.2); cab.rotation.x=-.35; }                               // braço erguido para o céu
     else { braco(-1,-2.4,.55); braco(1,-2.4,-.55); cab.rotation.x=.55; g.rotation.z=.1; }                       // mãos no rosto
-    for(let k=0;k<3;k++){ const pd=new THREE.Mesh(new THREE.DodecahedronGeometry(.12+vr()*.12,0),M); pd.position.set((vr()-.5)*1.2,.08,(vr()-.5)*1.2); world.add(pd); pd.position.add(g.position); } },
+    for(let k=0;k<3;k++){ const pd=new THREE.Mesh(new THREE.DodecahedronGeometry(.12+vr()*.12,0),M); pd.position.set(x+(vr()-.5)*1.4,.08,z+(vr()-.5)*1.4); world.add(pd); } },
   rocha(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, L=w.x2-w.x1, D=w.z2-w.z1;
     const m=new THREE.Mesh(new THREE.DodecahedronGeometry(.5,1),MAT.rocha); m.scale.set(L*1.05,w.h*1.5,D*1.05); m.position.set(x,w.h*.42,z); m.rotation.y=vr()*3; m.castShadow=m.receiveShadow=true; world.add(m);
     if(vr()<.6){ const q=new THREE.Mesh(new THREE.DodecahedronGeometry(.5,0),MAT.rocha); q.scale.set(L*.5,w.h*.8,D*.5); q.position.set(x+(vr()-.5)*L,w.h*.25,z+(vr()-.5)*D); q.rotation.set(vr(),vr()*3,vr()); q.castShadow=true; world.add(q); } },
@@ -938,11 +962,7 @@ function buildWorld(){
   // Um conjunto fixo de luzes pontuais vai para as fontes mais próximas da câmera: com mais de 30 fontes
   // espalhadas pelo mapa, acender todas deixaria cada pixel pagando por luzes que ele nem alcança.
   for(let i=0;i<12;i++){ const L=new THREE.PointLight(0xff8a36,0,14,2); nivelLuz(L,i<3?0:i<5?1:i<8?2:3); scene.add(L); candleLights.push(L); }
-  reagentMeshes=Sim.REAG.map(([x,z])=>{ const g=new THREE.Group(); g.position.set(x,0,z); g.userData.dinamico=true;
-    const pl=new THREE.Mesh(boxGeo(.7,.9,.7,1.5),MAT.wall); pl.position.y=.45; pl.castShadow=true; g.add(pl);
-    const jar=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,.34,10),new THREE.MeshStandardMaterial({color:0x2a1016,roughness:.3,metalness:.2,emissive:0xb0142e,emissiveIntensity:1.4})); jar.position.y=1.08; g.add(jar);
-    const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xff3355,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.55})); halo.scale.set(1.1,1.1,1); halo.position.y=1.1; g.add(halo);
-    world.add(g); return {jar,halo,x}; });
+  reagentMeshes=Sim.REAG.map(([x,z],i)=>modeloReagente(REAG_TIPOS[i]||'sal',x,z));
   const N=PERF.minimo?500:PERF.leve?1200:2400,pos=new Float32Array(N*3); for(let i=0;i<N;i++){ pos[i*3]=rand(-HALF.x,HALF.x); pos[i*3+1]=rand(.3,12); pos[i*3+2]=rand(-HALF.z,HALF.z); }
   const dg=new THREE.BufferGeometry(); dg.setAttribute('position',new THREE.BufferAttribute(pos,3));
   RT.dust=new THREE.Points(dg,new THREE.PointsMaterial({size:.05,map:RT.glow,color:0xcdbb96,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false})); world.add(RT.dust);
@@ -1066,7 +1086,7 @@ function buildFloresta(){
 
   // telhado da cabana do Ermitão
   { const erm=Sim.NPCS.find(n=>n.id==='ermitao'), mad=WALLDEF.filter(w=>w.kind==='madeira'&&Math.hypot((w.x1+w.x2)/2-erm.x,(w.z1+w.z2)/2-erm.z)<9), cx=(Math.min(...mad.map(w=>w.x1))+Math.max(...mad.map(w=>w.x2)))/2, cz=(Math.min(...mad.map(w=>w.z1))+Math.max(...mad.map(w=>w.z2)))/2;
-    const tel=new THREE.Mesh(new THREE.ConeGeometry(8.2,3,4),MAT.tabuas); tel.position.set(cx,3.6+1.5,cz); // v6: só as paredes da cabana (a carvoaria também tem tábuas) tel.rotation.y=Math.PI/4; tel.scale.z=.85; tel.castShadow=true; world.add(tel);
+    const tel=new THREE.Mesh(new THREE.ConeGeometry(8.2,3,4),MAT.tabuas); tel.position.set(cx,3.6+1.5,cz); /* v6: só as paredes da cabana (a carvoaria também tem tábuas) */ tel.rotation.y=Math.PI/4; tel.scale.z=.85; tel.castShadow=true; world.add(tel);
     const cham=new THREE.Mesh(boxGeo(.8,2.2,.8,1),MAT.wall); cham.position.set(cx-3,5.2,cz+2.5); world.add(cham); }
   // Círculo de Pedras: runas pintadas no chão
   { const d=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.MeshBasicMaterial({map:RT.rune,transparent:true,opacity:.22,color:0xa3203a,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
@@ -1293,7 +1313,16 @@ function buildAltars(){
     // convergem no Farol e explodem na Fenda). Só aparecem com o ritual que este jogador pode ver.
     const runas=[]; for(let k=0;k<8;k++){ const sm=new THREE.SpriteMaterial({map:RT.rune,color:0xff3a5a,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false,fog:false});
       const sp=new THREE.Sprite(sm), a=k/8*Math.PI*2+.2; sp.position.set(Math.cos(a)*(R+.25),.4,Math.sin(a)*(R+.25)); sp.scale.set(.5,.5,1); sp.userData={a,bx:sp.position.x,bz:sp.position.z,flash:0,choque:0}; sp.visible=false; g.add(sp); runas.push(sp); }
-    return {circle,sealRing,beam,L,em,es,rm,bm,dial,runas,rv:{st:null,prog:0,seal:0,contest:0},au:null};
+    // v6: oito velas na borda do círculo, o relógio do ritual sem HUD. Cada vela é um oitavo do progresso; as de antes
+    // da última etapa garantida queimam vermelho-escuro (aquele progresso não volta), as outras laranja (o selo pode
+    // apagá-las). Selado: todas douradas. Fenda: derretem, chama roxa. Quem não sabe do ritual vê o que o servidor mostra.
+    const velas=[]; { const cera=new THREE.MeshStandardMaterial({color:0xd8ccb0,roughness:.6}), R=CFG.circleR*.94;
+      for(let k=0;k<8;k++){ const a=k/8*Math.PI*2+Math.PI/8, h=.34+(k%3)*.07, v=new THREE.Group(); v.position.set(Math.cos(a)*R,0,Math.sin(a)*R); g.add(v);
+        const c=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,h,8),cera); c.position.y=h/2; c.castShadow=true; v.add(c);
+        const base=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.03,10),MAT.wallDark||MAT.wall); base.position.y=.015; v.add(base);
+        const ch=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.flame,color:0xffa050,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0,toneMapped:false})); ch.scale.set(.09,.16,1); ch.position.y=h+.07; v.add(ch);
+        velas.push({v,c,ch,h,a,acesa:0,cor:new THREE.Color(0xffa050)}); } }
+    return {circle,sealRing,beam,L,em,es,rm,bm,dial,runas,velas,rv:{st:null,prog:0,seal:0,contest:0},au:null};
   });
 }
 // ---- characters by class ----
@@ -1330,7 +1359,7 @@ function makeCharacter(team,cls){
       g.scale.setScalar(1.12); }
     else { U.rune=put(new THREE.Mesh(new THREE.PlaneGeometry(.3,.3),new THREE.MeshBasicMaterial({map:RT.rune,color:0x9a4ad0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false})),U.torso,0,.08,-.345); U.rune.rotation.y=Math.PI; }
     U.gun=junta(U.armR,0,-.6,-.02);
-    const ce=cetroOsso(guard?0xff4a5a:0xb050ff); ce.g.position.set(0,-.36,0); U.gun.add(ce.g); U.cetro=ce;
+    const ce=cetroOsso(guard?0xff4a5a:0xb050ff); ce.g.position.set(0,-.36,0); U.gun.add(ce.g); U.cetro=ce; U.armaA=ce; U.armaK='cetro';
   } else {
     const exo=cls==='exorcista';
     const casaco=pisca(matPano(exo?0x34343c:0x384858)), couro=matCouro(0x4a3220), calca=matPano(0x22262c), pele=new THREE.MeshStandardMaterial({color:0x8a6450,roughness:.78,emissive:0});
@@ -1367,7 +1396,7 @@ function makeCharacter(team,cls){
       for(let k=0;k<12;k++){ const a=Math.PI*(.15+k*.058); put(new THREE.Mesh(new THREE.SphereGeometry(.013,8,6),matMetal(0x3a2a20,.5,.2)),U.torso,Math.cos(a)*.2,.66-Math.sin(a)*.2,-.24-Math.sin(a)*.06); } }
     else { const omb=put(new THREE.Mesh(new THREE.SphereGeometry(.15,20,14,0,Math.PI*2,0,Math.PI*.5),couro),U.armL,0,.02,0); omb.scale.set(1.05,.7,1.1); }
     U.gun=junta(U.armR,0,-.6,-.02); U.gun.rotation.x=-Math.PI/2;
-    const ar=exo?armaRevolver():armaCarabina(); ar.g.position.set(0,0,.02); U.gun.add(ar.g);
+    const ar=exo?armaRevolver():armaCarabina(); ar.g.position.set(0,0,.02); U.gun.add(ar.g); U.armaA=ar; U.armaK=exo?'revolver':'carabina';
     U.flash=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.flame,color:0xffd08a,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0})); U.flash.scale.set(.5,.5,1); U.flash.position.copy(ar.boca); ar.g.add(U.flash);
   }
   const todas=new Set(); g.traverse(o=>{ if(o.isMesh){ o.castShadow=true; if(o.material&&!o.material.isMeshBasicMaterial) todas.add(o.material); } });
@@ -1385,8 +1414,8 @@ function animateActor(m,a,x,z,yaw,dt,now){
   const v=Math.hypot(x-A.px,z-A.pz)/Math.max(dt,1e-3); A.px=x; A.pz=z;
   A.spd=lerp(A.spd,Math.min(v,8),.18);
   const st=a.st;
-  if(st==='dead'&&A.prevSt!=='dead'){ A.dieT=0; A.deitado=A.prevSt==='down'; } if(st!=='dead'&&A.dieT>=0){ A.dieT=-1; desvanecer(U,1); }
-  if(st==='down'&&A.prevSt==='alive'){ A.quedaT=0; A.reac=null; } else if(st==='alive'&&A.prevSt==='down'){ A.levantaT=0; } // transições: cair e levantar têm movimento, não estalam
+  if(st==='dead'&&A.prevSt!=='dead'){ A.dieT=0; A.deitado=A.prevSt==='down'; if(A.prevSt==='down'){ const E=execRecente(a.id); if(E&&E.k>.6) fxExecucao(x,z,a.team,E); } } if(st!=='dead'&&A.dieT>=0){ A.dieT=-1; desvanecer(U,1); }
+  if(st==='down'&&A.prevSt==='alive'){ A.quedaT=0; A.reac=null; setTimeout(()=>tocar('queda_corpo',{x,z,raio:32,vol:.75}),280); } else if(st==='alive'&&A.prevSt==='down'){ A.levantaT=0; } // transições: cair e levantar têm movimento, não estalam
   if(st!=='alive'&&st!=='down'){ A.quedaT=A.levantaT=null; A.reac=null; }
   A.prevSt=st;
   A.pausa=Math.max(0,(A.pausa||0)-dt); const dtA=A.pausa>0?0:dt;   // pausa de impacto: o passo congela por 50 ms no golpe
@@ -1455,6 +1484,12 @@ function animateActor(m,a,x,z,yaw,dt,now){
     if(a.team==='H'){
       const mira=Math.PI/2+pitch*.7;
       if(a.sealing>=0){ B.position.y=-.38; U.legL.rotation.x=-1.5; U.legR.rotation.x=.25; U.torso.rotation.x=-.35; U.armR.rotation.set(1.1,0,0); U.armL.rotation.set(1.2+Math.sin(t*3)*.08,0,.2); }
+      // executando: de pé sobre o corpo, inclinado, a arma apontada para baixo e a outra mão estendida, tremendo mais perto do fim
+      else if(a.hold&&a.hold.key&&a.hold.key.slice(0,3)==='exe'){ const k=a.hold.max?a.hold.t/a.hold.max:0; B.position.y=-.14; U.legL.rotation.x=-.55; U.legR.rotation.x=.25; U.torso.rotation.x=-.55; U.head.rotation.x=.4;
+        U.armR.rotation.set(1.25,0,0); U.armL.rotation.set(1.4+Math.sin(t*(9+k*18))*(.03+k*.07),0,.18); if(U.cetro&&U.gun) U.gun.rotation.x=-1.3; }
+      // coletando, queimando ou reanimando: ajoelhado, a mão no chão (de longe se lê "ocupado com algo no chão")
+      else if(a.hold&&a.hold.key&&/^(col|burn|rev)/.test(a.hold.key)){ B.position.y=-.42; U.legL.rotation.x=-1.45; U.legR.rotation.x=.3; U.torso.rotation.x=-.5; U.head.rotation.x=.35;
+        U.armR.rotation.set(.7,0,0); U.armL.rotation.set(1.05+Math.sin(t*6)*.06,0,.15); }
       else if(a.reloadT>0){ const T=1.6-a.reloadT, en=(x,b,c)=>clamp((x-b)/(c-b),0,1), suv=x=>x*x*(3-2*x);
         // a mesma coreografia da primeira pessoa (client/arma.js), em ponto grande para quem vê de longe
         if(a.cls==='exorcista'){ const cima=suv(en(T,.08,.34))*(1-suv(en(T,.42,.58))), baixo=suv(en(T,.42,.58))*(1-suv(en(T,1.1,1.3)));
@@ -1470,7 +1505,14 @@ function animateActor(m,a,x,z,yaw,dt,now){
     U.orbita.visible=noCirculo&&!moving;
     if(U.orbita.visible){ U.orbita.children.forEach((r,k)=>{ const an=t*1.4+k/5*Math.PI*2; r.position.set(Math.cos(an)*.95,1.1+Math.sin(t*2+k)*.18,Math.sin(an)*.95); r.material.rotation=an*2; r.material.opacity=.55+.35*Math.sin(t*3+k); });
       if(Math.random()<dt*14) particulas(x+rand(-.4,.4),.25,z+rand(-.4,.4),1,0xb050ff,.2,1.3,-1.8,.2); }
-    if(noCirculo&&!moving){ const s2=Math.sin(t*2.5+a.id)*.15; U.armL.rotation.set(2.7+s2,0,.35); U.armR.rotation.set(2.7-s2,0,-.35); U.gun.rotation.x=-2.7; U.head.rotation.x=.35; }
+    const hk=a.hold&&a.hold.key||'';
+    // culto executando um Caçador: de pé sobre o corpo, o cetro erguido apontado para baixo, a garra tremendo até o fim
+    if(hk.slice(0,3)==='exe'){ const k=a.hold.max?a.hold.t/a.hold.max:0; B.position.y=-.1; U.torso.rotation.x=-.5; U.head.rotation.x=.45; U.armR.rotation.set(2.2,0,-.2); U.gun.rotation.x=-1.0;
+      U.armL.rotation.set(1.4+Math.sin(t*(9+k*18))*(.03+k*.08),0,.2); }
+    // coletando ou reanimando: ajoelhado, a mão no chão
+    else if(/^(col|burn|rev)/.test(hk)){ B.position.y=-.42; U.legL.rotation.x=-1.45; U.legR.rotation.x=.3; U.torso.rotation.x=-.5; U.head.rotation.x=.35; U.armR.rotation.set(.6,0,-.1); U.gun.rotation.x=-.5;
+      U.armL.rotation.set(1.05+Math.sin(t*6)*.06,0,.15); }
+    else if(noCirculo&&!moving){ const s2=Math.sin(t*2.5+a.id)*.15; U.armL.rotation.set(2.7+s2,0,.35); U.armR.rotation.set(2.7-s2,0,-.35); U.gun.rotation.x=-2.7; U.head.rotation.x=.35; }
       else if(A.cast>0){ const ang=Math.PI/2+pitch*.7+A.cast*.2; U.armR.rotation.set(ang,0,0); U.gun.rotation.x=-ang-1.05; U.armL.rotation.set(-sw*.8,0,.1); }
       else { U.armL.rotation.set(-sw*.9,0,.08); U.armR.rotation.set(.35+sw*.5,0,-.08); U.gun.rotation.x=-.35; }
       if(U.rune) U.rune.material.color.setHex(a.runeT>0?0xffd0ff:0x9a4ad0);
@@ -1599,9 +1641,10 @@ function updateParticles(dt){
 }
 let vmH,vmFlash,vmC,vmOrb,vmMaoH,vmMaoC,vmCarabina,vmRevolver,vmCetro,vmRunas=[];
 // a primeira pessoa (armas, mãos, braços e as animações) fica em client/arma.js
-let ARMA=null, MUNDO=null; const FX0={x:0,y:0,z:0};
+let ARMA=null, MUNDO=null, SKINS=null; const FX0={x:0,y:0,z:0};
 function buildViewmodels(){
-  ARMA=window.RR_ARMA({nivel:()=>PERF.nivelAtual,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula:()=>ejetarCapsula()});
+  SKINS=window.RR_SKINS?window.RR_SKINS({THREE,RT,efeito,tocar}):null;
+  ARMA=window.RR_ARMA({nivel:()=>PERF.nivelAtual,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula:()=>ejetarCapsula(),SKINS});
   ARMA.construir(); ({vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}=ARMA.vm); }
 
 // ================= AUDIO =================
@@ -1765,9 +1808,25 @@ function construirChuva(){ const N=PERF.nivel>=3?2200:PERF.nivel===2?1400:PERF.n
   const pos=new Float32Array(N*6), dr=new Float32Array(N*3); for(let i=0;i<N;i++){ dr[i*3]=rand(-22,22); dr[i*3+1]=rand(0,18); dr[i*3+2]=rand(-22,22); }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   CL.mesh=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0x9fb4cc,transparent:true,opacity:0,depthWrite:false,fog:true})); CL.mesh.frustumCulled=false; scene.add(CL.mesh); CL.gotas=dr; }
-function chuvaSom(on){ if(!AU.ok) return; if(on&&!CL.au){ const c=AU.ctx, src=c.createBufferSource(); src.buffer=AU.noise; src.loop=true; const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=700;
+function chuvaSom(on){ if(!AU.ok) return; if(on&&!CL.au){ const c=AU.ctx, src=c.createBufferSource(), gr=AMOS.buf.chuva_laco&&AMOS.buf.chuva_laco[0]; src.buffer=gr||AU.noise; src.loop=true; /* v6: a chuva gravada, se carregou */ const hp=c.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=700;
     const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=4000; const g=c.createGain(); g.gain.value=0; src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(AU.master); src.start(); CL.au={src,lp,g}; }
   if(!on&&CL.au){ const au=CL.au; CL.au=null; au.g.gain.setTargetAtTime(0,AU.ctx.currentTime,.5); setTimeout(()=>{ try{ au.src.stop(); }catch(e){} },3000); } }
+// ================= AMBIENTE POR LUGAR (v6) =================
+// Fundos gravados que se misturam conforme onde você está: dentro da catedral, o ar parado de pedra (e a noite lá fora
+// abafada); na mata, o vento nas copas; no planalto e no desfiladeiro, os grilos a céu aberto; perto do Charco, os sapos;
+// perto dos fornos da Carvoaria, o fogo. Na mata, de vez em quando, uma coruja ou um galho rangendo, longe e de um lado.
+// Informação igual para os dois lados: nada aqui depende de onde estão os outros.
+const AMBL={lacos:{},prox:12,fornos:null};
+const AMB_LACOS=['mata_laco','noite_laco','cripta_laco','charco_laco','fogo_laco'];
+function ambientePorLugar(dt){ if(!AU.ok) return; const jogo=V&&V.phase==='play', c=AU.ctx, P=camera.position;
+  for(const n of AMB_LACOS){ if(!AMBL.lacos[n]){ const b=AMOS.buf[n]&&AMOS.buf[n][0]; if(!b) continue; const s=c.createBufferSource(); s.buffer=b; s.loop=true; s.loopStart=0; const g=c.createGain(); g.gain.value=0; s.connect(g); g.connect(AU.master);
+      s.start(0,Math.random()*b.duration); AMBL.lacos[n]={s,g}; } }
+  if(!AMBL.fornos) AMBL.fornos=Sim.WALLS.filter(w=>w.kind==='forno').map(w=>({x:(w.x1+w.x2)/2,z:(w.z1+w.z2)/2}));
+  const dentro=Sim.coberto(P.x,P.z), zona=Sim.zoneAt(P.x,P.z), mata=zona==='Floresta', cha=Math.hypot(P.x-46,P.z-40), forno=AMBL.fornos.reduce((m,f)=>Math.min(m,Math.hypot(P.x-f.x,P.z-f.z)),99);
+  const alvo={mata_laco:jogo?(dentro?0:mata?.5:.18):0,noite_laco:jogo?(dentro?.06:mata?.22:.38):0,cripta_laco:jogo&&dentro?.55:0,charco_laco:jogo&&!dentro?clamp(1-(cha-10)/35,0,1)*.6:0,fogo_laco:jogo&&!dentro?clamp(1-(forno-3)/20,0,1)*.5:0};
+  const t=c.currentTime; for(const n in AMBL.lacos) AMBL.lacos[n].g.gain.setTargetAtTime((alvo[n]||0)*(SET.volAmb==null?1:SET.volAmb),t,.8);
+  // avulsos da mata: coruja e galho rangendo, longe e de lado
+  if(jogo&&mata&&!dentro){ AMBL.prox-=dt; if(AMBL.prox<=0){ AMBL.prox=rand(18,42); const a=rand(0,Math.PI*2), d=rand(18,34); tocar(Math.random()<.55?'coruja':'rangido',{x:P.x+Math.cos(a)*d,z:P.z+Math.sin(a)*d,raio:60,vol:.45}); } } }
 function atualizarClima(dt,now){
   const jogo=V&&V.phase==='play', tipo=jogo?climaDe(chaveClima()+':'+(V.round||1)):'limpa', C=CLIMAS[tipo];
   if(tipo!==CL.tipo){ CL.tipo=tipo; CL.raioT=rand(12,30); }
@@ -1943,7 +2002,7 @@ function lock(){
 }
 function unlock(){ if(TQ.ativo||PAD.ativo){ locked=false; if(TQ.ativo) TQ.soltar(); } if(document.pointerLockElement) document.exitPointerLock(); }
 document.addEventListener('pointerlockchange',()=>{ locked=document.pointerLockElement===renderer.domElement; if(locked) ignoreMoveUntil=performance.now()+120; else { down.clear(); mouseL=false; } });
-renderer.domElement.addEventListener('click',()=>{ if(V&&V.phase==='play'&&!locked) lock(); });
+renderer.domElement.addEventListener('click',()=>{ if(V&&V.phase==='play'&&!locked&&!ARS.ativo) lock(); });   // no Arsenal o mouse fica solto para o painel
 document.addEventListener('mousemove',e=>{
   if(!locked||!V||V.phase!=='play'||(TQ.ativo&&!document.pointerLockElement)) return;
   const now=performance.now(); if(now<ignoreMoveUntil){ lastMoveT=now; return; }
@@ -2086,7 +2145,7 @@ const RECON={ativo:false,ate:0,tentativas:0,nome:'',timer:null};
 function connect(create,code,name){
   const proto=location.protocol==='https:'?'wss:':'ws:'; const sock=new WebSocket(APP?baseServidor().replace(/^http/,'ws'):proto+'//'+location.host); ws=sock;
   RECON.nome=name||RECON.nome;
-  sock.onopen=()=>sock.send(JSON.stringify({t:'hello',create,code,name:RECON.nome,token:TOKEN,publica:create&&SET.salaPublica!==false}));
+  sock.onopen=()=>sock.send(JSON.stringify({t:'hello',create,code,name:RECON.nome,token:TOKEN,publica:create&&SET.salaPublica!==false,vis:SKINS?SKINS.ESC:null}));
   sock.onmessage=e=>{ const m=JSON.parse(e.data);
     if(m.t==='error'){ if(RECON.ativo){ pararReconexao(m.msg); } else { $('#err')&&($('#err').textContent=m.msg); } sock.close(); return; }
     if(m.t==='welcome'){ MODE='online'; meCid=m.cid; NET.code=m.code; try{ sessionStorage.setItem('rr-sala',m.code); }catch(e){}
@@ -2154,7 +2213,8 @@ function handleEvents(list,online){
   for(const e of list){
     if(!evVisible(e,role,id)) continue;
     switch(e.type){
-      case 'feed': feed(e.msg,e.cls); anotarCaderno(e.msg); break;
+      case 'feed': { let msg=e.msg; if(/^Reagente coletado/.test(msg)&&m){ const i=Sim.REAG.reduce((b,r,j)=>Math.hypot(r[0]-m.x,r[1]-m.z)<Math.hypot(Sim.REAG[b][0]-m.x,Sim.REAG[b][1]-m.z)?j:b,0); msg=msg.replace('Reagente coletado',`Coletado: ${REAG_NOMES[REAG_TIPOS[i]]||'reagente'}`); }
+        feed(msg,e.cls); anotarCaderno(msg); break; }
       case 'sfx': if(e.k==='sigil'&&e.a!==id){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.cast=1; }
         if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte'||e.k==='passoLeve')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z,e.a); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
       case 'tracer': { const own=e.a===id; const p0=own?camera.localToWorld(new THREE.Vector3(.27,-.2,-.9)):new THREE.Vector3(e.x0,e.y0+.1,e.z0);
@@ -2251,11 +2311,107 @@ function syncRastros(){
       RASTROS.setMatrixAt(n,o.matrix); RASTROS.setColorAt(n,cor.setRGB(.55*k,.16*k,.12*k)); n++; } }
   RASTROS.count=n; RASTROS.instanceMatrix.needsUpdate=true; RASTROS.instanceColor.needsUpdate=true;
 }
+// ================= REAGENTES =================
+// Cada subárea da mata tem o seu reagente, com forma própria (antes era um frasco sobre um toco). O brilho vermelho
+// continua: é a leitura de "aqui há reagente" para os dois lados. Quem coleta ou queima segura E, e o modelo responde ao
+// progresso que o servidor manda (a raiz sobe do barro, as velas apagam uma a uma, o sal racha...). Só aparência.
+const REAG_TIPOS=['sal','sal','mandragora','mandragora','cinza','cera','flor','flor','corvo','corvo'];
+const REAG_NOMES={sal:'sal negro',mandragora:'raiz de mandrágora',cinza:'cinza de osso',cera:'cera de defunto',flor:'flor-de-sepultura',corvo:'penas de corvo'};
+function modeloReagente(tipo,x,z){ const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=(x*7.3+z*3.1)%6.28; g.userData.dinamico=true; world.add(g);
+  const P={tipo,g,x,z,partes:[],k:0,kAlvo:0,cresce:1,tinha:true,acao:''}, add=(m,sombra)=>{ m.castShadow=sombra!==false; m.receiveShadow=true; g.add(m); return m; };
+  const std=(cor,r,o)=>new THREE.MeshStandardMaterial(Object.assign({color:cor,roughness:r==null?.8:r},o||{}));
+  if(tipo==='sal'){ const pedra=add(new THREE.Mesh(new THREE.DodecahedronGeometry(.42,0),MAT.rocha)); pedra.scale.set(1.2,.55,1); pedra.position.y=.12;
+    const cr=std(0x121216,.12,{metalness:.35,emissive:0x2a0610,emissiveIntensity:.6});
+    for(let k=0;k<7;k++){ const a=k/7*6.28, c=add(new THREE.Mesh(new THREE.OctahedronGeometry(.07,0),cr)); c.scale.set(.7,2.4+(k%3)*.6,.7); c.position.set(Math.cos(a)*.18,.3,Math.sin(a)*.14); c.rotation.set(Math.sin(a)*.6,a,Math.cos(a)*.6); P.partes.push({m:c,r:c.rotation.clone(),p:c.position.clone()}); } }
+  else if(tipo==='mandragora'){ const lama=add(new THREE.Mesh(new THREE.CircleGeometry(.55,18),std(0x1c140c,.35)),false); lama.rotation.x=-Math.PI/2; lama.position.y=.015;
+    const raiz=new THREE.Group(); g.add(raiz); const pele=std(0x8a6a48,.85); const tronco=new THREE.Mesh(new THREE.CylinderGeometry(.06,.025,.36,7),pele); tronco.position.y=-.1; raiz.add(tronco);
+    for(const s of [-1,1]){ const p=new THREE.Mesh(new THREE.ConeGeometry(.025,.22,6),pele); p.position.set(s*.04,-.32,0); p.rotation.z=s*.35+Math.PI; raiz.add(p); const b=new THREE.Mesh(new THREE.ConeGeometry(.018,.14,5),pele); b.position.set(s*.06,-.06,0); b.rotation.z=s*1.1+Math.PI; raiz.add(b); }
+    raiz.position.y=-.05; P.raiz=raiz; const folha=std(0x2a4020,.7,{side:THREE.DoubleSide});
+    for(let k=0;k<7;k++){ const a=k/7*6.28, f=new THREE.Mesh(new THREE.SphereGeometry(.16,8,5),folha); f.scale.set(.45,.08,1.15); f.position.set(Math.cos(a)*.13,.14,Math.sin(a)*.13); f.rotation.set(-.6*Math.cos(a),-a+Math.PI/2,0); g.add(f); P.partes.push({m:f,r:f.rotation.clone(),p:f.position.clone()}); } }
+  else if(tipo==='cinza'){ const barro=std(0x6a3e26,.75); const pts=[[0,0],[.12,.01],[.17,.08],[.16,.2],[.1,.26],[.11,.29],[0,.29]].map(q=>new THREE.Vector2(q[0],q[1]));
+    const pote=add(new THREE.Mesh(new THREE.LatheGeometry(pts,14),barro)); const tampa=add(new THREE.Mesh(new THREE.CylinderGeometry(.12,.115,.03,14),barro)); tampa.position.y=.3; P.tampa=tampa;
+    const cinza=add(new THREE.Mesh(new THREE.SphereGeometry(.2,10,6,0,6.28,0,1.2),std(0x6a6862,1)),false); cinza.scale.y=.35; cinza.position.set(.3,0,.1);
+    for(let k=0;k<5;k++){ const o=add(new THREE.Mesh(new THREE.CylinderGeometry(.012,.015,.16,5),std(0xcab894,.7))); o.position.set(-.25+k*.07,.02,.22-k*.05); o.rotation.set(Math.PI/2,0,k); } }
+  else if(tipo==='cera'){ const laje=add(new THREE.Mesh(new THREE.BoxGeometry(.7,.08,.45),MAT.pedraVelha||MAT.wall)); laje.position.y=.04; const cera=std(0x14100e,.55);
+    P.chamas=[]; for(let k=0;k<5;k++){ const h=.12+((k*37)%5)*.04, v=add(new THREE.Mesh(new THREE.CylinderGeometry(.022,.026,h,8),cera)); v.position.set(-.25+k*.12,.08+h/2,(k%2?.08:-.06)); P.partes.push({m:v,h});
+      const ch=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.flame,color:0xffb060,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.9})); ch.scale.set(.06,.1,1); ch.position.set(v.position.x,.08+h+.04,v.position.z); g.add(ch); P.chamas.push(ch); } }
+  else if(tipo==='flor'){ const monte=add(new THREE.Mesh(new THREE.SphereGeometry(.5,12,6,0,6.28,0,1.1),std(0x2a2418,1))); monte.scale.y=.25;
+    const petala=std(0xe8e2d6,.6,{emissive:0x6a6a70,emissiveIntensity:.5,side:THREE.DoubleSide}), haste=std(0x3a4a2a,.8);
+    for(let k=0;k<3;k++){ const fl=new THREE.Group(); fl.position.set(-.15+k*.15,0,(k-1)*.08); g.add(fl); const hs=new THREE.Mesh(new THREE.CylinderGeometry(.008,.01,.34,5),haste); hs.position.y=.17; fl.add(hs);
+      const cab=new THREE.Group(); cab.position.y=.35; fl.add(cab); for(let j=0;j<5;j++){ const p=new THREE.Mesh(new THREE.SphereGeometry(.045,6,4),petala); p.scale.set(.5,.12,1); p.position.set(Math.cos(j*1.26)*.04,0,Math.sin(j*1.26)*.04); p.rotation.y=-j*1.26; cab.add(p); }
+      P.partes.push({m:cab}); } }
+  else { const pedra=add(new THREE.Mesh(new THREE.DodecahedronGeometry(.3,0),MAT.rocha)); pedra.scale.y=.45; pedra.position.y=.08; const pena=std(0x0c0c10,.45,{metalness:.2,side:THREE.DoubleSide});
+    for(let k=0;k<6;k++){ const f=new THREE.Mesh(new THREE.ConeGeometry(.03,.32,4),pena); f.scale.z=.25; f.position.set(-.04+k*.016,.22,0); f.rotation.set(0,0,-.5+k*.2); g.add(f); P.partes.push({m:f,r:f.rotation.clone()}); }
+    const fio=add(new THREE.Mesh(new THREE.TorusGeometry(.035,.006,5,12),std(0x8a6a40,.9))); fio.position.y=.12; fio.rotation.x=Math.PI/2;
+    const cranio=add(new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),std(0xd8ccb0,.6))); cranio.position.set(.16,.16,.04); const bico=add(new THREE.Mesh(new THREE.ConeGeometry(.018,.09,5),std(0x2a2620,.5))); bico.position.set(.22,.15,.04); bico.rotation.z=-Math.PI/2; }
+  P.halo=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0xff3355,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.5})); P.halo.scale.set(.85,.85,1); P.halo.position.y=.45; g.add(P.halo);
+  P.fogo=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.flame,color:0xffa040,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0})); P.fogo.scale.set(.7,1,1); P.fogo.position.y=.4; g.add(P.fogo);
+  return P; }
+// quem está coletando ou queimando cada reagente (o E segurado do snapshot), e o quanto já foi
+function atualizarReagentes(dt){ const agora=performance.now()*.001, alvo=new Map();
+  for(const a of V.actors){ const h=a.hold; if(!h||!h.key||!h.max) continue; const col=h.key.slice(0,3)==='col', bur=h.key.slice(0,4)==='burn'; if(!col&&!bur) continue; alvo.set(+h.key.slice(col?3:4),{k:h.t/h.max,acao:col?'col':'burn'}); }
+  V.reagents.forEach((R,i)=>{ const P=reagentMeshes[i]; if(!P) return; const A=alvo.get(i);
+    if(P.tinha&&!R.has) fimReagente(P); else if(!P.tinha&&R.has){ P.cresce=0; P.k=0; }
+    P.tinha=R.has; P.g.visible=R.has; if(!R.has) return;
+    P.cresce=Math.min(1,P.cresce+dt/1.2); P.g.scale.setScalar(.05+.95*(1-Math.pow(1-P.cresce,3)));
+    P.kAlvo=A?A.k:0; P.acao=A?A.acao:P.acao; P.k+=(P.kAlvo-P.k)*Math.min(1,dt*10); const k=P.k, col=P.acao==='col'?k:0, fogo=P.acao==='burn'?k:0;
+    P.halo.material.opacity=(.4+.12*Math.sin(agora*3+P.x))*(1-k*.6); P.fogo.material.opacity=fogo*.95*(.8+.2*Math.sin(agora*23)); P.fogo.scale.set(.5+fogo*.6,.7+fogo*.9,1);
+    if(fogo>0&&Math.random()<dt*20*fogo) particulas(P.x+rand(-.2,.2),.3,P.z+rand(-.2,.2),1,0x4a4038,.6,1.4,-1.2,.3);
+    if(fogo>0&&Math.random()<dt*3.5) tocar('estalo_fogo',{x:P.x,z:P.z,raio:22,vol:.5});
+    if(col>.02&&!P.somCol){ P.somCol=true; tocar('folhas',{x:P.x,z:P.z,raio:18,vol:.5}); } else if(col<=.02) P.somCol=false;
+    const t=P.tipo;
+    if(t==='sal') P.partes.forEach((p,j)=>{ const s=clamp(col*7-j,0,1); p.m.rotation.set(p.r.x*(1+s*.8),p.r.y,p.r.z*(1+s*.8)); p.m.position.y=p.p.y+s*.06; p.m.visible=s<.98; });
+    else if(t==='mandragora'){ P.raiz.position.y=-.05+col*.32; P.raiz.rotation.z=Math.sin(agora*17)*.06*col; P.partes.forEach(p=>{ p.m.rotation.x=p.r.x*(1+col*.9); p.m.position.y=p.p.y-col*.05; }); }
+    else if(t==='cinza'){ P.tampa.position.y=.3+col*.06; P.tampa.rotation.z=col*.5; if(col>.3&&Math.random()<dt*8) particulas(P.x,.35,P.z,1,0x8a8680,.3,1,-.3,.15); }
+    else if(t==='cera') P.chamas.forEach((ch,j)=>{ const apaga=clamp(col*5-j,0,1); ch.material.opacity=(1-apaga)*(.75+.25*Math.sin(agora*19+j)); ch.scale.set(.06,.1*(1-apaga*.7),1); });
+    else if(t==='flor') P.partes.forEach(p=>p.m.scale.setScalar(1-col*.75));
+    else P.partes.forEach((p,j)=>{ p.m.rotation.z=p.r.z+Math.sin(agora*21+j)*.15*col; p.m.position.y=.22+col*.08; }); }); }
+// o instante em que o reagente sai do mundo: cada um some do seu jeito (e o fogo deixa fumaça)
+function fimReagente(P){ const x=P.x, z=P.z, fogo=P.acao==='burn';
+  const cor={sal:0x1a1a22,mandragora:0x3a2a18,cinza:0x8a8680,cera:0x2a2018,flor:0xe8e2d6,corvo:0x0c0c10}[P.tipo]||0x444444;
+  if(fogo){ particulas(x,.4,z,40,0xffa040,2,.9,-1.4,.3); particulas(x,.4,z,30,0x2a2622,1,2.2,-.8,.4); }
+  else { particulas(x,.25,z,26,cor,1.4,1.1,2.2,.25); if(P.tipo==='mandragora'){ const m=me(); if(m&&Math.hypot(m.x-x,m.z-z)<20) tocar('evp',{x,z,vol:.25,raio:20,taxa:1.6}); } }
+  P.k=0; P.kAlvo=0; }
+// ================= EXECUÇÃO =================
+// Quem está executando quem sai do E segurado que o snapshot manda ('exe' + id da vítima). Com isso: a pose de quem
+// executa, o que a vítima vê (o mundo fechando, o coração acelerando, a câmera virada para quem executa) e o fecho que
+// todos por perto veem quando a morte chega. Só aparência: quem decide a morte é o servidor.
+const EXE=new Map();   // id da vítima → {por, team, k, t}
+function lerExecucoes(){ if(!V||!V.actors) return; const agora=performance.now();
+  for(const a of V.actors){ const h=a.hold; if(!h||!h.key||h.key.slice(0,3)!=='exe'||!h.max) continue; EXE.set(+h.key.slice(3),{por:a.id,team:a.team,k:h.t/h.max,t:agora}); }
+  for(const [id,E] of EXE) if(agora-E.t>3000) EXE.delete(id); }
+// recente: visto há menos de 2,5 s (um quadro travado, de compilação ou de rede, não pode engolir o fecho)
+function execRecente(id){ const E=EXE.get(id); return E&&performance.now()-E.t<2500?E:null; }
+// Caçador executa Cultista: coluna de luz pálida, o sinal queimado no chão (fica 40 s como marca escura) e brasas.
+// Culto executa Caçador: garras de sombra saem do chão e puxam o corpo, um círculo de sangue fica no lugar.
+let FX_EXE_N=0;   // quantos fechos de execução já apareceram (o teste no navegador confere)
+function fxExecucao(x,z,vitima,E){ FX_EXE_N++; const caca=vitima==='C', m=me(); const meu=m&&E&&E.por===m.id;
+  if(caca){ const col=new THREE.Mesh(new THREE.CylinderGeometry(.55,.9,16,20,1,true),new THREE.MeshBasicMaterial({color:0xffe6b0,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));
+      col.position.set(x,8,z); efeito(col,1.5,(o,k)=>{ o.material.opacity=Math.sin(Math.min(1,k*1.4)*Math.PI)*.8; const r=1-k*.55; o.scale.set(r,1,r); });
+      particulas(x,.4,z,60,0xffd890,2.6,1.6,-2.2,.5); particulas(x,.2,z,30,0x3a2a1a,1,2.4,-.6,.6); tocar('sino',{x,z,vol:.55,raio:60}); tocar('selo_quebra',{x,z,vol:.5}); }
+  else { const garras=new THREE.Group(); garras.position.set(x,0,z); const mt=new THREE.MeshStandardMaterial({color:0x140508,roughness:.6,emissive:0x3a0610,emissiveIntensity:.8});
+      for(let k=0;k<7;k++){ const a=k/7*Math.PI*2+rand(-.2,.2), c=new THREE.Mesh(new THREE.ConeGeometry(.09,1.9,6),mt); c.position.set(Math.cos(a)*.75,0,Math.sin(a)*.75); c.rotation.set(Math.sin(a)*.5,0,-Math.cos(a)*.5); c.userData.a=a; garras.add(c); }
+      efeito(garras,1.8,(o,k)=>{ const sobe=k<.25?CURVA_E(k/.25):1-CURVA_E((k-.25)/.75); o.children.forEach(c=>{ c.position.y=-1+sobe*1.25; c.scale.y=.3+sobe*.9; }); });
+      particulas(x,.5,z,50,0x8a0a1a,2,1.4,-.4,.6); particulas(x,.3,z,24,0x050203,1.2,2,-.3,.4); tocar('canal_quebra',{x,z,vol:.6}); tocar('assombro',{x,z,vol:.45}); tocar('sussurro',{x,z,vol:.6,raio:30}); }
+  tocar('queda_corpo',{x,z,vol:.6,raio:30,atraso:.15});
+  // a marca que fica no chão: quem passar depois lê que ali alguém foi executado
+  const marca=new THREE.Mesh(new THREE.CircleGeometry(1.5,32),new THREE.MeshBasicMaterial({map:RT.rune,color:caca?0x1a1208:0x3a0208,transparent:true,opacity:0,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
+  marca.rotation.x=-Math.PI/2; marca.position.set(x,.03,z); efeito(marca,40,(o,k)=>{ o.material.opacity=(k<.02?k/.02:1-Math.pow(k,3))*.75; });
+  if(caca){ const brilho=new THREE.Mesh(new THREE.CircleGeometry(1.6,32),new THREE.MeshBasicMaterial({map:RT.rune,color:0xffc060,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
+    brilho.rotation.x=-Math.PI/2; brilho.position.set(x,.05,z); efeito(brilho,2.4,(o,k)=>{ o.material.opacity=(1-k)*.9; o.material.rotation=k*.6; }); }
+  if(meu){ ARMA.executou(); FX.fovPunch-=1.2*camFx(); marcaAcerto('kill'); } }
+const CURVA_E=u=>1-Math.pow(1-Math.min(1,Math.max(0,u)),3);
+// skin da arma de outro jogador (a que ele escolheu no Arsenal e mandou ao entrar na sala) ou de um bot (uma por nome,
+// sempre a mesma). Só cor e acabamento: a silhueta e a brasa do culto não mudam.
+function visDeBot(nome){ let h=7; for(const ch of String(nome||'')) h=(h*31+ch.charCodeAt(0))>>>0; const o={}; for(const k of ['carabina','revolver','cetro']){ const L=SKINS.SKINS[k]; o[k]=L[(h>>>(k.length))%L.length].id; } return o; }
+function vestirAtor(m,a){ const U=m.userData; if(!SKINS||!U||!U.armaA) return; let vis=null;
+  if(a.cid&&MODE==='online'&&NET.lobby){ const p=(NET.lobby.players||[]).find(p=>p.cid===a.cid); vis=p&&p.vis; } else if(!a.cid) vis=visDeBot(a.name);
+  const v=SKINS.limpar(vis); SKINS.aplicar(U.armaA,U.armaK,v[U.armaK],false); }
 function syncActors(dt){
   const seen=new Set(), now=performance.now();
   for(const a of V.actors){ if(a.cid===meCid) continue; seen.add(a.id);
     let m=actorMeshes.get(a.id); if(a.hidden){ if(m) m.visible=false; continue; } // fora de vista: guarda o boneco escondido em vez de recriar
-    if(!m){ m=makeCharacter(a.team,a.cls); actorMeshes.set(a.id,m); }
+    if(!m){ m=makeCharacter(a.team,a.cls); vestirAtor(m,a); actorMeshes.set(a.id,m); }
     const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z, yaw=a._ryaw!=null?a._ryaw:a.yaw;
     animateActor(m,a,x,z,yaw,dt||.016,now);
     // Véu: silhueta escura e translúcida. Some quase por completo de longe; de perto ou sob a lanterna dá para ver o vulto.
@@ -2286,7 +2442,7 @@ function syncActors(dt){
     if(!m){ const col=p.kind==='reag'?0xff3355:p.kind==='ess'?0xb35cff:0xffd98a; m=new THREE.Mesh(new THREE.OctahedronGeometry(p.kind==='reag'?.18:.24),new THREE.MeshBasicMaterial({color:col,toneMapped:false})); world.add(m); pickMeshes.set(p.id,m); }
     m.position.set(p.x,.4+Math.sin(performance.now()*.003+p.id)*.08,p.z); m.rotation.y+=.03; }
   for(const [id,m] of pickMeshes) if(!pk.has(id)){ world.remove(m); descartar(m); pickMeshes.delete(id); }
-  V.reagents.forEach((R,i)=>{ const rm=reagentMeshes[i]; rm.jar.visible=R.has; rm.halo.visible=R.has; if(R.has) rm.halo.material.opacity=.45+.15*Math.sin(performance.now()*.003+rm.x); });
+  atualizarReagentes(dt);
   V.flares.forEach((f,i)=>{ const o=flareObjs[i]; if(f.t>0){ o.L.position.set(f.x,1.2,f.z); o.L.intensity=(f.t>1?2.6:2.6*f.t)*(.9+Math.random()*.2); o.s.position.set(f.x,.3,f.z); o.s.visible=true; o.s.material.opacity=Math.min(1,f.t); } else { o.L.intensity=0; o.s.visible=false; } });
 }
 function hunterSees(A){ const k=V.know[A.i]; return ['desperto','confirmado','chamariz','ativo'].includes(k); }
@@ -2350,6 +2506,19 @@ function animarRitual(i,A,O,st,dt,t){ const Rv=O.rv, P=A.prog||0, ativo=st==='ac
     if(Rv.contest>.3&&Math.random()<dt*16){ const a=Math.random()*6.283; jato(A.x+Math.cos(a)*CFG.circleR,.3,A.z+Math.sin(a)*CFG.circleR,-Math.cos(a),.6,-Math.sin(a),2,0xf3d58e,2.2,.3,.45,3); } } } // faíscas douradas do selo
 // revelação do EVP (só para quem ouviu): vozes sobem do altar em espiral
 function revelarEVP(x,z){ anelChao(x,z,2.4,0x9a6aff,1.1); for(let k=0;k<3;k++) setTimeout(()=>particulas(x,.4+k*.5,z,12,0xb08aff,.6,1.4,-1.4,1.2),k*160); }
+const VELA_COR={atual:new THREE.Color(0xffa050),garantida:new THREE.Color(0xc0182a),consagrada:new THREE.Color(0x9a5aff),farol:new THREE.Color(0xffe2a0),fenda:new THREE.Color(0x8a2aff)};
+function animarVelas(A,O,st,dt0,t){ if(!O.velas) return; const ag=performance.now()/1000, dt=Math.min(1,Math.max(0,ag-(O.velasT||ag))); O.velasT=ag;   /* tempo real: quadros lentos não atrasam o relógio */ const n=O.velas.length, cp=A.cp||0, canal=V.actors.some(a=>a.team==='C'&&a.st==='alive'&&!a.hidden&&Math.hypot(a.x-A.x,a.z-A.z)<CFG.circleR);
+  O.velas.forEach((V2,k)=>{ let alvo=0, cor=VELA_COR.atual, inclina=0, derrete=1;
+    if(st==='awake'){ alvo=k===0?.55:0; cor=VELA_COR.consagrada; }
+    else if(st==='active'){ alvo=clamp(A.prog*n-k,0,1); cor=(k+1)/n<=cp+1e-3?VELA_COR.garantida:VELA_COR.atual; if(canal) inclina=.6; if(A.seal>0) alvo*=1-A.seal*.35; }
+    else if(st==='farol'){ alvo=1; cor=VELA_COR.farol; }
+    else if(st==='fenda'){ alvo=.7; cor=VELA_COR.fenda; derrete=.35; }
+    V2.acesa+=(alvo-V2.acesa)*Math.min(1,dt*(alvo>V2.acesa?3:6)); V2.cor.lerp(cor,Math.min(1,dt*4));
+    const fl=V2.acesa, tr=.85+.15*Math.sin(t*(17+k)+k*2.1)*Math.sin(t*7.3+k);
+    V2.ch.material.opacity=fl*tr; V2.ch.material.color.copy(V2.cor); V2.ch.scale.set(.09*(.5+fl*.5),.16*(.4+fl*.6)*tr*(st==='farol'?1.5:1),1);
+    // canalizando: as chamas se deitam para o altar
+    V2.ch.position.set(-Math.cos(V2.a)*inclina*.06,V2.h*V2.c.scale.y+.07,-Math.sin(V2.a)*inclina*.06); V2.ch.material.rotation=inclina*.5*Math.sin(V2.a+Math.PI/2);
+    V2.c.scale.y+=(derrete-V2.c.scale.y)*Math.min(1,dt*.8); V2.c.position.y=V2.h*V2.c.scale.y/2; }); }
 function syncAltars(dt){
   const role=myRole(), m=me(), px=camera.position.x, pz=camera.position.z; progressoInvestigacao(role);
   V.altars.forEach((A,i)=>{ const O=AV[i]; let st=A.state; if(role==='H'&&st==='active'&&!A.localized) st=hunterSees(A)?'awake':'dormant'; // como o servidor mostra à caça
@@ -2360,7 +2529,7 @@ function syncAltars(dt){
     if(st==='active'){ const pulse=A.prog>=.25?(.5+.5*Math.sin(t*1.3*Math.PI*2)):.5; op=.9+.1*pulse; col=0xff5577; lc=0xff2040; li=1.4+1.6*A.prog+pulse*.8; spin=.4+A.prog*1.6; emb=.9; if(A.localized) beam=.22+.1*pulse; if(A.grande){ beam=.55+.3*pulse; bcol=0xff2a3a; li*=1.6; spin*=1.8; } }
     if(st==='fenda'){ op=.35; col=0x6a1a8a; li=.8+.4*Math.sin(t*7)*Math.random(); lc=0x5a1080; beam=.1; bcol=0x7a2aa0; emb=.4; spin=-.2; }
     if(st==='farol'){ op=.7; col=0xf3d58e; li=3.2; lc=0xffd08a; beam=.28; bcol=0xf3d58e; spin=.08; }
-    animarRitual(i,A,O,st,dt||.016,t);
+    animarRitual(i,A,O,st,dt||.016,t); animarVelas(A,O,st,dt||.016,t);
     O.circle.material.opacity=lerp(O.circle.material.opacity,op,.1); O.circle.material.color.setHex(col); O.L.intensity=lerp(O.L.intensity,li,.12); O.L.color.setHex(lc);
     O.circle.rotation.z+=spin*dt; O.beam.material.opacity=lerp(O.beam.material.opacity,beam,.08); O.beam.material.color.setHex(bcol); { const lg=A.grande&&st==='active'?2.4:1; O.beam.scale.x=O.beam.scale.z=lerp(O.beam.scale.x,lg,.05); }
     O.bm.color.setHex(st==='active'?0xff3050:st==='farol'?0xf3d58e:st==='awake'?0x8a4ad0:0x2a2030);
@@ -2412,7 +2581,7 @@ const PASSOS_TUT={
      {t:'Adiantamos o relógio: a Vigília chegou e os altares consagrados despertam. Ligue a lanterna (F): ela mostra resíduo só nos altares verdadeiros.',avanca:true,feito:()=>V.momento>=1&&me()&&me().lantern},
      {t:'Vá a um altar desperto (diamante roxo no alto da tela) e segure E para purgá-lo antes que o ritual comece.',alvo:m=>maisPerto(V.altars.filter((A,i)=>V.know[i]==='desperto'||V.know[i]==='confirmado'),m),feito:()=>meuLog('purge')},
      {t:'Quando um ritual começar, o coro logo ecoa o setor: dois altares possíveis, marcados na faixa do topo. Vá até o certo, siga o som até o círculo e segure E dentro dele para selar. Com o aliado junto o selo anda muito mais rápido.',alvo:m=>maisPerto(V.altars.filter(A=>A.state==='active'),m),feito:()=>{ const m=me(); return m&&m.sealing>=0; }}],
-  C:[{t:'Ande com WASD e olhe com o mouse. Pegue um reagente no Claustro: vá ao frasco marcado e segure E.',alvo:m=>maisPerto(V.reagents.filter(R=>R.has),m),feito:()=>{ const m=me(); return m&&m.reag>0; }},
+  C:[{t:'Ande com WASD e olhe com o mouse. Pegue um reagente na mata: siga o marcador até o brilho vermelho (sal negro, raiz, velas…) e segure E.',alvo:m=>maisPerto(V.reagents.filter(R=>R.has),m),feito:()=>{ const m=me(); return m&&m.reag>0; }},
      {t:'Vá a um dos seus altares (marcado) e segure E para consagrá-lo. Isso gasta o reagente e prepara o altar para a Vigília.',alvo:m=>maisPerto(V.altars.filter(A=>A.chosen&&A.state==='dormant'),m),feito:()=>meuLog('consecrate')},
      {t:'Colha uma erva na floresta ou profane um túmulo no cemitério (segure E no ponto marcado). Tarefas rendem óbolos para a loja.',alvo:m=>maisPerto(V.pontos.filter(p=>(p.tipo==='erva'||p.tipo==='tumulo')&&p.ativo),m),feito:()=>meuLog('ponto',e=>e.tipo==='erva'||e.tipo==='tumulo')},
      {t:'Adiantamos o relógio até a Vigília: os rituais já podem começar. Pegue outro reagente.',avanca:true,alvo:m=>maisPerto(V.reagents.filter(R=>R.has),m),feito:()=>{ const m=me(); return V.momento>=1&&m&&m.reag>0; }},
@@ -2442,7 +2611,7 @@ const DICAS={
   h_ouvido:'Esse som é um ritual. Siga as legendas e o Sensor Áurico (Q) até o círculo.',
   h_circulo:'Você está no círculo: segure E para selar. Em dupla o selo anda muito mais rápido.',
   h_escuro:'A mata fechada é breu e abala a sanidade. A lanterna (F) ajuda, mas também denuncia você.',
-  c_inicio:'Colha ervas e profane túmulos para ganhar óbolos. Os reagentes livres ficam no Claustro.',
+  c_inicio:'Colha ervas e profane túmulos para ganhar óbolos. Os reagentes ficam na mata: Pedreira, Charco, Carvoaria, Encruzilhada e nas cabeceiras das pontes.',
   c_consagrar:'Este é um dos seus altares: segure E para consagrar (gasta 1 reagente). Faça isso no Crepúsculo.',
   c_vigilia:'Os rituais já podem começar: segure E num altar consagrado, com um reagente, e fique no círculo.',
   c_circulo:'O ritual só avança com quem está no círculo sem atacar: um sigilo pausa a sua canalização por um instante. Em dupla, um canaliza e o outro defende.',
@@ -2768,8 +2937,12 @@ function updateHUD(dt,m){
   $('#hurt').style.opacity=(hurtT/.35).toFixed(2); $('#hitmark').style.opacity=(hitT/.15).toFixed(2); $('#blind').style.opacity=(clamp(blindT/1.2,0,1)*(SET.suave?.55:1)).toFixed(2);
   // death / down
   const dO=$('#death');
-  if(m.st!==ESP.prev){ if((m.st==='down'||m.st==='dead')&&ESP.prev==='alive') registrarQueda(m); if(m.st==='alive') ESP.quem=''; ESP.prev=m.st; }
+  if(m.st!==ESP.prev){ if(m.st==='down'&&ESP.prev==='alive') setTimeout(()=>tocar('queda_corpo',{vol:.8}),250);
+    if(m.st==='dead'&&ESP.prev==='down'){ const E=execRecente(m.id); if(E&&E.k>.6) fxExecucao(m.x,m.z,m.team,E); }
+    if((m.st==='down'||m.st==='dead')&&ESP.prev==='alive') registrarQueda(m); if(m.st==='alive') ESP.quem=''; ESP.prev=m.st; }
   if(m.st==='dead'){ dO.style.display='grid'; $('#deathT').textContent='Você morreu'; $('#deathP').textContent=`Retorno em ${Math.ceil(m.respawnT)} s`; }
+  else if(m.st==='down'&&execRecente(m.id)){ const E=execRecente(m.id), por=V.actors.find(a=>a.id===E.por); dO.style.display='grid'; $('#deathT').textContent='Você está sendo executado';
+    const quem=por?por.name:'Alguém'; $('#deathP').textContent=`${quem} está sobre você. Se um aliado acertar ${por?por.name:'quem executa'}, a execução recomeça.`; }
   else if(m.st==='down'){ dO.style.display='grid'; $('#deathT').textContent='Você está caído'; $('#deathP').textContent=`Um aliado pode te reanimar. Sangrando: ${Math.ceil(m.downT)} s${m.revUsed?' (sem reanimação neste ciclo)':''}`; }
   else dO.style.display='none';
   dO.classList.toggle('espect',m.st==='dead'&&!!ESP.alvo);
@@ -2882,7 +3055,7 @@ function titleScreen(){
       <div class="dif" role="group" aria-label="Dificuldade dos bots"><span>Bots inimigos</span>${[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([k,n])=>`<button data-dif="${k}" class="${(SET.dificuldade||'normal')===k?'sel':''}">${n}</button>`).join('')}</div>
       ${labPainel(SET.lab,true)}
       ${(()=>{ const D=desafioDe(hojeDesafio()); let rec=null; try{ rec=(perfil().desafios||{})[hojeDesafio()]; }catch(e){} return `<button class="go ghost desafioBtn" id="bDesafio">Desafio da noite<small>Hoje você ${D.papel==='H'?'caça':'celebra'}, ${CLIMAS[D.clima].nome.toLowerCase()}, contra bots difíceis${rec!=null?` · recorde ${rec}`:''}</small></button>`; })()}
-      <div class="links"><button class="lk" id="bAprender">Aprender a jogar</button><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bPerfil">Perfil</button><button class="lk" id="bNovo">Novidades</button><button class="lk" id="bSet">Ajustes</button></div></div>
+      <div class="links"><button class="lk" id="bAprender">Aprender a jogar</button><button class="lk" id="bComo">Como jogar</button><button class="lk" id="bPerfil">Perfil</button><button class="lk" id="bNovo">Novidades</button><button class="lk" id="bArsenal">Arsenal</button><button class="lk" id="bSet">Ajustes</button></div></div>
     ${APP?`<div class="online on"><h3>Servidor${ONLINE_OK?' <small style="color:var(--gold)">conectado</small>':''}</h3><div class="linha"><input class="txt" id="iServ" style="width:260px" placeholder="ex.: abcd.trycloudflare.com" value="${esc(SET.servidor||'')}" aria-label="Endereço do servidor" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="go ghost" id="bServ">${SONDANDO?'Procurando…':'Conectar'}</button></div></div>`:''}
     <div class="online ${ONLINE_OK?'on':''}"><h3>Jogar online</h3>
       <div class="linha"><input class="txt" id="iName" maxlength="16" placeholder="Seu nome" value="${esc(savedName)}" aria-label="Seu nome"><button class="go gold" id="bCreate">Criar sala</button></div>
@@ -2897,7 +3070,7 @@ function titleScreen(){
     scrBody.querySelectorAll('.dif button:not([data-lab])').forEach(b=>b.onclick=()=>{ if(b.dataset.papel) SET.papelSolo=b.dataset.papel; else SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
     $('#bAprender').onclick=()=>{ aprenderAberto=true; screenKey=''; };
     $('#bDesafio').onclick=()=>{ audioInit(); startDesafio(); };
-    const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; }; $('#bNovo').onclick=()=>{ novidadesAberto=true; screenKey=''; };
+    const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; }; $('#bArsenal').onclick=startArsenal; $('#bNovo').onclick=()=>{ novidadesAberto=true; screenKey=''; };
     if(ONLINE_OK){ const go=create=>{ audioInit(); const name=($('#iName').value||'Jogador').trim(); try{ localStorage.setItem('rr-name',name); }catch(e){} const code=($('#iCode').value||'').trim().toUpperCase(); if(!create&&code.length!==4){ $('#err').textContent='Digite o código de 4 letras.'; return; } connect(create,code,name); };
       $('#bCreate').onclick=()=>go(true); $('#bJoin').onclick=()=>go(false);
       $('#iPub').onchange=()=>{ SET.salaPublica=$('#iPub').checked; saveSet(); };
@@ -2939,7 +3112,7 @@ function introScreen(){
   const H=role==='H';
   const LB=LAB(), mud=labMudancas(LB), crep=fmt(LB.crepusculo);
   const brief=H?`<p>No <b>Crepúsculo</b> (${crep}), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto.${LB.economia?' Negocie com o Ermitão, na cabana perto do acampamento.':''} Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Quando um ritual começa, o coro logo ecoa o setor dele: dois altares possíveis, e o que você descartou decide para onde correr. Resista até o amanhecer.</p>`
-    :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio.${LB.economia?' Negocie com a Carpideira, no cemitério.':''} Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir. Quem ataca não canaliza; você sente quando a caça começa a selar o seu ritual.</p>`;
+    :`<p>No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério, ao leste da catedral, e consagre seus altares em silêncio.${LB.economia?' Negocie com a Carpideira, no oratório perto do seu acampamento.':''} Os reagentes ficam na mata, ao sul do desfiladeiro (e nas cabeceiras das pontes). Agachado (C) você anda devagar e quase sem barulho. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir. Quem ataca não canaliza; você sente quando a caça começa a selar o seu ritual.</p>`;
   const CLn=CLIMAS[climaDe(chaveClima()+':'+(V.round||1))];
   setScreen(key,`<h2 style="color:${H?'var(--gold)':'var(--crimson-hi)'}">Esta noite você é ${H?'Caçador':'Cultista'}</h2><p class="lede" style="text-align:left!important;margin:0 0 8px!important">${CLn.nome}: ${CLn.sub.toLowerCase()}.</p>${brief}${mud.length?`<p class="labAviso">Laboratório de playtest: ${esc(mud.join(' · '))}.</p>`:''}
     <h3>Arquétipo</h3><div class="choices ${CLASS_BY_TEAM[role].length>2?'tres':''}">${CLASS_BY_TEAM[role].map(c=>`<button class="choice ${c===mine?'sel':''}" data-c="${c}" ${rdy?'disabled':''}><b>${CLASSES[c].name}</b><span>${CLASSES[c].text}</span><small>${CLASSES[c].hp} de vida</small></button>`).join('')}</div>
@@ -3244,7 +3417,11 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Mãos de verdade (v5.9)','As armas agora são seguradas por mãos com dedos e braços que se dobram. A carabina recarrega cartucho por cartucho pela portinhola (e aciona a alavanca quando estava vazia); o revólver abre o tambor, ejeta as cápsulas e usa um municiador de oito.'],
+const NOVIDADES=[['Catedral e desfiladeiro (v6)','O mapa foi refeito em duas regiões: a catedral em cruz no alto do promontório e a mata ao sul, separadas por um desfiladeiro com três travessias (a Ponte Grande, a árvore caída e o aqueduto). Cada parte da mata tem o seu reagente.'],
+  ['Cobertura e agachar (v6)','Túmulos, muretas e pedras baixas agora param tiros e sigilos abaixo da altura deles. Agachado (C, ou o botão B do controle) você anda na metade da velocidade, com passos que só se ouvem a 5 m, e fica mais baixo atrás da cobertura.'],
+  ['Execução, reagentes e velas (v6)','Executar alguém tem pose, tremor e um fecho que todos por perto veem; quem está sendo executado vê o mundo fechar. Os reagentes têm forma e respondem à coleta. Oito velas em cada altar contam o ritual: vermelho-escuro é progresso que não volta.'],
+  ['Arsenal (v6)','No menu, o Arsenal mostra as armas de perto e a coleção Relíquias da Vigília: três acabamentos por arma (Ofício, Mestre e Relíquia), todos livres, só aparência. Cada arma tem uma inspeção nova (tecla I).'],
+  ['Mãos de verdade (v5.9)','As armas agora são seguradas por mãos com dedos e braços que se dobram. A carabina recarrega cartucho por cartucho pela portinhola (e aciona a alavanca quando estava vazia); o revólver abre o tambor, ejeta as cápsulas e usa um municiador de oito.'],
   ['Sacar, inspecionar, gesticular','Cada arma tem seu jeito de sacar (a alavanca, a bênção na cruz do revólver, as vértebras do cetro acendendo). Tecla I inspeciona a arma; as habilidades têm um gesto da mão livre.'],
   ['Do primeiro playtest (v5.8b)','Salvar um ritual que chegou a 85% ou mais vira o lance "Selo no último instante", mesmo que o progresso recue enquanto você sela. A loja não cobra munição com a reserva cheia. O registro baixado diz a dificuldade dos bots.'],
   ['Sons gravados','Tiros, impactos, passos por chão, sino, corvos, coro e o ritual inteiro agora usam gravações reais de bibliotecas abertas, com variação a cada vez. Créditos em Ajustes.'],
@@ -3270,7 +3447,7 @@ function comoJogarScreen(){
     <p class="lede" style="margin-top:0">A catedral fica no meio de uma floresta. As trilhas e clareiras pegam luar; a mata fechada é breu. Dois altares ficam lá fora: os Menires e o Carvalho Oco.</p>
     <div class="cols">
       <div><h3 style="color:var(--crimson-hi)">Como Cultista</h3>
-        ${passo(1,'Crepúsculo: prepare-se',`Colha ervas na floresta e profane túmulos no cemitério, a sudeste. Tarefas rendem óbolos; negocie reagentes com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro.`)}
+        ${passo(1,'Crepúsculo: prepare-se',`Colha ervas na floresta e profane túmulos no cemitério, ao leste da catedral. Tarefas rendem óbolos; negocie reagentes com a Carpideira, no oratório perto do seu acampamento. Os reagentes ficam na mata, ao sul do desfiladeiro: cada lugar tem o seu (sal negro na Pedreira, raiz de mandrágora no Charco, velas de cera na Encruzilhada…).`)}
         ${passo(2,'Consagre em silêncio',`Você escolheu 3 de 6 altares. Consagrar gasta 1 reagente. Cuidado com as sentinelas acesas: elas denunciam você.`)}
         ${passo(3,'Vigília: os rituais começam',`Inicie com mais um reagente e fique no círculo. Quem ataca não canaliza: cada sigilo pausa a sua canalização por um instante, então em dupla um celebra e o outro defende. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (${kb('use')} num altar não escolhido) confundem a investigação.`)}
         ${passo(4,'Hora Morta: o Grande Ritual',`Se estiver 1 a 1, o ritual decisivo só começa agora, e a catedral inteira ouve. Vença dois dos três antes do amanhecer.`)}
@@ -3330,6 +3507,7 @@ function settingsScreen(){
   });
 }
 function syncScreens(){
+  if(ARS.ativo){ hideScreen(); return; }
   if(RECON.ativo){ reconexaoScreen(); return; }
   if(settingsOpen){ settingsScreen(); return; }
   if(comoJogarAberto&&!MODE){ comoJogarScreen(); return; }
@@ -3357,7 +3535,7 @@ function startLocal(opc){ opc=opc||{}; let papel=opc.papel||SET.papelSolo||'H'; 
 
 // ================= MAIN LOOP =================
 let fpsEMA=60;
-let last=performance.now(), lastPhase='', bellT=45, hallT=8, heartT=0, stepT=0, wasLocked=false;
+let last=performance.now(), lastPhase='', bellT=45, hallT=8, heartT=0, stepT=0, wasLocked=false, VEU_EXE=0;
 let cpuMs=0; // tempo de CPU de cada quadro (simulação local, lógica, efeitos e envio para a placa), média móvel
 // amostras por quadro para o teste de desempenho: lógica (tudo antes do render) e render, separados
 const QUADROS={log:[],ren:[],max:600}; function amostraQuadro(l,r){ QUADROS.log.push(l); QUADROS.ren.push(r); if(QUADROS.log.length>QUADROS.max){ QUADROS.log.shift(); QUADROS.ren.shift(); } }
@@ -3383,7 +3561,8 @@ function tick(now){
   if(MODE==='local'&&game){
     paused=game.phase==='play'&&!locked&&!lojaAberta;
     const m=me(); const inp=readInput(dt); ULT_INP=inp;
-    if(m&&game.phase==='play'&&!paused){ Sim.moveHuman(game,m,inp,dt); predictFire(dt,m); Sim.step(game,dt); }
+    if(ARS.ativo){ if(game.phase==='intro') sendAct({type:'ready'}); else if(game.phase!=='play') Sim.step(game,dt); else arsenalPosa(); }
+    else if(m&&game.phase==='play'&&!paused){ Sim.moveHuman(game,m,inp,dt); predictFire(dt,m); Sim.step(game,dt); }
     else if(game.phase!=='play') Sim.step(game,dt);
     V=game; const evs=game.events.splice(0); handleEvents(evs,false);
   } else if(MODE==='online'&&V&&ws&&ws.readyState===1){
@@ -3393,12 +3572,12 @@ function tick(now){
     ws.send(JSON.stringify(Object.assign({t:'in'},inp)));
     interpActors(); predictFire(dt,me());
   }
-  if(V&&V.phase!==lastPhase){ if(V.phase==='play'){ show('hud',true); { const C=CLIMAS[climaDe(chaveClima()+':'+(V.round||1))]; if(C.nome!=='Noite limpa') setTimeout(()=>anunciar(C.nome,C.sub),900); } if(!AUTOTEST) lock(); toolsKey=''; if(lastPhase!=='play'){ const m=me(); if(m){ LOOK.yaw=m.yaw; LOOK.pitch=0; } } } else { show('hud',false); atualizarMarcas(null); limparLegendas(); atualizarTensao(1,null); atualizarBussola(null); unlock(); AV.forEach((O,i)=>ritualLoopStop(i)); } lastPhase=V.phase; }
+  if(V&&V.phase!==lastPhase){ if(V.phase==='play'&&ARS.ativo){ arsenalComeca(); } else if(V.phase==='play'){ show('hud',true); { const C=CLIMAS[climaDe(chaveClima()+':'+(V.round||1))]; if(C.nome!=='Noite limpa') setTimeout(()=>anunciar(C.nome,C.sub),900); } if(!AUTOTEST) lock(); toolsKey=''; if(lastPhase!=='play'){ const m=me(); if(m){ LOOK.yaw=m.yaw; LOOK.pitch=0; } } } else { show('hud',false); atualizarMarcas(null); limparLegendas(); atualizarTensao(1,null); atualizarBussola(null); unlock(); AV.forEach((O,i)=>ritualLoopStop(i)); } lastPhase=V.phase; }
   wasLocked=locked;
   if(TQ.ativo){ const tq=$('#toque'), r=(myRole()||'')+(locked&&!lojaAberta?'':' solto'); if(tq.className!==r){ tq.className=r; if(r.includes('solto')) TQ.soltar(); } } // com menu aberto, os controles saem da frente dos botões
   syncScreens(); atualizarReplay(Math.min(.25,raw));
   // cosmetics
-  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); atualizarMusica(Math.min(.25,raw)); // transições em tempo real, mesmo com poucos quadros
+  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); ambientePorLugar(Math.min(.25,raw)); atualizarMusica(Math.min(.25,raw)); // transições em tempo real, mesmo com poucos quadros
   flames.forEach((f,i)=>{ f.scale.y=.26+Math.sin(now*.02+i)*.03; });
   if(RT.dust){ RT.dust.rotation.y+=dt*.004; RT.dust.position.y=Math.sin(now*.0002)*.3; }
   updateParticles(dt); atualizarEfeitos(dt); atualizarToast(dt);
@@ -3410,7 +3589,7 @@ function tick(now){
   for(let i=tracers.length-1;i>=0;i--){ const tr=tracers[i]; tr.t-=dt; tr.l.material.opacity=Math.max(0,tr.t/.07); if(tr.t<=0){ world.remove(tr.l); descartar(tr.l); tracers.splice(i,1); } }
   const m=V?me():null;
   if(V&&V.phase==='play'&&m){
-    syncActors(dt); syncAltars(dt); syncNoite(dt,now/1000); amostrarNoite(); if(DES.feito) DES.feito=null;
+    lerExecucoes(); syncActors(dt); syncAltars(dt); syncNoite(dt,now/1000); amostrarNoite(); if(DES.feito) DES.feito=null;
     const pos=MODE==='online'&&NET.pred?NET.pred:m;
     const s=m.sanity, shake=s<40&&!SET.suave?(40-s)/40*.012:0, down=m.st==='down';
     const I=ULT_INP||{mx:0,mz:0,sp:false}, agachado=!!I.ag&&m.st==='alive', correndo=!agachado&&I.sp&&I.mz<0&&pos.moving&&m.st==='alive';
@@ -3436,7 +3615,7 @@ function tick(now){
     const fb=VM.fase, bk=VM.bobK, bx=Math.cos(fb)*.011*bk, by=Math.abs(Math.sin(fb))*.013*bk+(1-bk)*Math.sin(now*.002)*.003;
     // corpo da primeira pessoa (balanço, atraso do mouse e do passo); a arma, as mãos e os clipes ficam em client/arma.js
     { const altC=m.team==='C'?V.altars.find(A=>A.state==='active'&&Math.hypot(pos.x-A.x,pos.z-A.z)<CFG.circleR):null;
-      ARMA.quadro(dt,m,{agora:now/1000,andando,correndo,agK:VM.agK,canalizando:!!altC&&!(m.hold&&m.hold.key),altar:altC,
+      ARMA.quadro(dt,m,{agora:now/1000,andando,correndo,agK:VM.agK,canalizando:!!altC&&!(m.hold&&m.hold.key),altar:altC,execK:m.hold&&m.hold.key&&m.hold.key.slice(0,3)==='exe'&&m.hold.max?m.hold.t/m.hold.max:0,colK:m.hold&&m.hold.key&&m.hold.key.slice(0,3)==='col'&&m.hold.max?m.hold.t/m.hold.max:0,queimando:!!(m.hold&&m.hold.key&&m.hold.key.slice(0,4)==='burn'),
         corpo:{x:-VM.sx+bx-VM.ix*.012,y:-VM.sy-by,z:VM.iz*-.008,rx:VM.iz*-.03,ry:VM.sx*1.4,rz:-VM.ix*.05}}); }
     // (o passo do jogador toca no ciclo do balanço, acima)
     // sanity fx (client side)
@@ -3445,6 +3624,11 @@ function tick(now){
     renderer.domElement.style.filter=PERF.nivelAtual>=2&&k>.01?`saturate(${(1-k*.55).toFixed(2)}) contrast(${(1+k*.25).toFixed(2)})${blur>.05?` blur(${blur.toFixed(2)}px)`:''}`:'';
     if(s<40){ hallT-=dt; if(hallT<=0){ hallT=rand(6,12); const a=rand(0,Math.PI*2); if(Math.random()<.25&&SFX.assombro(pos.x+Math.cos(a)*9,pos.z+Math.sin(a)*9)){} else if(Math.random()<.5) SFX.whisper(pos.x+Math.cos(a)*6,pos.z+Math.sin(a)*6,true); else for(let i=0;i<3;i++) setTimeout(()=>sfxNoise(0,0,1,.09,'lowpass',520,.8,.6,true),i*380); } }
     if(s<15){ heartT-=dt; if(heartT<=0){ heartT=.85; SFX.heart(); } }
+    // sendo executado: o mundo fecha em volta, o coração acelera com o progresso e a câmera vira para quem executa
+    { const E=m.st==='down'?execRecente(m.id):null; VEU_EXE=lerp(VEU_EXE,E?.3+E.k*.7:0,Math.min(1,dt*6)); $('#exeVeu').style.opacity=VEU_EXE.toFixed(2);
+      if(E){ heartT-=dt; if(heartT<=0){ heartT=.95-.62*E.k; SFX.heart(); }
+        if(ESP.exeVirou!==E.por){ const p=V.actors.find(a=>a.id===E.por); if(p&&!p.hidden){ ESP.virar={yaw:Math.atan2(-(p.x-m.x),-(p.z-m.z)),t:.6}; ESP.exeVirou=E.por; } } }
+      else if(m.st!=='down') ESP.exeVirou=null; }
     bellT-=dt; if(bellT<=0){ bellT=rand(45,80); SFX.bell(); }
     gotaT-=dt; if(gotaT<=0){ gotaT=rand(2.5,8); if(Sim.coberto(pos.x,pos.z)){ const a=rand(0,6.283), r=rand(2,7); SFX.gota(pos.x+Math.cos(a)*r,pos.z+Math.sin(a)*r); } } // pingos de água na nave
     updateHUD(dt,m); atualizarPings(dt); atualizarCaderno(); atualizarFalasBots(); atualizarTutorial(dt,m); atualizarDicas(dt,m); atualizarTensao(dt,m); if(FL.aberto){ FL.t-=dt; if(FL.t<=0||m.st==='dead'){ FL.aberto=false; desenharFalas(); } } atualizarMarcas(m); atualizarLegendas(dt); atualizarBussola(m);
@@ -3476,10 +3660,39 @@ function boot(){
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,get SKINS(){ return SKINS; },get REAGM(){ return reagentMeshes; },fxExecucoes:()=>FX_EXE_N,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
 }
 { const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">Esculpindo a catedral…<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
+// ================= ARSENAL =================
+// As armas de perto, as skins da coleção e a inspeção de cada uma. Abre do menu: uma partida local parada no meio da nave,
+// sem ninguém por perto e sem HUD. A arma é a mesma da primeira pessoa no jogo (mesmo modelo, mesma animação, mesma
+// luz de leitura); "Estúdio" só fortalece essa luz. A escolha fica salva e vai junto quando você entra numa sala.
+const ARS={ativo:false,arma:'carabina',vista:null,estudio:true,el:null};
+function startArsenal(){ audioInit(); ARS.ativo=true; document.body.classList.add('arsenal'); startLocal({papel:'H'}); }
+function sairArsenal(){ ARS.ativo=false; document.body.classList.remove('arsenal'); camera.clearViewOffset(); if(ARS.el){ ARS.el.remove(); ARS.el=null; } if(ARMA) ARMA.forcar(null); sairParaMenu(); }
+function arsenalComeca(){ show('hud',false); unlock(); arsenalForca('sacar'); arsenalPainel(); }
+// o jogador fica parado no corredor da nave, olhando as velas; os outros longe
+function arsenalEnquadra(){ const W=innerWidth, H=innerHeight; if(W<700){ camera.clearViewOffset(); return; } const f=1.6; camera.setViewOffset(W*f,H*f,W*(f-1),H*(f-1)*.75,W,H); }
+function arsenalPosa(){ const m=me(); if(!m) return; arsenalEnquadra(); m.x=2; m.z=-46; m.invuln=999; LOOK.yaw=.35; LOOK.pitch=-.06; m.yaw=LOOK.yaw; m.pitch=LOOK.pitch;
+  for(const a of game.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=a.team==='H'?-8:8; } }
+function arsenalForca(clipe,extra){ if(!ARMA) return; ARMA.forcar(Object.assign({arma:ARS.arma,clipe,vista:ARS.vista,estudio:ARS.estudio,repetir:false,t:null,fervor:100,vel:1},extra||{})); }
+function arsenalPainel(){ if(!SKINS) return; let el=ARS.el; if(!el){ el=ARS.el=document.createElement('div'); el.id='arsenal'; document.body.appendChild(el);
+    ['mousedown','pointerdown','keydown','wheel'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation())); }
+  const L=SKINS.SKINS[ARS.arma], usada=SKINS.ESC[ARS.arma], nomes={carabina:'Carabina',revolver:'Revólver',cetro:'Cetro'}, cetro=ARS.arma==='cetro';
+  el.innerHTML=`<h2>Arsenal</h2><div class="col">${esc(SKINS.COLECAO.nome)}</div><p class="txt">${esc(SKINS.COLECAO.texto)} Nada muda no jogo além da aparência; tudo é livre para escolher.</p>
+    <div class="abas">${['carabina','revolver','cetro'].map(k=>`<button data-arma="${k}" class="${k===ARS.arma?'sel':''}">${nomes[k]}</button>`).join('')}</div>
+    ${L.map(s=>{ const O=SKINS.OFICIOS[s.oficio]; return `<div class="skin ${s.id===usada?'sel':''}" data-skin="${s.id}"><span class="of" style="color:${O.cor}">${O.nome}</span><b>${esc(s.nome)}</b>${s.id===usada?' <small style="color:var(--gold)">· em uso</small>':''}<p>${esc(s.texto)}</p></div>`; }).join('')}
+    <div class="acoes"><button data-acao="inspecao">Inspecionar</button>${cetro?'<button data-acao="tiro">Lançar sigilo</button>':'<button data-acao="recarga">Recarregar</button>'}<button data-acao="sacar">Sacar</button></div>
+    <div class="rot">Vista</div><div class="abas">${[['','Jogador'],['ladoPerto','De lado'],['perto','De perto']].map(([v,t])=>`<button data-vista="${v}" class="${(ARS.vista||'')===v?'sel':''}">${t}</button>`).join('')}</div>
+    <div class="rot">Luz</div><div class="abas">${[['0','Da noite'],['1','Estúdio']].map(([v,t])=>`<button data-luz="${v}" class="${(ARS.estudio?'1':'0')===v?'sel':''}">${t}</button>`).join('')}</div>
+    <button class="go ghost sair" id="bArsSair">Voltar ao menu</button>`;
+  el.querySelectorAll('[data-arma]').forEach(b=>b.onclick=()=>{ ARS.arma=b.dataset.arma; arsenalForca('sacar'); arsenalPainel(); SFX.click(); });
+  el.querySelectorAll('[data-skin]').forEach(b=>b.onclick=()=>{ ARMA.trocarSkin(ARS.arma,b.dataset.skin); arsenalForca('inspecao'); arsenalPainel(); SFX.click(); });
+  el.querySelectorAll('[data-acao]').forEach(b=>b.onclick=()=>{ const a=b.dataset.acao; if(a==='recarga') arsenalForca('recarga',{vazia:true,n:3,carga:0}); else if(a==='tiro'){ arsenalForca('pronta'); setTimeout(()=>ARMA.tiroVitrine&&ARMA.tiroVitrine(),60); } else arsenalForca(a); });
+  el.querySelectorAll('[data-vista]').forEach(b=>b.onclick=()=>{ ARS.vista=b.dataset.vista||null; if(ARMA.S.forca){ ARMA.S.forca.vista=ARS.vista; ARMA.S.vista=ARS.vista; } arsenalPainel(); });
+  el.querySelectorAll('[data-luz]').forEach(b=>b.onclick=()=>{ ARS.estudio=b.dataset.luz==='1'; if(ARMA.S.forca) ARMA.S.forca.estudio=ARS.estudio; arsenalPainel(); });
+  el.querySelector('#bArsSair').onclick=sairArsenal; }
 // #vitrine: abre direto numa partida local com a vitrine das animações
 if(location.hash.startsWith('#vitrine')){ const iv=setInterval(()=>{ try{ if(!ARMA) return; if(!game) startLocal(); else if(game.phase==='intro') sendAct({type:'ready'});
   if(V&&V.phase==='play'){ clearInterval(iv); ARMA.painel(true); } }catch(e){ console.error(e); clearInterval(iv); } },500); }

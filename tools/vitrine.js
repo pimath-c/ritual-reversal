@@ -30,6 +30,12 @@ add('cetro-sacar',{arma:'cetro',clipe:'sacar',fervor:100},10);
 add('cetro-inspecao',{arma:'cetro',clipe:'inspecao',fervor:100},10);
 add('cetro-canalizar',{arma:'cetro',clipe:'canalizar',fervor:100},1,['jogador','lado']);
 add('cetro-corrida',{arma:'cetro',clipe:'corrida',fervor:100},1,['jogador']);
+// v6: as skins da coleção (client/skins.js), paradas e na inspeção
+for(const [arma,ids] of [['carabina',['servico','tempera','relicario']],['revolver',['prata','lavrada','martir']],['cetro',['vertebras','ossario','afogado']]])
+  for(const id of ids) add(`skin-${arma}-${id}`,{arma,clipe:'pronta',skin:id,fervor:100},1,['jogador','lado','perto']);
+add('skin-carabina-relicario-inspecao',{arma:'carabina',clipe:'inspecao',skin:'relicario'},8,['jogador']);
+add('skin-revolver-martir-inspecao',{arma:'revolver',clipe:'inspecao',skin:'martir'},8,['jogador']);
+add('skin-cetro-afogado-inspecao',{arma:'cetro',clipe:'inspecao',skin:'afogado',fervor:100},8,['jogador']);
 fs.mkdirSync(OUT,{recursive:true});
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
@@ -46,7 +52,7 @@ fs.mkdirSync(OUT,{recursive:true});
   await page.evaluate(()=>__T.sendAct({type:'ready'}));
   await page.waitForFunction(()=>__T.game.phase==='play',null,{timeout:30000});
   // um lugar com luz de velas e uma parede ao fundo; ninguém por perto
-  const lugar={x:+process.env.VX||-4,z:+process.env.VZ||52,yaw:+process.env.VYAW||.4,pitch:+process.env.VPITCH||-.05};
+  const lugar={x:+process.env.VX||2,z:+process.env.VZ||-44,yaw:+process.env.VYAW||.4,pitch:+process.env.VPITCH||-.05};   // a nave, com as velas do corredor
   const fixar=()=>page.evaluate(L=>{ const m=__T.game.actors.find(a=>a.cid==='local'); Object.assign(m,{x:L.x,z:L.z,invuln:999,hp:m.maxHp,lantern:true}); m.inp.yaw=L.yaw; m.inp.pitch=L.pitch; __T.LOOK.yaw=L.yaw; __T.LOOK.pitch=L.pitch;
     for(const a of __T.game.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=a.team==='H'?-8:8; } },lugar);
   await fixar(); await page.waitForTimeout(1200);
@@ -61,6 +67,7 @@ fs.mkdirSync(OUT,{recursive:true});
       return c.toDataURL('image/png').split(',')[1]; },[F,cols,lin,w,h]);
     fs.writeFileSync(path.join(OUT,F.nome+'.png'),Buffer.from(b64,'base64')); }
   for(const S of SEQ){ if(FILTRO&&!new RegExp(FILTRO).test(S.nome)) continue;
+    await page.evaluate(o=>{ const A=__T.ARMA; if(A.trocarSkin&&__T.SKINS) A.trocarSkin(o.arma,o.skin||__T.SKINS.SKINS[o.arma][0].id); },S.o);
     for(const vista of S.vistas){ const imgs=[];
       for(let i=0;i<S.quadros;i++){ const t=S.quadros===1?0:i/(S.quadros-1);
         await fixar();

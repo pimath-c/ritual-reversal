@@ -2,11 +2,11 @@
 // Análise de fluxo do mapa, direto dos dados da simulação: distâncias de caminhada (A* do jogo) entre os nascimentos,
 // os altares, os reagentes e os mercadores; exposição de cada altar (linhas de visão abertas); e uma planta vista de cima
 // em SVG com as rotas mais curtas de cada lado.
-// Uso: node tools/fluxo.js [pasta]   (padrão: fluxo/; grava planta.svg e fluxo.json e imprime as tabelas)
+// Uso: node tools/fluxo.js [pasta]   (padrão: dist/fluxo/; grava planta.svg e fluxo.json e imprime as tabelas)
 'use strict';
 const fs=require('fs'), path=require('path');
 const Sim=require('../shared/sim.js');
-const out=process.argv[2]||'fluxo'; fs.mkdirSync(out,{recursive:true});
+const out=process.argv[2]||path.join(__dirname,'..','dist','fluxo'); fs.mkdirSync(out,{recursive:true});
 const {ALTARS,SPAWN,REAG,NPCS,HALF,CFG,findPath,raioParede,losClear,WP,NAV}=Sim;
 
 // comprimento do caminho que o bot faria (o mesmo findPath do jogo)

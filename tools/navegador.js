@@ -9,21 +9,24 @@ const {chromium}=require('playwright');
 const ROOT=path.join(__dirname,'..'), OUT=process.argv[2]||path.join(ROOT,'dist','capturas');
 const THREE_DIR=process.env.THREE_DIR;
 fs.mkdirSync(OUT,{recursive:true});
-const VISTAS=[
-  {nome:'acampamento',x:-134.3,z:3,yaw:-Math.PI/2,pitch:.05},
-  {nome:'trilha-estreita',x:-86,z:-70.5,yaw:.2,pitch:0},
-  {nome:'mata-fechada',x:-119.9,z:-30,yaw:0,pitch:0},
-  {nome:'menires',x:-50,z:-78,yaw:0,pitch:-.02},
-  {nome:'fachada-sul',x:4,z:68,yaw:.35,pitch:.25},
-  {nome:'carvalho-oco',x:40,z:81.3,yaw:Math.PI,pitch:.12},
-  {nome:'cemiterio',x:110.9,z:66.2,yaw:Math.PI*.85,pitch:0},
-  {nome:'ruinas',x:-113.4,z:-79.6,yaw:0,pitch:.05},
-  {nome:'nave-oeste',x:-90,z:-26,yaw:Math.PI,pitch:.12},
-  {nome:'corredor-norte',x:-40,z:-31,yaw:-Math.PI/2,pitch:.15},
-  {nome:'claustro',x:-30,z:-8,yaw:-.6,pitch:.2},
-  {nome:'nartex',x:0,z:56,yaw:0,pitch:.1},
-  {nome:'capela-oeste',x:-66,z:-38,yaw:0,pitch:.1},
-  {nome:'brecha-norte',x:-35.5,z:-48,yaw:0,pitch:.08},{nome:'brecha-norte-fora',x:-38.5,z:-71,yaw:Math.PI,pitch:.1}];
+const VISTAS=[ // v6: um ponto de cada região e de cada travessia do mapa novo
+  {nome:'acampamento',x:-122,z:-22,yaw:-Math.PI/2,pitch:.05},
+  {nome:'ponte-grande',x:0,z:-2,yaw:0,pitch:.25},
+  {nome:'ponte-caida',x:-106,z:-77,yaw:-Math.PI/2,pitch:.02},
+  {nome:'aqueduto',x:106,z:-77,yaw:Math.PI/2,pitch:.02},
+  {nome:'nave',x:0,z:-38,yaw:0,pitch:.12},
+  {nome:'cruzeiro',x:0,z:-66,yaw:0,pitch:.25},
+  {nome:'claustro',x:-36,z:-46,yaw:-.7,pitch:.1},
+  {nome:'sala-capitulo',x:-53,z:-47,yaw:Math.PI/4,pitch:-.05},
+  {nome:'capela-desabada',x:22,z:-71,yaw:-Math.PI/2,pitch:.05},
+  {nome:'menires',x:-82,z:50,yaw:Math.PI,pitch:0},
+  {nome:'encapuzados',x:82,z:52,yaw:Math.PI,pitch:.05},
+  {nome:'portaria',x:0,z:10,yaw:-Math.PI/2,pitch:0},
+  {nome:'pedreira',x:-46,z:28,yaw:Math.PI,pitch:.05},
+  {nome:'charco',x:46,z:30,yaw:Math.PI,pitch:-.05},
+  {nome:'carvoaria',x:14,z:50,yaw:Math.PI,pitch:.05},
+  {nome:'calvario',x:0,z:76,yaw:Math.PI,pitch:.1},
+  {nome:'ruinas',x:-120,z:-76,yaw:0,pitch:.05}];
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const page=await browser.newPage({viewport:{width:1280,height:720}});
@@ -46,6 +49,23 @@ const VISTAS=[
     const lab=await page.evaluate(()=>({resumo:(document.querySelector('details.lab summary')||{}).textContent||''}));
     await page.screenshot({path:path.join(OUT,'menu-laboratorio.png')}); if(!/1 regra alterada/.test(lab.resumo)) erros.push('laboratório não marcou a regra alterada: '+lab.resumo);
     await page.click('#bLabPadrao'); await page.waitForFunction(()=>!/alterada/.test((document.querySelector('details.lab summary')||{}).textContent||''),null,{timeout:20000}).catch(()=>erros.push('laboratório não voltou ao normal')); console.log('laboratório no menu:',lab.resumo.trim()); }
+  // v6: Arsenal. Abre do menu, troca a skin (a escolha é salva e a arma faz a inspeção), muda de arma e volta ao menu
+  { await page.click('#bArsenal'); await page.waitForSelector('#arsenal .skin',{timeout:60000}); await page.waitForTimeout(1500);
+    await page.click('#arsenal .skin[data-skin="tempera"]'); await page.waitForTimeout(1800);
+    const a1=await page.evaluate(()=>({esc:__T.SKINS.ESC.carabina,clipe:__T.ARMA.S.est.nome,sel:(document.querySelector('#arsenal .skin.sel b')||{}).textContent||''}));
+    await page.screenshot({path:path.join(OUT,'arsenal-carabina.png')});
+    await page.click('#arsenal [data-arma="revolver"]'); await page.waitForTimeout(900); await page.click('#arsenal .skin[data-skin="martir"]');
+    await page.waitForFunction(()=>__T.ARMA.S.arma==='revolver'&&__T.ARMA.S.est.nome==='inspecao',null,{timeout:30000}).catch(()=>{});
+    const a2=await page.evaluate(()=>({esc:__T.SKINS.ESC.revolver,arma:__T.ARMA.S.arma,clipe:__T.ARMA.S.est.nome,t:+__T.ARMA.S.est.t.toFixed(2)}));
+    await page.screenshot({path:path.join(OUT,'arsenal-revolver.png')});
+    await page.click('#arsenal [data-arma="cetro"]'); await page.waitForTimeout(900); await page.click('#arsenal .skin[data-skin="afogado"]'); await page.waitForTimeout(3200);
+    await page.screenshot({path:path.join(OUT,'arsenal-cetro.png')});
+    await page.click('#bArsSair'); await page.waitForSelector('#bSolo',{timeout:30000});
+    console.log('arsenal:',JSON.stringify(a1),JSON.stringify(a2));
+    if(a1.esc!=='tempera'||a1.clipe!=='inspecao'||!/Têmpera/.test(a1.sel)) erros.push('Arsenal não trocou a skin da carabina: '+JSON.stringify(a1));
+    if(a2.esc!=='martir'||a2.arma!=='revolver'||a2.clipe!=='inspecao') erros.push('Arsenal não trocou a skin do revólver: '+JSON.stringify(a2));
+    // volta às de serviço, para as fotos seguintes serem as de sempre
+    await page.evaluate(()=>{ for(const k of ['carabina','revolver','cetro']) __T.ARMA.trocarSkin(k,__T.SKINS.SKINS[k][0].id); }); }
   await page.addStyleTag({content:'#scr{display:none!important}'}); // sem mouse capturado o jogo mostra a pausa por cima
   await page.evaluate(()=>{ __T.startLocal(); });
   await page.waitForFunction(()=>__T.game&&__T.game.phase==='intro',null,{timeout:30000});
@@ -61,15 +81,15 @@ const VISTAS=[
     await page.screenshot({path:path.join(OUT,v.nome+'.png')});
   }
   // Rastreador: pegadas de um Cultista que passou há pouco, marcas de arrasto num altar e um Cultista de Véu a 6 m
-  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'); if(m.team!=='H') return; m.cls='rastreador'; m.x=-20; m.z=0; __T.LOOK.yaw=-Math.PI/2; __T.LOOK.pitch=-.35; m.inp.yaw=__T.LOOK.yaw; m.inp.pitch=__T.LOOK.pitch;
-    for(let k=0;k<14;k++) g.pegadas.push({x:-17+k*.65,z:(k%2?.18:-.18),yaw:-Math.PI/2,t:g.t-k*.8});
-    g.rastros.push({de:1,para:0,x:-12,z:3,t:g.rt,visto:true,lido:true});
-    const c=g.actors.find(a=>a.team==='C'); c.x=-14; c.z=-2; c.veuT=30; c.invuln=99; });
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'); if(m.team!=='H') return; m.cls='rastreador'; m.x=-30; m.z=-28; __T.LOOK.yaw=-Math.PI/2; __T.LOOK.pitch=-.35; m.inp.yaw=__T.LOOK.yaw; m.inp.pitch=__T.LOOK.pitch;
+    for(let k=0;k<14;k++) g.pegadas.push({x:-27+k*.65,z:-28+(k%2?.18:-.18),yaw:-Math.PI/2,t:g.t-k*.8});
+    g.rastros.push({de:1,para:0,x:-22,z:-25,t:g.rt,visto:true,lido:true});
+    const c=g.actors.find(a=>a.team==='C'); c.x=-24; c.z=-30; c.veuT=30; c.invuln=99; });
   await page.waitForTimeout(1200); await page.screenshot({path:path.join(OUT,'rastreador-veu.png')});
-  // Grande Ritual na Abside, visto do Claustro: céu e lua de sangue, vitrais acesos, feixe largo sobre o altar
+  // Grande Ritual na Abside, visto da Ponte Grande: céu e lua de sangue, vitrais acesos, feixe largo sobre o altar
   await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), A=g.altars[1]; window.__antes={...A};
     Object.assign(A,{state:'active',grande:true,localized:true,prog:.4}); g.events.push({type:'grande',altar:1});
-    m.x=-6; m.z=-12; m.cls='soldado'; __T.LOOK.yaw=0; __T.LOOK.pitch=.3; m.inp.yaw=0; m.inp.pitch=.3; for(const a of g.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=0; } });
+    m.x=0; m.z=-4; m.cls='soldado'; __T.LOOK.yaw=0; __T.LOOK.pitch=.35; m.inp.yaw=0; m.inp.pitch=.35; for(const a of g.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=0; } });
   await page.waitForTimeout(6000); await page.screenshot({path:path.join(OUT,'grande-ritual.png')});
   const gr=await page.evaluate(()=>({corpo:document.body.classList.contains('grande'),relogio:document.querySelector('#roundName').textContent,bussola:document.querySelectorAll('#bussola .ct').length,legendas:document.querySelectorAll('#legendas .lg').length}));
   if(!gr.bussola) erros.push('bússola vazia'); if(!gr.legendas) erros.push('o Grande Ritual não gerou legenda de som');
@@ -99,12 +119,12 @@ const VISTAS=[
   await page.screenshot({path:path.join(OUT,'lance.png')});
   // v5.8: as gravações carregaram (nenhuma falhou ao decodificar)
   const total=await page.evaluate(()=>Object.values(window.SONS_RR||{}).reduce((n,l)=>n+l.length,0));
-  await page.waitForFunction(t=>__T.AMOS.prontos+__T.AMOS.falhas>=t,total,{timeout:30000}).catch(()=>{});
+  await page.waitForFunction(t=>__T.AMOS.prontos+__T.AMOS.falhas>=t,total,{timeout:90000}).catch(()=>{});   // 107 gravações na v6
   const som=await page.evaluate(()=>({prontos:__T.AMOS.prontos,falhas:__T.AMOS.falhas}));
   console.log('sons gravados:',JSON.stringify(som),'de',total); if(som.falhas||som.prontos!==total) erros.push('sons gravados não carregaram: '+JSON.stringify(som));
   // v5.8: combate. Um Cultista a 6 m; tiro na cabeça confirmado pelo servidor, depois um golpe no escudo, depois tiro na parede
   const cb=await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), c=g.actors.find(a=>a.team!==m.team);
-    m.x=-20; m.z=0; c.x=-26; c.z=0; c.st='alive'; c.hp=c.maxHp; c.invuln=99; c.shield=0; __T.LOOK.yaw=Math.PI/2; __T.LOOK.pitch=0; m.inp.yaw=__T.LOOK.yaw; m.inp.pitch=0; return {m:m.id,c:c.id}; });
+    m.x=-30; m.z=-28; c.x=-36; c.z=-28; c.st='alive'; c.hp=c.maxHp; c.invuln=99; c.shield=0; __T.LOOK.yaw=Math.PI/2; __T.LOOK.pitch=0; m.inp.yaw=__T.LOOK.yaw; m.inp.pitch=0; return {m:m.id,c:c.id}; });
   await page.waitForTimeout(1500);
   await page.evaluate(o=>{ const g=__T.game, m=g.actors.find(a=>a.id===o.m), c=g.actors.find(a=>a.id===o.c);
     g.events.push({type:'tracer',a:m.id,x0:m.x,y0:1.42,z0:m.z,x1:c.x+.3,y1:1.7,z1:c.z,alvo:c.id,cab:true},{type:'hit',a:m.id,alvo:c.id,derrubou:false}); },cb);
@@ -175,8 +195,32 @@ const VISTAS=[
   await page.evaluate(()=>{ __T.game.know=window.__know; });
   await page.waitForTimeout(600);
   await page.keyboard.down('Tab'); await page.waitForTimeout(600); await page.screenshot({path:path.join(OUT,'planta.png')}); await page.keyboard.up('Tab');
+  // v6: o relógio de velas do altar (metade do ritual, primeira etapa garantida): 4 acesas, as 2 primeiras vermelho-escuro
+  { await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), A=g.altars[0]; window.__antesV={...A}; Object.assign(A,{state:'active',localized:true,prog:.5,cp:.25,seal:0,chosen:true});
+      m.x=A.x; m.z=A.z+5; __T.LOOK.yaw=0; __T.LOOK.pitch=-.5; m.inp.yaw=0; m.inp.pitch=-.5; for(const a of g.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=0; } });
+    await page.waitForFunction(()=>__T.AV[0].velas.filter(v=>v.ch.material.opacity>.35).length===4&&__T.AV[0].velas[0].cor.g<.3,null,{timeout:30000}).catch(()=>{});   // quadros lentos no swiftshader
+    const vel=await page.evaluate(()=>__T.AV[0].velas.map(v=>({o:+v.ch.material.opacity.toFixed(2),r:+v.cor.r.toFixed(2),g:+v.cor.g.toFixed(2)})));
+    await page.screenshot({path:path.join(OUT,'velas.png')}); await page.evaluate(()=>{ Object.assign(__T.game.altars[0],window.__antesV); });
+    const acesas=vel.filter(v=>v.o>.35).length; console.log('velas:',acesas,'acesas',JSON.stringify(vel.slice(0,4)));
+    if(acesas!==4) erros.push('o relógio de velas não mostra metade do ritual: '+acesas+' acesas');
+    if(!(vel[0].g<.35&&vel[3].g>.45)) erros.push('as velas garantidas não ficaram vermelho-escuro: '+JSON.stringify(vel.slice(0,4))); }
+  // v6: reagente físico. Um Cultista segurando E na raiz de mandrágora: a raiz sobe com o progresso; coletado, some
+  { const ri=await page.evaluate(()=>{ const g=__T.game, i=g.reagents.findIndex((R,j)=>R.has&&__T.REAGM[j].tipo==='mandragora'), R=g.reagents[i], m=g.actors.find(a=>a.cid==='local'), c=g.actors.find(a=>a.team==='C');
+      m.x=R.x; m.z=R.z+3.2; __T.LOOK.yaw=0; __T.LOOK.pitch=-.45; m.inp.yaw=0; m.inp.pitch=-.45; c.x=R.x+1; c.z=R.z; c.st='alive'; c.hold={key:'col'+i,t:__T.Sim.CFG.collect*.8,max:__T.Sim.CFG.collect}; return i; });
+    await page.waitForFunction(i=>__T.REAGM[i].k>.5,ri,{timeout:30000}).catch(()=>{}); const k=await page.evaluate(i=>({k:__T.REAGM[i].k,y:__T.REAGM[i].raiz.position.y}),ri); await page.screenshot({path:path.join(OUT,'reagente-coleta.png')});
+    await page.evaluate(i=>{ const g=__T.game, c=g.actors.find(a=>a.team==='C'); c.hold={key:'',t:0,max:0}; g.reagents[i].has=false; },ri); await page.waitForFunction(i=>!__T.REAGM[i].g.visible,ri,{timeout:30000}).catch(()=>{});
+    const some=await page.evaluate(i=>!__T.REAGM[i].g.visible,ri); await page.evaluate(i=>{ __T.game.reagents[i].has=true; },ri);
+    console.log('reagente:',JSON.stringify(k),'some ao coletar:',some); if(!(k.k>.5&&k.y>.1)) erros.push('a raiz não subiu com o progresso da coleta: '+JSON.stringify(k)); if(!some) erros.push('o reagente coletado continuou no mundo'); }
+  // v6: execução. O jogador segura E sobre um Cultista caído; quando o servidor confirma a morte, o fecho aparece
+  { const ex=await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), c=g.actors.find(a=>a.team==='C'); m.x=-30; m.z=-28; c.x=-30; c.z=-29.4; c.st='down'; c.hp=0; c.downT=20; c.invuln=0;
+      m.hold={key:'exe'+c.id,t:4.1,max:4.5}; __T.LOOK.yaw=0; __T.LOOK.pitch=-.7; m.inp.yaw=0; m.inp.pitch=-.7; window.__fx0=__T.fxExecucoes(); return {c:c.id}; });
+    await page.waitForFunction(()=>__T.ARMA.S.est.nome==='executar',null,{timeout:30000}).catch(()=>{}); await page.waitForTimeout(600); const pose=await page.evaluate(()=>__T.ARMA.S.est.nome); await page.screenshot({path:path.join(OUT,'execucao-segurando.png')});
+    await page.evaluate(o=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), c=g.actors.find(a=>a.id===o.c); m.hold={key:'',t:0,max:0}; c.st='dead'; c.respawnT=30; },ex);
+    await page.waitForFunction(()=>__T.fxExecucoes()>window.__fx0,null,{timeout:30000}).catch(()=>{}); await page.waitForTimeout(300); await page.screenshot({path:path.join(OUT,'execucao-fecho.png')}); const n=await page.evaluate(()=>__T.fxExecucoes()-window.__fx0);
+    await page.evaluate(o=>{ const c=__T.game.actors.find(a=>a.id===o.c); c.st='alive'; c.hp=c.maxHp; c.x=125; c.z=8; },ex);
+    console.log('execução: pose',pose,'fechos',n); if(pose!=='executar') erros.push('a primeira pessoa não entrou na pose de execução: '+pose); if(n!==1) erros.push('o fecho da execução não apareceu: '+n); }
   // partida acelerada: despausa, avança a simulação em blocos de 30 s e deixa o cliente desenhar e tratar os eventos entre eles
-  await page.evaluate(()=>{ const b=document.querySelector('#bRes'); if(b) b.click(); const m=__T.game.actors.find(a=>a.cid==='local'); m.x=-120; m.z=0; m.invuln=0; });
+  await page.evaluate(()=>{ const b=document.querySelector('#bRes'); if(b) b.click(); const m=__T.game.actors.find(a=>a.cid==='local'); m.x=-122; m.z=-22; m.invuln=0; });
   let fases=[];
   for(let k=0;k<40;k++){ const r=await page.evaluate(()=>{ const g=__T.game; if(g.phase==='play') for(let i=0;i<900&&g.phase==='play';i++) __T.Sim.step(g,1/30); return {ph:g.phase,rt:Math.round(g.rt),fendas:g.altars.filter(A=>A.state==='fenda').length,far:g.altars.filter(A=>A.state==='farol').length}; });
     fases.push(r); await page.waitForTimeout(400); if(r.ph!=='play') break; }

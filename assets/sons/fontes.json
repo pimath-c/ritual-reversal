@@ -1,5 +1,5 @@
 {
- "_leia": "Origem e licença de cada gravação em assets/sons/fontes. Só entram CC0 1.0 e CC BY 3.0 (atribuição em docs/AUDIO.md e nos créditos do jogo). Nada de CC BY-SA, GPL ou licença não declarada. Obtidos em 2026-10-20 dos repositórios abaixo (clone do GitHub), que registram autor e link do Freesound/OpenGameArt de cada arquivo.",
+ "_leia": "Origem e licença de cada gravação em assets/sons/fontes. Só entram CC0 1.0, CC BY 3.0 e domínio público (atribuição em docs/AUDIO.md e nos créditos do jogo). Nada de CC BY-SA, GPL ou licença não declarada. Obtidos em 2026-10-20 (v5.8) e 2026-10-21 (v6, cq_*.mp3) dos repositórios abaixo (clone do GitHub), que registram autor e link do Freesound/OpenGameArt/NPS de cada arquivo.",
  "_repos": {
   "sonic-pi": {
    "url": "https://github.com/sonic-pi-net/sonic-pi",
@@ -18,6 +18,12 @@
    "commit": "4492ce6ff8d856daa4567abe2ea689f4e7a39842",
    "caminho": "mods/**/sounds",
    "licenca_doc": "README de cada mod (mcl_bells, mcl_portals, mcl_mobs, mcl_throwing, mcl_potions, mcl_armor, mcl_mud, mcl_dripping, vl_cavesounds)"
+  },
+  "conquest": {
+   "url": "https://github.com/hoffspot/conquest",
+   "commit": "a5ebc09bdf3b6def68454d9b5bf69eccf57533ef",
+   "caminho": "client/sounds",
+   "licenca_doc": "scripts/sounds/*.js (SOURCES): autor, página e licença de cada gravação, todas CC0 ou domínio público, conferidas pelo projeto em 2026-10-07; os cortes (trecho e ganho) são do repositório, sob Apache 2.0 (LICENSE do repositório)"
   }
  },
  "arquivos": {
@@ -386,6 +392,198 @@
    "autor": "Paolo D'Emilio",
    "fonte": "https://opengameart.org/content/scary-monster",
    "licenca": "CC BY 3.0"
+  },
+  "cq_death-thud-mid-1.mp3": {
+   "repo": "conquest",
+   "autor": "Wigglesworth",
+   "fonte": "https://freesound.org/people/Wigglesworth/sounds/853591/",
+   "licenca": "CC0 1.0",
+   "titulo": "A body falling to the ground, with leaf crush",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_death-thud-mid-2.mp3": {
+   "repo": "conquest",
+   "autor": "Wigglesworth",
+   "fonte": "https://freesound.org/people/Wigglesworth/sounds/853591/",
+   "licenca": "CC0 1.0",
+   "titulo": "A body falling to the ground, with leaf crush",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_death-thud-mid-3.mp3": {
+   "repo": "conquest",
+   "autor": "jmdh",
+   "fonte": "https://freesound.org/people/jmdh/sounds/181177/",
+   "licenca": "CC0 1.0",
+   "titulo": "Body falling to floor.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_ghost-call-1.mp3": {
+   "repo": "conquest",
+   "autor": "geoneo0",
+   "fonte": "https://freesound.org/people/geoneo0/sounds/193812/",
+   "licenca": "CC0 1.0",
+   "titulo": "Four_Voices_Whispering_6.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_ghost-call-2.mp3": {
+   "repo": "conquest",
+   "autor": "geoneo0",
+   "fonte": "https://freesound.org/people/geoneo0/sounds/193812/",
+   "licenca": "CC0 1.0",
+   "titulo": "Four_Voices_Whispering_6.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_ghost-call-3.mp3": {
+   "repo": "conquest",
+   "autor": "geoneo0",
+   "fonte": "https://freesound.org/people/geoneo0/sounds/193812/",
+   "licenca": "CC0 1.0",
+   "titulo": "Four_Voices_Whispering_6.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_crackle-1.mp3": {
+   "repo": "conquest",
+   "autor": "SKrafft",
+   "fonte": "https://freesound.org/people/SKrafft/sounds/681366/",
+   "licenca": "CC0 1.0",
+   "titulo": "Campfire (Position 1)",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_crackle-2.mp3": {
+   "repo": "conquest",
+   "autor": "SKrafft",
+   "fonte": "https://freesound.org/people/SKrafft/sounds/681366/",
+   "licenca": "CC0 1.0",
+   "titulo": "Campfire (Position 1)",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_crackle-3.mp3": {
+   "repo": "conquest",
+   "autor": "SKrafft",
+   "fonte": "https://freesound.org/people/SKrafft/sounds/681366/",
+   "licenca": "CC0 1.0",
+   "titulo": "Campfire (Position 1)",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_crackle-4.mp3": {
+   "repo": "conquest",
+   "autor": "SKrafft",
+   "fonte": "https://freesound.org/people/SKrafft/sounds/681366/",
+   "licenca": "CC0 1.0",
+   "titulo": "Campfire (Position 1)",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_leaves-1.mp3": {
+   "repo": "conquest",
+   "autor": "bruno.auzet",
+   "fonte": "https://freesound.org/people/bruno.auzet/sounds/714265/",
+   "licenca": "CC0 1.0",
+   "titulo": "gusts in a tree",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_leaves-2.mp3": {
+   "repo": "conquest",
+   "autor": "bruno.auzet",
+   "fonte": "https://freesound.org/people/bruno.auzet/sounds/714265/",
+   "licenca": "CC0 1.0",
+   "titulo": "gusts in a tree",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_owl-1.mp3": {
+   "repo": "conquest",
+   "autor": "Gerent",
+   "fonte": "https://freesound.org/people/Gerent/sounds/558396/",
+   "licenca": "CC0 1.0",
+   "titulo": "owl_hooting_000102_0145S3 002-070 000-002 068-074.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_owl-2.mp3": {
+   "repo": "conquest",
+   "autor": "Gerent",
+   "fonte": "https://freesound.org/people/Gerent/sounds/558397/",
+   "licenca": "CC0 1.0",
+   "titulo": "owl_hooting_000102_0145S3 002-070 000-002 037-044.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_owl-3.mp3": {
+   "repo": "conquest",
+   "autor": "Gerent",
+   "fonte": "https://freesound.org/people/Gerent/sounds/558398/",
+   "licenca": "CC0 1.0",
+   "titulo": "owl_hooting_000102_0145S3 002-070 000-002 007-015.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_creak-tree-1.mp3": {
+   "repo": "conquest",
+   "autor": "felix.blume",
+   "fonte": "https://freesound.org/people/felix.blume/sounds/140047/",
+   "licenca": "CC0 1.0",
+   "titulo": "A tree is creaking in the patagonian forest of Argentina in a deep creaky sound. (Argentina, Tierra del Fuego).",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_creak-tree-2.mp3": {
+   "repo": "conquest",
+   "autor": "felix.blume",
+   "fonte": "https://freesound.org/people/felix.blume/sounds/140047/",
+   "licenca": "CC0 1.0",
+   "titulo": "A tree is creaking in the patagonian forest of Argentina in a deep creaky sound. (Argentina, Tierra del Fuego).",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_creak-tree-3.mp3": {
+   "repo": "conquest",
+   "autor": "felix.blume",
+   "fonte": "https://freesound.org/people/felix.blume/sounds/140047/",
+   "licenca": "CC0 1.0",
+   "titulo": "A tree is creaking in the patagonian forest of Argentina in a deep creaky sound. (Argentina, Tierra del Fuego).",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_wind-forest-1.mp3": {
+   "repo": "conquest",
+   "autor": "Nox_Sound",
+   "fonte": "https://freesound.org/people/Nox_Sound/sounds/530908/",
+   "licenca": "CC0 1.0",
+   "titulo": "Ambiance_Wind_Forest_Trees_Loop_01.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_night-loop-1.mp3": {
+   "repo": "conquest",
+   "autor": "Nox_Sound",
+   "fonte": "https://freesound.org/people/Nox_Sound/sounds/637083/",
+   "licenca": "CC0 1.0",
+   "titulo": "Ambiance_Nature_Night_Cricket_Calm_Loop_Stereo.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_crypt-loop-1.mp3": {
+   "repo": "conquest",
+   "autor": "kyles",
+   "fonte": "https://freesound.org/people/kyles/sounds/451170/",
+   "licenca": "CC0 1.0",
+   "titulo": "room tone cellar dead quiet- use very low breath tone.flac",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_frogs-loop-1.mp3": {
+   "repo": "conquest",
+   "autor": "NPS/Neal Herbert",
+   "fonte": "https://www.nps.gov/yell/learn/photosmultimedia/sounds-chorusfrogs.htm",
+   "licenca": "Domínio público (NPS, EUA)",
+   "titulo": "Boreal Chorus Frogs, 05/02/2014",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_brazier-loop-1.mp3": {
+   "repo": "conquest",
+   "autor": "Nox_Sound",
+   "fonte": "https://freesound.org/people/Nox_Sound/sounds/558967/",
+   "licenca": "CC0 1.0",
+   "titulo": "Ambiance_Campfire_Loop_Stereo.wav",
+   "corte": "hoffspot/conquest (Apache 2.0)"
+  },
+  "cq_rain-loop-1.mp3": {
+   "repo": "conquest",
+   "autor": "jmbphilmes",
+   "fonte": "https://freesound.org/people/jmbphilmes/sounds/200273/",
+   "licenca": "CC0 1.0",
+   "titulo": "Rain light 2 (rural)",
+   "corte": "hoffspot/conquest (Apache 2.0)"
   }
  }
 }

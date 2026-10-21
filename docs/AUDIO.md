@@ -6,11 +6,14 @@ Gerado por `python3 tools/montar-sons.py` (não edite à mão as tabelas). As gr
 
 ## Regras de licença
 
-- Só entram gravações em **CC0 1.0** ou **CC BY 3.0**. Nada de CC BY-SA, GPL, uso não comercial ou licença não declarada.
+- Só entram gravações em **CC0 1.0**, **CC BY 3.0** ou **domínio público**. Nada de CC BY-SA, GPL, uso não comercial ou licença não declarada.
 - CC BY 3.0 exige atribuição: os créditos abaixo também aparecem no jogo (Ajustes, Créditos de áudio).
 - Os sites de áudio (Freesound, OpenGameArt, Pixabay, Kenney, Sonniss) estavam bloqueados pela rede do ambiente de
   desenvolvimento. As gravações vieram de repositórios públicos no GitHub que as redistribuem com a licença de cada arquivo
-  documentada (Sonic Pi, Minetest Game, VoxeLibre); o link original do Freesound/OpenGameArt de cada uma está na tabela.
+  documentada (Sonic Pi, Minetest Game, VoxeLibre; na v6, conquest); o link original do Freesound/OpenGameArt de cada uma está na tabela.
+- v6: os arquivos `cq_*.mp3` são cortes (trecho e ganho) que o repositório hoffspot/conquest fez de gravações CC0 do Freesound e de
+  uma gravação em domínio público do National Park Service (EUA). A gravação de cada um é CC0 ou domínio público; o corte vem com o
+  repositório, sob Apache 2.0 (<https://www.apache.org/licenses/LICENSE-2.0>), cuja licença e aviso valem para esses arquivos.
 - O tiro não é a gravação de uma arma: é montado com gravações reais em CC0 (explosão, impacto, estalo e mecanismo de metal).
   Quando os sites de áudio estiverem acessíveis, troque por gravações de armas reais e rode o script de novo.
 
@@ -74,6 +77,18 @@ Gerado por `python3 tools/montar-sons.py` (não edite à mão as tabelas). As gr
 | `cetro_sacar` | cetro acordando ao sacar | ambi_dark_woosh.flac, ambi_glass_hum.flac | CC0 1.0 |
 | `runa_volta` | runa voltando a orbitar o cetro | ambi_glass_rub.flac, perc_bell2.flac | CC0 1.0 |
 | `bencao` | Exorcista toca a cruz do revólver | ambi_glass_hum.flac, perc_bell2.flac | CC0 1.0 |
+| `queda_corpo` | alguém derrubado ou executado cai no chão | cq_death-thud-mid-1.mp3, cq_death-thud-mid-2.mp3, cq_death-thud-mid-3.mp3 | CC0 1.0 |
+| `sussurro` | inspeção do cetro e execução pelo culto | cq_ghost-call-1.mp3, cq_ghost-call-2.mp3, cq_ghost-call-3.mp3 | CC0 1.0 |
+| `estalo_fogo` | reagente queimado pela caça | cq_crackle-1.mp3, cq_crackle-2.mp3, cq_crackle-3.mp3, cq_crackle-4.mp3 | CC0 1.0 |
+| `folhas` | coleta de reagente na mata | cq_leaves-1.mp3, cq_leaves-2.mp3 | CC0 1.0 |
+| `coruja` | mata à noite (avulso) | cq_owl-1.mp3, cq_owl-2.mp3, cq_owl-3.mp3 | CC0 1.0 |
+| `rangido` | mata à noite (avulso) | cq_creak-tree-1.mp3, cq_creak-tree-2.mp3, cq_creak-tree-3.mp3 | CC0 1.0 |
+| `mata_laco` | fundo da mata (laço) | cq_wind-forest-1.mp3 | CC0 1.0 |
+| `noite_laco` | fundo a céu aberto (laço) | cq_night-loop-1.mp3 | CC0 1.0 |
+| `cripta_laco` | fundo dentro da catedral (laço) | cq_crypt-loop-1.mp3 | CC0 1.0 |
+| `charco_laco` | fundo perto do Charco (laço) | cq_frogs-loop-1.mp3 | Domínio público (NPS, EUA) |
+| `fogo_laco` | fornos da Carvoaria (laço) | cq_brazier-loop-1.mp3 | CC0 1.0 |
+| `chuva_laco` | chuva, no clima de chuva (laço) | cq_rain-loop-1.mp3 | CC0 1.0 |
 
 ## Créditos (gravações usadas)
 
@@ -85,32 +100,47 @@ Gerado por `python3 tools/montar-sons.py` (não edite à mão as tabelas). As gr
 | Erdie | CC BY 3.0 | https://freesound.org/people/Erdie/sounds/41579/ | default_hard_footstep.1.ogg, default_hard_footstep.2.ogg, default_hard_footstep.3.ogg |
 | Exsomniel | CC0 1.0 | http://freesound.org/people/Exsomniel/sounds/207809/ | ambi_choir.flac |
 | FreqMan e Wuzzy | CC BY 3.0 | https://freesound.org/people/FreqMan/sounds/32541/ | mcl_portals_teleport.ogg |
+| Gerent | CC0 1.0 | https://freesound.org/people/Gerent/sounds/558396/ | cq_owl-1.mp3 |
+| Gerent | CC0 1.0 | https://freesound.org/people/Gerent/sounds/558397/ | cq_owl-2.mp3 |
+| Gerent | CC0 1.0 | https://freesound.org/people/Gerent/sounds/558398/ | cq_owl-3.mp3 |
 | Halgrimm | CC0 1.0 | http://freesound.org/people/Halgrimm/sounds/169867/ | ambi_swoosh.flac |
 | Iwan Gabovitch (qubodup) | CC0 1.0 | http://opengameart.org/users/qubodup | default_dug_metal.1.ogg, default_dug_metal.2.ogg |
 | Johnnie_Holiday | CC0 1.0 | https://freesound.org/people/Johnnie_Holiday/sounds/546571/ | mcl_portals_open_end_portal.ogg |
+| NPS/Neal Herbert | Domínio público (NPS, EUA) | https://www.nps.gov/yell/learn/photosmultimedia/sounds-chorusfrogs.htm | cq_frogs-loop-1.mp3 |
 | Northern_Monkey | CC0 1.0 | http://freesound.org/people/Northern_Monkey/sounds/177242/ (link marcado como desativado pelo Sonic Pi) | misc_cineboom.flac |
+| Nox_Sound | CC0 1.0 | https://freesound.org/people/Nox_Sound/sounds/530908/ | cq_wind-forest-1.mp3 |
+| Nox_Sound | CC0 1.0 | https://freesound.org/people/Nox_Sound/sounds/558967/ | cq_brazier-loop-1.mp3 |
+| Nox_Sound | CC0 1.0 | https://freesound.org/people/Nox_Sound/sounds/637083/ | cq_night-loop-1.mp3 |
 | Ogrebane | CC0 1.0 | http://opengameart.org/content/wood-and-metal-sound-effects-volume-2 | default_place_node_metal.2.ogg |
 | Paolo D'Emilio | CC BY 3.0 | https://opengameart.org/content/scary-monster | cave1.ogg |
 | Planman | CC0 1.0 | https://freesound.org/people/Planman/sounds/208111/ | mcl_mobs_mob_poof.ogg |
 | Ryding | CC0 1.0 | http://freesound.org/people/Ryding/sounds/94337/ | default_snow_footstep.1.ogg, default_snow_footstep.2.ogg, default_snow_footstep.3.ogg, default_snow_footstep.4.ogg, default_snow_footstep.5.ogg |
+| SKrafft | CC0 1.0 | https://freesound.org/people/SKrafft/sounds/681366/ | cq_crackle-1.mp3, cq_crackle-2.mp3, cq_crackle-3.mp3, cq_crackle-4.mp3 |
 | Sheyvan | CC0 1.0 | https://freesound.org/people/Sheyvan/sounds/476113/ | default_dig_choppy.1.ogg, default_dig_choppy.2.ogg, default_dig_choppy.3.ogg |
 | SoundCollectah | CC0 1.0 | http://www.freesound.org/people/SoundCollectah/sounds/109400/ | perc_snap.flac |
 | TheRandomLegoBrick | CC0 1.0 | mods/ITEMS/mcl_mud/README.txt | mud_footsteps.ogg |
 | Tomlija | CC BY 3.0 | http://www.freesound.org/people/Tomlija/sounds/97669/ | default_break_glass.2.ogg |
+| Wigglesworth | CC0 1.0 | https://freesound.org/people/Wigglesworth/sounds/853591/ | cq_death-thud-mid-1.mp3, cq_death-thud-mid-2.mp3 |
 | Zajo | CC0 1.0 | http://freesound.org/people/Zajo/sounds/4832/ | drum_heavy_kick.flac |
 | ani_music | CC0 1.0 | http://freesound.org/people/ani_music/sounds/198403/ | ambi_glass_rub.flac |
 | artisticdude | CC0 1.0 | https://opengameart.org/content/rpg-sound-pack | mcl_armor_equip_chainmail.ogg |
+| bruno.auzet | CC0 1.0 | https://freesound.org/people/bruno.auzet/sounds/714265/ | cq_leaves-1.mp3, cq_leaves-2.mp3 |
 | cmusounddesign | CC BY 3.0 | http://www.freesound.org/people/cmusounddesign/sounds/71947/ | default_break_glass.1.ogg |
 | dav0r | CC0 1.0 | https://freesound.org/people/dav0r/sounds/176760/ | mcl_throwing_egg_impact.ogg |
 | davidworksonline | CC0 1.0 | http://freesound.org/people/davidworksonline/sounds/54973/ | misc_crow.flac |
 | edsward (modificado por sorcerykid) | CC0 1.0 | https://freesound.org/people/edsward/sounds/341866/ | mcl_bells_bell_stroke.ogg |
+| felix.blume | CC0 1.0 | https://freesound.org/people/felix.blume/sounds/140047/ | cq_creak-tree-1.mp3, cq_creak-tree-2.mp3, cq_creak-tree-3.mp3 |
+| geoneo0 | CC0 1.0 | https://freesound.org/people/geoneo0/sounds/193812/ | cq_ghost-call-1.mp3, cq_ghost-call-2.mp3, cq_ghost-call-3.mp3 |
 | hullum | CC0 1.0 | https://freesound.org/people/hullum/sounds/415559/ | perc_bell2.flac |
 | hullum | CC0 1.0 | https://freesound.org/people/hullum/sounds/415578/ | perc_impact1.flac |
 | hullum | CC0 1.0 | https://freesound.org/people/hullum/sounds/415579/ | perc_door.flac |
 | hullum | CC0 1.0 | https://freesound.org/people/hullum/sounds/415581/ | perc_impact2.flac |
+| jmbphilmes | CC0 1.0 | https://freesound.org/people/jmbphilmes/sounds/200273/ | cq_rain-loop-1.mp3 |
+| jmdh | CC0 1.0 | https://freesound.org/people/jmdh/sounds/181177/ | cq_death-thud-mid-3.mp3 |
 | kaligari | CC0 1.0 | http://freesound.org/people/kaligari/sounds/35391/ | ambi_glass_hum.flac |
 | kaligari | CC0 1.0 | http://freesound.org/people/kaligari/sounds/35392/ | ambi_haunted_hum.flac |
 | kretopi | CC0 1.0 | https://freesound.org/people/kretopi/sounds/406405/ | mcl_throwing_throw.ogg |
+| kyles | CC0 1.0 | https://freesound.org/people/kyles/sounds/451170/ | cq_crypt-loop-1.mp3 |
 | lolamadeus | CC0 1.0 | https://freesound.org/people/lolamadeus/sounds/179341/ | default_gravel_dig.1.ogg, default_gravel_dig.2.ogg |
 | lsprice | CC BY 3.0 | http://www.freesound.org/people/lsprice/sounds/88808/ | default_break_glass.3.ogg |
 | mcl_dripping (VoxeLibre) | CC0 1.0 | mods/ENTITIES/mcl_dripping/README.md | drippingwater_drip.1.ogg, drippingwater_drip.2.ogg, drippingwater_drip.3.ogg |

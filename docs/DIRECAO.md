@@ -54,4 +54,37 @@ com semente fixa. Um registro humano é indício, não conclusão: tudo que depe
 | Eliminação com peso, reagente físico, ritual por estados, inspeções e skins | 6, 7, 8 | folhas de quadros + jogo no navegador | só visual e som, servidor decide |
 
 ## Medições do mapa (antes → depois)
-Preenchido com `node tools/fluxo.js` e `exp.js` (400 noites de bots, sementes 1000–1399); ver `notas/v6.md`.
+Com `node tools/fluxo.js` (caminho real do A*, a pé a 4,6 m/s) e 400 noites de bots com sementes 1000–1399.
+
+| Medida | Mapa antigo (v5.9) | v6 |
+| --- | --- | --- |
+| Forma | retângulo de 192 × 116 m, catedral cercada pela mata | catedral em cruz no promontório, mata ao sul, desfiladeiro com 3 travessias |
+| Reagentes | 10 num pátio só | 10 em 7 lugares da mata (Pedreira, Charco, Carvoaria, Encruzilhada, cabeceiras da ponte, ruínas) |
+| Nascimento → altares (média) | — | caça 157 m, culto 164 m (diferença 4,3%; invariante: até 10%) |
+| Altares ouvidos de um ponto (24 m) | — | no máximo 2 (invariante) |
+| Aproximação clara e escura em todo altar | — | sim, nos 6 (o mais escuro: Abside, 68% do entorno) |
+| Área andável | — | mata 19 528 m², planalto 7 276 m², catedral 2 492 m², claustro 104 m², travessias 232 m² |
+| Peças altas que parecem mais baixas que a colisão | 61 muros arruinados e 31 estátuas (vistos e não acertáveis) | 0 de 250 (`tools/alturas.js`) |
+| Vitórias do culto, bots | 42% | 38–40% (alvo do documento de design: 45–55%) |
+
+"—" é o que não foi medido no mapa antigo antes de trocá-lo (a ferramenta nasceu com o mapa novo).
+
+## O que a v6 fez com cada problema
+1. Cobertura baixa: feito e testado por regra (`tools/testar.js`, seção 9) e no C#.
+2. Aproximação silenciosa: agachar feito e testado (passo leve só a 5 m). A acústica por lugar existe (fundos gravados por
+   região), mas ninguém ouviu: o ambiente de desenvolvimento não tem áudio.
+3. Regiões: feito; medido acima.
+4. Bots fracos: não mexido nesta versão. Continua o maior risco do modo solo (ver próximos passos).
+5. Tempo morto: os reagentes na mata põem caminho, risco e travessias entre um ritual e outro. Só um registro humano diz
+   se o intervalo passou a ter jogo.
+6. "Segure E": coletar, queimar, reanimar e executar ganharam pose, gesto e resposta física ao progresso; a regra é a mesma.
+7. Queda e execução: fecho por lado, vítima vendo o mundo fechar, som de corpo caindo.
+8. Inspeções e acabamento: três inspeções novas e nove skins (ver `docs/SKINS.md`).
+
+## Próximos três, por impacto
+1. **Playtest com quatro pessoas** no mapa novo, com o relatório da noite (`tools/analisar.js`): o equilíbrio dos bots
+   (38–40%) não diz nada sobre gente, e o tempo morto só se mede com gente.
+2. **Bots que dão medo**: o Caçador humano derrubou 8 e não caiu nenhuma vez. Bots Cultistas que usam a cobertura nova,
+   recuam feridos e emboscam nas travessias.
+3. **Ouvir o jogo**: volumes, a acústica por lugar e trocar o tiro montado por gravação de arma quando os sites de áudio
+   estiverem liberados na rede do ambiente.

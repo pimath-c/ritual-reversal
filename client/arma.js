@@ -17,7 +17,7 @@
 // O jogo (index.html) roda dentro de uma função: ele chama RR_ARMA com o que este módulo usa e recebe a API de volta.
 window.RR_ARMA=function(D){
 'use strict';
-const {nivel,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula}=D;
+const {nivel,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula,SKINS}=D;
 let vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas=[],vmFlash;
 const PI=Math.PI, TAU=PI*2;
 const cl=(v,a,b)=>v<a?a:v>b?b:v, mix=(a,b,t)=>a+(b-a)*t;
@@ -58,7 +58,9 @@ const DEDOS={
   suporte:  [.66,.72,.78,.84, .35,.55,.3, .02],
   berco:    [.42,.48,.54,.6,  .55,.3,.15, .15],  // mão aberta segurando o revólver pelo tambor
   extrai:   [.4,.6,.66,.72,   .2,.15,0, .1],     // polegar esticado na vareta do extrator
-  municia:  [.55,.86,.9,.92,  .5,.85,.45, 0] };
+  municia:  [.55,.86,.9,.92,  .5,.85,.45, 0],
+  gira:     [.48,.06,.12,.18, .55,.2,.1, .3],     // giro no guarda-mato: só o indicador por dentro, os outros abertos
+  mostra:   [.2,.25,.3,.35,   .4,.3,.2, .3] };     // mão aberta virada para quem olha
 const ND=8, ESC_MAO=1.16;
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -150,6 +152,7 @@ function criarCartucho(tipo,vazio){ matsPeca(); const g=new THREE.Group(), car=t
 // ---------------------------------------------------------------------------------------------------------------------
 // Armas da primeira pessoa (as do terceiro-pessoa continuam em index.html): mesmas formas, com as peças que se mexem.
 function carabinaFP(){ const A=armaCarabina(), aco=matMetal(0x3a3d43,.36), acoClaro=matMetal(0x6a6e75,.3);
+  aco.userData.papel=acoClaro.userData.papel='caixa'; acoClaro.userData.claro=1.7;   // peças da caixa (portinhola, ferrolho): seguem o acabamento da caixa, mais claras
   // portinhola de carga no lado direito, presa pela frente: o cartucho a empurra para dentro
   const port=new THREE.Group(); port.position.set(.0262,-.011,-.078); A.g.add(port);
   const placa=new THREE.Mesh(new THREE.BoxGeometry(.0035,.021,.031),acoClaro); placa.position.set(0,0,.0155); port.add(placa);
@@ -165,7 +168,7 @@ function carabinaFP(){ const A=armaCarabina(), aco=matMetal(0x3a3d43,.36), acoCl
     entrada:V3(.0385,-.011,-.034), dirEntrada:V3(-Math.sin(.3),0,-Math.cos(.3)), rotEntrada:[0,.3,0]}); }
 function revolverFP(){ matsPeca();
   const g=new THREE.Group(), prata=matMetal(0xc8ccd2,.22,1), escuro=matMetal(0x1c1d20,.45), mad=new THREE.MeshStandardMaterial({color:0x2e1a12,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:.45,emissive:0});
-  prata.emissive=new THREE.Color(0x000000);
+  prata.emissive=new THREE.Color(0x000000); prata.userData.papel='prata'; escuro.userData.papel='escuro'; mad.userData.papel='madeira';
   const arm=lateral([[-.05,-.022],[.075,-.022],[.085,.042],[-.02,.05],[-.05,.03]],.03,.005,prata); g.add(arm);
   const cano=cilZ(.013,.014,.2,prata,20); cano.position.set(0,.03,-.17); g.add(cano);
   const nerv=new THREE.Mesh(new THREE.BoxGeometry(.012,.012,.2),prata); nerv.position.set(0,.045,-.17); g.add(nerv);
@@ -188,7 +191,7 @@ function revolverFP(){ matsPeca();
     for(const c of [cv,cz]){ c.position.set(Math.cos(a)*.022,Math.sin(a)*.022,.0335-.017+.0016); ext.add(c); }
     camaras.push({vivo:cv,vazio:cz,a}); }
   const cabo=lateral([[-.05,.012],[.012,-.015],[.0,-.1],[-.012,-.14,-.05,-.135],[-.075,-.07],[-.07,-.005]],.034,.007,mad); g.add(cabo);
-  const cruzMat=prata.clone(); cruzMat.emissive=new THREE.Color(0x000000); const cruz=[];
+  const cruzMat=prata.clone(); cruzMat.emissive=new THREE.Color(0x000000); cruzMat.userData.papel='cruz'; const cruz=[];
   for(const sx of [-1,1]){ const v=new THREE.Mesh(new THREE.BoxGeometry(.002,.05,.009),cruzMat); v.position.set(sx*.021,-.07,.04); g.add(v); const h=new THREE.Mesh(new THREE.BoxGeometry(.002,.009,.03),cruzMat); h.position.set(sx*.021,-.058,.04); g.add(h); cruz.push(v,h); }
   const guarda=new THREE.Mesh(new THREE.TorusGeometry(.025,.005,8,20,PI*1.2),prata); guarda.rotation.y=PI/2; guarda.rotation.x=PI*.6; guarda.position.set(0,-.036,0); g.add(guarda);
   const gat=new THREE.Mesh(new THREE.BoxGeometry(.005,.022,.006),escuro); gat.position.set(0,-.032,.006); gat.rotation.x=.25; g.add(gat);
@@ -203,7 +206,7 @@ function revolverFP(){ matsPeca();
 function cetroFP(cor){ const C=cetroOsso(cor);
   // as vértebras ganham material próprio para acender em sequência (sacar, lançar, canalizar)
   const vert=[]; C.g.children.forEach(o=>{ if(o.isMesh&&o.geometry&&o.geometry.type==='TorusGeometry'){ o.material=o.material.clone(); o.material.emissive=new THREE.Color(cor); o.material.emissiveIntensity=0; vert.push(o); } });
-  vert.sort((a,b)=>a.position.y-b.position.y); return Object.assign(C,{tipo:'cetro',vert}); }
+  vert.sort((a,b)=>a.position.y-b.position.y); C.brasa.material.userData.papel='brasa'; return Object.assign(C,{tipo:'cetro',vert,corOriginal:cor}); }
 
 // Luz de leitura: a arma na mão é a estrela, mas a noite é escura. Em vez de mais uma luz na cena (que pesaria em todo
 // material do mundo), os materiais da primeira pessoa ganham uma luz própria vinda de cima à esquerda (no espaço da câmera)
@@ -213,7 +216,10 @@ function luzDeLeitura(mat){ const L=Array.isArray(mat)?mat:[mat];
   for(const m of L){ if(!m||m.userData.leitura||!(m.isMeshStandardMaterial)) continue; m.userData.leitura=true;
     m.onBeforeCompile=sh=>{ sh.uniforms.uLeitura=LEITURA.uL; sh.uniforms.uRim=LEITURA.uRim;
       sh.fragmentShader=sh.fragmentShader.replace('void main() {','uniform float uLeitura; uniform float uRim;\nvoid main() {')
-        .replace('#include <output_fragment>','{ vec3 nL=normalize(normal); float k=max(dot(nL,normalize(vec3(-.45,.7,.55))),0.); float r=pow(1.-max(dot(nL,vec3(0.,0.,1.)),0.),3.);\n  outgoingLight+=diffuseColor.rgb*uLeitura*k+vec3(.55,.62,.8)*uRim*r*(1.-roughnessFactor*.6); }\n#include <output_fragment>'); };
+        .replace('#include <output_fragment>','{ vec3 nL=normalize(normal), Ld=normalize(vec3(-.45,.7,.55)), Vd=normalize(vViewPosition); float k=max(dot(nL,Ld),0.); float r=pow(1.-max(dot(nL,vec3(0.,0.,1.)),0.),3.);\n'+
+          // brilho especular da mesma luz: é ele que faz o metal, a gravura e o latão aparecerem no escuro
+          '  float sp=pow(max(dot(nL,normalize(Ld+Vd)),0.),mix(6.,72.,1.-roughnessFactor))*(1.-roughnessFactor*.75)*(.25+metalnessFactor*.75);\n'+
+          '  outgoingLight+=diffuseColor.rgb*uLeitura*(k*(1.-metalnessFactor*.6)+.22)+mix(vec3(1.),diffuseColor.rgb,metalnessFactor)*min(sp*uLeitura*1.1,.85)+vec3(.55,.62,.8)*uRim*r*(1.-roughnessFactor*.6); }\n#include <output_fragment>'); };
     m.customProgramCacheKey=()=>'leitura'; m.needsUpdate=true; } }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -328,7 +334,12 @@ function construir(){ if(S.ok) return; matsPeca();
   S.rigs={carabina:Object.assign({arma:vmCarabina},rigH),revolver:Object.assign({arma:vmRevolver},rigH),cetro:Object.assign({arma:vmCetro},rigC)};
   for(const k in S.rigs) S.rigs[k].nome=k;
   for(const o of [vmH,vmC]) o.traverse(x=>{ if(x.isMesh){ x.castShadow=false; x.receiveShadow=false; x.frustumCulled=false; luzDeLeitura(x.material); } });
+  if(SKINS){ SKINS.preparar(vmH); SKINS.preparar(vmC); for(const k of ['carabina','revolver','cetro']) vestir(k,SKINS.ESC[k]); }
   montarClipes(); S.ok=true; }
+// skin na primeira pessoa (client/skins.js): materiais, acessórios e as cores da brasa (runas, rastro) do cetro
+function vestir(arma,id){ if(!SKINS) return; const A=arma==='carabina'?vmCarabina:arma==='revolver'?vmRevolver:vmCetro; SKINS.aplicar(A,arma,id,true);
+  A.g.traverse(x=>{ if(x.isMesh&&!x.userData.vm){ x.userData.vm=true; x.castShadow=x.receiveShadow=false; x.frustumCulled=false; luzDeLeitura(x.material); } });
+  if(arma==='cetro'){ const c=A.corBrasa||new THREE.Color(A.corOriginal), claro=c.clone().lerp(new THREE.Color(1,1,1),.5); vmRunas.forEach(r=>r.material.color.copy(claro)); if(A.runa) A.runa.material.color.copy(claro); } }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Poses e clipes. Unidades: as do corpo da arma (1 = 0,72 m na carabina e no revólver; 0,6 m no cetro).
@@ -430,16 +441,27 @@ function montarClipesCarabina(C){
     E:[chave(0,['corpo',[-.5,-.6,.1],[.6,.4,-.6],[-.4,-.9,0],'aberta']),chave(.2,P.cE,{p:[-.016,-.06,-.25],dd:'relaxada',e:'o'}),chave(.27,P.cE,{e:'q'}),chave(.72,P.cE)],
     c:{alav:[[0,0],[.36,0],[.43,1,'q'],[.46,1],[.55,0,'i'],[.72,0]]},
     ev:[[0,'som','roupa',.55],[.26,'som','empunhar',.6],[.37,'som','alavanca',.55],[.55,'cam',[-.01,.003,-.004]],[.55,'camara',1]]});
-  // ---------- inspeção: mostra o lado direito, confere a câmara pela alavanca, passa o polegar no latão ----------
-  C.carabina_inspecao=prepararClipe({nome:'inspecao',dur:3.2,
-    a:[[0,[0,0,0],[0,0,0]],[.55,[-.07,.03,.12],[.12,.55,.9],'w'],[1.0,[-.07,.034,.12],[.15,.58,.95],'s'],
-       [1.25,[-.07,.03,.12],[.1,.56,.92]],[1.85,[-.07,.032,.12],[.12,.57,.93]],
-       [2.25,[-.04,.0,.1],[-.15,-.25,-.5],'w'],[2.75,[-.04,.004,.1],[-.12,-.28,-.52],'s'],[3.2,[0,0,0],[0,0,0],'w']],
-    D:[chave(0,P.cD),chave(3.2,P.cD)],
-    E:[chave(0,P.cE),chave(.55,P.cE,{p:[-.018,-.05,-.17]}),chave(2.0,P.cE,{p:[-.018,-.05,-.17]}),chave(2.3,P.cE,{p:[-.02,-.035,-.13],d:[.6,.6,-.5],c:[-.6,-.6,.4],dd:'relaxada'}),
-       chave(2.55,P.cE,{p:[-.022,-.03,-.09],d:[.6,.6,-.5],c:[-.6,-.6,.4],dd:'relaxada'}),chave(2.8,P.cE,{p:[-.02,-.035,-.13],d:[.6,.6,-.5],c:[-.6,-.6,.4],dd:'relaxada'}),chave(3.2,P.cE)],
-    c:{alav:[[0,0],[1.05,0],[1.25,.42,'o'],[1.75,.42],[1.9,0,'i'],[3.2,0]]},
-    ev:[[.05,'som','roupa',.45],[1.06,'som','alavanca',.32],[1.88,'som','empunhar',.35],[2.2,'som','roupa',.35],[3.05,'som','empunhar',.4]]});
+  // ---------- inspeção MECÂNICA (5,6 s): conferência de quem cuida da arma. O lado da portinhola; a câmara aberta pela
+  // alavanca até aparecer o latão (e fechada sem tirar o cartucho); o outro lado, com a luz correndo pela caixa (gancho da
+  // skin) e o polegar na gravura; a mira levada ao olho; e o tapa seco na caixa antes de voltar. Nada é ejetado nem gasto. ----------
+  C.carabina_inspecao=prepararClipe({nome:'inspecao',dur:5.6,
+    a:[[0,[0,0,0],[0,0,0]],
+       [.5,[-.07,.03,.12],[.12,.55,.9],'w'],[.75,[-.07,.034,.12],[.15,.58,.95],'s'],
+       [1.25,[-.07,.028,.13],[.08,.6,.97],'s'],[1.6,[-.07,.032,.12],[.13,.57,.93],'o'],
+       [2.15,[-.04,.0,.1],[-.15,-.25,-.5],'w'],[2.5,[-.042,.004,.11],[-.12,-.3,-.55],'s'],[3.0,[-.045,.006,.115],[-.1,-.36,-.58],'s'],
+       [3.5,[-.2,.105,-.02],[.03,0,-.05],'w'],[4.0,[-.205,.107,-.016],[.035,.004,-.05],'s'],
+       [4.35,[.02,-.05,.05],[-.3,.1,-.18],'w'],[4.46,[.024,-.058,.05],[-.34,.1,-.21],'q'],[4.75,[.02,-.05,.05],[-.3,.1,-.18],'o'],
+       [5.6,[0,0,0],[0,0,0],'w']],
+    D:[chave(0,P.cD),chave(5.6,P.cD)],
+    E:[chave(0,P.cE),chave(.5,P.cE,{p:[-.018,-.05,-.17]}),chave(2.0,P.cE,{p:[-.018,-.05,-.17]}),
+       chave(2.3,P.cE,{p:[-.02,-.035,-.13],d:[.6,.6,-.5],c:[-.6,-.6,.4],dd:'relaxada'}),chave(2.65,P.cE,{p:[-.022,-.03,-.08],d:[.6,.6,-.5],c:[-.6,-.6,.4],dd:'relaxada'}),
+       chave(2.95,P.cE,{p:[-.02,-.032,-.05],d:[.6,.6,-.5],c:[-.6,-.6,.4],dd:'relaxada'}),chave(3.25,P.cE,{e:'o'}),chave(4.15,P.cE),
+       // o tapa: a esquerda larga o fuste, a palma bate na lateral da caixa e volta
+       chave(4.3,P.cE,{p:[-.03,-.02,-.1],dd:'aberta',e:'i'}),chave(4.44,['arma',[-.04,.0,-.02],[.2,.3,-1],[-1,.1,.1],'palma'],{e:'q'}),chave(4.62,['arma',[-.043,.002,-.02],[.2,.3,-1],[-1,.1,.1],'palma']),
+       chave(4.95,P.cE,{e:'o'}),chave(5.6,P.cE)],
+    c:{alav:[[0,0],[1.0,0],[1.18,.42,'o'],[1.48,.42],[1.58,0,'i'],[5.6,0]]},
+    ev:[[.05,'som','roupa',.45],[1.02,'som','alavanca',.32],[1.58,'som','empunhar',.38],[1.6,'cam',[-.004,.002,.002]],[2.05,'som','roupa',.35],
+        [2.35,'skin','revela'],[3.3,'som','roupa',.3],[4.45,'som','empunhar',.62],[4.46,'cam',[.006,-.003,0]],[5.45,'som','empunhar',.35]]});
   // ---------- ajuste de pegada (ocioso): a mão do fuste afrouxa, escorrega e firma; a direita aperta ----------
   C.carabina_ajuste=prepararClipe({nome:'ajuste',dur:1.1,
     a:[[0,[0,0,0],[0,0,0]],[.35,[.002,-.006,0],[.0,.0,-.035]],[.7,[-.001,.002,0],[.0,.0,.012],'o'],[1.1,[0,0,0],[0,0,0]]],
@@ -455,6 +477,10 @@ function montarClipesCarabina(C){
   C.carabina_gesto=prepararClipe({nome:'gesto',dur:.62,a:[[0,[0,0,0],[0,0,0]],[.12,[.03,-.05,.03],[-.12,-.05,-.12],'o'],[.42,[.03,-.05,.03],[-.12,-.05,-.12]],[.62,[0,0,0],[0,0,0],'s']],
     D:[chave(0,P.cD),chave(.62,P.cD)],E:[chave(0,P.cE),chave(.1,['corpo',[-.3,-.3,-.15],[.3,.3,-1],[-.3,1,0],'garra'],{e:'i'}),chave(.2,['corpo',[-.26,-.1,-.56],[.25,.15,-1],[-.1,1,.1],'palma'],{e:'q'}),
       chave(.4,['corpo',[-.26,-.11,-.54],[.25,.15,-1],[-.1,1,.1],'palma']),chave(.62,P.cE,{e:'s'})],ev:[[0,'som','roupa',.5]]});
+  // executar (segurando E sobre um Cultista caído): a carabina aponta para o chão, a esquerda espalmada sobre o corpo
+  // queima o sinal; o tremor da mão cresce até o fim (camada de tremor, pelo progresso que o servidor manda)
+  C.carabina_executar=prepararClipe({nome:'executar',dur:1,laco:true,a:[[0,[.02,-.07,.0],[-.78,.12,-.12]]],D:[chave(0,P.cD)],
+    E:[chave(0,['corpo',[-.24,-.22,-.62],[.1,-.7,-1],[0,1,-.6],'palma'])]});
   C.carabina_abaixada=prepararClipe({nome:'abaixada',dur:1,laco:true,a:[[0,[.06,-.16,.1],[-.45,.25,-.25]]],D:[chave(0,P.cD)],
     E:[chave(0,['corpo',[-.28,-.24,-.36],[.2,-.6,-1],[-.2,1,-.4],'aberta'])]});
 }
@@ -508,15 +534,32 @@ function montarClipesRevolver(C){
        chave(.42,['arma',[-.048,-.06,.05],[.45,-.6,-.2],[-.9,.2,.3],'relaxada']),chave(.6,P.rE,{e:'s'}),chave(.86,P.rE)],
     c:{cao:[[0,0],[.6,0],[.68,1,'q'],[.86,1]],cruz:[[0,0],[.26,0],[.36,1,'o'],[.58,0,'s'],[.86,0]]},
     ev:[[0,'som','roupa',.5],[.3,'som','bencao',.6],[.64,'som','cao',.5]]});
-  C.revolver_inspecao=prepararClipe({nome:'inspecao',dur:3.4,
-    a:[[0,[0,0,0],[0,0,0]],[.55,[-.05,.03,.1],[.12,.5,-.8],'w'],[1.4,[-.05,.034,.1],[.15,.52,-.84],'s'],[1.7,[-.04,.02,.09],[.2,-.3,.75],'w'],[2.6,[-.04,.024,.09],[.22,-.32,.78],'s'],[3.4,[0,0,0],[0,0,0],'w']],
-    D:[chave(0,P.rD),chave(3.4,P.rD)],
-    E:[chave(0,P.rE),chave(.5,P.rE),chave(.75,['arma',[-.05,-.07,.06],[.4,-.8,-.2],[-.9,.2,.3],'relaxada'],{e:'o'}),chave(1.1,['arma',[-.048,-.062,.05],[.45,-.6,-.2],[-.9,.2,.3],'relaxada']),
-       chave(1.35,['arma',[-.05,-.07,.06],[.4,-.8,-.2],[-.9,.2,.3],'relaxada']),chave(1.65,P.rE),chave(1.95,['arma',[-.036,-.02,-.02],[.5,.7,-.4],[-.7,-.5,.4],'berco'],{e:'s'}),
-       chave(2.15,['arma',[-.036,-.01,-.03],[.5,.7,-.4],[-.7,-.5,.4],'berco'],{e:'o'}),chave(2.35,['arma',[-.036,-.02,-.02],[.5,.7,-.4],[-.7,-.5,.4],'berco']),chave(2.55,['arma',[-.036,-.01,-.03],[.5,.7,-.4],[-.7,-.5,.4],'berco'],{e:'o'}),
-       chave(2.9,P.rE,{e:'s'}),chave(3.4,P.rE)],
-    c:{cruz:[[0,0],[.8,0],[1.0,1,'o'],[1.4,.2,'s'],[1.6,0],[3.4,0]],giro:[[0,0],[2.1,0],[2.3,.5,'o'],[2.5,.5],[2.7,1,'o'],[3.4,1]]},
-    ev:[[.05,'som','roupa',.45],[.82,'som','bencao',.55],[2.18,'som','cao',.25],[2.58,'som','cao',.25],[3.2,'som','empunhar',.35]]});
+  // inspeção de EXIBIÇÃO (5,8 s): o polegar desarma o cão e destrava; um golpe de pulso abre o tambor, a esquerda o gira
+  // (os estalos da catraca vão rareando), outro golpe fecha; dois giros no guarda-mato em volta do indicador; o polegar
+  // arma o cão e traça a cruz do cabo (gancho da skin: a cruz acende na cor do esmalte).
+  { const G=V3(0,-.034,.004).add(V3(.025,.045,-.13)), T=V3(0,-.03,-.03), giro=[], t0=2.62, dur=1.13, voltas=2, N=12*voltas;
+    // o tempo de cada chave sai da curva suave invertida: o giro acelera, roda e freia, com chaves a cada 30°
+    const inv=f=>{ let a=0,b=1; for(let i=0;i<30;i++){ const m=(a+b)/2; if(CURVA.s(m)<f) a=m; else b=m; } return (a+b)/2; };
+    for(let k=0;k<=N;k++){ const th=-k/N*voltas*TAU, q=qE([th,0,0]), p=T.clone().add(G).sub(G.clone().applyQuaternion(q)); giro.push([t0+inv(k/N)*dur,[p.x,p.y,p.z],[th,0,0],'l']); }
+    const tFim=t0+dur, rDc=['corpo',[.034+.025,-.072+.045+T.y,.044-.13+T.z],[-.35,-.25,-.9],[.95,.15,.2],'gira'];
+    const eAb=['arma',[-.034,-.03,-.005],[.55,.6,-.55],[-.7,-.4,.4],'berco'], eSeg=['arma',[-.03,-.042,.0],[.45,.75,-.45],[-.75,-.35,.35],'berco'];
+    C.revolver_inspecao=prepararClipe({nome:'inspecao',dur:5.8,
+      a:[[0,[0,0,0],[0,0,0]],[.4,[-.01,-.005,.02],[.04,.06,-.2],'s'],[.62,[-.03,-.01,.04],[.1,.2,-.85],'q'],[.95,[-.08,-.02,.1],[.35,.35,-.75],'o'],[2.0,[-.08,-.018,.1],[.38,.36,-.74],'s'],
+         [2.2,[0,0,.02],[0,-.1,.32],'q'],[2.4,[0,-.02,-.01],[0,0,.05],'o'],[2.55,[T.x,T.y,T.z],[0,0,0],'s'],...giro.slice(1),
+         [tFim+.12,[T.x,T.y+.006,T.z],[.06,0,0],'o'],[4.0,[0,0,0],[0,0,0],'s'],[4.6,[-.05,.03,.1],[.12,.5,-.8],'w'],[5.1,[-.05,.034,.1],[.15,.52,-.84],'s'],[5.8,[0,0,0],[0,0,0],'w']],
+      D:[chave(0,P.rD),chave(.15,P.rD,{dd:'cao'}),chave(.35,P.rD,{dd:'cao'}),chave(.45,P.rD,{dd:[.36,.84,.9,.94,.7,.2,.1,0]}),chave(.6,P.rD,{dd:'revolver'}),chave(2.45,P.rD),
+         chave(2.56,P.rD,{dd:'gira'}),chave(t0,rDc),chave(tFim,rDc),chave(tFim+.1,P.rD,{e:'q'}),chave(4.05,P.rD,{dd:'cao'}),chave(4.25,P.rD,{dd:'revolver',e:'q'}),chave(5.8,P.rD)],
+      E:[chave(0,P.rE),chave(.5,P.rE),chave(.62,eAb,{e:'o'}),chave(.82,eSeg),chave(.9,['arma',[-.07,-.03,-.02],[.3,.8,-.5],[-.8,-.2,.4],'aberta'],{e:'q'}),chave(1.05,eSeg,{e:'o'}),
+         chave(1.95,eSeg),chave(2.12,eAb,{p:[-.04,-.028,-.01],dd:'aberta',e:'q'}),chave(2.4,['corpo',[-.36,-.4,-.05],[.3,-.4,-.9],[-.5,.6,0],'relaxada'],{e:'o'}),
+         chave(tFim+.2,['corpo',[-.36,-.4,-.05],[.3,-.4,-.9],[-.5,.6,0],'relaxada']),chave(4.2,P.rE,{e:'s'}),
+         chave(4.6,['arma',[-.05,-.07,.06],[.4,-.8,-.2],[-.9,.2,.3],'relaxada'],{e:'o'}),chave(4.85,['arma',[-.048,-.062,.05],[.45,-.6,-.2],[-.9,.2,.3],'relaxada']),chave(5.05,['arma',[-.05,-.07,.06],[.4,-.8,-.2],[-.9,.2,.3],'relaxada']),
+         chave(5.4,P.rE,{e:'s'}),chave(5.8,P.rE)],
+      c:{cao:[[0,1],[.18,1],[.32,0,'o'],[4.1,0],[4.2,1,'q'],[5.8,1]],guin:[[0,0],[.6,0],[.7,1,'q'],[2.12,1],[2.2,0,'i'],[5.8,0]],giro:[[0,0],[.92,0],[2.0,8,'o'],[5.8,8]],
+         cruz:[[0,0],[4.68,0],[4.86,1,'o'],[5.25,.2,'s'],[5.45,0],[5.8,0]]},
+      ev:[[.05,'som','roupa',.4],[.3,'som','cao',.3],[.47,'som','cao',.22],[.64,'som','tambor_abre',.7],[.92,'som','roupa',.3],
+          ...[.97,1.04,1.12,1.21,1.31,1.43,1.57,1.74,1.94].map((t,i)=>[t,'som','cao',.2-i*.016]),
+          [2.19,'som','tambor_fecha',.85],[2.2,'cam',[.006,-.003,.004]],[2.62,'som','roupa',.45],[3.15,'som','roupa',.35],[tFim+.08,'som','empunhar',.55],[tFim+.09,'cam',[-.004,.003,0]],
+          [4.18,'som','cao',.55],[4.72,'som','bencao',.5],[4.76,'skin','revela'],[5.6,'som','empunhar',.3]]}); }
   C.revolver_ajuste=prepararClipe({nome:'ajuste',dur:1,
     a:[[0,[0,0,0],[0,0,0]],[.35,[.002,-.004,0],[.02,0,.03]],[.62,[0,.001,0],[-.01,0,-.01],'o'],[1,[0,0,0],[0,0,0]]],
     D:[chave(0,P.rD),chave(.32,P.rD,{dd:[.2,.55,.65,.7,.4,.5,.2,.05]}),chave(.5,P.rD,{e:'q'}),chave(1,P.rD)],
@@ -526,6 +569,8 @@ function montarClipesRevolver(C){
   C.revolver_gesto=prepararClipe({nome:'gesto',dur:.62,a:[[0,[0,0,0],[0,0,0]],[.12,[.04,-.04,.02],[-.1,-.1,0],'o'],[.42,[.04,-.04,.02],[-.1,-.1,0]],[.62,[0,0,0],[0,0,0],'s']],
     D:[chave(0,P.rD),chave(.62,P.rD)],E:[chave(0,P.rE),chave(.1,['corpo',[-.3,-.3,-.15],[.3,.3,-1],[-.3,1,0],'garra'],{e:'i'}),chave(.2,['corpo',[-.26,-.1,-.56],[.25,.15,-1],[-.1,1,.1],'palma'],{e:'q'}),
       chave(.4,['corpo',[-.26,-.11,-.54],[.25,.15,-1],[-.1,1,.1],'palma']),chave(.62,P.rE,{e:'s'})],ev:[[0,'som','roupa',.5]]});
+  C.revolver_executar=prepararClipe({nome:'executar',dur:1,laco:true,a:[[0,[.04,-.09,-.04],[-.88,.12,-.1]]],D:[chave(0,P.rD)],
+    E:[chave(0,['corpo',[-.24,-.22,-.62],[.1,-.7,-1],[0,1,-.6],'palma'])]});
   C.revolver_abaixada=prepararClipe({nome:'abaixada',dur:1,laco:true,a:[[0,[.06,-.16,.08],[-.55,.25,-.2]]],D:[chave(0,P.rD)],E:[chave(0,['corpo',[-.28,-.24,-.36],[.2,-.6,-1],[-.2,1,-.4],'aberta'])]});
 }
 
@@ -538,11 +583,23 @@ function montarClipesCetro(C){
     a:[[0,[.05,-.45,.15],[-.9,.2,.5]],[.3,[0,-.01,0],[-.22,0,.14],'o'],[.8,[0,0,0],[-.3,0,.18],'s']],
     D:[chave(0,P.xD),chave(.8,P.xD)],E:[chave(0,P.xE),chave(.8,P.xE)],c:{acende:[[0,0],[.15,0],[.6,1,'s'],[.8,1]],brasa:[[0,0],[.5,0],[.62,1.6,'q'],[.8,1,'s']]},
     ev:[[0,'som','cetro_sacar',.6]]});
-  C.cetro_inspecao=prepararClipe({nome:'inspecao',dur:3.2,
-    a:[[0,[0,0,0],[-.3,0,.18]],[.7,[-.12,-.06,.12],[-.28,.35,.22],'w'],[2.4,[-.13,-.05,.13],[-.25,.4,.2],'s'],[3.2,[0,0,0],[-.3,0,.18],'w']],
-    D:[chave(0,P.xD),chave(.9,P.xD),chave(1.1,P.xD,{dd:[.6,.88,.92,.95,.3,.8,.6,0]}),chave(1.3,P.xD),chave(1.5,P.xD,{dd:[.82,.6,.92,.95,.3,.8,.6,0]}),chave(1.7,P.xD),chave(1.9,P.xD,{dd:[.82,.88,.62,.95,.3,.8,.6,0]}),chave(2.1,P.xD),chave(3.2,P.xD)],
-    E:[chave(0,P.xE),chave(.8,['corpo',[-.42,-.34,-.2],[.25,1,-.3],[-.2,.3,1],'garra'],{e:'w'}),chave(2.3,['corpo',[-.4,-.33,-.22],[.25,1,-.3],[-.2,.3,1],'garra']),chave(3.2,P.xE,{e:'w'})],
-    c:{orbita:[[0,0],[.7,1,'s'],[2.4,1],[3.2,0,'s']],acende:[[0,1],[3.2,1]]},ev:[[.2,'som','roupa',.4],[.9,'som','runa_volta',.6],[1.6,'som','runa_volta',.45]]});
+  // inspeção INQUIETANTE (6,2 s): o cetro sobe para perto, as runas aceleram e PARAM no ar, a brasa quase apaga e uma voz
+  // passa; a mão livre se abre para quem olha com os dedos se dobrando para trás, um de cada vez; a cabeça se inclina para
+  // a câmera como quem olha de volta, a luz desce pela espinha ao contrário (ganchos: respira, pinga, revela); e tudo volta
+  // de uma vez, num estalo, com as runas em frenesi.
+  { const tw=(t,a)=>chave(t,['corpo',[-.26,-.16,-.3],[0,1,.12],[0,.12,-1],a]);
+    const f1=[-.18,.62,.12,.7, .4,.3,.2,.3], f2=[.68,-.18,.6,.1, .4,.3,.2,.3], f3=[.12,.7,-.2,.62, .4,.3,.2,.3], f4=[.6,.12,.7,-.18, .45,.3,.2,.3];
+    C.cetro_inspecao=prepararClipe({nome:'inspecao',dur:6.2,
+      a:[[0,[0,0,0],[-.3,0,.18]],[.8,[-.12,-.05,.12],[-.26,.38,.2],'w'],[1.6,[-.13,-.045,.13],[-.24,.42,.2],'s'],[2.4,[-.15,-.03,.14],[-.1,.3,.15],'s'],
+         [3.2,[-.2,.0,.16],[.35,.15,.1],'w'],[3.45,[-.2,.004,.165],[.4,.14,.1],'s'],[3.56,[0,-.01,.04],[-.36,0,.2],'q'],[4.4,[0,0,0],[-.3,0,.18],'o'],[6.2,[0,0,0],[-.3,0,.18]]],
+      D:[chave(0,P.xD),chave(1.55,P.xD),chave(1.65,P.xD,{dd:[.95,.98,1,1,.3,.85,.75,0],e:'q'}),chave(3.4,P.xD,{dd:[.95,.98,1,1,.3,.85,.75,0]}),chave(3.6,P.xD,{e:'o'}),chave(6.2,P.xD)],
+      E:[chave(0,P.xE),chave(1.7,P.xE),tw(2.05,'mostra'),tw(2.17,f1),tw(2.29,f2),tw(2.41,f3),tw(2.53,f4),tw(2.7,f1),tw(2.95,'mostra'),tw(3.4,'mostra'),
+         chave(3.65,P.xE,{e:'o'}),chave(4.2,P.xE),chave(4.3,P.xE,{dd:[-.12,.5,.45,.5,.35,.35,.25,.12]}),chave(4.45,P.xE),chave(6.2,P.xE)],
+      c:{orbita:[[0,0],[.8,.6,'s'],[3.5,.6],[4.4,0,'s'],[6.2,0]],frenesi:[[0,0],[.8,0],[1.55,1,'i'],[1.62,0,'h'],[3.5,0],[3.56,1,'q'],[4.6,0,'o'],[6.2,0]],
+         para:[[0,0],[1.58,0],[1.64,1,'q'],[3.48,1],[3.52,0,'h'],[6.2,0]],brasa:[[0,1],[1.6,1],[1.95,.3,'o'],[3.48,.3],[3.58,1.7,'q'],[4.3,1,'s'],[6.2,1]],
+         ondaInv:[[0,0],[2.6,0],[3.4,1,'l'],[3.41,0,'h'],[6.2,0]],acende:[[0,1],[6.2,1]]},
+      ev:[[.15,'som','roupa',.4],[.85,'som','runa_volta',.45],[1.64,'som','sussurro',.42],[2.05,'som','roupa',.3],[2.6,'skin','respira'],[2.7,'skin','gotas'],[2.65,'som','assombro',.28],
+          [3.05,'skin','revela'],[3.53,'som','cetro_sacar',.5],[3.54,'som','runa_volta',.55],[3.55,'cam',[.007,-.004,.005]],[5.9,'som','roupa',.3]]}); }
   C.cetro_ajuste=prepararClipe({nome:'ajuste',dur:1,a:[[0,[0,0,0],[-.3,0,.18]],[.4,[0,.01,0],[-.27,.04,.14]],[1,[0,0,0],[-.3,0,.18]]],
     D:[chave(0,P.xD),chave(.35,P.xD,{dd:[.5,.6,.7,.75,.3,.6,.4,.05]}),chave(.55,P.xD,{e:'q'}),chave(1,P.xD)],E:[chave(0,P.xE),chave(1,P.xE)]});
   C.cetro_corrida=prepararClipe({nome:'corrida',dur:1,laco:true,a:[[0,[-.05,-.1,.08],[-.5,.15,.45]]],D:[chave(0,P.xD)],E:[chave(0,P.xE)]});
@@ -552,6 +609,12 @@ function montarClipesCetro(C){
   C.cetro_gesto=prepararClipe({nome:'gesto',dur:.6,a:[[0,[0,0,0],[-.3,0,.18]],[.14,[.03,-.03,.05],[-.18,0,.22],'o'],[.4,[.03,-.03,.05],[-.18,0,.22]],[.6,[0,0,0],[-.3,0,.18],'s']],
     D:[chave(0,P.xD),chave(.6,P.xD)],E:[chave(0,P.xE),chave(.1,['corpo',[-.5,-.5,-.1],[.3,.5,-1],[-.3,1,0],'punho'],{e:'i'}),chave(.2,['corpo',[-.36,-.22,-.62],[.12,1,-.35],[-.15,.3,1],'garra'],{e:'q'}),
       chave(.4,['corpo',[-.36,-.23,-.6],[.12,1,-.35],[-.15,.3,1],'garra']),chave(.6,P.xE,{e:'s'})],c:{acende:[[0,1],[.15,1.6,'q'],[.6,1]]},ev:[[0,'som','roupa',.45]]});
+  // executar (culto sobre um Caçador caído): o cetro erguido aponta a brasa para o corpo e a garra puxa para baixo
+  C.cetro_executar=prepararClipe({nome:'executar',dur:1,laco:true,a:[[0,[-.06,.16,-.18],[-1.65,.05,.15]]],D:[chave(0,P.xD)],
+    E:[chave(0,['corpo',[-.36,-.32,-.56],[.12,-.55,-1],[-.15,.8,.4],'garra'])],c:{acende:[[0,1]],brasa:[[0,1.3]]}});
+  // coletar (culto, E num reagente): a garra desce até o chão; o progresso do servidor a faz fechar e puxar para cima
+  C.cetro_coletar=prepararClipe({nome:'coletar',dur:1,laco:true,a:[[0,[.03,-.14,-.02],[-.8,0,.12]]],D:[chave(0,P.xD)],
+    E:[chave(0,['corpo',[-.34,-.66,-.44],[.2,-.85,-.5],[-.2,.45,-.85],'garra'])]});
   C.cetro_abaixada=prepararClipe({nome:'abaixada',dur:1,laco:true,a:[[0,[.02,-.12,-.02],[-.85,0,.1]]],D:[chave(0,P.xD)],
     E:[chave(0,['corpo',[-.36,-.36,-.3],[.25,-.5,-1],[-.2,1,-.3],'garra'])]});
 }
@@ -566,7 +629,7 @@ function estadoDesejado(m,ctx){
   if(S.recarga) return 'recarga';
   const H=m.team==='H';
   if(H&&m.sealing>=0) return 'selar';
-  if(m.hold&&m.hold.key) return 'abaixada';
+  if(m.hold&&m.hold.key) return /^exe/.test(m.hold.key)?'executar':!H&&/^col/.test(m.hold.key)&&clipeDe('coletar')?'coletar':'abaixada';
   if(!H&&ctx.canalizando) return 'canalizar';
   if(ctx.correndo&&ctx.agora-S.ultTiro>.45) return 'corrida';
   return 'pronta'; }
@@ -577,7 +640,8 @@ function evento(E,m){ const [,tipo,a1,a2]=E;
   if(tipo==='cam'){ const f=camFx(); S.joltV.x+=a1[0]*f*30; S.joltV.y+=a1[1]*f*30; S.joltV.z+=a1[2]*f*30; return; }
   if(tipo==='camara'){ S.camaraCheia=true; return; }
   if(tipo==='ejetar') return ejetarTambor(E[2]);
-  if(tipo==='soltar') return soltarMuniciador(); }
+  if(tipo==='soltar') return soltarMuniciador();
+  if(tipo==='skin'){ if(SKINS&&S.R) SKINS.gancho(S.R.arma,a1); return; } }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Objetos que saem da mão para o mundo: cápsulas e cartuchos do tambor, o municiador vazio
@@ -606,7 +670,7 @@ function aplicar(R,pose,dt,tremor){
   if(W.tipo==='carabina'){ W.alav.rotation.x=(c.alav||0)*.95; W.cao.rotation.x=c.caoAbs!=null?c.caoAbs:-.5; W.port.rotation.y=-(c.port||0)*.48;
     W.ferr.position.z=.018+cl((c.alav||0)/.7,0,1)*.036; W.camara.visible=(c.alav||0)>.28&&S.camaraCheia; }
   else if(W.tipo==='revolver'){ W.guin.rotation.z=(c.guin||0)*1.42; W.ext.position.z=(c.ext||0)*.03; W.tambor.rotation.z=(c.tambor||0); W.cao.rotation.x=c.caoAbs!=null?c.caoAbs:-.6;
-    W.cruzMat.emissive.setRGB(.9*(c.cruz||0),.75*(c.cruz||0),.35*(c.cruz||0)); W.prata.emissive.setRGB(.5*(c.brilho||0),.42*(c.brilho||0),.2*(c.brilho||0)); }
+    const cc=W.cruzCor||[.9,.75,.35], kz=c.cruz||0; W.cruzMat.emissive.setRGB(cc[0]*kz,cc[1]*kz,cc[2]*kz); W.prata.emissive.setRGB(.5*(c.brilho||0),.42*(c.brilho||0),.2*(c.brilho||0)); }
   R.raiz.updateMatrix();
   // mãos e braços
   for(const h of ['D','E']){ const M=R.maos[h], H=pose[h]; maoNoCorpo(R,pose,H,_PW,_QW);
@@ -700,7 +764,11 @@ function quadroAnim(dt,m,ctx){ if(!S.ok) return;
   // brilho de acerto confirmado (prata, latão, brasa): a arma reage quando o servidor confirma
   S.brilho=Math.max(0,(S.brilho||0)-dt*5); P2.c.brilho=S.brilho;
   aplicarObjetos(R,P2);
-  const tremor=S.est.nome==='selar'?[Math.sin(agora*31)*.03,Math.sin(agora*27+1)*.03,Math.sin(agora*29+2)*.03,Math.sin(agora*33+3)*.03]:null;
+  S.queimando=!!ctx.queimando; const tr=S.est.nome==='selar'?.03:S.est.nome==='executar'?.012+.06*(ctx.execK||0):0;
+  const tremor=tr?[Math.sin(agora*31)*tr,Math.sin(agora*27+1)*tr,Math.sin(agora*29+2)*tr,Math.sin(agora*33+3)*tr]:null;
+  if(S.est.nome==='coletar'){ const k=ctx.colK||0, E=P2.E; if(E.f==='corpo'){ E.p.y+=k*.28; E.p.z+=k*.05; E.p.x+=Math.sin(agora*29)*.006*k; }
+    for(let n=0;n<4;n++) E.dd[n]=Math.min(1,E.dd[n]+k*.4); }
+  if(S.est.nome==='executar'&&ctx.execK>.6){ const k=(ctx.execK-.6)*.006; P2.a.p.x+=Math.sin(agora*37)*k; P2.a.p.y+=Math.sin(agora*41+1)*k; }
   aplicar(R,P2,dt,tremor);
   luzNaMao(R,agora);
   // corpo: balanço do passo, atraso do mouse, atraso ao começar a andar, tranco de golpe (mola)
@@ -712,13 +780,14 @@ function quadroAnim(dt,m,ctx){ if(!S.ok) return;
   S.cam.set(S.jolt.x*.5,S.jolt.y*.5,S.jolt.z*.5);
   if(arma==='cetro'){ cetroVida(P2,m,dt,agora,ctx); rastroBrasa(); }
   vmFlash.position.copy(arma==='revolver'?vmRevolver.boca.clone().applyMatrix4(vmRevolver.base):vmCarabina.boca);
+  if(SKINS) SKINS.quadro(dt,[vmCarabina,vmRevolver,vmCetro]);
 }
 function luzNaMao(R,agora){ const M=R.maos.E; if(!M.luz){ M.luz=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:R.corpo===vmH?0xffd890:0xff3a5a,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0}));
     M.luz.position.copy(PALMA_CENTRO).add(V3(0,-.03,-.01)); M.raiz.add(M.luz); }
-  const on=S.est.nome==='selar'||S.est.nome==='canalizar'||S.est.nome==='gesto', alvo=on?(.55+.25*Math.sin(agora*9)+.1*Math.sin(agora*23)):0;
+  const on=S.est.nome==='selar'||S.est.nome==='canalizar'||S.est.nome==='gesto'||S.est.nome==='executar'||S.queimando, alvo=on?(.55+.25*Math.sin(agora*9)+.1*Math.sin(agora*23)):0;
   M.luz.material.opacity+=(alvo-M.luz.material.opacity)*.2; const sc=.09+M.luz.material.opacity*.07; M.luz.scale.set(sc,sc,1); M.luz.visible=M.luz.material.opacity>.01; }
 function rastroBrasa(){ if(!vmCetro||VM.cast<.45||!S.R||S.R.corpo!==vmC) return; const p=new THREE.Vector3(); vmCetro.brasa.getWorldPosition(p);
-  const m=new THREE.SpriteMaterial({map:RT.glow,color:0xc070ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.7}); const sp=new THREE.Sprite(m); sp.position.copy(p); sp.scale.set(.07,.07,1);
+  const m=new THREE.SpriteMaterial({map:RT.glow,color:vmCetro.corBrasa||0xc070ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.7}); const sp=new THREE.Sprite(m); sp.position.copy(p); sp.scale.set(.07,.07,1);
   efeito(sp,.2,(o,u)=>{ o.material.opacity=.7*(1-u); const s=.07*(1-u*.6); o.scale.set(s,s,1); }); }
 function iniciarSacar(){ const C=clipeDe('sacar'); if(C){ S.saida=null; entrar('sacar',C,0); S.camaraCheia=true; } }
 function iniciarRecarga(ammo,reloadT){ if(!S.ok||!S.R||S.arma==='cetro') return; const vazia=ammo<=0, falta=8-ammo;
@@ -737,14 +806,16 @@ function cetroVida(P2,m,dt,agora,ctx){ const W=vmCetro, c=P2.c, cast=VM.cast, kC
   const cargas=Math.floor((S.forca&&S.forca.fervor!=null?S.forca.fervor:m.fervor)/CFG.sigilCusto);
   if(cargas>S.runasVisiveis&&S.est.nome!=='sacar'){ for(let k=S.runasVisiveis;k<cargas&&k<7;k++) S.runaNasce[k]=agora; if(S.tUltRuna==null||agora-S.tUltRuna>.3){ tocar('runa_volta',{vol:.4,max:1}); S.tUltRuna=agora; } }
   S.runasVisiveis=cargas;
-  const giro=agora*1.5*(1+cast*6), orb=c.orbita||0;
+  // a órbita anda por um tempo próprio: o frenesi acelera e a parada congela as runas no ar (inspeção do cetro)
+  S.giroT=(S.giroT||0)+dt*1.5*(1+cast*6)*(1+(c.frenesi||0)*5)*(1-(c.para||0)); const giro=S.giroT, orb=c.orbita||0;
   const recolhe=kC<.06?kC/.06:Math.max(0,1-(kC-.06)/.22), raioR=.085*(1-.8*recolhe)*(1-orb*.25)+.03*cicloDe(kC,PERFIL_ARMA.cetro);
   vmRunas.forEach((r,k)=>{ const on=k<cargas; r.visible=on; if(!on) return; const nasce=S.runaNasce[k]!=null?cl((agora-S.runaNasce[k])/.4,0,1):1, e=CURVA.o(nasce);
     const a=giro*(1-orb*.6)+k/7*TAU+(1-e)*3; const rr=raioR*e; r.position.set(Math.cos(a)*rr,.1+Math.sin(a*2+k)*.012+(1-e)*.0,Math.sin(a)*rr); r.material.rotation=a*2; r.scale.setScalar(.035*(.4+.6*e)*(1+(1-e)*.8)); });
   // vértebras: acendem de baixo para cima ao sacar; no lançamento uma onda sobe pela espinha em 80 ms
   const ac=c.acende==null?1:c.acende, n=W.vert.length;
   W.vert.forEach((v,i)=>{ const u=i/(n-1), base=cl(ac*1.4-u*.9,0,1)*.25, onda=Math.max(0,1-Math.abs(kC*12.5-u*1)*3)*(kC<.15?1:0), can=S.est.nome==='canalizar'?.35+.25*Math.sin(agora*6-u*5):0;
-    v.material.emissiveIntensity=base+onda*1.6+can+(S.brilho||0)*.8; });
+    const inv=c.ondaInv?Math.max(0,1-Math.abs(c.ondaInv*1.3-(1-u)-.15)*4)*1.4:0;   // a luz descendo a espinha, de cima para baixo
+    v.material.emissiveIntensity=base+onda*1.6+can+inv+(S.brilho||0)*.8; });
   const br=c.brasa==null?1:c.brasa; W.brasa.scale.setScalar(Math.max(.001,br)*(1+cast*.5+recolhe*.6+Math.sin(agora*6)*.05+(S.brilho||0)*.5)); W.runa.material.rotation+=dt*(1.5+cast*12);
   vmOrb.material.opacity=Math.min(1,(.3+.5*(m.fervor/100)+cast*.5)*Math.min(1,br)+(S.brilho||0)*.4);
   // fio de luz da brasa até o altar enquanto canaliza
@@ -772,10 +843,10 @@ function golpe(lado){ S.calmo=0; const f=camFx(); S.joltV.x+=(Math.random()-.5)*
 const VISTAS={ladoPerto:[[-.4,-.06,-.36],[.1,-.21,-.44]],cimaPerto:[[.1,.2,-.38],[.1,-.2,-.42]],lado:[[-.62,-.12,-.36],[.12,-.2,-.42]],cima:[[.12,.45,-.4],[.12,-.2,-.42]],frente:[[.18,-.12,-1.15],[.12,-.2,-.42]],direita:[[.75,-.1,-.4],[.12,-.2,-.42]],perto:[[-.05,-.06,-.12],[.15,-.22,-.45]]};
 let camV=null;
 // luz de estúdio (só na vitrine): três luzes presas à câmera para conferir forma e contato, sem o escuro da noite
-let estudio=null;
-function luzEstudio(on){ if(on&&!estudio){ estudio=new THREE.Group(); const a=new THREE.DirectionalLight(0xffffff,1.6); a.position.set(-1,1.2,.6); const b=new THREE.DirectionalLight(0x9fb4ff,.7); b.position.set(1,.2,.4);
-    const c=new THREE.DirectionalLight(0xffe0c0,.9); c.position.set(.3,.6,-1.2); const t=new THREE.Object3D(); t.position.set(.1,-.2,-.45); estudio.add(a,b,c,t); [a,b,c].forEach(l=>l.target=t); camera.add(estudio); LEITURA.uL.value=.05; }
-  else if(!on&&estudio){ camera.remove(estudio); estudio=null; LEITURA.uL.value=.2; } }
+let estudio=false;
+// v6: a luz de estúdio é a própria luz de leitura, mais forte (luzes de verdade na cena obrigariam todos os materiais do
+// mapa a recompilar ao ligar e desligar; a de leitura só existe nos materiais da arma). Mesma luz no Arsenal e na vitrine.
+function luzEstudio(on){ if(on===estudio) return; estudio=on; LEITURA.uL.value=on?1.3:.2; LEITURA.uRim.value=on?.4:.16; }
 function camVista(cam){ luzEstudio(!!(S.forca&&S.forca.estudio));
   if(S.vista==='peca'){ if(!camV){ camV=new THREE.PerspectiveCamera(50,1,.01,60); cam.add(camV); }
     // perto da peça que trabalha: a portinhola da carabina ou o tambor do revólver (no espaço da arma)
@@ -794,8 +865,9 @@ function camVista(cam){ luzEstudio(!!(S.forca&&S.forca.estudio));
 const VIT={arma:'carabina',clipe:'recarga',vazia:true,vel:1,vista:null,estudio:false,repetir:true,t:null};
 function aplicarVitrine(reiniciar){ const o={arma:VIT.arma,clipe:VIT.clipe,vazia:VIT.vazia,n:3,carga:VIT.vazia?0:4,vel:VIT.vel,vista:VIT.vista,estudio:VIT.estudio,repetir:VIT.repetir,t:VIT.t,fervor:100};
   if(reiniciar||!S.forca) forcarAPI(o); else { Object.assign(S.forca,o); S.vista=o.vista; } }
-function atirarVitrine(){ VM.k=1; VM.tT=0; VM.som=false; VM.tiros++; S.tiros++; if(VIT.arma==='cetro'){ VM.cast=1; tocar('sigilo',{vol:.6}); } else { vmFlash.material.opacity=1; tocar(VIT.arma==='revolver'?'tiro_revolver':'tiro_carabina',{vol:.7}); }
-  if(S.est.nome!=='pronta'){ VIT.clipe='pronta'; aplicarVitrine(true); } }
+function atirarVitrine(){ disparoForcado(VIT.arma); if(S.est.nome!=='pronta'){ VIT.clipe='pronta'; aplicarVitrine(true); } }
+// um tiro ou sigilo só de aparência (vitrine e Arsenal): coice, ciclo, clarão e som, sem nada no servidor
+function disparoForcado(arma){ arma=arma||S.arma; VM.k=1; VM.tT=0; VM.som=false; VM.tiros++; S.tiros++; if(arma==='cetro'){ VM.cast=1; tocar('sigilo',{vol:.6}); } else { vmFlash.material.opacity=1; tocar(arma==='revolver'?'tiro_revolver':'tiro_carabina',{vol:.7}); } }
 function forcarAPI(o){ S.forca=o?Object.assign({},o):null; S.vista=o&&o.vista||null; if(o){ if(o.arma&&o.arma!==S.arma) S.arma=null; if(S.est) S.est.nome='_'; } }
 function painel(abrir){ let el=document.getElementById('vitrineArma');
   if(el&&abrir!==true){ el.remove(); forcarAPI(null); return; } if(el) return;
@@ -822,7 +894,12 @@ function painel(abrir){ let el=document.getElementById('vitrineArma');
   const tick=()=>{ if(!document.getElementById('vitrineArma')) return; const T=el.querySelector('#vitT'); if(S.est&&S.est.C){ T.textContent=`${S.est.t.toFixed(2)} / ${S.est.dur.toFixed(2)} s`; if(VIT.t==null) R.value=Math.round(S.est.t/S.est.dur*1000); } requestAnimationFrame(tick); }; tick(); }
 function hab(){ S.calmo=0; if(['pronta','ajuste','inspecao','corrida'].includes(S.est.nome)&&S.R&&clipeDe('gesto')) entrar('gesto',clipeDe('gesto'),.08); }
 function pedirInspecao(){ if(S.est&&S.est.nome==='pronta') S.pedidoInspecao=true; }
-return {construir,quadro:quadroAnim,camVista,hab,tiro,sigilo,acerto,golpe,pedirInspecao,S,DEDOS,
+// troca de skin (Arsenal e vitrine): grava a escolha e veste a arma na hora
+// o golpe final da execução (quando o servidor confirma a morte): tranco para a frente, pausa curta e o brilho de acerto
+function executou(){ const f=camFx(); S.joltV.z-=.5*f; S.joltV.y-=.3*f; VM.pausa=.1; S.brilho=1; }
+function tiroVitrine(){ disparoForcado(S.forca&&S.forca.arma); }
+function trocarSkin(arma,id){ if(!SKINS||!SKINS.escolher(arma,id)) return false; vestir(arma,id); return true; }
+return {construir,quadro:quadroAnim,camVista,hab,tiro,sigilo,acerto,golpe,pedirInspecao,trocarSkin,tiroVitrine,executou,S,DEDOS,
   // vitrine: força uma arma e um clipe; t (0 a 1) fixa o instante, vel muda a velocidade
   forcar:forcarAPI,painel,
   get cam(){ return S.cam; },get vm(){ return {vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}; }};

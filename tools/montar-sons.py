@@ -363,6 +363,22 @@ def _():
     b = fade(ler('perc_bell2.flac', 0, .6, 1.6, 'highpass=f=900'), sai=.5, curva=3)
     return [pico(mix((h, 0, 0), (b, .04, -9)), -12)]
 
+# ---------------- v6: gravações CC0 do conquest (cortes prontos; aqui só se apara, normaliza e se fecha o laço) ----------------
+R['queda_corpo'] = lambda: [pico(fade(aparar(ler(f'cq_death-thud-mid-{k}.mp3', 0, 1.4)), sai=.25), -2) for k in (1, 2, 3)]   # corpo que cai no chão
+R['sussurro'] = lambda: [pico(fade(aparar(ler(f'cq_ghost-call-{k}.mp3', 0, 3.0)), ent=.05, sai=.6), -5) for k in (1, 2, 3)]  # vozes sussurrando
+R['estalo_fogo'] = lambda: [pico(fade(aparar(ler(f'cq_crackle-{k}.mp3', 0, .8)), sai=.15), -4) for k in (1, 2, 3, 4)]       # brasa estalando
+R['folhas'] = lambda: [pico(fade(aparar(ler(f'cq_leaves-{k}.mp3', 0, 1.6)), ent=.08, sai=.5), -6) for k in (1, 2)]          # folhagem mexida
+R['coruja'] = lambda: [pico(fade(aparar(ler(f'cq_owl-{k}.mp3', 0, 3.0)), sai=.4), -6) for k in (1, 2, 3)]                   # coruja na mata
+R['rangido'] = lambda: [pico(fade(aparar(ler(f'cq_creak-tree-{k}.mp3', 0, 2.5)), sai=.4), -6) for k in (1, 2, 3)]           # árvore rangendo
+def _laco_cq(arq, dur, alvo):
+    return [pico(laco(ler(arq, 1.0, dur), 1.4), alvo)]
+R['mata_laco'] = lambda: _laco_cq('cq_wind-forest-1.mp3', 15, -10)     # vento nas copas (mata)
+R['noite_laco'] = lambda: _laco_cq('cq_night-loop-1.mp3', 14, -12)     # grilos da noite (céu aberto)
+R['cripta_laco'] = lambda: _laco_cq('cq_crypt-loop-1.mp3', 14, -14)    # ar parado de pedra (dentro da catedral)
+R['charco_laco'] = lambda: _laco_cq('cq_frogs-loop-1.mp3', 14, -10)    # sapos do Charco
+R['fogo_laco'] = lambda: _laco_cq('cq_brazier-loop-1.mp3', 9, -10)     # fornos da Carvoaria
+R['chuva_laco'] = lambda: _laco_cq('cq_rain-loop-1.mp3', 14, -8)       # chuva (clima)
+
 USO = {   # para que serve cada som no jogo (vai para docs/AUDIO.md)
   'tiro_carabina': 'tiro da carabina de alavanca (Soldado, Rastreador)', 'tiro_revolver': 'tiro do revólver (Exorcista)',
   'alavanca': 'ciclo da alavanca depois do tiro', 'cao': 'cão do revólver e tambor', 'recarga': 'recarga (abrir, cartuchos, fechar)',
@@ -378,6 +394,9 @@ USO = {   # para que serve cada som no jogo (vai para docs/AUDIO.md)
   'sino_grande': 'sino do Grande Ritual', 'gota': 'gotas de água na nave', 'flare': 'flare aceso', 'coleta': 'reagente coletado', 'assombro': 'alucinação com sanidade baixa',
   'ritual_inicio': 'ritual começando (ou aparecendo para a caça)', 'ritual_marco': 'ritual passando de 25%, 50% e 75%', 'fenda': 'Fenda (ritual completo)',
   'farol': 'Farol (ritual selado)', 'selo_quebra': 'selo interrompido', 'canal_quebra': 'canalização interrompida', 'selando': 'a caça começou a selar',
+  'queda_corpo': 'alguém derrubado ou executado cai no chão', 'sussurro': 'inspeção do cetro e execução pelo culto', 'estalo_fogo': 'reagente queimado pela caça',
+  'folhas': 'coleta de reagente na mata', 'coruja': 'mata à noite (avulso)', 'rangido': 'mata à noite (avulso)', 'mata_laco': 'fundo da mata (laço)', 'noite_laco': 'fundo a céu aberto (laço)',
+  'cripta_laco': 'fundo dentro da catedral (laço)', 'charco_laco': 'fundo perto do Charco (laço)', 'fogo_laco': 'fornos da Carvoaria (laço)', 'chuva_laco': 'chuva, no clima de chuva (laço)',
   'coro_laco': 'coro do ritual em andamento (laço)', 'zumbido_laco': 'sussurros do ritual em andamento (laço)', 'evp': 'EVP: vozes num altar desperto',
   'descoberta': 'descoberta da investigação e lances da noite', 'chamariz_desfeito': 'Lanterna desmascara um Chamariz', 'transferencia': 'Transferência'}
 
@@ -424,11 +443,14 @@ def escrever_doc(usos, fontes, autores):
          '`assets/sons/fontes/` e a origem de cada uma em `assets/sons/fontes.json`; o script monta os sons do jogo',
          '(cortes, filtros, camadas, normalização) em `assets/sons/jogo/*.mp3` e em `client/sons.js`.', '',
          '## Regras de licença', '',
-         '- Só entram gravações em **CC0 1.0** ou **CC BY 3.0**. Nada de CC BY-SA, GPL, uso não comercial ou licença não declarada.',
+         '- Só entram gravações em **CC0 1.0**, **CC BY 3.0** ou **domínio público**. Nada de CC BY-SA, GPL, uso não comercial ou licença não declarada.',
          '- CC BY 3.0 exige atribuição: os créditos abaixo também aparecem no jogo (Ajustes, Créditos de áudio).',
          '- Os sites de áudio (Freesound, OpenGameArt, Pixabay, Kenney, Sonniss) estavam bloqueados pela rede do ambiente de',
          '  desenvolvimento. As gravações vieram de repositórios públicos no GitHub que as redistribuem com a licença de cada arquivo',
-         '  documentada (Sonic Pi, Minetest Game, VoxeLibre); o link original do Freesound/OpenGameArt de cada uma está na tabela.',
+         '  documentada (Sonic Pi, Minetest Game, VoxeLibre; na v6, conquest); o link original do Freesound/OpenGameArt de cada uma está na tabela.',
+         '- v6: os arquivos `cq_*.mp3` são cortes (trecho e ganho) que o repositório hoffspot/conquest fez de gravações CC0 do Freesound e de',
+         '  uma gravação em domínio público do National Park Service (EUA). A gravação de cada um é CC0 ou domínio público; o corte vem com o',
+         '  repositório, sob Apache 2.0 (<https://www.apache.org/licenses/LICENSE-2.0>), cuja licença e aviso valem para esses arquivos.',
          '- O tiro não é a gravação de uma arma: é montado com gravações reais em CC0 (explosão, impacto, estalo e mecanismo de metal).',
          '  Quando os sites de áudio estiverem acessíveis, troque por gravações de armas reais e rode o script de novo.', '',
          '## Como foi conferido', '',
