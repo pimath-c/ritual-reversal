@@ -221,6 +221,26 @@ namespace RitualReversal
                 default: return e.transferencias.ToString();
             }
         }
+        // o #interact do navegador: o anel de progresso (46 px, logo abaixo da mira) e os rótulos com a tecla numa caixinha dourada
+        void Rotulo(float y, string tecla, string txt)
+        {
+            var st = new GUIStyle(sTexto) { fontSize = 18, wordWrap = false, richText = false }; var sk = new GUIStyle(st) { fontStyle = FontStyle.Bold }; sk.normal.textColor = OURO;
+            float wk = tecla != null ? sk.CalcSize(new GUIContent(tecla)).x + 10 : 0, wt = st.CalcSize(new GUIContent(txt)).x, w = wk + (tecla != null ? 6 : 0) + wt + 20, x = W / 2 - w / 2;
+            Caixa(new Rect(x, y, w, 28), new Color(.031f, .035f, .043f, .72f));
+            if (tecla != null) { var rk = new Rect(x + 10, y + 3, wk, 22); Caixa(new Rect(rk.x, rk.y, rk.width, 1), OURO); Caixa(new Rect(rk.x, rk.yMax - 1, rk.width, 1), OURO); Caixa(new Rect(rk.x, rk.y, 1, rk.height), OURO); Caixa(new Rect(rk.xMax - 1, rk.y, 1, rk.height), OURO); GUI.Label(new Rect(rk.x + 5, y + 1, wk, 26), tecla, sk); }
+            GUI.Label(new Rect(x + 10 + wk + (tecla != null ? 6 : 0), y + 1, wt + 4, 26), txt, st);
+        }
+        void InteracaoHud(Ator m)
+        {
+            var ctx = Sim.Contexts(g, m); if (ctx.e == null && ctx.t == null && string.IsNullOrEmpty(ctx.info)) return;
+            float anel = m.sealing >= 0 ? (float)g.altars[m.sealing].seal : m.hold != null && m.hold.max > 0 ? (float)(m.hold.t / m.hold.max) : 0f;
+            float cx = W / 2, cy = H / 2 + 46 + 23; Tracos.Anel(cx, cy, 19, 4, new Color(1, 1, 1, .18f)); if (anel > 0) Tracos.Arco(cx, cy, 19, 4, Mathf.Clamp01(anel), Desenho.Hex("#f3d58e"));
+            float y = cy + 27;
+            if (ctx.e != null) { Rotulo(y, EntradaUnity.Nome("use"), ctx.e.label.Replace("Segure E para ", "Segure para ")); y += 31; }
+            else if (!string.IsNullOrEmpty(ctx.info)) { Rotulo(y, null, ctx.info); y += 31; }
+            if (ctx.t != null) Rotulo(y, EntradaUnity.Nome("use2"), ctx.t.label.Replace("Segure T para ", "Segure: "));
+        }
+
         // ---------- HUD ----------
         // o véu da execução: o centro limpo, a borda fechando em sangue escuro (o #exeVeu do navegador)
         Texture2D texVeuExe;
@@ -336,13 +356,7 @@ namespace RitualReversal
                 var dc = new Color(.9f, .1f, .15f, Mathf.Clamp01(d.t / 1.2f) * .85f); Caixa(new Rect(W / 2 - 60, H / 2 - 170, 120, 10), dc); GUI.matrix = mt;
             }
             if (notaT > 0) { notaT -= dtG; var nc = notaCor; nc.a = Mathf.Clamp01(notaT / .4f); GUI.Label(new Rect(W / 2 - 400, H / 2 + 130, 800, 30), Cor(nota, nc), sCentro); }
-            var ctx = Sim.Contexts(g, m);
-            float iy = H / 2 + 60;
-            if (ctx.e != null) { GUI.Label(new Rect(W / 2 - 400, iy, 800, 30), "[E] " + ctx.e.label.Replace("Segure E para ", "Segure para ").Replace("Aperte E para ", ""), sCentro); iy += 30; }
-            else if (ctx.info != null && ctx.info != "") { GUI.Label(new Rect(W / 2 - 400, iy, 800, 30), ctx.info, sCentro); iy += 30; }
-            if (ctx.t != null) { GUI.Label(new Rect(W / 2 - 400, iy, 800, 30), "[T] " + ctx.t.label.Replace("Segure T para ", "Segure: "), sCentro); iy += 30; }
-            float anel = m.sealing >= 0 ? (float)g.altars[m.sealing].seal : m.hold != null && m.hold.max > 0 ? (float)(m.hold.t / m.hold.max) : 0f;
-            if (anel > 0) Barra(new Rect(W / 2 - 100, iy + 4, 200, 8), anel, m.sealing >= 0 ? OURO : OSSO);
+            InteracaoHud(m);
 
             // disputa do ritual mais próximo
             Altar R = null; double bd = 1e9;
