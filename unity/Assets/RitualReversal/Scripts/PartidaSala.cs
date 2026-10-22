@@ -21,7 +21,7 @@ namespace RitualReversal
         JsonEscrita HelloExtra(JsonEscrita j, bool criar)
         {
             j.Bool("publica", criar && SalaPublica);
-            var vis = new JsonEscrita(); var s = Json.Ler(PlayerPrefs.GetString("rr-skins", "")) as Dictionary<string, object>; bool tem = false;
+            var vis = new JsonEscrita(); string sk = PlayerPrefs.GetString("rr-skins", ""); var s = sk.Length > 0 ? Json.Ler(sk) as Dictionary<string, object> : null; bool tem = false;   // sem skin escolhida, a chave nem existe
             if (s != null) foreach (var k in new[] { "carabina", "revolver", "cetro" }) { object v; if (s.TryGetValue(k, out v) && v is string) { vis.Txt(k, (string)v); tem = true; } }
             if (tem) j.Obj("vis", vis); return j;
         }

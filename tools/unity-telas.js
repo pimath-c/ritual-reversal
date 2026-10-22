@@ -14,6 +14,10 @@ const arqs=[...fs.readdirSync(S).filter(f=>f.endsWith('.cs')&&!fora.test(f)).map
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'unity-telas-')), EXE=path.join(tmp,'telas.exe');
 try{ execFileSync('mcs',['-nowarn:414,618,169,649,219,162,168,1717','-out:'+EXE,'-main:RitualReversal.PartidaLocal',path.join(CS,'UnityFalso.cs'),path.join(CS,'IMGUIFalso.cs'),path.join(CS,'TesteTelas.cs'),...arqs],{stdio:['ignore','pipe','pipe']}); }
 catch(e){ console.error('as telas não compilaram contra o Unity de mentira:\n'+String(e.stdout||'')+String(e.stderr||'')); process.exit(2); }
-const t0=Date.now();
-try{ execFileSync('mono',[EXE,path.join(UN,'Resources')],{stdio:['ignore','inherit','inherit'],cwd:tmp,timeout:1500000}); console.log('TELAS SEM ERRO ('+((Date.now()-t0)/1000).toFixed(0)+' s)'); }
-catch(e){ console.error('PROBLEMAS nas telas (acima)'); process.exit(1); }
+// o servidor de verdade numa porta livre, para a parte online do roteiro
+const porta=String(8900+Math.floor(Math.random()*200)), {spawn}=require('child_process');
+const srv=spawn(process.execPath,[path.join(ROOT,'server','server.js')],{env:Object.assign({},process.env,{PORT:porta}),stdio:'ignore'});
+setTimeout(()=>{ const t0=Date.now(); let ok=false;
+  try{ execFileSync('mono',[EXE,path.join(UN,'Resources'),porta],{stdio:['ignore','inherit','inherit'],cwd:tmp,timeout:1500000}); ok=true; console.log('TELAS SEM ERRO ('+((Date.now()-t0)/1000).toFixed(0)+' s)'); }
+  catch(e){ console.error('PROBLEMAS nas telas (acima)'); }
+  srv.kill(); process.exit(ok?0:1); },1500);

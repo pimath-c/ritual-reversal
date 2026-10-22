@@ -17,6 +17,7 @@ namespace RitualReversal
         static void Falha(string onde, Exception e) { if (falhas.Count < 40) falhas.Add(onde + ": " + e.GetType().Name + ": " + e.Message + "\n      " + string.Join("\n      ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim()).ToArray())); }
         string Tela() { if (g == null) return online ? "lobby" : "título" + (telaMenu != null ? "/" + telaMenu : ""); return arsenal ? "arsenal" : g.phase + (g.phase == "final" ? (repAberto ? "/replay" : relAberto ? "/relatório" : "") : g.phase == "play" && !Travado() ? "/pausa" : ""); }
         // um quadro: o Update e as duas passadas do OnGUI
+        KeyCode teclaGUI;   // uma tecla para a próxima passada do OnGUI (KeyDown), como digitar no chat
         void TQuadro(float dt = 1 / 30f, int passosExtras = 0)
         {
             nQuadros++; Time.time += dt; Time.unscaledTime += dt; Time.deltaTime = dt; Time.unscaledDeltaTime = dt; Time.realtimeSinceStartup += dt; Time.frameCount++;
@@ -24,9 +25,10 @@ namespace RitualReversal
             if (g != null && passosExtras > 0 && g.phase == "play" && !arsenal) try { for (int i = 0; i < passosExtras; i++) Sim.Step(g, .05); } catch (Exception e) { Falha("Sim.Step", e); }
             Input.apertadas.Clear();
             string t = Tela(); int n; telas.TryGetValue(t, out n); telas[t] = n + 1;
-            foreach (var tipo in new[] { EventType.Layout, EventType.Repaint })
+            var passadas = teclaGUI != KeyCode.None ? new[] { EventType.Layout, EventType.KeyDown, EventType.Layout, EventType.Repaint } : new[] { EventType.Layout, EventType.Repaint }; var tecla = teclaGUI; teclaGUI = KeyCode.None;
+            foreach (var tipo in passadas)
             {
-                Event.current = new Event { type = tipo, mousePosition = new Vector2(-100, -100) }; GUILayout.pilha.Clear(); GUI.matrix = new Matrix4x4();
+                Event.current = new Event { type = tipo, keyCode = tipo == EventType.KeyDown ? tecla : KeyCode.None, mousePosition = new Vector2(-100, -100) }; GUILayout.pilha.Clear(); GUI.matrix = new Matrix4x4();
                 try { OnGUI(); } catch (Exception e) { Falha("OnGUI " + tipo + " (" + t + ")", e); }
                 if (GUILayout.pilha.Count > 0 && GUILayout.erros.Count < 40) GUILayout.erros.Add("tela " + t + ": sobrou aberto no fim da passada: " + string.Join(", ", GUILayout.pilha.ToArray()));
             }
@@ -51,7 +53,7 @@ namespace RitualReversal
             Resources.pasta = a[0]; Screen.width = 1920; Screen.height = 1080; GameObject.chamarAwake = true;
             var go = new GameObject("Partida"); var p = go.AddComponent<PartidaLocal>();
             try { p.Awake(); p.Start(); } catch (Exception e) { Falha("Awake/Start", e); Relatar(p); return 1; }
-            p.Roteiro(); return Relatar(p);
+            p.Roteiro(); if (a.Length > 1) p.RoteiroOnline(a[1]); return Relatar(p);
         }
         void Roteiro()
         {
@@ -84,6 +86,26 @@ namespace RitualReversal
             // o Arsenal: troca de arma e de skin, as ações e as vistas
             IniciarArsenal(); TQuadros(30); foreach (var b in new[] { "Revólver", "Inspecionar", "Recarregar", "De lado", "De perto", "Jogador", "Cetro", "Lançar sigilo", "Da noite", "Estúdio", "Carabina", "Sacar" }) Apertar(b, 12);
             Apertar("Voltar ao menu", 5); TQuadros(10);
+        }
+        // online, contra o servidor de verdade (a porta vem do unity-telas.js): a sala, as opções do anfitrião, o chat, a partida
+        void Esperar(System.Func<bool> ok, int limite = 300) { for (int i = 0; i < limite && !ok(); i++) { System.Threading.Thread.Sleep(15); TQuadro(1 / 30f); } }
+        void RoteiroOnline(string porta)
+        {
+            servidor = "localhost:" + porta; nomeJogador = "Teste"; Conectar(true, ""); Esperar(() => noLobby && lobbySlots.Count == 4);
+            if (!noLobby) { falhas.Add("online: não entrou no lobby (" + erroRede + ")"); return; }
+            Apertar("Difíceis", 2); Esperar(() => lobbyDif == "dificil", 100); if (lobbyDif != "dificil") falhas.Add("online: a dificuldade do lobby não chegou (" + lobbyDif + ")");
+            labAberto = true; Apertar("2:00", 2); Esperar(() => lobbyLab != null && lobbyLab.crepusculo == 120, 100); if (lobbyLab == null || lobbyLab.crepusculo != 120) falhas.Add("online: o laboratório do lobby não chegou");
+            rascunhoLobby = "boa noite"; Apertar("Enviar", 2); Esperar(() => chat.Count > 0, 100); if (chat.Count == 0) falhas.Add("online: o chat do lobby não voltou");
+            Apertar("Começar a partida", 2); Esperar(() => g != null, 200); if (g == null) { falhas.Add("online: a partida não começou"); return; }
+            if (g.lab == null || g.lab.crepusculo != 120) falhas.Add("online: a partida não veio com o laboratório do lobby");
+            for (int i = 0; i < 600 && g != null && g.phase != "play"; i++) { if (g.phase == "intro") GUILayout.Apertar("Estou pronto"); System.Threading.Thread.Sleep(15); TQuadro(1 / 30f); }
+            if (g == null || g.phase != "play") { falhas.Add("online: não chegou ao jogo (" + (g != null ? g.phase : "sem jogo") + ")"); return; }
+            Travar(true); Esperar(() => false, 60);
+            Input.apertadas.Add(KeyCode.Return); TQuadro(1 / 30f); if (!chatAberto) falhas.Add("online: Enter não abriu o chat da partida");
+            chatTexto = "estou indo"; TQuadro(1 / 30f); teclaGUI = KeyCode.Return; TQuadro(1 / 30f); if (chatAberto) falhas.Add("online: Enter não enviou o chat");
+            Esperar(() => feed.Any(f => f.msg.Contains("estou indo")), 100); if (!feed.Any(f => f.msg.Contains("estou indo"))) falhas.Add("online: a mensagem da partida não voltou para a equipe");
+            Travar(false); Esperar(() => false, 10); Apertar("Sair da sala", 3); if (online) falhas.Add("online: Sair da sala não saiu");
+            Console.WriteLine("online: lobby, opções, chat, partida e chat da partida");
         }
         static int Relatar(PartidaLocal p)
         {
