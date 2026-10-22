@@ -87,27 +87,7 @@ namespace RitualReversal
             return ns + (A.x > 20 ? ", leste" : A.x < -20 ? ", oeste" : "");
         }
 
-        void TelaIntro()
-        {
-            string papel = MeuPapel(); bool Hc = papel == "H"; string meu; if (!g.cls.TryGetValue(EU, out meu)) meu = Regras.CLASS_BY_TEAM[papel][0];
-            string fe; if (!g.feit.TryGetValue(EU, out fe)) fe = Regras.FEIT_BY_TEAM[papel][0]; bool pronto; g.ready.TryGetValue(EU, out pronto);
-            var LB = g.lab ?? Lab.De(null); var mud = LabMudancas(LB); string crep = Relogio(LB.crepusculo); var CLn = Mundo.CLIMAS[Mundo.ClimaDaRodada(g)];
-            var r = Janela(1100, 880); GUILayout.BeginArea(r);
-            GUILayout.Label(Cor("Esta noite você é " + (Hc ? "Caçador" : "Cultista"), Hc ? OURO : CARMIM_VIVO), sTitulo);
-            GUILayout.Label("<i>" + CLn.nome + ": " + CLn.sub.ToLowerInvariant() + ".</i>", sTexto);
-            GUILayout.Label(Hc
-                ? "No <b>Crepúsculo</b> (" + crep + "), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto." + (LB.economia ? " Negocie com o Ermitão, na cabana perto do acampamento." : "") + " Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Quando um ritual começa, o coro logo ecoa o setor dele: dois altares possíveis, e o que você descartou decide para onde correr. Resista até o amanhecer."
-                : "No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério, ao leste da catedral, e consagre seus altares em silêncio." + (LB.economia ? " Negocie com a Carpideira, no oratório perto do seu acampamento." : "") + " Os reagentes ficam na mata, ao sul do desfiladeiro (e nas cabeceiras das pontes). Agachado (C) você anda devagar e quase sem barulho. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir. Quem ataca não canaliza; você sente quando a caça começa a selar o seu ritual.", sTexto);
-            if (mud.Count > 0) GUILayout.Label(Cor("Laboratório de playtest: " + string.Join(" · ", mud.ToArray()) + ".", OURO_VIVO), sPequeno);
-            GUILayout.Space(8); GUILayout.Label("<b>Arquétipo</b>", sTexto); GUILayout.BeginHorizontal();
-            foreach (var c in Regras.CLASS_BY_TEAM[papel]) { var C = Regras.CLASSES[c]; if (Bt((c == meu ? Cor("● ", OURO) : "") + "<b>" + C.name + "</b>\n" + C.text + "\n<size=15>" + C.hp + " de vida</size>", sBotao, GUILayout.Height(170)) && !pronto) Acao(new Acao { type = "cls", cls = c }); }
-            GUILayout.EndHorizontal(); GUILayout.Space(8); GUILayout.Label("<b>Feitiço</b> (clique direito)", sTexto); GUILayout.BeginHorizontal();
-            foreach (var f in Regras.FEIT_BY_TEAM[papel]) { var F = Regras.FEITICOS[f]; if (Bt((f == fe ? Cor("● ", OURO) : "") + "<b>" + F.nome + "</b>\n" + F.text + "\n<size=15>recarga de " + F.cd + " s</size>", sBotao, GUILayout.Height(150)) && !pronto) Acao(new Acao { type = "feit", f = f }); }
-            GUILayout.EndHorizontal(); GUILayout.Space(14);
-            GUI.enabled = !pronto; if (Bt(pronto ? "Aguardando os outros" : "Estou pronto", sBotao, GUILayout.Height(56))) Acao(new Acao { type = "ready" }); GUI.enabled = true;
-            GUILayout.Label((online ? ListaProntos() : "") + TextoTempo(), sCentro);
-            GUILayout.EndArea();
-        }
+        void TelaIntro() { TelaIntroCss(); }
 
         // ajustes (settingsScreen do protótipo): ficam salvos entre as sessões
         static readonly string[] NIVEIS = { "Mínimo", "Baixo", "Médio", "Alto" };
@@ -174,29 +154,7 @@ namespace RitualReversal
 
         // pausa (local) ou mouse solto (online, a partida não para): a cola das teclas do seu papel, Ajustes e sair
         bool pausaAjustes;
-        void TelaPausa()
-        {
-            bool comRolagem = pausaAjustes;   // o botão pode mudar pausaAjustes no meio da passada: Begin e End seguem o começo
-            var r = Janela(Mathf.Min(900, W - 40), comRolagem ? H - 60 : 520); GUILayout.BeginArea(r); if (comRolagem) rolPerfil = GUILayout.BeginScrollView(rolPerfil);
-            GUILayout.Label(online ? "Clique para jogar" : "Pausado", sTitulo);
-            GUILayout.Label(online ? "No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado." : "Clique em Continuar para voltar ao jogo.", sCentro);
-            if (comRolagem) { Ajustes(); }
-            else
-            {
-                string papel = MeuPapel(); System.Func<string, string> kb = EntradaUnity.Nome; string andar = kb("fwd") == "W" && kb("left") == "A" && kb("back") == "S" && kb("right") == "D" ? "WASD" : kb("fwd") + " " + kb("left") + " " + kb("back") + " " + kb("right");
-                var L = new List<string[]> { new[] { andar, "Andar" }, new[] { kb("sprint"), "Correr" }, new[] { kb("agachar"), "Agachar" }, new[] { kb("fire"), "Atacar" }, new[] { kb("abil"), "Feitiço" }, new[] { kb("use"), "Interagir" } };
-                if (papel == "H") { L.Add(new[] { kb("sensor"), "Sensor" }); L.Add(new[] { kb("lantern"), "Lanterna" }); L.Add(new[] { kb("flare"), "Flare" }); L.Add(new[] { kb("reload"), "Recarregar" }); } else L.Add(new[] { kb("use2"), "Transferir" });
-                L.Add(new[] { kb("map"), "Planta" }); L.Add(new[] { kb("caderno"), "Caderno" }); L.Add(new[] { kb("ping"), "Ping" }); L.Add(new[] { kb("falas"), "Frases" }); L.Add(new[] { kb("inspecionar"), "Inspecionar" }); if (online) L.Add(new[] { "Enter", "Chat" });
-                GUILayout.Space(8);
-                for (int i = 0; i < L.Count; i += 4) { GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); for (int k = i; k < Mathf.Min(L.Count, i + 4); k++) GUILayout.Label("<b>" + Cor(L[k][0], OURO_VIVO) + "</b> " + L[k][1], sPequeno, GUILayout.Width(190)); GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
-            }
-            GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (Bt("Continuar", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; Travar(true); }
-            if (Bt(pausaAjustes ? "Voltar" : "Ajustes", sBotao, GUILayout.Width(200), GUILayout.Height(52))) pausaAjustes = !pausaAjustes;
-            if (Bt(online ? "Sair da sala" : "Sair da noite", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; if (online) SairOnline(""); else { g = null; LimparVisual(); } }
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            if (comRolagem) GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
+        void TelaPausa() { TelaPausaCss(); }
 
         void TelaLoja()
         {

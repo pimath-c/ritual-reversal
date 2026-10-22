@@ -49,39 +49,7 @@ namespace RitualReversal
         {
             EstilosNoite();
             switch (telaMenu) { case "ajustes": TelaAjustes(); return; case "como": TelaComoJogar(); return; case "perfil": TelaPerfil(); return; case "novidades": TelaNovidades(); return; case "aprender": TelaAprender(); return; }
-            var r = Janela(Mathf.Min(1040, W - 40), H - 50); GUILayout.BeginArea(r); rolFim = GUILayout.BeginScrollView(rolFim);
-            var rs = GUILayoutUtility.GetRect(r.width - 30, 110); GUI.DrawTexture(new Rect(rs.center.x - 55, rs.y, 110, 110), Sigilo());
-            GUILayout.Label(Cor("Ritual Reversal", OSSO), new GUIStyle(sTitulo) { fontSize = 54, fontStyle = FontStyle.Normal });
-            GUILayout.Label(Cor(UmaNoite ? "Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence." : "Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.", new Color(.79f, .75f, .68f)), sCentro);
-            GUILayout.Space(10);
-            GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (Bt("<size=24>Jogar sozinho, com bots</size>", sBotao, GUILayout.Width(440), GUILayout.Height(62))) IniciarSolo(PapelSolo, null, false, false);
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            var sb = new GUIStyle(sBotao) { fontSize = 16, padding = new RectOffset(10, 10, 6, 6) };
-            GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUILayout.Label("Você", sPequeno, GUILayout.Width(130));
-            foreach (var k in new[] { new[] { "H", "Caça" }, new[] { "C", "Celebra" }, new[] { "?", "Sorteia" } })
-                if (Bt(PapelSolo == k[0] ? Cor(k[1], OURO_VIVO) : k[1], sb, GUILayout.Width(120))) { papelSolo = k[0]; PlayerPrefs.SetString("rr-papel", k[0]); som.Tocar("click"); }
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUILayout.Label("Bots inimigos", sPequeno, GUILayout.Width(130));
-            foreach (var d in new[] { new[] { "facil", "Fácil" }, new[] { "normal", "Normal" }, new[] { "dificil", "Difícil" } })
-                if (Bt(dificuldade == d[0] ? Cor(d[1], OURO_VIVO) : d[1], sb, GUILayout.Width(120))) { dificuldade = d[0]; PlayerPrefs.SetString("rr-dif", dificuldade); som.Tocar("click"); }
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUILayout.BeginVertical(GUILayout.Width(760)); PainelLab(LabSolo, MudarLabSolo); GUILayout.EndVertical(); GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            {
-                var D = DesafioDe(HojeDesafio()); object rec; var des = O(Perfil(), "desafios"); bool tem = des.TryGetValue(HojeDesafio(), out rec) && rec != null;
-                string sub = "Hoje você " + (D[1] == "H" ? "caça" : "celebra") + ", " + Mundo.CLIMAS[D[2]].nome.ToLowerInvariant() + ", contra bots difíceis" + (tem ? " · recorde " + System.Convert.ToInt32(rec) : "");
-                GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-                if (Bt("Desafio da noite\n<size=14>" + Cor(sub, MUDO) + "</size>", sBotao, GUILayout.Width(560))) IniciarDesafio();
-                GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            }
-            var lk = new GUIStyle(sPequeno) { richText = true, alignment = TextAnchor.MiddleCenter };
-            GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            foreach (var l in new[] { new[] { "aprender", "Aprender a jogar" }, new[] { "como", "Como jogar" }, new[] { "perfil", "Perfil" }, new[] { "novidades", "Novidades" }, new[] { "arsenal", "Arsenal" }, new[] { "ajustes", "Ajustes" } })
-                if (Bt("<u>" + Cor(l[1], OURO) + "</u>", lk, GUILayout.ExpandWidth(false))) { som.Tocar("click"); if (l[0] == "arsenal") IniciarArsenal(); else { telaMenu = l[0]; rolPerfil = Vector2.zero; } }
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            GUILayout.Space(16); TelaOnline(r);
-            GUILayout.Label("<size=14>" + Cor("Para jogar online com amigos, rode o servidor do projeto (npm start na pasta server) e digite o endereço dele. Use fones: o som diz onde e em que fase está cada ritual.", MUDO) + "</size>", sCentro);
-            GUILayout.EndScrollView(); GUILayout.EndArea();
+            TituloCss();
         }
         void Voltar(string txt = "Voltar") { GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); if (Bt(txt, sBotao, GUILayout.Width(240), GUILayout.Height(50))) { telaMenu = null; som.Tocar("click"); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
 
@@ -147,11 +115,8 @@ namespace RitualReversal
             GUILayout.Label("<size=14>" + Cor("Caído, um aliado pode te reanimar. O inimigo pode te executar, mas levar dano recomeça a execução: atire em quem executa o seu aliado. O som diz muito: use fones (as legendas mostram de que lado vem cada som). Z marca um ponto, um altar ou um inimigo para o aliado; o bot aliado também obedece.", MUDO) + "</size>", sCentro);
             Voltar("Entendi"); GUILayout.EndScrollView(); GUILayout.EndArea();
         }
-        void TelaAjustes()
-        {
-            var r = Janela(Mathf.Min(980, W - 40), H - 60); GUILayout.BeginArea(r); rolPerfil = GUILayout.BeginScrollView(rolPerfil);
-            GUILayout.Label("Ajustes", sTitulo); Ajustes(); Voltar(); GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
+        void TelaAjustes() { PainelTela("ajustes", 800, (x, y, w) => AjustesCss(x, y, w, () => { telaMenu = null; som.Tocar("click"); })); }
+
 
         // ================= APRENDER A JOGAR (TUTORIAL) =================
         bool tutAtivo, tutFim, tutAvancou; string tutPapel = "H"; int tutI; Ponto tutAlvo;

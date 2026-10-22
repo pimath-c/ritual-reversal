@@ -220,6 +220,13 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `DirecaoDano`, `AnuncioHud`, `NotaHabilidade`); `PartidaCss.cs` põe o texto como o navegador (`Css(peso, tamanho, cor)`
   com a Barlow em 400/500/600/700, `Linha` pela altura de linha do CSS, `Paragrafo` com quebra própria, `NaBase`, sombra,
   `Moldura`, `Degrade`); caderno, frases, tutorial, dica, bússola, faixa do lance, queda e rótulos de interação também.
+  Telas com o CSS do navegador, sem GUILayout (posições calculadas, `medindo` mede antes de desenhar): `PartidaCssTelas.cs`
+  (button.go/gold/ghost com as pontas chanfradas em textura nove-partes, opções .dif/.set/.labRow/.repCtl, link .lk, campo
+  input.txt, caixinha, fundo .screen e do título, `BotaoCss` com o foco do controle, `P`/`H2`/`H3` com o max-width 64ch e as
+  margens que se fundem), `PartidaTitulo.cs` (coluna de 470 px, laboratório como details, online), `PartidaTelasCss.cs`
+  (`PainelTela` centra e rola a placa de 800 px; `Cartoes` (.choice), `FileiraBotoes` (.btnrow), entrada da noite, Ajustes
+  com a grade .set e as teclas em .binds, pausa com a .cola). Ajustes sem as linhas que o Unity não tem (toque, resolução
+  adaptativa, mouse bruto).
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).

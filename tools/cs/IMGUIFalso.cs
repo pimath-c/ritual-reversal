@@ -125,6 +125,7 @@ namespace UnityEngine
             }
             return v;
         }
+        public static float HorizontalSlider(Rect r, float v, float a, float b, GUIStyle s, GUIStyle t) { return v; }
         public static void BeginGroup(Rect r) { Desenho2D.Empilhar(r, Vector2.zero); } public static void EndGroup() { Desenho2D.Desempilhar(); }
         // GUI.BeginScrollView: a barra aparece quando o conteúdo é maior que a vista; a posição é limitada fora do Layout
         public static Vector2 BeginScrollView(Rect pos, Vector2 rol, Rect vista)
@@ -146,6 +147,7 @@ namespace UnityEngine
             }
             Desenho2D.Empilhar(rec, rol + new Vector2(vista.x, vista.y)); return rol;
         }
+        public static Vector2 BeginScrollView(Rect pos, Vector2 rol, Rect vista, bool sempreH, bool sempreV, GUIStyle barraH, GUIStyle barraV) { return BeginScrollView(pos, rol, vista); }
         public static void EndScrollView() { Desenho2D.Desempilhar(); }
     }
     public class ExitGUIException : Exception { }
