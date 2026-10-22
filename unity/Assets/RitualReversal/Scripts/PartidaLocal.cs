@@ -74,6 +74,7 @@ namespace RitualReversal
             else if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); PreverTiro(m, (float)dt, inp.fire); Sim.Step(g, dt); }
             else if (!jogando) Sim.Step(g, dt);
             var evs = new List<Evento>(g.events); g.events.Clear(); TratarEventos(evs, Eu());
+            PassoNoite((float)raw);
 
             if (g.phase != faseAnterior)
             {

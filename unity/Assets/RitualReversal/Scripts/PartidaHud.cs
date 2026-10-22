@@ -75,20 +75,20 @@ namespace RitualReversal
 
         void TelaEscolha()
         {
-            if (MeuPapel() != "C") { var r0 = Janela(700, 200); GUI.Label(r0, "Os Cultistas estão escolhendo os altares…", sGrande); return; }
-            var r = Janela(820, 640); GUILayout.BeginArea(r);
-            GUILayout.Label("Escolham 3 altares", sTitulo);
-            GUILayout.Label("Os Caçadores não sabem quais são. Altares perto da sua entrada (leste) são mais rápidos de alcançar, e mais óbvios.", sCentro);
-            GUILayout.Space(12);
-            for (int i = 0; i < g.altars.Count; i++)
+            if (MeuPapel() != "C")
             {
-                bool sel = g.picks.Contains(i);
-                if (GUILayout.Button((sel ? Cor("● ", CARMIM_VIVO) : "○ ") + g.altars[i].name + "   " + Cor(Lado(g.altars[i]), CINZA * 2f), sBotao)) Acao(new Acao { type = "pick", i = i });
+                var r0 = Janela(760, 230); GUILayout.BeginArea(r0); GUILayout.Label("Os Cultistas estão escolhendo os altares", sTitulo);
+                GUILayout.Label("Você vai caçar nesta rodada. Assim que eles confirmarem, você escolhe sua classe.", sCentro); GUILayout.EndArea(); return;
             }
-            GUILayout.Space(10); GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Sortear", sBotao)) Acao(new Acao { type = "pickRandom" });
-            GUI.enabled = g.picks.Count == 3; if (GUILayout.Button("Confirmar " + g.picks.Count + " de 3", sBotao)) Acao(new Acao { type = "pickConfirm" }); GUI.enabled = true;
-            GUILayout.EndHorizontal(); GUILayout.EndArea();
+            float w = Mathf.Min(900, W - 40), hm = (w - 60) * VB_A / VB_L; var r = Janela(w, hm + 250); GUILayout.BeginArea(r);
+            GUILayout.Label("Escolham 3 altares", sTitulo);
+            int parceiros = g.slots.Count(s => s.cid != null && Sim.RoleOf(g, s.team) == "C");
+            GUILayout.Label("Os Caçadores não sabem quais são. Altares perto da sua entrada (leste) são mais rápidos de alcançar, e mais óbvios." + (parceiros > 1 ? " Seu parceiro vê e altera a mesma seleção." : ""), sCentro);
+            var rm = GUILayoutUtility.GetRect(r.width, hm); PlantaEscolha(rm);
+            GUILayout.Space(8); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Sortear", sBotao, GUILayout.Width(200))) Acao(new Acao { type = "pickRandom" });
+            GUI.enabled = g.picks.Count == 3; if (GUILayout.Button("Confirmar " + g.picks.Count + " de 3", sBotao, GUILayout.Width(260))) Acao(new Acao { type = "pickConfirm" }); GUI.enabled = true;
+            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndArea();
         }
         static string Lado(Altar A)
         {
@@ -180,37 +180,6 @@ namespace RitualReversal
                 default: return e.transferencias.ToString();
             }
         }
-        void Estatisticas()
-        {
-            Estatisticas e; if (!g.stats.TryGetValue(1, out e)) return;
-            foreach (var l in LINHAS) { GUILayout.BeginHorizontal(); GUILayout.Label(l[1], sPequeno); GUILayout.FlexibleSpace(); GUILayout.Label(Valor(e, l[0]), sPequeno); GUILayout.EndHorizontal(); }
-        }
-        void TelaResumo()
-        {
-            var sc = g.scores[g.round == 1 ? "B" : "A"]; bool pronto; g.ready.TryGetValue(EU, out pronto);
-            var r = Janela(760, 760); GUILayout.BeginArea(r);
-            GUILayout.Label("O amanhecer", sTitulo);
-            if (sc != null) GUILayout.Label("Os Cultistas completaram <b>" + sc.done + "</b> de 3 rituais" + (sc.lastT.HasValue ? ", o último aos " + Relogio(sc.lastT.Value) : "") + ". " + sc.@sealed + (sc.@sealed == 1 ? " ritual foi selado." : " rituais foram selados."), sCentro);
-            GUILayout.Space(10); Estatisticas(); GUILayout.Space(10);
-            GUI.enabled = !pronto; if (GUILayout.Button("Ver resultado", sBotao, GUILayout.Height(52))) Acao(new Acao { type = "ready" }); GUI.enabled = true;
-            GUILayout.EndArea();
-        }
-        void TelaFinal()
-        {
-            var slot = MeuSlot(); var w = Sim.Winner(g) ?? new Vencedor { why = "" }; bool minha = slot != null && w.win == slot.team;
-            string titulo = w.win == null ? "Empate" : minha ? "Vitória da sua equipe" : "Vitória dos adversários";
-            var r = Janela(760, 780); GUILayout.BeginArea(r);
-            GUILayout.Label(Cor(titulo, w.win == null ? OSSO : minha ? OURO : CARMIM_VIVO), sTitulo);
-            if (w.why.Length > 0) GUILayout.Label(char.ToUpper(w.why[0]) + w.why.Substring(1) + ".", sCentro);
-            GUILayout.Space(10); Estatisticas(); GUILayout.Space(10);
-            GUILayout.BeginHorizontal();
-            bool anfitriao = !online || hostCid == EU;
-            if (anfitriao && GUILayout.Button("Jogar de novo", sBotao, GUILayout.Height(52))) { LimparVisual(); Acao(new Acao { type = "restart" }); }
-            if (online) { if (anfitriao && GUILayout.Button("Voltar ao lobby", sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "lobby")); if (!anfitriao) GUILayout.Label("O anfitrião decide o próximo passo.", sCentro); if (GUILayout.Button("Sair da sala", sBotao, GUILayout.Height(52))) SairOnline(""); }
-            else if (GUILayout.Button("Trocar de lado", sBotao, GUILayout.Height(52))) { g = null; LimparVisual(); }
-            GUILayout.EndHorizontal(); GUILayout.EndArea();
-        }
-
         // ---------- HUD ----------
         // o véu da execução: o centro limpo, a borda fechando em sangue escuro (o #exeVeu do navegador)
         Texture2D texVeuExe;
@@ -381,27 +350,6 @@ namespace RitualReversal
             if (papel == "H") foreach (var a in g.actors) if (a.team == "C" && !a.hidden && a.revelT > 0 && a.st == "alive") Marcador(new Vector3((float)a.x, 2.4f, (float)a.z), a.name, "denunciado pelo sal", CARMIM_VIVO, true);
             for (int i = pings.Count - 1; i >= 0; i--) { var p = pings[i]; p.t -= dtG; if (p.t <= 0) { pings.RemoveAt(i); continue; } Marcador(new Vector3(p.x, p.txt.StartsWith("Altar") ? 3.6f : .8f, p.z), p.txt, p.nome + " · " + dm(p.x, p.z) + " m", new Color(.56f, .91f, 1f), true); }
             foreach (var A in g.altars) { if (A.state != "active" || (papel == "H" && !A.localized)) continue; Marcador(new Vector3((float)A.x, 3.2f, (float)A.z), (A.grande ? "Grande Ritual" : "Ritual") + " em " + A.name, dm(A.x, A.z) + " m", CARMIM_VIVO, true); }
-        }
-
-        // planta (Tab): catedral, Claustro, altares como o seu lado os conhece, você e seus aliados
-        void Planta(Ator m, string papel)
-        {
-            float S = Mathf.Min(1100f / (float)(Mapa.HX * 2), 760f / (float)(Mapa.HZ * 2)), ox = W / 2, oz = H / 2;
-            System.Func<double, float> X = x => ox + (float)x * S; System.Func<double, float> Z = z => oz + (float)z * S;
-            Caixa(new Rect(X(-Mapa.HX), Z(-Mapa.HZ), (float)Mapa.HX * 2 * S, (float)Mapa.HZ * 2 * S), new Color(.05f, .08f, .06f, .92f));
-            Caixa(new Rect(X(Mapa.CAT_X1), Z(Mapa.CAT_Z1), (float)(Mapa.CAT_X2 - Mapa.CAT_X1) * S, (float)(Mapa.CAT_Z2 - Mapa.CAT_Z1) * S), new Color(.09f, .1f, .12f, .95f));
-            Caixa(new Rect(X(Mapa.CL_X1), Z(Mapa.CL_Z1), (float)(Mapa.CL_X2 - Mapa.CL_X1) * S, (float)(Mapa.CL_Z2 - Mapa.CL_Z1) * S), new Color(.12f, .13f, .15f, .95f));
-            foreach (var n in Mapa.NPCS) { Caixa(new Rect(X(n.x) - 4, Z(n.z) - 4, 8, 8), OURO); GUI.Label(new Rect(X(n.x) - 80, Z(n.z) - 30, 160, 24), n.nome, new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleCenter }); }
-            foreach (var A in g.altars)
-            {
-                Color c = CINZA * 1.5f; string k = g.know[A.i];
-                if (A.state == "fenda") c = CARMIM; else if (A.state == "farol") c = OURO;
-                else if (papel == "C") c = A.state == "active" ? CARMIM_VIVO : A.chosen ? (A.state == "awake" ? ROXO_VIVO : CARMIM) : A.decoy ? CINZA * 2f : c;
-                else c = A.state == "active" && A.localized ? CARMIM_VIVO : k == "confirmado" ? ROXO_VIVO : k == "desperto" ? ROXO : k == "chamariz" ? CINZA * 2f : k == "descartado" ? CINZA * .6f : k == "purgado" ? OURO * .7f : c;
-                Caixa(new Rect(X(A.x) - 9, Z(A.z) - 9, 18, 18), c);
-                GUI.Label(new Rect(X(A.x) - 90, Z(A.z) + (A.z < 0 ? 12 : -36), 180, 24), A.name, new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleCenter });
-            }
-            foreach (var a in g.actors) if (a.team == m.team && a.st != "dead") Caixa(new Rect(X(a.x) - 5, Z(a.z) - 5, 10, 10), a == m ? Color.white : (a.team == "H" ? OURO : CARMIM_VIVO));
         }
     }
 }

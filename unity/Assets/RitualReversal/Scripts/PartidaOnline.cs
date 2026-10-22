@@ -90,6 +90,7 @@ namespace RitualReversal
         void AoSnapshot(Dictionary<string, object> m)
         {
             var s = (Dictionary<string, object>)m["s"]; var ng = Snapshot.Ler(s); noLobby = false;
+            object lg; if (m.TryGetValue("log", out lg)) GuardarLogUrl(lg);
             float agora = Time.realtimeSinceStartup; double alvo = ng.t - agora + .02;
             offset = offset.HasValue ? offset.Value + (alvo - offset.Value) * .05 : alvo; if (System.Math.Abs(alvo - offset.Value) > .5) offset = alvo;
             object cidO; if (m.TryGetValue("cid", out cidO) && cidO is string) EU = (string)cidO;

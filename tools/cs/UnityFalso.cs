@@ -195,6 +195,7 @@ namespace UnityEngine
         public static Color clear { get { return new Color(0, 0, 0, 0); } }
         public static Color red { get { return new Color(1, 0, 0, 1); } }
         public static Color gray { get { return new Color(.5f, .5f, .5f, 1); } }
+        public static Color magenta { get { return new Color(1, 0, 1, 1); } }
         public float maxColorComponent { get { return Math.Max(r, Math.Max(g, b)); } }
         static float L2G(float v) { return v <= .0031308f ? v * 12.92f : 1.055f * (float)Math.Pow(v, 1 / 2.4) - .055f; }
         static float G2L(float v) { return v <= .04045f ? v / 12.92f : (float)Math.Pow((v + .055) / 1.055, 2.4); }
@@ -412,6 +413,7 @@ namespace UnityEngine
         public readonly int id = ++seq;
         public Texture2D(int w, int h, TextureFormat f = TextureFormat.RGBA32, bool mip = true, bool linear = false) { width = w; height = h; this.linear = linear; pixels = new Color32[w * h]; }
         public void SetPixels32(Color32[] p) { pixels = (Color32[])p.Clone(); }
+        public void SetPixels(Color[] p) { pixels = new Color32[p.Length]; for (int i = 0; i < p.Length; i++) pixels[i] = p[i]; }
         public Color32[] GetPixels32() { return pixels; }
         public void SetPixel(int x, int y, Color c) { pixels[y * width + x] = c; }
         public void Apply(bool mip = true, bool naoLer = false) { }
@@ -449,6 +451,18 @@ namespace UnityEngine
     }
     public class TextAsset : Object { public string text; public byte[] bytes; public TextAsset(string t) { text = t; } public TextAsset(byte[] b) { bytes = b; } }
     public static class ImageConversion { public static bool LoadImage(Texture2D t, byte[] b) { return false; } }
+    public static class ColorUtility
+    {
+        public static bool TryParseHtmlString(string h, out Color c)
+        {
+            c = new Color(1, 1, 1, 1); if (string.IsNullOrEmpty(h) || h[0] != '#') return false; h = h.Substring(1);
+            if (h.Length == 3 || h.Length == 4) { var t = ""; foreach (var ch in h) t += new string(ch, 2); h = t; }
+            if (h.Length != 6 && h.Length != 8) return false;
+            System.Func<int, float> B = i => System.Convert.ToInt32(h.Substring(i, 2), 16) / 255f;
+            c = new Color(B(0), B(2), B(4), h.Length == 8 ? B(6) : 1); return true;
+        }
+        public static string ToHtmlStringRGB(Color c) { System.Func<float, string> B = v => ((int)System.Math.Round(Mathf.Clamp01(v) * 255)).ToString("X2"); return B(c.r) + B(c.g) + B(c.b); }
+    }
     public static class Resources
     {
         public static string pasta = "";

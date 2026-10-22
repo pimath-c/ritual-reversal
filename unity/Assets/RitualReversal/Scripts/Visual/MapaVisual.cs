@@ -15,6 +15,7 @@ namespace RitualReversal.Visual
     // v6: tabuleiro de uma travessia do desfiladeiro: ao longo (de..ate) e largura (a..b)
     public class TravessiaV { public string nome, eixo; public float a, b, de, ate; }
     public struct Caixa2 { public float x1, x2, z1, z2; }
+    public class LugarV { public string nome; public float x, z; }
 
     public static class MapaVisual
     {
@@ -33,6 +34,7 @@ namespace RitualReversal.Visual
         public static Caixa2 PROMONTORIO, DESFILADEIRO; // v6
         public static List<TravessiaV> TRAVESSIAS = new List<TravessiaV>();
         public static List<PecaV> ABISMO = new List<PecaV>();
+        public static List<LugarV> LUGARES = new List<LugarV>(); // nomes dos lugares na planta
         public static bool Carregado;
 
         static float F(object v) { return (float)(double)v; }
@@ -72,6 +74,7 @@ namespace RitualReversal.Visual
             CANDLES.Clear(); foreach (var o in Json.L(R["luzes"])) { var p = Json.O(o); string t = Json.S(p["tipo"]); CANDLES.Add(new LuzV { x = F(p["x"]), z = F(p["z"]), tipo = t == "vela" ? null : t }); }
             PORTAIS.Clear();
             foreach (var o in Json.L(R["portais"])) { var p = Json.O(o); object b; PORTAIS.Add(new PortalV { nome = Json.S(p["nome"]), eixo = Json.S(p["eixo"]), fixo = F(p["fixo"]), a = F(p["a"]), b = F(p["b"]), brecha = p.TryGetValue("brecha", out b) && b is bool && (bool)b }); }
+            LUGARES.Clear(); foreach (var o in Json.L(R["lugares"])) { var p = Json.O(o); LUGARES.Add(new LugarV { nome = Json.S(p["nome"]), x = F(p["x"]), z = F(p["z"]) }); }
             Carregado = true;
         }
         public static bool NaCatedral(float x, float z, float m = 0) { return x > CATEDRAL.xMin - m && x < CATEDRAL.xMax + m && z > CATEDRAL.yMin - m && z < CATEDRAL.yMax + m; }

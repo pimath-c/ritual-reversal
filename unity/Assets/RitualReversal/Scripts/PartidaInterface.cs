@@ -141,26 +141,14 @@ namespace RitualReversal
         // Lance da noite (v5.7): uma faixa curta, uma de cada vez, logo abaixo do anúncio
         class LanceF { public string tit, sub; public bool c, meu; }
         readonly List<LanceF> filaLance = new List<LanceF>(); LanceF lanceAtual; float lanceT = -1;
-        static readonly HashSet<string> LANCE_CULTO = new HashSet<string> { "defesa", "transferencia", "chamariz" };
         bool LanceTexto(Evento e, out string tit, out string sub)
         {
-            var q = Nomes(e["quem"]); int ai = e.Int("altar"); string alt = ai >= 0 && ai < g.altars.Count ? g.altars[ai].name : ""; string quem = ListaNomes(q);
-            double v = e["v"] != null ? e.Num("v") : 0; string pct = Mathf.RoundToInt((float)v * 100) + "%";
-            switch (e.Str("tipo"))
-            {
-                case "selo_limite": tit = "Selo no último instante"; sub = quem + (q.Count > 1 ? " selaram" : " selou") + " com o ritual em " + pct; return true;
-                case "achou_cedo": tit = "Achou antes do coro"; sub = quem + " encontrou o ritual" + (alt != "" ? " em " + alt : "") + " com " + pct; return true;
-                case "defesa": tit = "Defesa até o fim"; sub = quem + (q.Count > 1 ? " seguraram" : " segurou") + " o ritual" + (alt != "" ? " em " + alt : "") + " com o selo em " + pct; return true;
-                case "resgate": tit = "Resgate"; sub = q.Count > 1 ? q[0] + " impediu a execução e " + q[1] + " reanimou" : quem + " impediu a execução e reanimou"; return true;
-                case "transferencia": tit = "A Transferência deu certo"; sub = quem + " levou o ritual" + (alt != "" ? " para " + alt : "") + ", e ele virou Fenda"; return true;
-                case "chamariz": tit = "O Chamariz funcionou"; sub = "O Chamariz de " + quem + (alt != "" ? " em " + alt : "") + " prendeu a caça por " + Mathf.RoundToInt((float)v) + " s"; return true;
-            }
-            tit = sub = null; return false;
+            int ai = e.Int("altar"); return Noite.LanceFrase(e.Str("tipo"), Nomes(e["quem"]), ai >= 0 && ai < g.altars.Count ? g.altars[ai].name : "", e["v"] != null ? e.Num("v") : 0, out tit, out sub);
         }
         void MostrarLance(Evento e)
         {
             string tit, sub; if (!LanceTexto(e, out tit, out sub)) return; var m = Eu(); var q = Nomes(e["quem"]);
-            filaLance.Add(new LanceF { tit = tit, sub = sub, c = LANCE_CULTO.Contains(e.Str("tipo")) || (e.Str("tipo") == "resgate" && e.Str("team") == "C"), meu = m != null && q.Contains(m.name) });
+            filaLance.Add(new LanceF { tit = tit, sub = sub, c = Noite.LanceDoCulto(e.Str("tipo"), e.Str("team")), meu = m != null && q.Contains(m.name) });
         }
         void FaixaLance()
         {
@@ -194,6 +182,7 @@ namespace RitualReversal
         void RegistrarQueda(Ator m)
         {
             espQuem = "";
+            LT.Marco(g, m.st == "down" ? "queda" : "morte", m.st == "down" ? "Você caiu" : "Você morreu");
             if (golpe != null && Time.time - golpe.t < 4)
             {
                 var a = g.actors.Find(b => b.id == golpe.s);

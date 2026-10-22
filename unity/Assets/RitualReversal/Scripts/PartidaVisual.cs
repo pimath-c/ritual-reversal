@@ -155,12 +155,13 @@ namespace RitualReversal
                     }
                 case "presage": som.Tocar("presage"); break;
                 case "selando":
-                    if (papel == "C") { int ai = e.Int("altar"); var A = ai >= 0 && ai < g.altars.Count ? g.altars[ai] : null; som.Tocar("selando", x, z); Legenda("selando", x, z, "Selando o ritual em " + (A != null ? A.name : "um altar"), "cult", 400); }
+                    if (papel == "C") { int ai = e.Int("altar"); var A = ai >= 0 && ai < g.altars.Count ? g.altars[ai] : null; som.Tocar("selando", x, z); Legenda("selando", x, z, "Selando o ritual em " + (A != null ? A.name : "um altar"), "cult", 400); LT.Marco(g, "eco", "A caça começou a selar " + (A != null ? A.name : "")); }
                     break;
                 case "eco":
                     {
                         // v5.5: o coro ecoa em dois altares do setor; se a equipe já descartou um, a dedução aponta o outro
                         var L = new List<Altar>(); var la = e["altares"] as System.Collections.IList; if (la != null) foreach (var o in la) { int i = System.Convert.ToInt32(o); if (i >= 0 && i < g.altars.Count) L.Add(g.altars[i]); }
+                        LT.Marco(g, "eco", "Eco do coro");
                         if (L.Count == 0) break; float ex = (float)L.Average(A => A.x), ez = (float)L.Average(A => A.z);
                         som.Tocar("eco", ex, ez); Legenda("eco", ex, ez, "Coro distante: " + string.Join(" ou ", L.Select(A => A.name).ToArray()), "rit", 400);
                         var poss = papel == "H" && g.know != null ? L.Where(A => AltarPossivel(A.i)).ToList() : L;
@@ -172,7 +173,7 @@ namespace RitualReversal
                 case "evp": som.Tocar("whisper", x, z); som.Tocar("evp", x, z); mundo.RevelarEVP(x, z); break;
                 case "blind": NotaHab("Você foi cegado", new Color(1, .96f, .82f)); break;
                 case "stun": atordT = 1; NotaHab("Você foi atordoado", OURO); fp.kickP += .03f; break;
-                case "momento": som.Tocar("bell"); break;
+                case "momento": som.Tocar("bell"); LT.Marco(g, "momento", e.Str("nome")); break;
                 case "grande":
                     som.Tocar("doom"); som.Tocar("sinoGrande"); StartCoroutine(Depois(2.3f, () => som.Tocar("sinoGrande"))); StartCoroutine(Depois(4.6f, () => som.Tocar("sinoGrande")));
                     mundo.EspantarCorvos(); claraoGrande = 1.2f; fp.kickP += .05f;
@@ -246,23 +247,7 @@ namespace RitualReversal
             knowAnt = (string[])g.know.Clone();
         }
         static List<string> Nomes(object v) { var L = new List<string>(); var en = v as System.Collections.IEnumerable; if (en != null && !(v is string)) foreach (var x in en) if (x != null) L.Add(x.ToString()); return L; }
-        static string ListaNomes(List<string> L) { return L.Count < 2 ? (L.Count == 1 ? L[0] : "") : string.Join(", ", L.GetRange(0, L.Count - 1)) + " e " + L[L.Count - 1]; }
-        // os lances da noite (mesmos textos do protótipo)
-        string TextoLance(Evento e)
-        {
-            var q = Nomes(e["quem"]); int ai = e.Int("altar"); string alt = ai >= 0 && ai < g.altars.Count ? g.altars[ai].name : ""; string quem = ListaNomes(q);
-            double v = e["v"] != null ? e.Num("v") : 0; string pct = Mathf.RoundToInt((float)v * 100) + "%";
-            switch (e.Str("tipo"))
-            {
-                case "selo_limite": return "selo no último instante: " + quem + (q.Count > 1 ? " selaram" : " selou") + " com o ritual em " + pct;
-                case "achou_cedo": return "achou antes do coro: " + quem + " encontrou o ritual em " + alt + " com " + pct;
-                case "defesa": return "defesa até o fim: " + quem + (q.Count > 1 ? " seguraram" : " segurou") + " o ritual em " + alt + " com o selo em " + pct;
-                case "resgate": return "resgate: " + (q.Count > 1 ? q[0] + " impediu a execução e " + q[1] + " reanimou" : quem + " impediu a execução e reanimou");
-                case "transferencia": return "a Transferência deu certo: " + quem + " levou o ritual para " + alt + ", e ele virou Fenda";
-                case "chamariz": return "o Chamariz funcionou: o Chamariz de " + quem + " em " + alt + " prendeu a caça por " + Mathf.RoundToInt((float)v) + " s";
-            }
-            return null;
-        }
+        static string ListaNomes(List<string> L) { return Noite.ListaNomes(L); }
         static System.Collections.IEnumerator Depois(float s, System.Action f) { yield return new WaitForSeconds(s); f(); }
         static string TextoHab(string f, int n)
         {

@@ -40,6 +40,7 @@ commits em português.
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-ver.js [pasta] [regex]   # mundo do Unity ao lado do oficial, sem o Unity (Mono)
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/exportar-primeira-pessoa.js   # mudou arma.js/skins.js? regrava Resources/primeira-pessoa.*
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
+    [THREE_DIR=<three@0.128.0>] NODE_PATH=$(npm root -g) node tools/unity-noite.js   # fim da noite do Unity (planta, gráfico, placar) numa noite de bots (Mono)
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v6)
@@ -184,7 +185,12 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   bússola, faixa dos lances, tela de queda e espectador, caderno dos altares (J); `MundoAltares.cs` tem o mostrador do
   círculo (`Resources/RitualReversalMostrador.shader`, `PiscarMostrador`). `PartidaArsenal.cs` é o Arsenal do menu
   (partida local parada, `ArmaFP.Forcar`/`Vista`/`LuzEstudio`, enquadramento deslocado como o setViewOffset do three).
-  Faltam: clima (chuva, raios); replay, perfil, tutorial, laboratório, relatório e o resto das telas de fim de noite.
+  Fim da noite: `Noite.cs` (sem IMGUI) anota a linha do tempo (`LinhaDoTempo`, a cada quadro em `PassoNoite`) e tira do
+  registro os marcos, lances, destaques e o placar; `PartidaNoite.cs` são o resumo, o resultado e o Rever a noite; online,
+  o registro vem do caminho `log` do snapshot final (UnityWebRequest). `Desenho.cs` rasteriza a planta fixa do navegador
+  (`PlantaFixa`) e o gráfico da noite em textura; `Tracos.cs` desenha no IMGUI o que muda a cada quadro; `PartidaPlanta.cs`
+  é a planta do Tab e a escolha dos altares. `tools/unity-noite.js` confere tudo no Mono (e fotografa a planta do navegador).
+  Faltam: clima (chuva, raios); perfil, tutorial, desafio, dicas, laboratório e relatório do playtest.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
