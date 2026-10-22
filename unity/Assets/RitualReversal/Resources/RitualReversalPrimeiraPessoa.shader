@@ -1,6 +1,6 @@
 // Materiais da primeira pessoa do Ritual Reversal (URP): mãos, braços, armas e acessórios (ArmaFP.cs, SkinsFP.cs).
-// Iluminação do URP (UniversalFragmentPBR: luz principal, luzes adicionais, luz ambiente) e, por cima, o que o
-// client/arma.js e o client/skins.js põem no shader do three:
+// A luz do three em faixas (RitualReversalLuz.hlsl: o estilo ilustrado vale para todo MeshStandardMaterial) e, por cima,
+// o que o client/arma.js e o client/skins.js põem no shader do three:
 //  • luz de leitura: uma luz própria vinda de cima à esquerda no espaço da câmera, com brilho especular, e um contorno de
 //    luz fria (_RRLeitura e _RRRim são globais: 0,2 / 0,16 no jogo; 1,3 / 0,4 na vitrine e no Arsenal);
 //  • detalhe da skin: textura em três planos no espaço da peça (sem depender das UVs). R escava sulcos (relevo pela
@@ -55,6 +55,7 @@ Shader "RitualReversal/PrimeiraPessoa"
             #pragma multi_compile_fog
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "RitualReversalLuz.hlsl"
 
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
             TEXTURE2D(_BumpMap); SAMPLER(sampler_BumpMap);
@@ -116,15 +117,11 @@ Shader "RitualReversal/PrimeiraPessoa"
                 }
                 float3 nW = normalize(mul(n, (float3x3)UNITY_MATRIX_V));   // de volta ao mundo (a matriz de vista é ortogonal)
 
-                InputData inp = (InputData)0;
-                inp.positionWS = i.positionWS; inp.positionCS = i.positionCS; inp.normalWS = nW; inp.viewDirectionWS = vWS; inp.fogCoord = i.fog;
-                inp.bakedGI = SampleSH(nW); inp.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS); inp.shadowMask = half4(1, 1, 1, 1);
-                SurfaceData s = (SurfaceData)0;
-                s.albedo = cor; s.metallic = met; s.smoothness = saturate(1 - rug) * .9; s.normalTS = half3(0, 0, 1); s.occlusion = 1; s.alpha = 1;
                 half3 em = _Emissao.rgb * _EmissaoI;
                 if (_Varre.z > 0) { float vv = exp(-pow((dot(posVS.xy, float2(.93, .37)) - _Varre.x) / _Varre.y, 2)) * _Varre.z; em += _VarreCor.rgb * vv * (.12 + S * 1.4 + I * 1.8); }
-                s.emission = em;
-                half4 c = UniversalFragmentPBR(inp, s);
+                // a luz do three em faixas (o estilo ilustrado vale para todo MeshStandardMaterial, a primeira pessoa inclusive)
+                float3 dif, esp; RR_LuzThree(i.positionWS, i.positionCS, nW, vWS, cor * (1 - met), lerp(float3(.04, .04, .04), cor, met), RR_Aspereza(rug, nWS), dif, esp);
+                half4 c = half4(RR_Ilustrar(cor, dif, esp) + em, 1);
 
                 // luz de leitura (client/arma.js, luzDeLeitura)
                 float3 Ld = normalize(float3(-.45, .7, .55)), Vd = normalize(-posVS);

@@ -264,6 +264,8 @@ namespace RitualReversal.Visual
                 rends.Add(r); originais.Add(r.sharedMaterials);
                 foreach (var m in r.sharedMaterials) if (m != null && m.shader == Mat.Lit && !todas.Contains(m)) todas.Add(m);
             }
+            // luz de recorte nas silhuetas (RIMLUZ do navegador): âmbar na caça, carmim no culto
+            foreach (var m in todas) m.SetColor("_Rim", Mat.Lin(team == "C" ? new Color(.95f, .14f, .24f) : new Color(1f, .7f, .32f)));
             // marcas de estado sobre o personagem: quem vê entende o que a habilidade fez
             mAtord = Pecas.Aditivo(0xf3d58e, null, false); atord = Mundo.Malha(Geo.Toro(.26f, .035f, 8, 28), mAtord, g, "atordoado", false); atord.SetActive(false);
             mCego = Pecas.Aditivo(0xffffff, Tex.Brilho(), true); cego = Mundo.Sprite(g, mCego, .9f, .9f, "cego"); cego.SetActive(false);

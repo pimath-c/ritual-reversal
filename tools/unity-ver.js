@@ -48,8 +48,9 @@ try{ console.log(execFileSync('mono',[EXE,path.join(UN,'Resources'),EXP,'partida
 catch(e){ console.error(String(e.stdout||'')+String(e.stderr||'')); process.exit(1); }
 
 // 2) a página que desenha a exportação (three r128, os mesmos ajustes do renderizador do jogo)
+const ILUSTRADO=(()=>{ const h=fs.readFileSync(path.join(ROOT,'client','index.html'),'utf8'), i=h.indexOf('(function estiloIlustrado(){'), j=h.indexOf('})();',i); return i>=0&&j>i?h.slice(i,j+5):''; })();
 const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000;overflow:hidden}</style></head><body>
-<script src="http://ver.local/three.min.js"></script><script>
+<script src="http://ver.local/three.min.js"></script><script>${ILUSTRADO}</script><script>
 (async()=>{ console.log('baixando'); const J=await (await fetch('http://ver.local/exp/mundo.json')).json(); console.log('json'); const BIN=await (await fetch('http://ver.local/exp/mundo.bin')).arrayBuffer(); console.log('bin '+BIN.byteLength);
   const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setSize(innerWidth,innerHeight); document.body.appendChild(renderer.domElement);
   renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.25; renderer.outputEncoding=THREE.sRGBEncoding; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -68,7 +69,10 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
       transparent:transp,opacity:transp?M.cor[3]:1,alphaTest:M.clip===1?(M.cutoff||.5):0,emissive:M.emissao?new THREE.Color(M.emissao[0],M.emissao[1],M.emissao[2]):new THREE.Color(0)});
     if(M.detalhe>=0){ const d=texCom(M.detalhe,[1,1],[0,0]); m.onBeforeCompile=sh=>{ sh.uniforms.detalhe={value:d}; sh.uniforms.dEsc={value:new THREE.Vector2(M.dEsc[0],M.dEsc[1])};
         sh.fragmentShader='uniform sampler2D detalhe; uniform vec2 dEsc;\\n'+sh.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\\n diffuseColor.rgb*=sRGBToLinear(texture2D(detalhe,vUv*dEsc)).rgb*2.0;'); }; m.customProgramCacheKey=()=>'det'+M.detalhe; } // como o _DETAIL_MULX2 do URP
-    if(/Marco/.test(M.shader)){ m.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace('#include <fog_fragment>','#ifdef USE_FOG\\n float fogFactor=1.0-exp(-fogDensity*fogDensity*fogDepth*fogDepth*.07);\\n gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,fogFactor);\\n #endif'); }; m.customProgramCacheKey=()=>'marco'; } // RitualReversal/Marco: _NevoaK .07
+    if(M.rim&&(M.rim[0]||M.rim[1]||M.rim[2])){ m.defines=Object.assign({},m.defines,{RIMLUZ:'vec3('+M.rim[0]+','+M.rim[1]+','+M.rim[2]+')'}); }
+    const nk=/Marco/.test(M.shader)?.07:M.nevoaK!=null&&M.nevoaK<1?M.nevoaK:0;
+    if(nk&&M.detalhe<0){ m.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace('#include <fog_fragment>','#ifdef USE_FOG\\n float fogFactor=1.0-exp(-fogDensity*fogDensity*fogDepth*fogDepth*'+nk+');\\n gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,fogFactor);\\n #endif'); }; m.customProgramCacheKey=()=>'marco'+nk; }
+    else if(/Marco/.test(M.shader)){ m.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace('#include <fog_fragment>','#ifdef USE_FOG\\n float fogFactor=1.0-exp(-fogDensity*fogDensity*fogDepth*fogDepth*.07);\\n gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,fogFactor);\\n #endif'); }; m.customProgramCacheKey=()=>'marco'; } // RitualReversal/Marco: _NevoaK .07
     m.userData={fila:M.fila}; return m; });
   console.log('materiais prontos; '+J.malhas.length+' malhas');
   for(const mm of J.malhas){ const M=mats[mm.mat], v=mm.v; let o=mm.ini; const g=new THREE.BufferGeometry();

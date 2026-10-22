@@ -2,6 +2,11 @@
 // exposição 1,25, sombras puxadas para o azul-frio e luzes para o âmbar das velas, saturação e contraste da etapa
 // final, vinheta oval, granulado de filme e aberração cromática que cresce quando a sanidade cai.
 // A Grande Ritual tinge a imagem de carmim; a sanidade baixa tira a cor e aperta a vinheta.
+// Etapa GRADE (contorno a nanquim e névoa rasteira, Resources/RitualReversalGrade.shader): um passe de tela cheia do URP
+// (FullScreenPassRendererFeature) posto no renderizador do projeto quando a partida começa e tirado quando ela acaba.
+// Tudo por reflexão: se o URP do projeto não tiver o recurso, a etapa só não aparece (aviso no console).
+using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -11,6 +16,9 @@ namespace RitualReversal.Visual
     public class Pos
     {
         Volume vol; Bloom bloom; ColorAdjustments cor; Vignette vinheta; ChromaticAberration aberr; FilmGrain grao; SplitToning tons;
+        Material grade; ScriptableObject recurso, dadosR; System.Collections.IList listaR; float densG = .024f; Vector4 corG = COR_NEVOA;
+        static readonly Vector4 COR_NEVOA = new Vector4(.075f, .086f, .09f, 1), COR_NEVOA_HM = new Vector4(.085f, .062f, .068f, 1), COR_NEVOA_GR = new Vector4(.13f, .035f, .045f, 1);
+        static readonly float[] DENS_GRADE = { .024f, .03f, .04f };
 
         public Pos(Camera cam)
         {
@@ -25,6 +33,55 @@ namespace RitualReversal.Visual
             aberr = p.Add<ChromaticAberration>(true); aberr.intensity.Override(.08f);
             grao = p.Add<FilmGrain>(true); grao.type.Override(FilmGrainLookup.Medium1); grao.intensity.Override(Qualidade.nivel >= 2 ? .3f : 0); grao.response.Override(.8f);
             bloom.active = Qualidade.nivel >= 1;
+            if (Qualidade.nivel >= 1) CriarGrade();   // no mínimo, nada de pós-processamento (como no navegador)
+        }
+
+        static void Def(object o, string campo, object v) { var f = o.GetType().GetField(campo, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); if (f != null) f.SetValue(o, v); }
+        void CriarGrade()
+        {
+            try
+            {
+                var sh = Shader.Find("RitualReversal/Grade"); if (sh == null || !sh.isSupported) return;
+                var asset = GraphicsSettings.currentRenderPipeline; if (asset == null) return;
+                const BindingFlags fl = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                var lista = asset.GetType().GetField("m_RendererDataList", fl) != null ? asset.GetType().GetField("m_RendererDataList", fl).GetValue(asset) as Array : null;
+                if (lista == null || lista.Length == 0) { Debug.LogWarning("Ritual Reversal: sem a etapa GRADE (o URP não mostrou a lista de renderizadores)"); return; }
+                int idx = 0; var fi = asset.GetType().GetField("m_DefaultRendererIndex", fl); if (fi != null) idx = (int)fi.GetValue(asset);
+                var dados = lista.GetValue(Mathf.Clamp(idx, 0, lista.Length - 1)) as ScriptableObject; if (dados == null) return;
+                var tipo = Type.GetType("UnityEngine.Rendering.Universal.FullScreenPassRendererFeature, Unity.RenderPipelines.Universal.Runtime");
+                var pr = dados.GetType().GetProperty("rendererFeatures", fl); var lr = pr != null ? pr.GetValue(dados, null) as System.Collections.IList : null;
+                if (tipo == null || lr == null) { Debug.LogWarning("Ritual Reversal: sem a etapa GRADE (este URP não tem o FullScreenPassRendererFeature)"); return; }
+                grade = new Material(sh) { name = "GRADE" };
+                var rec = ScriptableObject.CreateInstance(tipo); rec.name = "Ritual Reversal: GRADE";
+                Def(rec, "passMaterial", grade); Def(rec, "passIndex", 0); Def(rec, "fetchColorBuffer", true); Def(rec, "bindDepthStencilAttachment", false);
+                var ip = tipo.GetField("injectionPoint", fl); if (ip != null) ip.SetValue(rec, Enum.Parse(ip.FieldType, "AfterRenderingPostProcessing"));
+                var rq = tipo.GetField("requirements", fl); if (rq != null) rq.SetValue(rec, Enum.Parse(rq.FieldType, "Depth"));
+                lr.Add(rec); var sd = dados.GetType().GetMethod("SetDirty", fl, null, Type.EmptyTypes, null); if (sd != null) sd.Invoke(dados, null);
+                recurso = rec; dadosR = dados; listaR = lr;
+            }
+            catch (Exception e) { Debug.LogWarning("Ritual Reversal: sem a etapa GRADE (" + e.Message + ")"); grade = null; }
+        }
+        // tira o passe do renderizador (o recurso só existe nesta partida; sem isto o asset do URP ficaria com uma referência perdida)
+        public void Destruir()
+        {
+            try
+            {
+                if (listaR != null && recurso != null) { listaR.Remove(recurso); var sd = dadosR.GetType().GetMethod("SetDirty", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null); if (sd != null) sd.Invoke(dadosR, null); }
+                if (recurso != null) UnityEngine.Object.Destroy(recurso); if (grade != null) UnityEngine.Object.Destroy(grade);
+            }
+            catch (Exception) { }
+            recurso = null; listaR = null; grade = null;
+        }
+        // a câmera e a noite: névoa que adensa com o momento (e com o clima), cor carmim no Grande Ritual
+        public void Grade(Camera cam, int momento, float grande, float nevoaClima, float dt, float agora)
+        {
+            if (grade == null) return; int mi = Mathf.Clamp(momento, 0, 2); float k = Mathf.Min(1, dt * .6f);
+            densG = Mathf.Lerp(densG, DENS_GRADE[mi] * (1 + (nevoaClima - 1) * 1.6f), k); corG = Vector4.Lerp(corG, grande > .05f ? COR_NEVOA_GR : mi >= 2 ? COR_NEVOA_HM : COR_NEVOA, k);
+            float tv = Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad / 2);
+            // cores da etapa final são de tela (sRGB): SetVector, sem a conversão de SetColor
+            grade.SetVector("_Tinta", new Vector4(12 / 255f, 6 / 255f, 16 / 255f, 1)); grade.SetVector("_NevoaCor", corG); grade.SetFloat("_NevoaDens", densG);
+            grade.SetVector("_Cat", new Vector4(-96, -58, 96, 58)); grade.SetVector("_Tan", new Vector4(tv * cam.aspect, tv, 0, 0)); grade.SetMatrix("_CamMundo", cam.cameraToWorldMatrix);
+            grade.SetFloat("_T", agora); grade.SetFloat("_Longe", cam.farClipPlane); grade.SetFloat("_Contorno", 1);
         }
 
         // sanidade 0..100, grande 0..1 (céu de sangue), ferido 0..1 (tomou dano agora)

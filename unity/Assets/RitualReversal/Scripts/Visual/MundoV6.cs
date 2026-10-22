@@ -45,6 +45,8 @@ namespace RitualReversal.Visual
         // material de marco: mesma cor e textura do Lit, com a névoa reduzida (shader próprio; sem ele, fica o Lit)
         static Material Marco(Material m)
         {
+            // com o estilo ilustrado, o marco é o mesmo material com 0,07 da névoa (_NevoaK do shader)
+            if (Mat.Ilustrado) { var c = new Material(m) { name = m.name + " (marco)" }; c.SetFloat("_NevoaK", .07f); return c; }
             var sh = Shader.Find("RitualReversal/Marco"); if (sh == null || !sh.isSupported) return m;
             var r = new Material(sh) { enableInstancing = true };
             r.SetColor("_BaseColor", m.GetColor("_BaseColor"));

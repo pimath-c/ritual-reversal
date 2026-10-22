@@ -10,7 +10,18 @@ namespace RitualReversal.Visual
     {
         static Shader lit, brilho;
         public static readonly Dictionary<string, Material> cache = new Dictionary<string, Material>();
-        public static Shader Lit { get { if (lit == null) lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"); return lit; } }
+        // estilo ilustrado (Resources/RitualReversalIlustrado.shader: a luz do three em faixas, com as propriedades do Lit); sem ele
+        // ou com "rr-ilustrado" = 0 nos PlayerPrefs, o URP/Lit
+        public static Shader Lit
+        {
+            get
+            {
+                if (lit != null) return lit;
+                var il = PlayerPrefs.GetInt("rr-ilustrado", 1) == 1 ? Shader.Find("RitualReversal/Ilustrado") : null;
+                lit = il != null && il.isSupported ? il : Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"); return lit;
+            }
+        }
+        public static bool Ilustrado { get { return Lit != null && Lit.name == "RitualReversal/Ilustrado"; } }
         public static Shader ShaderBrilho
         {
             get

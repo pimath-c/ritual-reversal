@@ -175,8 +175,12 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   que o `ArmaFP.Quadro` recebe. Tecla I inspeciona; `ArmaFP.Forcar`/`LuzEstudio`/`TrocarSkin` são a vitrine e o Arsenal.
   `tools/unity-fp.js` roda os mesmos casos no navegador e no `ArmaFP` (Mono, `tools/cs/TesteFP.cs`) e compara cada nó:
   656 poses, diferença máxima 2e-7 m, e uma passada de fumaça por todas as skins e entradas.
-  Faltam: contorno a nanquim e névoa rasteira da etapa GRADE e a luz de recorte (RIMLUZ); clima (chuva, raios); a tela do
-  Arsenal; a maior parte da interface da v5.3 em diante (bússola, legendas, espectador, caderno, replay, perfil, tutorial,
+  Estilo do navegador no Unity: `Resources/RitualReversalIlustrado.shader` substitui o URP/Lit no `Mat.Lit` (mesmas
+  propriedades; a luz do three em faixas, especular recortado, `_Rim` = RIMLUZ nos personagens e mercadores, `_NevoaK` nos
+  marcos; luz comum em `Resources/RitualReversalLuz.hlsl`, também usada pela primeira pessoa; PlayerPrefs "rr-ilustrado" = 0
+  volta ao URP/Lit). Etapa GRADE: `Resources/RitualReversalGrade.shader` (contorno a nanquim e névoa rasteira, em sRGB depois
+  do ACES), posta por `Pos.cs` no renderizador do URP como FullScreenPassRendererFeature, por reflexão, e tirada no fim.
+  Faltam: clima (chuva, raios); a tela do Arsenal; a maior parte da interface da v5.3 em diante (bússola, legendas, espectador, caderno, replay, perfil, tutorial,
   laboratório, relatório, mostrador do círculo, lances).
 
 ## Pendências
@@ -189,5 +193,6 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   da v5.9 e as skins; falta a lista em "Visual do protótipo no Unity" (Arsenal, GRADE/RIMLUZ, clima e a interface).
 - v6 sem gente: equilíbrio entre bots ficou em 38–40% para o culto; os sons novos não foram ouvidos (ambiente sem áudio).
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
-  O shader da primeira pessoa nunca compilou num Unity de verdade (só o C# é conferido aqui).
+  Os shaders Ilustrado, PrimeiraPessoa e Grade nunca compilaram num Unity de verdade (só o C# é conferido aqui); se o
+  mundo ficar rosa, PlayerPrefs "rr-ilustrado" = 0 volta ao URP/Lit.
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.

@@ -37,6 +37,7 @@ namespace RitualReversal
         }
 
         void LimparVisual() { if (mundo != null) mundo.Limpar(); if (som != null) som.Silenciar(); }
+        void OnDestroy() { if (pos != null) pos.Destruir(); }
 
         // posição da câmera nas coordenadas do protótipo
         Vector3 CamP() { var p = cam.transform.position; return new Vector3(p.x, p.y, -p.z); }
@@ -86,6 +87,7 @@ namespace RitualReversal
                 if (pos != null) pos.Atualizar(s, mundo.GRk, Mathf.Clamp01(hurtT / .35f), Mathf.Clamp01(blindT / 1.5f));
             }
             else { if (pos != null) pos.Atualizar(100, 0, 0, 0); veuExe = 0; }
+            if (pos != null) pos.Grade(cam, g != null ? g.momento : 0, mundo.GRk, 1, dt, agora);
         }
 
         // retorno imediato da arma (predictFire): som, clarão e coice antes da simulação confirmar

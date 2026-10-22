@@ -67,7 +67,8 @@ public static class ExportarMundo
             j.Append(",\"detalhe\":" + (det != null ? tex(det) : -1) + ",\"dEsc\":[" + F(dEsc.x) + "," + F(dEsc.y) + "]");
             j.Append(",\"cull\":" + num("_Cull") + ",\"surface\":" + num("_Surface") + ",\"clip\":" + num("_AlphaClip") + ",\"cutoff\":" + num("_Cutoff") + ",\"dst\":" + num("_DstBlend") + ",\"zwrite\":" + num("_ZWrite"));
             j.Append(",\"billboard\":" + num("_Billboard") + ",\"nevoa\":" + num("_Nevoa") + ",\"corte\":" + num("_Corte") + ",\"metal\":" + num("_Metallic") + ",\"liso\":" + num("_Smoothness") + ",\"fila\":" + m.renderQueue);
-            j.Append(",\"emissao\":" + (m.chaves.Contains("_EMISSION") ? Cor(m.GetColor("_EmissionColor")) : "null") + "}");
+            j.Append(",\"emissao\":" + (m.chaves.Contains("_EMISSION") ? Cor(m.GetColor("_EmissionColor")) : "null"));
+            j.Append(",\"nevoaK\":" + num("_NevoaK") + ",\"rim\":" + (m.cores.ContainsKey("_Rim") ? Cor(m.cores["_Rim"]) : "null") + "}");
         }
         j.Append("\n],\"texturas\":[\n");
         for (int i = 0; i < texs.Count; i++)

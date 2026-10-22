@@ -342,7 +342,10 @@ namespace RitualReversal.Visual
                 foreach (var q in new[] { new Vector2(-.55f, -.5f), new Vector2(.55f, -.5f), new Vector2(-.55f, -1), new Vector2(.55f, -1) }) k.Por(V.g, banca, Geo.Caixa(.06f, .9f, .06f), q.x, .45f, q.y);
                 Pos(Halo(c, 0xb070ff, .6f, out mm), 0, 1.62f, -.2f);
             }
-            k.Fechar(); return V;
+            k.Fechar();
+            // luz de recorte violeta nos mercadores (RIMLUZ do navegador, em todo material com luz do grupo)
+            foreach (var r in V.g.GetComponentsInChildren<Renderer>(true)) foreach (var m in r.sharedMaterials) if (m != null && m.shader == Mat.Lit) m.SetColor("_Rim", Mat.Lin(new Color(.62f, .4f, 1f)));
+            return V;
         }
         PontoV FazerPonto(PontoNoite p)
         {
