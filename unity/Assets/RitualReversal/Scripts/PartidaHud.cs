@@ -133,20 +133,47 @@ namespace RitualReversal
             linha("Cores das equipes", "rr-dalt", new[] { new[] { "0", "Ouro e carmim" }, new[] { "1", "Ouro e azul" } });
             linha("Chat dos adversários", "rr-mudo-adv", new[] { new[] { "0", "Mostrar" }, new[] { "1", "Silenciar" } });
             linha("Música da tela inicial", "rr-musica", new[] { new[] { "1", "Ligada" }, new[] { "0", "Desligada" } });
+            // mira e brilho
+            GUILayout.BeginHorizontal(); GUILayout.Label("Mira", sPequeno, GUILayout.Width(230)); string mira = PlayerPrefs.GetString("rr-mira", "cruz");
+            foreach (var o in new[] { new[] { "cruz", "Cruz" }, new[] { "ponto", "Ponto" }, new[] { "circulo", "Círculo" } }) if (GUILayout.Button((mira == o[0] ? "● " : "") + o[1], sBotao, GUILayout.Width(125))) PlayerPrefs.SetString("rr-mira", o[0]);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal(); GUILayout.Label("Cor da mira", sPequeno, GUILayout.Width(230)); string mc = PlayerPrefs.GetString("rr-mira-cor", "#e8e0d0");
+            foreach (var o in new[] { new[] { "#e8e0d0", "Osso" }, new[] { "#7dff9a", "Verde" }, new[] { "#ffe066", "Amarelo" }, new[] { "#8ee8ff", "Ciano" } }) { Color cc; ColorUtility.TryParseHtmlString(o[0], out cc); if (GUILayout.Button((mc == o[0] ? "● " : "") + Cor(o[1], cc), sBotao, GUILayout.Width(110))) PlayerPrefs.SetString("rr-mira-cor", o[0]); }
+            GUILayout.EndHorizontal();
+            float mt = PlayerPrefs.GetFloat("rr-mira-tam", 1);
+            GUILayout.BeginHorizontal(); GUILayout.Label("Tamanho da mira " + Mathf.RoundToInt(mt * 100) + "%", sPequeno, GUILayout.Width(230)); float mt2 = Mathf.Round(GUILayout.HorizontalSlider(mt, .6f, 1.8f, GUILayout.Width(380)) * 10) / 10; GUILayout.EndHorizontal(); if (mt2 != mt) PlayerPrefs.SetFloat("rr-mira-tam", mt2);
+            float br = PlayerPrefs.GetFloat("rr-brilho", 1);
+            GUILayout.BeginHorizontal(); GUILayout.Label("Brilho " + Mathf.RoundToInt(br * 100) + "%", sPequeno, GUILayout.Width(230)); float br2 = Mathf.Round(GUILayout.HorizontalSlider(br, .6f, 1.8f, GUILayout.Width(380)) * 20) / 20; GUILayout.EndHorizontal(); if (br2 != br) PlayerPrefs.SetFloat("rr-brilho", br2);
+            if (pos != null) pos.brilho = PlayerPrefs.GetFloat("rr-brilho", 1);
             if (mundo != null) mundo.claroesSuaves = PlayerPrefs.GetInt("rr-suave", 0) == 1;
             GUILayout.Label("<size=14>" + Cor("Reduzidos: relâmpagos ficam mais fracos. Ouro e azul troca o carmim do culto por azul na planta e no replay (ajuda com daltonismo vermelho-verde).", MUDO) + "</size>", sPequeno);
             if (GUI.changed) SalvarAjustes();
         }
         void SalvarAjustes() { PlayerPrefs.SetFloat("rr-sens", sensibilidade); if (som != null) PlayerPrefs.SetFloat("rr-vol", som.volume); if (fp != null) PlayerPrefs.SetFloat("rr-fov", fp.fovBase); }
 
+        // pausa (local) ou mouse solto (online, a partida não para): a cola das teclas do seu papel, Ajustes e sair
+        bool pausaAjustes;
         void TelaPausa()
         {
-            var r = Janela(760, 560); GUILayout.BeginArea(r);
-            GUILayout.Label("Pausado", sTitulo); GUILayout.Space(10);
-            if (GUILayout.Button("Continuar", sBotao, GUILayout.Height(52))) Travar(true);
-            GUILayout.Space(8); Ajustes(); GUILayout.Space(8);
-            if (GUILayout.Button(online ? "Sair da sala" : "Abandonar a partida", sBotao)) { if (online) SairOnline(""); else { g = null; LimparVisual(); } }
-            GUILayout.EndArea();
+            bool comRolagem = pausaAjustes;   // o botão pode mudar pausaAjustes no meio da passada: Begin e End seguem o começo
+            var r = Janela(Mathf.Min(900, W - 40), comRolagem ? H - 60 : 520); GUILayout.BeginArea(r); if (comRolagem) rolPerfil = GUILayout.BeginScrollView(rolPerfil);
+            GUILayout.Label(online ? "Clique para jogar" : "Pausado", sTitulo);
+            GUILayout.Label(online ? "No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado." : "Clique em Continuar para voltar ao jogo.", sCentro);
+            if (comRolagem) { Ajustes(); }
+            else
+            {
+                string papel = MeuPapel(); var L = new List<string[]> { new[] { "WASD", "Andar" }, new[] { "Shift", "Correr" }, new[] { "C", "Agachar" }, new[] { "Clique", "Atacar" }, new[] { "Botão dir.", "Feitiço" }, new[] { "E", "Interagir" } };
+                if (papel == "H") { L.Add(new[] { "Q", "Sensor" }); L.Add(new[] { "F", "Lanterna" }); L.Add(new[] { "G", "Flare" }); L.Add(new[] { "R", "Recarregar" }); } else L.Add(new[] { "T", "Transferir" });
+                L.Add(new[] { "Tab", "Planta" }); L.Add(new[] { "J", "Caderno" }); L.Add(new[] { "Z", "Ping" }); L.Add(new[] { "V", "Frases" }); L.Add(new[] { "I", "Inspecionar" }); if (online) L.Add(new[] { "Enter", "Chat" });
+                GUILayout.Space(8);
+                for (int i = 0; i < L.Count; i += 4) { GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); for (int k = i; k < Mathf.Min(L.Count, i + 4); k++) GUILayout.Label("<b>" + Cor(L[k][0], OURO_VIVO) + "</b> " + L[k][1], sPequeno, GUILayout.Width(190)); GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
+            }
+            GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Continuar", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; Travar(true); }
+            if (GUILayout.Button(pausaAjustes ? "Voltar" : "Ajustes", sBotao, GUILayout.Width(200), GUILayout.Height(52))) pausaAjustes = !pausaAjustes;
+            if (GUILayout.Button(online ? "Sair da sala" : "Sair da noite", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; if (online) SairOnline(""); else { g = null; LimparVisual(); } }
+            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
+            if (comRolagem) GUILayout.EndScrollView(); GUILayout.EndArea();
         }
 
         void TelaLoja()
@@ -262,13 +289,12 @@ namespace RitualReversal
             GUI.Label(new Rect(352, H - 118, 100, 30), Mathf.CeilToInt((float)System.Math.Max(0, m.hp)).ToString(), sTexto);
             string san = m.sanity < 15 ? "Sanidade: pânico, você se denuncia" : m.sanity < 40 ? "Sanidade: abalado" : m.sanity < 70 ? "Sanidade: inquieto" : "Sanidade";
             Barra(new Rect(24, H - 82, 320, 10), (float)(m.sanity / 100), new Color(.45f, .55f, .8f)); GUI.Label(new Rect(24, H - 70, 420, 26), san, sPequeno);
-            GUI.Label(new Rect(24, H - 44, 600, 26), (g.lab == null || g.lab.economia ? Cor(Mathf.FloorToInt(m.obolos) + " óbolos", OURO) : "") + (m.team == "C" ? "   Reagentes " + m.reag + "/" + CFG.carry + "   Chamarizes " + g.decoys : "   Sinalizadores " + m.flares + "   Lanterna " + Mathf.RoundToInt((float)m.carga) + "%" + (m.sensorCd > 0 ? "   Sensor " + Mathf.CeilToInt((float)m.sensorCd) + " s" : "   Sensor pronto")), sPequeno);
+            if (g.lab == null || g.lab.economia) GUI.Label(new Rect(24, H - 44, 600, 26), Cor(Mathf.FloorToInt(m.obolos) + " óbolos", OURO), sPequeno);
 
             // munição, fervor e feitiço
             string arma = m.team == "H" ? (m.reloadT > 0 ? "recarregando…" : m.ammo + " <size=18>/ " + m.reserve + "</size>") : Mathf.FloorToInt((float)m.fervor) + " <size=18>Fervor</size>";
-            GUI.Label(new Rect(W - 324, H - 120, 300, 50), "<size=36>" + arma + "</size>", new GUIStyle(sTexto) { alignment = TextAnchor.MiddleRight });
-            var F = Regras.FEITICOS[m.feitico];
-            GUI.Label(new Rect(W - 424, H - 64, 400, 30), F.nome + (m.abilCd > 0 ? ": " + Mathf.CeilToInt((float)m.abilCd) + " s" : ": pronto (clique direito)"), new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleRight });
+            GUI.Label(new Rect(W - 324, H - 124, 300, 50), "<size=36>" + arma + "</size>", new GUIStyle(sTexto) { alignment = TextAnchor.MiddleRight });
+            Kit(m); LinhaRede();
             string dica = "";
             if (m.st == "alive") { if (m.team == "H") { if (m.reloadT <= 0 && m.ammo == 0) dica = m.reserve > 0 ? "Sem munição: R para recarregar" : "Sem munição: volte ao spawn para repor"; else if (m.reloadT <= 0 && m.ammo <= 2) dica = "Munição baixa (" + m.ammo + ")"; } else if (m.fervor < CFG.sigilCusto) dica = "Fervor esgotado: pare de conjurar um instante para recuperar"; }
             if (dica != "") GUI.Label(new Rect(W - 624, H - 150, 600, 30), dica, new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleRight });
@@ -279,7 +305,7 @@ namespace RitualReversal
             if (sensorT > 0) { sensorT -= dtG; string s = sensorV > .6 ? "Sinal forte" : sensorV > .3 ? "Sinal médio" : sensorV > .02 ? "Sinal fraco" : "Nenhum sinal"; GUI.Label(new Rect(W / 2 - 150, H - 190, 300, 26), "Sensor Áurico: " + s, sCentro); Barra(new Rect(W / 2 - 120, H - 162, 240, 8), (float)sensorV, ROXO_VIVO); }
 
             // mira e interação
-            Caixa(new Rect(W / 2 - 2, H / 2 - 2, 4, 4), new Color(1, 1, 1, .8f));
+            Mira();
             if (hitT > 0)
             {
                 hitT -= dtG; float hs = marcaAcerto == "kill" ? 1.15f : marcaAcerto == "head" ? .9f : .6f;

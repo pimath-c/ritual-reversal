@@ -28,6 +28,7 @@ namespace RitualReversal
             if (raizBlockout != null) foreach (Transform c in raizBlockout) if (c != transform) c.gameObject.SetActive(false);
             mundo = Mundo.Construir(); fp = new PrimeiraPessoa(cam);
             try { pos = new Pos(cam); } catch (System.Exception e) { Debug.LogWarning("Ritual Reversal: sem pós-processamento (" + e.Message + ")"); }
+            if (pos != null) pos.brilho = PlayerPrefs.GetFloat("rr-brilho", 1);   // o brilho dos Ajustes
             som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => { som.Tocar("corvo", x, z); Legenda("corvo", x, z); };
             // v5.8: impactos e momentos do ritual tocam pelo Som; a arma avisa o meio do ciclo (alavanca, cão) e o passo
             mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
@@ -110,9 +111,9 @@ namespace RitualReversal
                 if (m.reloadT > 0 || m.sealing >= 0) return;
                 if (m.ammo <= 0) { localCd = .35f; som.Tocar("vazio"); if (m.reserve > 0) botoes.r++; return; }
                 // a cadência é a do servidor (antes o Unity previa um tiro a cada 0,3 s, e um em cada quatro não existia)
-                bool exo = m.cls == "exorcista"; localCd = (float)Sim.CADENCIA_HUMANA; som.Tiro(exo, c.x, c.z, true); fp.Tiro(exo);
+                bool exo = m.cls == "exorcista"; localCd = (float)Sim.CADENCIA_HUMANA; som.Tiro(exo, c.x, c.z, true); fp.Tiro(exo); AbrirMira(exo ? .45f : .35f);
             }
-            else { if (m.fervor < CFG.sigilCusto) { localCd = .35f; som.Tocar("vazio"); return; } localCd = (float)Sim.CADENCIA_HUMANA; som.Tocar("sigil", c.x, c.z); fp.Sigilo(); }
+            else { if (m.fervor < CFG.sigilCusto) { localCd = .35f; som.Tocar("vazio"); return; } localCd = (float)Sim.CADENCIA_HUMANA; som.Tocar("sigil", c.x, c.z); fp.Sigilo(); AbrirMira(.2f); }
         }
 
         // eventos da simulação que viram efeito e som (handleEvents do protótipo)

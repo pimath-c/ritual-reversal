@@ -85,13 +85,14 @@ namespace RitualReversal.Visual
         }
 
         // sanidade 0..100, grande 0..1 (céu de sangue), ferido 0..1 (tomou dano agora)
+        public float brilho = 1;   // Ajustes: a exposição é 1,25 × brilho, como o toneMappingExposure do navegador
         public void Atualizar(float sanidade, float grande, float ferido, float cego)
         {
             float k = Mathf.Clamp01((70 - sanidade) / 70);
             aberr.intensity.Override(Mathf.Clamp01(.08f + Mathf.Max(0, (45 - sanidade) / 45) * .55f));
             cor.saturation.Override(22 - k * 55 - grande * 10); cor.contrast.Override(10 + k * 25);
             cor.colorFilter.Override(Color.Lerp(Color.white, new Color(1f, .62f, .6f), grande * .6f + ferido * .5f));
-            cor.postExposure.Override(Mathf.Log(1.25f, 2) + cego * 3);
+            cor.postExposure.Override(Mathf.Log(1.25f * Mathf.Max(.1f, brilho), 2) + cego * 3);
             vinheta.intensity.Override(Mathf.Clamp01(.42f + k * .25f + grande * .15f + ferido * .2f));
             vinheta.color.Override(Color.Lerp(Color.black, new Color(.35f, 0, .04f), Mathf.Max(grande * .8f, ferido)));
         }

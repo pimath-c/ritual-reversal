@@ -202,7 +202,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   campo a campo); `PartidaRelatorio.cs` é a tela (tabelas, perguntas em PlayerPrefs "rr-resp-<partida>", copiar, baixar).
   Frases rápidas e falas do bot aliado: `PartidaFalas.cs` (V abre, 1 a 6). Música do menu e trilha de tensão: `Visual/SomMusica.cs`
   (sintetizadas no OnAudioFilterRead; a partida passa o nível em `som.Tensao`, `AtualizarTensao` no PartidaVisual).
-  Faltam: a fileira de ferramentas, a mira configurável, o brilho e a linha de rede/quadros.
+  Kit e mira: `PartidaKit.cs` (fileira de ferramentas com recarga, mira cruz/ponto/círculo com cor e tamanho que abre com o
+  tiro, linha de quadros/ping); brilho em `Pos.brilho`; pausa com a cola das teclas.
+  Faltam (Unity): conferir tudo num Unity de verdade (IMGUI e shaders nunca rodaram aqui); controles de toque e gamepad.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
