@@ -19,11 +19,13 @@ namespace RitualReversal
             float w = Mathf.Min(470, W - 32), x = Mathf.Max(16, W * .07f);
             // mede e desenha: no meio da altura quando cabe; senão, rolando
             medindo = true; altTitulo = ColunaTitulo(x, 0, w); medindo = false;
-            if (altTitulo + 32 <= H) ColunaTitulo(x, (H - altTitulo) / 2, w);
+            // @media (max-height:430px): a coluna também é um .screen .panel e encolhe para 0,86 a partir do meio de cima
+            float k = H <= 430 ? .86f : 1;
+            if (altTitulo + 32 <= H) { float y0 = (H - altTitulo) / 2; ComTransformacao(x + w / 2, y0, x + w / 2, y0, k, () => ColunaTitulo(x, y0, w)); }
             else
             {
                 rolTitulo = GUI.BeginScrollView(new Rect(0, 0, W, H), rolTitulo, new Rect(0, 0, W - 20, altTitulo + 32), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-                ColunaTitulo(x, 16, w); GUI.EndScrollView();
+                ComTransformacao(x + w / 2, 16, x + w / 2, 16, k, () => ColunaTitulo(x, 16, w)); GUI.EndScrollView();
             }
         }
         float ColunaTitulo(float x, float y0, float w)

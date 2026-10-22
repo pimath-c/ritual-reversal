@@ -32,10 +32,17 @@ namespace RitualReversal
         // OnGUI roda mais de uma vez por quadro: os cronômetros do HUD só andam no desenho
         static float dtG { get { return Event.current != null && Event.current.type == EventType.Repaint ? Time.unscaledDeltaTime : 0; } }
 
+        // a escala da interface: no computador, a tela virtual de 1080 de altura; no celular, o pixel de CSS do navegador
+        // (a densidade da tela: 160 ppp no Android, 163 no iOS), para os botões terem o tamanho que têm no navegador
+        static float EscalaUI()
+        {
+            if (!Application.isMobilePlatform || Screen.dpi <= 0) return Screen.height / 1080f;
+            return Mathf.Max(1, Screen.dpi / (Application.platform == RuntimePlatform.IPhonePlayer ? 163f : 160f));
+        }
         void OnGUI()
         {
             Estilos(); ComecoNavPad();
-            float esc = Screen.height / 1080f; GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = 1080f;
+            float esc = EscalaUI(); GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = Screen.height / esc;
             // um clique que muda a tela no meio da passada deixa o resto dela sem o layout que o Layout calculou: o Unity
             // acusaria "Getting control N's position..." no console; ExitGUI encerra a passada sem erro (o próximo quadro já
             // desenha a tela nova)
@@ -50,7 +57,7 @@ namespace RitualReversal
             {
                 case "pick": TelaEscolha(); break;
                 case "intro": TelaIntro(); break;
-                case "play": if (arsenal) { PainelArsenal(); break; } Hud(); if (lojaAberta != null) TelaLoja(); else if (!Travado()) TelaPausa(); break;
+                case "play": if (arsenal) { PainelArsenal(); break; } Hud(); DesenharToque(); if (lojaAberta != null) TelaLoja(); else if (!Travado()) TelaPausa(); break;
                 case "summary": TelaResumo(); break;
                 case "final": TelaFinal(); break;
             }
@@ -178,15 +185,26 @@ namespace RitualReversal
             string nome = GA != null ? "Grande Ritual em " + GA.name + (papel == "C" || GA.localized ? ": " + Mathf.FloorToInt((float)GA.prog * 100) + "%" : "") : prox != null ? CFG.momentoNome[mi] + ", " + prox + " em seguida" : CFG.momentoNome[mi] + ", depois o amanhecer";
             int fendas = Sim.Fendas(g), farois = Sim.Farois(g), nos = papel == "C" ? fendas : farois, eles = papel == "C" ? farois : fendas;
             string regra = g.lab != null && g.lab.formato == "placar" ? "2 rituais decidem · a noite vai até o amanhecer" : "Quem levar 2 dos 3 rituais vence";
-            Topo(papel, Relogio(Sim.FimMomento(g, mi) - g.rt), nome, GA != null, regra, nos, eles);
-            Faixa(papel); Tarefas(papel); FeedHud(); AnuncioHud();
-            Vitais(m, g.lab == null || g.lab.economia); KitHud(m); LinhaRede();
+            // body.toque: o HUD encolhe e muda de lugar para os botões caberem (transform: scale com o transform-origin do CSS)
+            hudToque = toqueAtivo; bool eco = g.lab == null || g.lab.economia;
+            if (hudToque)
+            {
+                ComTransformacao(W / 2, 10, W / 2, 4, .72f, () => Topo(papel, Relogio(Sim.FimMomento(g, mi) - g.rt), nome, GA != null, regra, nos, eles));
+                ComTransformacao(W / 2, 88, W / 2, 50, .78f, () => Faixa(papel)); Tarefas(papel); FeedHud(); AnuncioHud();
+                ComTransformacao(12, 8, 12, 8, .78f, () => Vitais(m, eco)); ComTransformacao(W - 190, H - 96, W - 190, H - 96, .72f, () => KitHud(m)); SensorHud(m); LinhaRede();
+            }
+            else
+            {
+                Topo(papel, Relogio(Sim.FimMomento(g, mi) - g.rt), nome, GA != null, regra, nos, eles);
+                Faixa(papel); Tarefas(papel); FeedHud(); AnuncioHud();
+                Vitais(m, eco); KitHud(m); SensorHud(m); LinhaRede();
+            }
             // #ammoHint embaixo da mira e #buffs embaixo da faixa
             string dica = "";
             if (m.st == "alive") { if (m.team == "H") { if (m.reloadT <= 0 && m.ammo == 0) dica = m.reserve > 0 ? "Sem munição: " + EntradaUnity.Nome("reload") + " para recarregar" : "Sem munição: volte ao spawn para repor"; else if (m.reloadT <= 0 && m.ammo <= 2) dica = "Munição baixa (" + m.ammo + ")"; } else if (m.fervor < CFG.sigilCusto) dica = "Fervor esgotado: pare de conjurar um instante para recuperar"; }
             if (dica != "") Linha(0, H / 2 + 30, W, 18, dica, Css("400", 15, GOLD_HI, TextAnchor.UpperCenter), .9f);
             var bf = new List<string>(); if (papel == "H" && g.buff.ess > g.t) bf.Add("Essência Profana: selamento a 125% (" + Mathf.CeilToInt((float)(g.buff.ess - g.t)) + " s)"); if (papel == "C" && g.buff.selo > g.t) bf.Add("Selo de Luz: próximo ritual +10% (" + Mathf.CeilToInt((float)(g.buff.selo - g.t)) + " s)"); if (m.runeT > 0) bf.Add("Runa ativa (" + Mathf.CeilToInt((float)m.runeT) + " s)");
-            if (bf.Count > 0) Linha(0, 182, W, 18, string.Join("   ", bf.ToArray()), Css("400", 15, GOLD_HI, TextAnchor.UpperCenter), .9f);
+            if (bf.Count > 0) { int fb = hudToque ? 12 : 15; Linha(0, hudToque ? 108 : 182, W, LN(fb), string.Join("   ", bf.ToArray()), Css("400", fb, GOLD_HI, TextAnchor.UpperCenter), .9f); }
 
             // mira, acerto, marcadores, dano, nota da habilidade, interação e a disputa do ritual
             Mira(); MarcaAcerto(); Marcadores(m, papel); DirecaoDano(); NotaHabilidade(); InteracaoHud(m); Disputa(m, papel);
@@ -198,7 +216,8 @@ namespace RitualReversal
             if (claraoGrande > 0) { claraoGrande -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.8f, .05f, .1f, Mathf.Clamp01(claraoGrande / 1.2f) * .85f)); }
             TelaQueda(m);
 
-            Bussola(m, papel); Legendas(); FaixaLance(); Caderno(papel); PainelTutorial(); PainelDica(); ChatJogo(); PainelFalas();
+            if (hudToque) ComTransformacao(W / 2, 148, W / 2, 84, .72f, () => Bussola(m, papel)); else Bussola(m, papel);
+            Legendas(); FaixaLance(); Caderno(papel); PainelTutorial(); PainelDica(); ChatJogo(); PainelFalas();
             if (EntradaUnity.Segurando(Tecla.Tab)) Planta(m, papel);
         }
 

@@ -304,7 +304,8 @@ namespace UnityEngine
         public static Vector3 insideUnitSphere { get { return new Vector3(value * 2 - 1, value * 2 - 1, value * 2 - 1) * .5f; } }
     }
     public static class Debug { public static void Log(object o) { Console.Error.WriteLine(o); } public static void LogWarning(object o) { Console.Error.WriteLine("aviso: " + o); } public static void LogError(object o) { Console.Error.WriteLine("erro: " + o); } }
-    public static class Application { public static string persistentDataPath = "."; public static bool isPlaying = true; public static int targetFrameRate; public static string abriu; public static void OpenURL(string u) { abriu = u; } }
+    public enum RuntimePlatform { WindowsPlayer, Android, IPhonePlayer, LinuxPlayer }
+    public static class Application { public static bool isMobilePlatform; public static RuntimePlatform platform = RuntimePlatform.LinuxPlayer; public static string persistentDataPath = "."; public static bool isPlaying = true; public static int targetFrameRate; public static string abriu; public static void OpenURL(string u) { abriu = u; } }
     public static class PlayerPrefs
     {
         static readonly Dictionary<string, object> d = new Dictionary<string, object>();
@@ -535,6 +536,9 @@ namespace UnityEngine
 }
 namespace UnityEngine.Rendering
 {
+    // o asset do pipeline: sem URP no teste, não há escala de renderização (a resolução adaptativa só não aplica)
+    public class RenderPipelineAsset : UnityEngine.Object { }
+    public static class GraphicsSettings { public static RenderPipelineAsset currentRenderPipeline; }
     public enum ShadowCastingMode { Off, On, TwoSided, ShadowsOnly }
     public enum BlendMode { Zero = 0, One = 1, DstColor = 2, SrcColor = 3, OneMinusDstColor = 4, SrcAlpha = 5, OneMinusSrcColor = 6, DstAlpha = 7, OneMinusDstAlpha = 8, SrcAlphaSaturate = 9, OneMinusSrcAlpha = 10 }
     public enum IndexFormat { UInt16, UInt32 }

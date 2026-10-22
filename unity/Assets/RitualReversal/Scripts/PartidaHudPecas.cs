@@ -25,21 +25,29 @@ namespace RitualReversal
         }
 
         // #top: sua equipe e o placar | relógio, momento e regra | o placar e os adversários
+        bool hudToque;   // body.toque: o HUD compacto dos controles de toque
+        // transform: scale(s) com o transform-origin no ponto (ox, oy) do lugar do computador, levado para (nx, ny)
+        void ComTransformacao(float ox, float oy, float nx, float ny, float s, System.Action desenho)
+        {
+            var m0 = GUI.matrix; GUI.matrix = m0 * Matrix4x4.TRS(new Vector3(nx, ny, 0), Quaternion.identity, new Vector3(s, s, 1)) * Matrix4x4.TRS(new Vector3(-ox, -oy, 0), Quaternion.identity, Vector3.one);
+            try { desenho(); } finally { GUI.matrix = m0; }
+        }
         void Topo(string papel, string relogio, string fase, bool grande, string regra, int nos, int eles)
         {
             var stLado = Css("400", 14, MUDO); var stNum = Css("600", 30, BONE);
             var stRel = Css("600", 36, grande ? Hx("#ff5a6e") : BONE, TextAnchor.UpperCenter); var stFase = Css("serif", 14, grande ? Hx("#ff8a98") : GOLD, TextAnchor.UpperCenter);
             var stRegra = Css("400", 11, MUDO, TextAnchor.UpperCenter);
             string nA = papel == "H" ? "Sua equipe (caça)" : "Sua equipe (culto)", nB = papel == "H" ? "Adversários (culto)" : "Adversários (caça)";
+            if (hudToque) { nA = nB = ""; regra = ""; }   // body.toque: #top .side span e #regra somem
             float wNA = Larg(nos.ToString(), stNum) + 12, wNB = Larg(eles.ToString(), stNum) + 12;
             float wRel = Mathf.Max(88, Larg(relogio, stRel), Larg(fase, stFase), Larg(regra, stRegra) * 1.05f);
-            float ladoA = Mathf.Max(150, Larg(nA, stLado) + wNA), ladoB = Mathf.Max(150, Larg(nB, stLado) + wNB), total = ladoA + 22 + wRel + 22 + ladoB;
-            float x0 = W / 2 - total / 2, y0 = 14, hRel = 36 * 1.05f, hFase = AlturaNormal(stFase), hRegra = LN(11f), hWrap = hRel + hFase + 1 + hRegra, xw = x0 + ladoA + 22;
+            float minLado = hudToque ? 40 : 150, ladoA = Mathf.Max(minLado, Larg(nA, stLado) + wNA), ladoB = Mathf.Max(minLado, Larg(nB, stLado) + wNB), total = ladoA + 22 + wRel + 22 + ladoB;
+            float x0 = W / 2 - total / 2, y0 = 14, hRel = 36 * 1.05f, hFase = AlturaNormal(stFase), hRegra = regra == "" ? -1 : LN(11f), hWrap = hRel + hFase + 1 + hRegra, xw = x0 + ladoA + 22;
             if (grande) Tracos.Brilho(W / 2, y0 + hRel / 2, Larg(relogio, stRel) * .8f + 18, 30, new Color(.878f, .263f, .369f, .45f));
             NaBase(xw, y0 + (hRel - AlturaNormal(stRel)) / 2 + 36 + 2, wRel, relogio, Css("600", 36, new Color(0, 0, 0, .45f), TextAnchor.UpperCenter));   // text-shadow 0 2px 10px
             Linha(xw, y0, wRel, hRel, relogio, stRel);
             Linha(xw, y0 + hRel, wRel, hFase, fase, stFase);
-            Linha(xw, y0 + hRel + hFase + 1, wRel, hRegra, regra, stRegra);
+            if (regra != "") Linha(xw, y0 + hRel + hFase + 1, wRel, hRegra, regra, stRegra);
             float bas = y0 + (hWrap - 36) / 2 + 30;   // a linha de base comum do nome e do número
             float xa = x0 + ladoA - wNA; NaBase(xa + 6, bas, wNA - 12, nos.ToString(), stNum); NaBase(xa - Larg(nA, stLado), bas, Larg(nA, stLado) + 2, nA, stLado);
             float xb = xw + wRel + 22; NaBase(xb + 6, bas, wNB - 12, eles.ToString(), stNum); NaBase(xb + wNB, bas, Larg(nB, stLado) + 2, nB, stLado);
@@ -93,11 +101,13 @@ namespace RitualReversal
         void Tarefas(string papel)
         {
             List<Tarefa> T; if (!g.tarefas.TryGetValue(papel, out T) || T.Count == 0) return;
-            float x = W - 26 - 300, y = 120, w = 300; var tit = Css("serif", 17, GOLD); Linha(x, y, w, 17 * 1.35f, "Tarefas da equipe", tit, .9f); y += 17 * 1.35f + 4;
-            float lh = 14.5f * 1.35f;
+            // body.toque: à esquerda, 128 px do topo, 220 de largura, letra de 11 (o título 13) e linha de 1,25
+            bool tq = hudToque; float x = tq ? 12 : W - 26 - 300, y = tq ? 128 : 120, w = tq ? 220 : 300, ft = tq ? 13 : 17, fi = tq ? 11 : 14.5f, lk = tq ? 1.25f : 1.35f;
+            var tit = Css("serif", Mathf.RoundToInt(ft), GOLD); Linha(x, y, w, ft * lk, "Tarefas da equipe", tit, .9f); y += ft * lk + (tq ? 2 : 4);
+            float lh = fi * lk;
             foreach (var t in T)
             {
-                var st = Css("400", 15, t.feita ? Hx("#8f978a") : Hx("#d8cfbf"));
+                var st = Css("400", tq ? 11 : 15, t.feita ? Hx("#8f978a") : Hx("#d8cfbf"));
                 string txt = (t.feita ? "✓" : "○") + " " + t.nome + (t.meta > 0 ? " " + Cor(t.prog + "/" + t.meta, MUDO) : "");
                 var ls = Quebrar(txt, st, w);
                 for (int i = 0; i < ls.Count; i++)
@@ -112,22 +122,24 @@ namespace RitualReversal
         // #feed: o mais novo em cima; some depois de 6 s
         void FeedHud()
         {
-            float y = 112, x = 18, w = 330, agora = Time.unscaledTime; int n = 0;
-            for (int i = feed.Count - 1; i >= 0 && n < 6; i--)
+            // body.toque: 214 px do topo, 12 da esquerda, 240 de largura, letra de 11,5 (13 no grande), padding 2 × 7, só 3
+            bool tq = hudToque; float y = tq ? 214 : 112, x = tq ? 12 : 18, w = tq ? 240 : 330, padV = tq ? 2 : 5, padH = tq ? 7 : 10, agora = Time.unscaledTime; int n = 0;
+            for (int i = feed.Count - 1; i >= 0 && n < (tq ? 3 : 6); i--)
             {
                 var a = feed[i]; float idade = agora - a.t; if (idade > 6.6f) continue; n++; float op = idade < 6 ? 1 : Mathf.Clamp01(1 - (idade - 6) / .6f);
-                bool big = a.cls.Contains("big"); var st = big ? Css("serif", 20, new Color(BONE.r, BONE.g, BONE.b, op)) : Css("400", 15, new Color(BONE.r, BONE.g, BONE.b, op));
-                float lh = AlturaNormal(st), h = AlturaParagrafo(a.msg, st, w - 22, lh) + 10;
+                bool big = a.cls.Contains("big"); var cor = new Color(BONE.r, BONE.g, BONE.b, op); var st = big ? Css("serif", tq ? 13 : 20, cor) : Css("400", tq ? 12 : 15, cor);
+                float lh = AlturaNormal(st), h = AlturaParagrafo(a.msg, st, w - 2 - 2 * padH, lh) + 2 * padV;
                 Caixa(new Rect(x, y, w, h), new Color(0, 0, 0, .5f * op));
                 var cb = a.cls.Contains("c") ? CrimsonHi : a.cls.Contains("h") ? GOLD : STEEL; cb.a *= op; Caixa(new Rect(x, y, 2, h), cb);
-                Paragrafo(x + 12, y + 5, w - 22, lh, a.msg, st); y += h + 4;
+                Paragrafo(x + 2 + padH, y + padV, w - 2 - 2 * padH, lh, a.msg, st); y += h + 4;
             }
         }
 
         // #vitals: a classe, vida, sanidade e óbolos, presos embaixo à esquerda
         void Vitais(Ator m, bool economia)
         {
-            float x = 26, w = 250, hRole = LNs(19f), hMet = 7 + LN(17f) + 2 + 5, hBolsa = economia ? 8 + LN(17f) : 0, y = H - 22 - (hRole + 2 * hMet + hBolsa);
+            // body.toque: preso em cima (12, 8) com 170 de largura (a escala de ,78 vem de fora)
+            float x = hudToque ? 12 : 26, w = hudToque ? 170 : 250, hRole = LNs(19f), hMet = 7 + LN(17f) + 2 + 5, hBolsa = economia ? 8 + LN(17f) : 0, y = hudToque ? 8 : H - 22 - (hRole + 2 * hMet + hBolsa);
             var cl = Regras.CLASSES[m.cls]; var stR = Css("serif", 19, m.team == "H" ? GOLD : CrimsonHi); float bas = y + (hRole - AlturaNormal(stR)) / 2 + SubidaPx(stR);
             NaBase(x, bas, 200, cl.name, stR, .9f); NaBase(x + Larg(cl.name, stR) + 6, bas, 150, m.team == "H" ? "Caçador" : "Cultista", Css("400", 14, MUDO), .9f);
             y += hRole;
@@ -148,7 +160,8 @@ namespace RitualReversal
         // #kit: munição (ou fervor) e a fileira de ferramentas, presos embaixo à direita; #sensor em cima dele
         void KitHud(Ator m)
         {
-            float xd = W - 26, hTool = 37.8f, yTools = H - 20 - hTool, yAmmo = yTools - 6 - 52;
+            // body.toque: sem a fileira de ferramentas; a munição com o canto de baixo à direita em (W - 190, H - 96)
+            float xd = hudToque ? W - 190 : W - 26, hTool = 37.8f, yTools = H - 20 - hTool, yAmmo = hudToque ? H - 96 - 52 : yTools - 6 - 52;
             string grande, peq; if (m.team == "H") { if (m.reloadT > 0) { grande = ""; peq = "recarregando…"; } else { grande = m.ammo.ToString(); peq = "/ " + m.reserve; } } else { grande = Mathf.FloorToInt((float)m.fervor).ToString(); peq = "Fervor"; }
             var stG = Css("600", 52, BONE); var stP = Css("500", 19, MUDO); float wP = Larg(peq, stP), wG = grande.Length > 0 ? Larg(grande, stG) + Larg(" ", stG) : 0, bas = yAmmo + (52 - AlturaNormal(stG)) / 2 + 52;
             Tracos.Brilho(xd - (wP + wG) / 2, bas - 18, (wP + wG) / 2 + 16, 30, new Color(0, 0, 0, .35f));   // text-shadow 0 2px 12px
@@ -159,7 +172,7 @@ namespace RitualReversal
             else { L.Add(new object[] { "☉", "Reagentes", m.reag.ToString(), 0f, false }); L.Add(new object[] { EntradaUnity.Nome("use"), "Chamariz", g.decoys.ToString(), 0f, false }); }
             L.Add(new object[] { EntradaUnity.Nome("abil"), F.nome, null, (float)(m.abilCd / F.cd), false });
             var stK = Css("700", 12, GOLD, TextAnchor.UpperCenter); var stN = Css("400", 12, BONE, TextAnchor.UpperCenter); float x = xd;
-            for (int i = L.Count - 1; i >= 0; i--)
+            for (int i = hudToque ? -1 : L.Count - 1; i >= 0; i--)
             {
                 var t = L[i]; string nome = (string)t[1] + (t[2] != null ? " <b>" + t[2] + "</b>" : ""); float tw = Mathf.Max(58, Mathf.Max(Larg((string)t[0], stK), Larg(nome, stN)) + 18); x -= tw;
                 var r = new Rect(x, yTools, tw, hTool); Caixa(r, new Color(0, 0, 0, .35f)); Moldura(r, (bool)t[4] ? GOLD : new Color(.91f, .878f, .816f, .14f));
@@ -167,14 +180,17 @@ namespace RitualReversal
                 float cd = Mathf.Clamp01((float)t[3]); if (cd > 0) Caixa(new Rect(r.x + 1, r.yMax - 1 - (hTool - 2) * cd, tw - 2, (hTool - 2) * cd), new Color(0, 0, 0, .65f));
                 x -= 5;
             }
-            if (m.team == "H")
-            {
-                if (sensorT > 0) sensorT -= dtG; float op = sensorT > 0 ? 1 : .45f;
-                string s = sensorV > .6 ? "Sinal forte" : sensorV > .3 ? "Sinal médio" : sensorV > .02 ? "Sinal fraco" : "Nenhum sinal";
-                var stS = Css("serif", 16, new Color(203 / 255f, 191 / 255f, 224 / 255f, op), TextAnchor.UpperRight); float hS = AlturaNormal(stS), ys = H - 128 - (hS + 4 + 4);
-                Linha(xd - 220, ys, 220, hS, s, stS, .9f); var tr = new Rect(xd - 220, ys + hS + 4, 220, 4); Caixa(tr, new Color(1, 1, 1, .1f * op));
-                if (sensorV > 0) PintarDegrade(new Rect(tr.x, tr.y, tr.width * Mathf.Clamp01((float)sensorV), 4), Hx("#5a3a74", op), Hx("#d9b7ff", op), false);
-            }
+        }
+        // #sensor: o sinal do Sensor Áurico em cima do kit (no toque: 190 da direita, 150 de baixo, 170 de largura, sem escala)
+        void SensorHud(Ator m)
+        {
+            if (m.team != "H") return;
+            float xd = hudToque ? W - 190 : W - 26, ws = hudToque ? 170 : 220, baixo = hudToque ? 150 : 128;
+            if (sensorT > 0) sensorT -= dtG; float op = sensorT > 0 ? 1 : .45f;
+            string s = sensorV > .6 ? "Sinal forte" : sensorV > .3 ? "Sinal médio" : sensorV > .02 ? "Sinal fraco" : "Nenhum sinal";
+            var stS = Css("serif", 16, new Color(203 / 255f, 191 / 255f, 224 / 255f, op), TextAnchor.UpperRight); float hS = AlturaNormal(stS), ys = H - baixo - (hS + 4 + 4);
+            Linha(xd - ws, ys, ws, hS, s, stS, .9f); var tr = new Rect(xd - ws, ys + hS + 4, ws, 4); Caixa(tr, new Color(1, 1, 1, .1f * op));
+            if (sensorV > 0) PintarDegrade(new Rect(tr.x, tr.y, tr.width * Mathf.Clamp01((float)sensorV), 4), Hx("#5a3a74", op), Hx("#d9b7ff", op), false);
         }
 
         // #race: a disputa do ritual mais perto, numa placa com os cantos cortados

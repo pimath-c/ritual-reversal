@@ -277,13 +277,16 @@ namespace UnityEngine
         }
     }
     public static class GUILayoutUtility { public static Rect GetRect(float w, float h, params GUILayoutOption[] o) { return GUILayout.GetRect(w, h, o); } public static Rect GetLastRect() { return GUILayout.Ultimo(); } }
-    public static class Screen { public static int width = 1920, height = 1080; }
+    public static class Screen { public static int width = 1920, height = 1080; public static float dpi = 96; }
     public static class Cursor { public static CursorLockMode lockState; public static bool visible = true; }
+    public enum TouchPhase { Began, Moved, Stationary, Ended, Canceled }
+    public struct Touch { public int fingerId; public Vector2 position; public TouchPhase phase; }
     public static class Input
     {
         public static readonly HashSet<KeyCode> apertadas = new HashSet<KeyCode>();
         public static readonly HashSet<KeyCode> seguradas = new HashSet<KeyCode>();
         public static bool GetKey(KeyCode k) { return seguradas.Contains(k); } public static bool GetKeyDown(KeyCode k) { return apertadas.Contains(k); }
+        public static int touchCount { get { return 0; } } public static Touch GetTouch(int i) { return new Touch(); }   // os dedos do teste vão por EntradaUnity.toquesTeste
         public static float GetAxisRaw(string e) { return 0; } public static bool GetMouseButton(int b) { return false; } public static bool GetMouseButtonDown(int b) { return false; }
     }
     public enum AudioDataLoadState { Unloaded, Loading, Loaded, Failed }

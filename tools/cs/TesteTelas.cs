@@ -107,9 +107,48 @@ namespace RitualReversal
             IniciarSolo("H", "treino", true, false); AteFase("play", 300); TQuadros(100, .05f, 3); Foto("tutorial", .05f); Input.apertadas.Add(KeyCode.N); TQuadro(.05f); TQuadros(200, .05f, 9); g = null; LimparVisual(); TQuadros(3);
             // o desafio da noite, até o fim
             Apertar("Desafio da noite", 2); AteFase("play", 300); AteFase("final", 3000); TQuadros(10); g = null; LimparVisual(); TQuadros(3);
+            RoteiroCelular();
             // o Arsenal: troca de arma e de skin, as ações e as vistas
             IniciarArsenal(); TQuadros(30); Foto("arsenal"); foreach (var b in new[] { "Revólver", "Inspecionar", "Recarregar", "De lado", "De perto", "Jogador", "Cetro", "Lançar sigilo", "Da noite", "Estúdio", "Carabina", "Sacar" }) Apertar(b, 12);
             Apertar("Voltar ao menu", 5); TQuadros(10);
+        }
+        // um celular deitado (2400 × 1080 a 420 ppp: 914 × 411 em pixels de CSS) com os controles de toque: o direcional anda,
+        // o arrasto olha, o botão de atacar atira; com o menu aberto os controles somem e soltam tudo
+        float dprCel; readonly List<EntradaUnity.Toque> dedos = new List<EntradaUnity.Toque>();
+        void Dedo(int id, float cx, float cy, int fase) { dedos.RemoveAll(t => t.id == id); dedos.Add(new EntradaUnity.Toque { id = id, pos = new Vector2(cx * dprCel, Screen.height - cy * dprCel), fase = fase }); }
+        void RoteiroCelular()
+        {
+            int w0 = Screen.width, h0 = Screen.height; float dpi0 = Screen.dpi; Screen.width = 2400; Screen.height = 1080; Screen.dpi = 420; dprCel = 420 / 160f;
+            Application.isMobilePlatform = true; toqueAtivo = toqueGlobal = true; EntradaUnity.toquesTeste = dedos;
+            try
+            {
+                IniciarSolo("H", "facil", false, false); AteFase("play", 300); TQuadros(20, .05f);
+                if (!Travado()) falhas.Add("celular: a noite não prendeu o toque (travadoToque)");
+                var m = Eu(); double x0 = m.x, z0 = m.z, yaw0 = lookYaw;
+                // o direcional: encosta em (150, 300) e empurra 50 px para cima, por 1,5 s
+                Dedo(1, 150, 300, 0); TQuadro(.05f); for (int i = 0; i < 30; i++) { Dedo(1, 150, 250, 1); TQuadro(.05f); }
+                m = Eu(); if (JS.Hypot(m.x - x0, m.z - z0) < 1) falhas.Add("celular: o direcional não andou (" + JS.Hypot(m.x - x0, m.z - z0).ToString("0.00") + " m)");
+                Foto("celular", .05f, 2400, 1080);
+                Dedo(1, 150, 250, 2); TQuadro(.05f); dedos.Clear(); TQuadro(.05f);
+                // olhar: um dedo na direita arrasta 100 px para a esquerda
+                Dedo(2, 600, 250, 0); TQuadro(.05f); Dedo(2, 500, 250, 1); TQuadro(.05f); Dedo(2, 500, 250, 2); TQuadro(.05f); dedos.Clear(); TQuadro(.05f);
+                if (System.Math.Abs(lookYaw - yaw0) < .3) falhas.Add("celular: arrastar à direita não virou a câmera (" + (lookYaw - yaw0).ToString("0.00") + ")");
+                // atacar: o botão de 92 px a 22 do canto (o centro a 68 px da direita e de baixo)
+                float fx = W - 68, fy = H - 68;
+                Dedo(3, fx, fy, 0); for (int i = 0; i < 20; i++) { TQuadro(.05f); Dedo(3, fx, fy, 1); }
+                if (!EntradaUnity.Atirando()) falhas.Add("celular: segurar o botão de atacar não atira");
+                Dedo(3, fx, fy, 2); TQuadro(.05f); dedos.Clear(); TQuadro(.05f);
+                if (EntradaUnity.Atirando()) falhas.Add("celular: o tiro continuou depois de soltar o dedo");
+                // correr liga e desliga; a Pausa solta tudo
+                Dedo(4, 14 + 25, H - 26 - 25, 0); TQuadro(.05f); Dedo(4, 39, H - 51, 2); TQuadro(.05f); dedos.Clear();
+                if (!EntradaUnity.Segurando(Tecla.Shift)) falhas.Add("celular: o botão Correr não ligou a corrida");
+                var rp = RetTopoToque(4); Dedo(5, rp.center.x, rp.center.y, 0); TQuadro(.05f); Dedo(5, rp.center.x, rp.center.y, 2); TQuadro(.05f); dedos.Clear(); TQuadros(3, .05f);
+                if (Travado()) falhas.Add("celular: o botão Pausa não soltou o jogo");
+                if (EntradaUnity.Segurando(Tecla.Shift)) falhas.Add("celular: a pausa não soltou a corrida");
+                Foto("celular-pausa", .05f, 2400, 1080);
+                Console.WriteLine("celular: direcional, olhar, ataque, correr e pausa pelo toque");
+            }
+            finally { g = null; LimparVisual(); EntradaUnity.toquesTeste = null; dedos.Clear(); Application.isMobilePlatform = false; toqueAtivo = toqueGlobal = false; travadoToque = false; Screen.width = w0; Screen.height = h0; Screen.dpi = dpi0; TQuadros(3); }
         }
         // online, contra o servidor de verdade (a porta vem do unity-telas.js): a sala, as opções do anfitrião, o chat, a partida
         void Esperar(System.Func<bool> ok, int limite = 300) { for (int i = 0; i < limite && !ok(); i++) { System.Threading.Thread.Sleep(15); TQuadro(1 / 30f); } }

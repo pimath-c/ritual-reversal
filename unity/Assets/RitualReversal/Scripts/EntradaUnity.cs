@@ -44,6 +44,39 @@ namespace RitualReversal
         public static string NomeCodigo(string c) { string n; if (c == null) return "—"; if (NOMES.TryGetValue(c, out n)) return n; if (c.StartsWith("Key")) return c.Substring(3); if (c.StartsWith("Digit")) return c.Substring(5); if (c.StartsWith("Numpad")) return "Num " + c.Substring(6); return c; }
         // o nome da tecla de uma ação, para os textos do HUD (o kb() do navegador)
         public static string Nome(string acao) { string c; return Binds.TryGetValue(acao, out c) ? NomeCodigo(c) : "—"; }
+        // ---------- toque (os botões redondos do navegador): cada botão segura ou aperta a ação da tecla configurada ----------
+        static readonly HashSet<string> toqueSeg = new HashSet<string>(), toqueAp = new HashSet<string>();
+        public static void ToqueSegurar(string acao, bool sim) { if (sim) { if (toqueSeg.Add(acao)) toqueAp.Add(acao); } else toqueSeg.Remove(acao); }
+        public static bool ToqueSegurando(string acao) { return toqueSeg.Contains(acao); }
+        public static void ToqueNovoQuadro() { toqueAp.Clear(); }
+        public static void ToqueSoltarTudo() { toqueSeg.Clear(); toqueAp.Clear(); }
+        public static bool Segurando(Tecla t) { var a = Acao(t); return SegurandoDisp(t) || (a != null && toqueSeg.Contains(a)); }
+        public static bool Apertou(Tecla t) { var a = Acao(t); return ApertouDisp(t) || (a != null && toqueAp.Contains(a)); }
+        public static bool Atirando() { return AtirandoDisp() || toqueSeg.Contains("fire"); }
+        public static bool CliqueDir() { return CliqueDirDisp() || toqueAp.Contains("abil"); }
+        // os dedos na tela: posição em pixels da tela (y para cima, como o Unity) e a fase (0 encostou, 1 segue, 2 saiu)
+        public struct Toque { public int id; public Vector2 pos; public int fase; }
+        public static List<Toque> toquesTeste;   // o teste no Mono põe os dedos aqui
+        public static List<Toque> Toques()
+        {
+            if (toquesTeste != null) return toquesTeste; var L = new List<Toque>();
+#if ENABLE_INPUT_SYSTEM
+            var ts = Touchscreen.current; if (ts == null) return L;
+            foreach (var t in ts.touches)
+            {
+                var f = t.phase.ReadValue(); if (f == UnityEngine.InputSystem.TouchPhase.None) continue;
+                L.Add(new Toque { id = t.touchId.ReadValue(), pos = t.position.ReadValue(), fase = f == UnityEngine.InputSystem.TouchPhase.Began ? 0 : f == UnityEngine.InputSystem.TouchPhase.Ended || f == UnityEngine.InputSystem.TouchPhase.Canceled ? 2 : 1 });
+            }
+#else
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                var t = Input.GetTouch(i); var f = t.phase;
+                L.Add(new Toque { id = t.fingerId, pos = t.position, fase = f == UnityEngine.TouchPhase.Began ? 0 : f == UnityEngine.TouchPhase.Ended || f == UnityEngine.TouchPhase.Canceled ? 2 : 1 });
+            }
+#endif
+            return L;
+        }
+
         static string Acao(Tecla t)
         {
             switch (t)
@@ -95,13 +128,13 @@ namespace RitualReversal
             var m = UnityEngine.InputSystem.Mouse.current; if (m != null) { if (m.leftButton.wasPressedThisFrame) return "Mouse0"; if (m.rightButton.wasPressedThisFrame) return "Mouse2"; if (m.middleButton != null && m.middleButton.wasPressedThisFrame) return "Mouse1"; }
             var kb = Keyboard.current; if (kb == null) return null; foreach (var k in kb.allKeys) if (k != null && k.wasPressedThisFrame) return DeKey(k.keyCode); return null;
         }
-        public static bool Segurando(Tecla t)
+        static bool SegurandoDisp(Tecla t)
         {
             var a = Acao(t); var k = Keyboard.current;
             if (a != null ? Codigo(Binds[a], false) : (k != null && k[Mapear(t)].isPressed)) return true; var p = Gamepad.current; if (p == null) return false;
             var b = Botao(p, t); return (b != null && b.isPressed) || (t == Tecla.Shift && p.leftStickButton.isPressed);
         }
-        public static bool Apertou(Tecla t)
+        static bool ApertouDisp(Tecla t)
         {
             var a = Acao(t); var k = Keyboard.current;
             if (a != null ? Codigo(Binds[a], true) : (k != null && k[Mapear(t)].wasPressedThisFrame)) return true; var p = Gamepad.current; var b = p != null ? Botao(p, t) : null; return b != null && b.wasPressedThisFrame;
@@ -125,9 +158,9 @@ namespace RitualReversal
         }
         // pixels neste quadro, y para cima
         public static Vector2 Mouse() { var m = UnityEngine.InputSystem.Mouse.current; return m != null ? m.delta.ReadValue() : Vector2.zero; }
-        public static bool Atirando() { var p = Gamepad.current; return Codigo(Binds["fire"], false) || (p != null && p.rightTrigger.isPressed); }
+        static bool AtirandoDisp() { var p = Gamepad.current; return Codigo(Binds["fire"], false) || (p != null && p.rightTrigger.isPressed); }
         public static bool CliqueEsq() { return Codigo(Binds["fire"], true); }
-        public static bool CliqueDir() { var p = Gamepad.current; return Codigo(Binds["abil"], true) || (p != null && p.rightShoulder.wasPressedThisFrame); }
+        static bool CliqueDirDisp() { var p = Gamepad.current; return Codigo(Binds["abil"], true) || (p != null && p.rightShoulder.wasPressedThisFrame); }
 #else
         static KeyCode Mapear(Tecla t)
         {
@@ -155,12 +188,12 @@ namespace RitualReversal
             }
             return null;
         }
-        public static bool Segurando(Tecla t) { var a = Acao(t); return Input.GetKey(a != null ? ParaKey(Binds[a]) : Mapear(t)); }
-        public static bool Apertou(Tecla t) { var a = Acao(t); return Input.GetKeyDown(a != null ? ParaKey(Binds[a]) : Mapear(t)); }
+        static bool SegurandoDisp(Tecla t) { var a = Acao(t); return Input.GetKey(a != null ? ParaKey(Binds[a]) : Mapear(t)); }
+        static bool ApertouDisp(Tecla t) { var a = Acao(t); return Input.GetKeyDown(a != null ? ParaKey(Binds[a]) : Mapear(t)); }
         public static Vector2 Mouse() { return new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")) * 10f; }
-        public static bool Atirando() { return Input.GetKey(ParaKey(Binds["fire"])); }
+        static bool AtirandoDisp() { return Input.GetKey(ParaKey(Binds["fire"])); }
         public static bool CliqueEsq() { return Input.GetKeyDown(ParaKey(Binds["fire"])); }
-        public static bool CliqueDir() { return Input.GetKeyDown(ParaKey(Binds["abil"])); }
+        static bool CliqueDirDisp() { return Input.GetKeyDown(ParaKey(Binds["abil"])); }
         // sem o Input System, sem controle
         public static Vector2 PadAndar() { return Vector2.zero; } public static Vector2 PadOlhar() { return Vector2.zero; }
         public static bool PadCima() { return false; } public static bool PadBaixo() { return false; } public static bool PadA() { return false; } public static bool PadB() { return false; } public static bool PadStart() { return false; }

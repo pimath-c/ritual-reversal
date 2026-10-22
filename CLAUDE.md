@@ -42,7 +42,7 @@ commits em português.
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
     [THREE_DIR=<three@0.128.0>] NODE_PATH=$(npm root -g) node tools/unity-noite.js   # fim da noite do Unity (planta, gráfico, placar) numa noite de bots (Mono)
     [FOTOS=dist/telas/unity] node tools/unity-telas.js   # telas do Unity (IMGUI) por todo o jogo e online, layout do Unity em miniatura; FOTOS= grava PNG (Mono, Pillow)
-    [MEDIR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças
+    [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v6)
@@ -242,7 +242,17 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Menus pelo controle (`PartidaNavPad.cs`): todo botão das telas passa por `BotaoCss`, que conta a ordem; cima/baixo move o foco, A aperta, B volta. Nenhuma tela usa mais GUILayout.
   Fontes do navegador em `Resources/Fontes` (OFL, `LEIA.txt`): Barlow Condensed no corpo e nos botões, IM Fell English nos
   títulos, seções, anúncio, lances e nomes da planta (`Estilos`, `TextoSvg`).
-  Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); controles de toque.
+  Toque (como o TQ do navegador): `PartidaToque.cs` (direcional na faixa esquerda, olhar à direita, botões redondos nas medidas
+  do CSS, correr/agachar/mapa que alternam, Pausa); os dedos entram por `EntradaUnity.Toques()` (Input System ou o antigo) e os
+  botões seguram ações (`EntradaUnity.ToqueSegurar`), somadas a Segurando/Apertou/Atirando. Ajustes "Controles de toque"
+  (PlayerPrefs "rr-toque", ligado de saída no celular); com toque, `Travado()` é o `travadoToque` (não há cursor). No celular a
+  interface usa o pixel de CSS (`EscalaUI`: a densidade da tela, 160 ppp no Android) em vez da tela virtual de 1080; o HUD fica
+  compacto como o `body.toque` (`hudToque`, `ComTransformacao` = transform: scale com transform-origin) e, com a tela até 430 de
+  altura, painéis e título encolhem para 0,86. Resolução adaptativa: `Visual/Resolucao.cs` (o medirRes do navegador na escala de
+  renderização do URP; PlayerPrefs "rr-autores"). `tools/telas-navegador.js` com `CELULAR=1` fotografa o navegador como celular
+  (914 × 411 a 2,625×, toque ligado) e mede o HUD; o `RoteiroCelular` do `TesteTelas.cs` faz o mesmo no Unity falso com dedos.
+  Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); a linha "Movimento
+  bruto do mouse" (o Input System já lê o mouse sem aceleração).
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);

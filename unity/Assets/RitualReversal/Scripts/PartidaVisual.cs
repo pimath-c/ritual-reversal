@@ -29,6 +29,7 @@ namespace RitualReversal
             mundo = Mundo.Construir(); fp = new PrimeiraPessoa(cam);
             try { pos = new Pos(cam); } catch (System.Exception e) { Debug.LogWarning("Ritual Reversal: sem pós-processamento (" + e.Message + ")"); }
             if (pos != null) pos.brilho = PlayerPrefs.GetFloat("rr-brilho", 1);   // o brilho dos Ajustes
+            autoRes = PlayerPrefs.GetInt("rr-autores", 1) == 1; Resolucao.k = 1; Resolucao.Aplicar();   // a base da qualidade (o Mínimo fica abaixo da tela)
             som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => { som.Tocar("corvo", x, z); Legenda("corvo", x, z); };
             // v5.8: impactos e momentos do ritual tocam pelo Som; a arma avisa o meio do ciclo (alavanca, cão) e o passo
             mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
@@ -41,7 +42,8 @@ namespace RitualReversal
         }
 
         void LimparVisual() { if (mundo != null) mundo.Limpar(); if (som != null) som.Silenciar(); }
-        void OnDestroy() { if (pos != null) pos.Destruir(); }
+        bool autoRes = true;   // Ajustes: resolução adaptativa (PlayerPrefs "rr-autores")
+        void OnDestroy() { if (pos != null) pos.Destruir(); Resolucao.Restaurar(); }
 
         // posição da câmera nas coordenadas do protótipo
         Vector3 CamP() { var p = cam.transform.position; return new Vector3(p.x, p.y, -p.z); }
@@ -98,6 +100,7 @@ namespace RitualReversal
             }
             else { if (pos != null) pos.Atualizar(100, 0, 0, 0); veuExe = 0; }
             if (pos != null) pos.Grade(cam, g != null ? g.momento : 0, mundo.GRk, mundo.climaNevoa, dt, agora);
+            Resolucao.Medir(Time.unscaledDeltaTime, g != null && g.phase == "play" && !arsenal, autoRes);
         }
 
         // retorno imediato da arma (predictFire): som, clarão e coice antes da simulação confirmar

@@ -43,8 +43,10 @@ namespace RitualReversal
         Ator Eu() { if (g == null) return null; foreach (var a in g.actors) if (a.cid == EU) return a; return null; }
         Slot MeuSlot() { if (g == null) return null; foreach (var s in g.slots) if (s.cid == EU) return s; return null; }
         string MeuPapel() { var s = MeuSlot(); return s != null ? Sim.RoleOf(g, s.team) : "H"; }
-        static bool Travado() { return Cursor.lockState == CursorLockMode.Locked; }
-        static void Travar(bool sim) { Cursor.lockState = sim ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !sim; }
+        // com toque não há cursor para prender: vale o travadoToque (o "locked" do navegador)
+        static bool toqueGlobal;
+        static bool Travado() { return toqueGlobal ? travadoToque : Cursor.lockState == CursorLockMode.Locked; }
+        static void Travar(bool sim) { travadoToque = sim; if (toqueGlobal) return; Cursor.lockState = sim ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !sim; }
         public void Acao(Acao a) { if (online) EnviarAcao(a); else if (g != null) Sim.Act(g, EU, a); }
 
         string capturando; int capturaQuadro;   // a ação esperando a tecla nova (Ajustes)
@@ -55,6 +57,7 @@ namespace RitualReversal
             if (online) ProcessarRede();
             if (g == null) { NavPad(false); BuscarSalas(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }
             if (arsenal) { NavPad(false); PassoArsenal(dt); ultimaEntrada = null; g.events.Clear(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }   // Arsenal: a noite fica parada
+            AtualizarToque();
             var m = Eu();
             bool jogando = g.phase == "play";
             bool ativo = jogando && Travado() && lojaAberta == null && !chatAberto;
@@ -122,6 +125,7 @@ namespace RitualReversal
                 if (EntradaUnity.Segurando(Tecla.A)) mx -= 1; if (EntradaUnity.Segurando(Tecla.D)) mx += 1;
                 // controle: o analógico esquerdo soma ao teclado; o direito olha (curva quadrática, a sensibilidade do mouse)
                 var pa = EntradaUnity.PadAndar(); mx = JS.Clamp(mx + pa.x, -1, 1); mz = JS.Clamp(mz - pa.y, -1, 1);
+                mx = JS.Clamp(mx + toqueMx, -1, 1); mz = JS.Clamp(mz + toqueMz, -1, 1);   // o direcional de toque (TQ.mx, TQ.mz)
                 var po = EntradaUnity.PadOlhar(); double k = 2.8 * sensibilidade * Time.unscaledDeltaTime;
                 lookYaw -= System.Math.Sign(po.x) * po.x * po.x * k; lookPitch = JS.Clamp(lookPitch + System.Math.Sign(po.y) * po.y * po.y * k * .8, -1.45, 1.45);
             }

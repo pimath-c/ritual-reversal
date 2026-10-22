@@ -15,9 +15,11 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   .map(([f,s,w,a])=>`@font-face{font-family:'${f}';font-style:${s};font-weight:${w};src:url(https://fontes.local/${a}.ttf) format('truetype');}`).join('\n');
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
-  const page=await browser.newPage({viewport:{width:1920,height:1080}});
+  // CELULAR=1: um celular deitado (914 × 411 pixels de CSS a 2,625×, como o roteiro de celular do Unity) com o toque ligado
+  const CEL=!!process.env.CELULAR;
+  const page=await browser.newPage(CEL?{viewport:{width:914,height:411},deviceScaleFactor:2.625,isMobile:true,hasTouch:true}:{viewport:{width:1920,height:1080}});
   // a interface é o que importa aqui: o mundo vai na qualidade Mínimo, que o swiftshader desenha a tempo
-  await page.addInitScript(()=>{ try{ if(!localStorage.getItem('rr-cfg')) localStorage.setItem('rr-cfg',JSON.stringify({qual:'minimo',autoRes:false})); }catch(e){} });
+  await page.addInitScript(c=>{ try{ if(!localStorage.getItem('rr-cfg')) localStorage.setItem('rr-cfg',JSON.stringify(Object.assign({qual:'minimo',autoRes:false},c?{toque:true}:{}))); }catch(e){} },CEL);
   page.setDefaultTimeout(120000);
   const erros=[];
   let ultimaFoto='nada'; page.on('pageerror',e=>erros.push('pageerror (depois de '+ultimaFoto+'): '+e.message+' '+String(e.stack||'').split('\n').slice(1,3).join(' | ')));
@@ -35,6 +37,7 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   await page.goto('file://'+PAG+'#autotest');
   await page.waitForFunction(()=>window.__T,null,{timeout:120000});
   await page.evaluate(()=>document.fonts.ready);
+  if(CEL){ await roteiroCelular(page,ev=>page.evaluate(s=>__T.ev(s),ev),OUT,erros); await browser.close(); console.log(erros.length?'ERROS:\n  '+erros.join('\n  '):'celular sem erro'); process.exit(erros.length?1:0); }
   const fotos=[];
   const foto=async(nome,espera=600)=>{ ultimaFoto=nome; await page.waitForTimeout(espera); if(!FILTRO.test(nome)) return;   // espera mesmo a que não fotografa: a tela seguinte depende dela
   await page.screenshot({path:path.join(OUT,nome+'.png')}); fotos.push(nome); };
@@ -98,3 +101,20 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   if(erros.length){ console.log('ERROS:'); [...new Set(erros)].slice(0,20).forEach(e=>console.log(' ',e)); }
   await browser.close(); process.exit(erros.length?1:0);
 })().catch(e=>{ console.error(e); process.exit(1); });
+// a noite de Caçador no celular, como o RoteiroCelular do Unity: o dedo empurra o direcional (fica na foto), depois a Pausa
+async function roteiroCelular(page,ev,OUT,erros){
+  await page.evaluate(()=>{ __T.startLocal({papel:'H',dificuldade:'facil'}); });
+  await page.waitForFunction(()=>__T.game&&__T.game.phase==='intro',null,{timeout:30000}); await page.evaluate(()=>{ __T.sendAct({type:'ready'}); });
+  await page.waitForFunction(()=>__T.game.phase==='play',null,{timeout:30000});
+  await ev("locked=true; paused=false; screenKey=''; scr.classList.remove('on'); for(let i=0;i<20;i++) Sim.step(game,.05)"); await page.waitForTimeout(800);
+  // o dedo: encosta em (150, 300) e sobe 50 px
+  await page.touchscreen.tap; const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:150,y:300,id:1}]}); await page.waitForTimeout(100);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:150,y:250,id:1}]}); await page.waitForTimeout(1500);
+  await page.screenshot({path:require('path').join(OUT,'celular.png')});
+  const sels=['#top','#strip','#vitals','#kit','#sensor','#tarefas','#feed','#net','#bussola','#tqStick','#tqFire','#tqUse','#tqAbil','#tqReload','#tqLant','#tqSens','#tqFlare','#tqCorre','#tqAgacha','#tqTopo .tq','#legendas','#mira'];
+  console.log('medidas celular:\n  '+(await page.evaluate(ss=>ss.map(s=>[...document.querySelectorAll(s)].slice(0,6).map(e=>{ const b=e.getBoundingClientRect(); return s+' '+[b.x,b.y,b.width,b.height].map(v=>Math.round(v*10)/10).join(','); })).flat(),sels)).join('\n  '));
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); await page.waitForTimeout(200);
+  await ev("unlock(); screenKey=''"); await page.waitForTimeout(900); await page.screenshot({path:require('path').join(OUT,'celular-pausa.png')});
+  console.log('medidas celular-pausa:\n  '+(await page.evaluate(()=>['#scrBody','#scrBody h2','#scrBody p','.cola','.btnrow'].map(s=>{ const e=document.querySelector(s); if(!e) return s+' -'; const b=e.getBoundingClientRect(); return s+' '+[b.x,b.y,b.width,b.height].map(v=>Math.round(v*10)/10).join(','); }))).join('\n  '));
+}

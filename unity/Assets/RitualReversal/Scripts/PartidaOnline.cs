@@ -22,6 +22,7 @@ namespace RitualReversal
         void CarregarPreferencias()
         {
             sensibilidade = PlayerPrefs.GetFloat("rr-sens", sensibilidade); dificuldade = PlayerPrefs.GetString("rr-dif", "normal");
+            toqueAtivo = toqueGlobal = PlayerPrefs.GetInt("rr-toque", Application.isMobilePlatform ? 1 : 0) == 1;   // o TOQUE_DISP do navegador
             nomeJogador = PlayerPrefs.GetString("rr-nome", "Jogador"); servidor = PlayerPrefs.GetString("rr-servidor", "localhost:8080");
             token = PlayerPrefs.GetString("rr-token", ""); if (token.Length == 0) { token = System.Guid.NewGuid().ToString("N").Substring(0, 20); PlayerPrefs.SetString("rr-token", token); }
         }

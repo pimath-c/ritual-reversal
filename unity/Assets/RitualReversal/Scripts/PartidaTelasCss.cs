@@ -19,7 +19,9 @@ namespace RitualReversal
             bool nova = painelChave != chave; if (nova) { painelChave = chave; rolPainel = Vector2.zero; }
             FundoTela(); float w = Mathf.Min(largura, W - 32), wc = w - 82;
             primeiroFoco = null; medindo = true; float hc = corpo(0, 0, wc); medindo = false; float h = 1 + 26 + hc + 24 + 1;
-            if (h + 32 <= H) { var r = new Rect((W - w) / 2, (H - h) / 2, w, h); PainelCss(r); corpo(r.x + 41, r.y + 27, wc); return; }
+            // @media (max-height:430px): .screen .panel encolhe para 0,86 a partir do meio de cima (o lugar na grade não muda)
+            float k = H <= 430 ? .86f : 1;
+            if (h + 32 <= H) { var r = new Rect((W - w) / 2, (H - h) / 2, w, h); ComTransformacao(r.center.x, r.y, r.center.x, r.y, k, () => { PainelCss(r); corpo(r.x + 41, r.y + 27, wc); }); return; }
             // o setScreen do navegador foca o primeiro botão (ou campo) da tela nova, e o focus() o traz para a vista: no meio
             // da tela se estava fora dela, sem passar do fim da rolagem
             if (nova && primeiroFoco.HasValue)
@@ -28,7 +30,7 @@ namespace RitualReversal
                 if (fy < rolPainel.y || fy + f.height > rolPainel.y + H) rolPainel.y = Mathf.Clamp(fy + f.height / 2 - H / 2, 0, h + 32 - H);
             }
             rolPainel = GUI.BeginScrollView(new Rect(0, 0, W, H), rolPainel, new Rect(0, 0, W - 20, h + 32), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-            var rr = new Rect((W - 20 - w) / 2, 16, w, h); PainelCss(rr); corpo(rr.x + 41, rr.y + 27, wc); GUI.EndScrollView();
+            var rr = new Rect((W - 20 - w) / 2, 16, w, h); ComTransformacao(rr.center.x, rr.y, rr.center.x, rr.y, k, () => { PainelCss(rr); corpo(rr.x + 41, rr.y + 27, wc); }); GUI.EndScrollView();
         }
 
         // .choices: cartões em 2 ou 3 colunas, 14 px entre eles; o conteúdo no meio da altura (é um <button>)
@@ -150,6 +152,8 @@ namespace RitualReversal
             y += LinhaAjuste(x, y, w, "Campo de visão", Mathf.RoundToInt(fov).ToString(), hs, r => { float n = SliderCss(r, fov, 60, 105, 1); if (n != fov && fp != null) { fp.fovBase = n; SalvarAjustes(); } }) + 12;
             int q = PlayerPrefs.GetInt("rr-qualidade", Qualidade.nivel);
             y += LinhaAjuste(x, y, w, "Qualidade", null, ho, r => OpcoesIguais(r, new[] { new[] { "3", "Alto" }, new[] { "2", "Médio" }, new[] { "1", "Baixo" }, new[] { "0", "Mínimo" } }, q.ToString(), k => PlayerPrefs.SetInt("rr-qualidade", int.Parse(k)))) + 12;
+            y += LinhaAjuste(x, y, w, "Resolução adaptativa", null, ho, r => OpcoesIguais(r, new[] { new[] { "1", "Ligada" }, new[] { "0", "Desligada" } }, autoRes ? "1" : "0", k => { autoRes = k == "1"; PlayerPrefs.SetInt("rr-autores", autoRes ? 1 : 0); })) + 12;
+            y += LinhaAjuste(x, y, w, "Controles de toque", null, ho, r => OpcoesIguais(r, new[] { new[] { "1", "Ligados" }, new[] { "0", "Desligados" } }, toqueAtivo ? "1" : "0", k => { toqueAtivo = toqueGlobal = k == "1"; PlayerPrefs.SetInt("rr-toque", toqueAtivo ? 1 : 0); if (!toqueAtivo) SoltarToque(); })) + 12;
             float br = PlayerPrefs.GetFloat("rr-brilho", 1);
             y += LinhaAjuste(x, y, w, "Brilho", Mathf.RoundToInt(br * 100) + "%", hs, r => { float n = SliderCss(r, br * 100, 60, 180, 5) / 100; if (n != br) { PlayerPrefs.SetFloat("rr-brilho", n); if (pos != null) pos.brilho = n; } }) + 12;
             y += LinhaAjuste(x, y, w, "Mira", null, ho, r => OpcoesIguais(r, new[] { new[] { "cruz", "Cruz" }, new[] { "ponto", "Ponto" }, new[] { "circulo", "Círculo" } }, PlayerPrefs.GetString("rr-mira", "cruz"), k => PlayerPrefs.SetString("rr-mira", k))) + 12;
@@ -161,7 +165,7 @@ namespace RitualReversal
             y += pref("Dicas da primeira noite", "rr-dicas-on", new[] { new[] { "1", "Ligadas" }, new[] { "0", "Desligadas" }, new[] { "r", "Rever todas" } });
             y += pref("Música da tela inicial", "rr-musica", new[] { new[] { "1", "Ligada" }, new[] { "0", "Desligada" } });
             y += pref("Legendas dos sons", "rr-legendas", new[] { new[] { "1", "Ligadas" }, new[] { "0", "Desligadas" } });
-            y -= 12; y += P(x, y, w, "Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento e encurta a distância de visão. A qualidade vale no próximo Play.", 15, MUDO, 1.45f, TextAnchor.UpperCenter, 64, true);
+            y -= 12; y += P(x, y, w, "Médio desliga o brilho difuso e metade das luzes; Baixo desliga também as sombras e usa texturas menores; Mínimo tira o pós-processamento, encurta a distância de visão e renderiza abaixo da resolução da tela. A qualidade vale no próximo Play. A resolução adaptativa baixa a resolução interna quando o jogo cai abaixo de 28 quadros por segundo.", 15, MUDO, 1.45f, TextAnchor.UpperCenter, 64, true);
             y += H3(x, y, w, "Acessibilidade") - 6 + 12;
             float cf = fp != null ? fp.camFx : PlayerPrefs.GetFloat("rr-camfx", 1);
             y += LinhaAjuste(x, y, w, "Impacto na câmera", null, ho, r => OpcoesIguais(r, new[] { new[] { "1", "Normal" }, new[] { ".5", "Reduzido" }, new[] { "0", "Desligado" } }, cf >= .99f ? "1" : cf > .01f ? ".5" : "0", k => { float v = float.Parse(k, System.Globalization.CultureInfo.InvariantCulture); if (fp != null) fp.camFx = v; PlayerPrefs.SetFloat("rr-camfx", v); })) + 12;
@@ -200,8 +204,8 @@ namespace RitualReversal
                 float y0 = y; y += H2(x, y, w, online ? "Clique para jogar" : "Pausado", TextAnchor.UpperCenter);
                 var stP = Css("400", 18, Hx("#cfc7b8"), TextAnchor.UpperCenter); float wb = Mathf.Min(w, Larg("0", stP) * 64);
                 // o p tem margem 6, que some no 8 de baixo do h2
-                y += Ps(x + (w - wb) / 2, y, wb, online ? "No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado." : "Clique para voltar ao jogo.", stP, 18 * 1.45f);
-                if (!online) y += ColaTeclas(x, y, w);
+                y += Ps(x + (w - wb) / 2, y, wb, online ? "No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado." : (toqueAtivo ? "Toque" : "Clique") + " para voltar ao jogo.", stP, 18 * 1.45f);
+                if (!online && !toqueAtivo) y += ColaTeclas(x, y, w);   // com toque, sem a cola das teclas
                 y += FileiraBotoes(x, y, w, online ? "Jogar" : "Continuar", "go", true, (System.Action)(() => { pausaAjustes = false; Travar(true); }),
                     "Ajustes", "ghost", true, (System.Action)(() => { pausaAjustes = true; som.Tocar("click"); }),
                     online ? "Sair da sala" : "Abandonar a noite", "ghost", true, (System.Action)(() => { pausaAjustes = false; if (online) SairOnline(""); else { g = null; LimparVisual(); } }));

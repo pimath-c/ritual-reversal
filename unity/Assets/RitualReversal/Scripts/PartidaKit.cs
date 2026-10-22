@@ -31,8 +31,9 @@ namespace RitualReversal
             float dt = Time.unscaledDeltaTime; if (dtG > 0 && dt > 0) fpsMedia += (1 / dt - fpsMedia) * .05f;
             string linha = Mathf.RoundToInt(fpsMedia) + " fps"; bool ruim = false;
             if (online) { int ping = Mathf.RoundToInt(this.ping); linha = "Sala " + salaCodigo + " · " + ping + " ms · " + linha; ruim = ping > 250; }
-            // #net: 13 px apagado (carmim com ping alto), 12 px do topo e 16 da direita
-            Linha(W - 16 - 400, 12, 400, LN(13), linha, Css("400", 13, ruim ? CrimsonHi : MUDO, TextAnchor.UpperRight));
+            // #net: 13 px apagado (carmim com ping alto), 12 px do topo e 16 da direita; no toque, 10 px embaixo à esquerda
+            if (hudToque) Linha(12, H - 4 - LN(10), 400, LN(10), linha, Css("400", 10, ruim ? CrimsonHi : MUDO));
+            else Linha(W - 16 - 400, 12, 400, LN(13), linha, Css("400", 13, ruim ? CrimsonHi : MUDO, TextAnchor.UpperRight));
         }
     }
 }
