@@ -235,7 +235,16 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   fonte da interface do sistema (`fonteSistema`, o system-ui do navegador; `fonteSans` é o sans-serif do chat da partida),
   com cantos redondos (`TexArredondada`). Alturas de linha como o Chromium: line-height normal = subida e descida
   arredondadas (`AlturaNormal`, `LN` Barlow, `LNs` IM Fell, `LNsis`, `LNsans`); `MeioX` é o vertical-align: middle;
-  `PainelTela` rola até o primeiro botão da tela nova, como o focus() do setScreen.
+  `PainelTela` rola até o primeiro botão da tela nova, como o focus() do setScreen. No `Linha` a meia entrelinha entra com
+  floor (o AddLeading do Chromium) e a linha de base cai no pixel da tela (`PixelY`: 1/64 e meio pixel para cima, pela
+  matriz); glifo que falta na fonte aumenta a linha como a reserva DejaVu (`AlturaNormalCom`, o ☉ do kit do culto);
+  `LargEspaco` (o CalcSize ignora espaço no fim). Texto nítido com a interface escalada (1440p, 4K, celular): `TextoNitido`/
+  `BotaoNitido` rasterizam a fonte no tamanho dos pixels e põem uma matriz 1/s em volta; para isso toda rolagem e grupo
+  passa por `Rolagem`/`FimRolagem`/`Grupo`/`FimGrupo` (pilha `recortes`, a origem que o IMGUI soma antes do GUI.matrix;
+  o `ComTransformacao` usa a mesma origem). Nada de `GUI.BeginScrollView`/`BeginGroup`/`GUI.Label` direto nas telas.
+  O "○" das tarefas é desenhado (anel com as medidas do glifo da DejaVu); as legendas dos sons são a fileira flex do .lg
+  (seta `Tracos.SetaSom`, ponto/anel de 8 px, small à parte; no toque à direita com scale .8). Fotos: `foto-imgui.py`
+  superamostra o que gira; `MANTER=1` deixa o JSON; a foto "legendas" põe os mesmos sons nos dois roteiros.
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).
@@ -252,7 +261,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   renderização do URP; PlayerPrefs "rr-autores"). `tools/telas-navegador.js` com `CELULAR=1` fotografa o navegador como celular
   (914 × 411 a 2,625×, toque ligado) e mede o HUD; o `RoteiroCelular` do `TesteTelas.cs` faz o mesmo no Unity falso com dedos.
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); a linha "Movimento
-  bruto do mouse" (o Input System já lê o mouse sem aceleração).
+  bruto do mouse" (o Input System já lê o mouse sem aceleração); os campos de texto (TextField/TextArea) ainda sem o texto
+  nítido em telas escaladas; letras de tamanho fracionário do CSS (14,5, 11,5) saem no inteiro mais perto.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);

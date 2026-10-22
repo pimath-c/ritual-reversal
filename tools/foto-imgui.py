@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 FUNDO = (12, 14, 18, 255)
+Q = 4   # superamostragem do que vai girado
 
 
 class Pintor:
@@ -87,18 +88,23 @@ class Pintor:
         if abs(b) < 1e-6 and abs(c) < 1e-6:
             bx, by = int(round(X0)), int(round(Y0))
         else:
-            A = np.array([[a / s, b / s], [c / s, d / s]])
+            # pixel (u, v) da imagem -> deslocamento na tela a partir de (X0, Y0); a imagem pode ter sido arredondada (ou
+            # superamostrada), então a escala vem do tamanho dela e não de s
             W, H = img.size
+            A = np.array([[a * w / W, b * h / H], [c * w / W, d * h / H]])
             cant = [A @ np.array(p) for p in ((0, 0), (W, 0), (0, H), (W, H))]
-            mnx, mny = min(p[0] for p in cant), min(p[1] for p in cant)
-            mxx, mxy = max(p[0] for p in cant), max(p[1] for p in cant)
-            bw, bh = int(math.ceil(mxx - mnx)) + 2, int(math.ceil(mxy - mny)) + 2
+            bx, by = int(math.floor(X0 + min(p[0] for p in cant))) - 1, int(math.floor(Y0 + min(p[1] for p in cant))) - 1
+            bw, bh = int(math.ceil(X0 + max(p[0] for p in cant))) - bx + 2, int(math.ceil(Y0 + max(p[1] for p in cant))) - by + 2
             Ai = np.linalg.inv(A)
-            ox, oy = X0 + mnx - 1, Y0 + mny - 1
-            # (X, Y) da caixa -> (u, v) da imagem
-            co = (Ai[0, 0], Ai[0, 1], Ai[0, 0] * (ox - X0) + Ai[0, 1] * (oy - Y0), Ai[1, 0], Ai[1, 1], Ai[1, 0] * (ox - X0) + Ai[1, 1] * (oy - Y0))
-            img = img.transform((bw, bh), Image.AFFINE, co, resample=Image.BILINEAR)
-            bx, by = int(math.floor(ox)), int(math.floor(oy))
+            # (X, Y) da caixa, em 1/q de pixel -> (u, v) da imagem; a caixa começa no pixel inteiro (bx, by), sem perder a fração
+            q = Q
+            co = (Ai[0, 0] / q, Ai[0, 1] / q, Ai[0, 0] * (bx - X0) + Ai[0, 1] * (by - Y0), Ai[1, 0] / q, Ai[1, 1] / q, Ai[1, 0] * (bx - X0) + Ai[1, 1] * (by - Y0))
+            pm = np.asarray(img, np.float32); pm[..., :3] *= pm[..., 3:4] / 255
+            g = Image.fromarray(np.clip(pm, 0, 255).astype(np.uint8), 'RGBA').transform((bw * q, bh * q), Image.AFFINE, co, resample=Image.BILINEAR)
+            # média de q × q (a cobertura de cada pixel), com a cor pré-multiplicada para a borda não escurecer
+            g = np.asarray(g, np.float32).reshape(bh, q, bw, q, 4).mean(axis=(1, 3))
+            al = g[..., 3:4]; g[..., :3] = np.where(al > 0, g[..., :3] * 255 / np.maximum(al, 1e-6), 0)
+            img = Image.fromarray(np.clip(np.round(g), 0, 255).astype(np.uint8), 'RGBA')
         W, H = img.size
         cx0, cy0, cx1, cy1 = cl[0], cl[1], cl[0] + cl[2], cl[1] + cl[3]
         x0, y0, x1, y1 = max(bx, int(math.floor(cx0))), max(by, int(math.floor(cy0))), min(bx + W, int(math.ceil(cx1)), tela.size[0]), min(by + H, int(math.ceil(cy1)), tela.size[1])
@@ -115,7 +121,12 @@ class Pintor:
         if w <= 0 or h <= 0:
             return
         cor = [k['c'][0], k['c'][1], k['c'][2], k['c'][3]]
-        img = self.esticada(k['tex'], W, H, [int(round(v * s)) for v in k['b']] if 'b' in k else None, cor, 'fit' in k)
+        if abs(m[1]) > 1e-6 or abs(m[3]) > 1e-6:
+            # girada: a textura em Q vezes o tamanho, para as bordas finas (1,5 px) não engrossarem no arredondamento
+            W, H = max(1, int(round(w * s * Q))), max(1, int(round(h * s * Q)))
+            img = self.esticada(k['tex'], W, H, [int(round(v * s * Q)) for v in k['b']] if 'b' in k else None, cor, 'fit' in k)
+        else:
+            img = self.esticada(k['tex'], W, H, [int(round(v * s)) for v in k['b']] if 'b' in k else None, cor, 'fit' in k)
         self.colocar(tela, img, (x, y, w, h), m, k['cl'], s)
 
     def texto_cmd(self, tela, k):

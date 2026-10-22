@@ -107,8 +107,8 @@ namespace RitualReversal
             if (chatVisto != chat.Count) { chatVisto = chat.Count; rolChatCss.y = 1e6f; }
             if (rola)
             {
-                rolChatCss = GUI.BeginScrollView(dentro, rolChatCss, new Rect(0, 0, dentro.width - 16, hTot + 12), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-                float yy = 6; foreach (var m in msgs) yy += Fluxo(9, yy, wi - 16, lh, 16.5f, m, false); GUI.EndScrollView();
+                rolChatCss = Rolagem(dentro, rolChatCss, new Rect(0, 0, dentro.width - 16, hTot + 12));
+                float yy = 6; foreach (var m in msgs) yy += Fluxo(9, yy, wi - 16, lh, 16.5f, m, false); FimRolagem();
             }
             else { float yy = r.y + 1 + 6; foreach (var m in msgs) yy += Fluxo(r.x + 1 + 10, yy, wi, lh, 16.5f, m, false); }
         }

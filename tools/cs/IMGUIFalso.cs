@@ -38,6 +38,13 @@ namespace UnityEngine
         static readonly string[][] SISTEMA = { new[] { "DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" }, new[] { "Liberation Sans", "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf" } };
         public static string[] GetOSInstalledFontNames() { var o = new List<string>(); foreach (var f in SISTEMA) if (File.Exists(f[1])) o.Add(f[0]); return o.ToArray(); }
         public static Font CreateDynamicFontFromOSFont(string nome, int tam) { foreach (var f in SISTEMA) if (f[0] == nome && File.Exists(f[1])) return new Font { name = nome, arquivo = f[1], fontSize = tam }; return null; }
+        // o glifo existe no próprio TTF (sem contar a reserva)
+        static readonly Dictionary<string, FonteTTF> lidas = new Dictionary<string, FonteTTF>();
+        public bool HasCharacter(char c)
+        {
+            if (string.IsNullOrEmpty(arquivo)) return false; FonteTTF f; if (!lidas.TryGetValue(arquivo, out f)) lidas[arquivo] = f = FonteTTF.Abrir(arquivo, name);
+            return f != null && f.Tem(c);
+        }
     }
     public class GUIStyleState { public Color textColor = Color.white; public Texture2D background; public GUIStyleState Copia() { return new GUIStyleState { textColor = textColor, background = background }; } }
     public class GUIStyle
@@ -123,6 +130,8 @@ namespace UnityEngine
         public static void SetNextControlName(string n) { proximoNome = n; } public static void FocusControl(string n) { foco = n; } public static string GetNameOfFocusedControl() { return foco ?? ""; }
         public static bool Button(Rect r, string t) { return Button(r, t, skin.button); }
         public static bool Button(Rect r, string t, GUIStyle s) { Desenho2D.Estilo(r, t, s); return GUILayout.Apertado(t); }
+        // sem texto (o BotaoNitido desenha o texto à parte): o roteiro aperta pelo texto que vem na dica (tooltip)
+        public static bool Button(Rect r, GUIContent c, GUIStyle s) { string t = c == null ? "" : c.text ?? ""; Desenho2D.Estilo(r, t, s); return GUILayout.Apertado(t != "" ? t : c == null ? "" : c.tooltip ?? ""); }
         public static bool Toggle(Rect r, bool v, string t, GUIStyle s) { Desenho2D.Estilo(r, t, s, v); GUILayout.Texto(t); return v; }
         public static float HorizontalSlider(Rect r, float v, float a, float b)
         {
@@ -675,11 +684,13 @@ namespace FalsoIMGUI
         }
         public static void Desempilhar() { if (pilha.Count > 0) pilha.RemoveAt(pilha.Count - 1); }
         static string F(float v) { return Math.Round(v, 2).ToString(CultureInfo.InvariantCulture); }
+        // a parte de giro e escala da matriz precisa de mais casas: 0,71 no lugar de 0,7071 desloca 2,6 px a 900 px da origem
+        static string F6(float v) { return Math.Round(v, 6).ToString(CultureInfo.InvariantCulture); }
         static string Cor(Color c) { return "[" + F(c.r) + "," + F(c.g) + "," + F(c.b) + "," + F(c.a) + "]"; }
         static string Cabeca(string k)
         {
             var m = GUI.matrix; var t = Tela; comandos++;
-            return (json.Length > 1 ? ",\n" : "") + "{\"k\":\"" + k + "\",\"m\":[" + F(m.m00) + "," + F(m.m01) + "," + F(m.m03) + "," + F(m.m10) + "," + F(m.m11) + "," + F(m.m13) + "],\"cl\":[" + F(t.x) + "," + F(t.y) + "," + F(t.width) + "," + F(t.height) + "]";
+            return (json.Length > 1 ? ",\n" : "") + "{\"k\":\"" + k + "\",\"m\":[" + F6(m.m00) + "," + F6(m.m01) + "," + F(m.m03) + "," + F6(m.m10) + "," + F6(m.m11) + "," + F(m.m13) + "],\"cl\":[" + F(t.x) + "," + F(t.y) + "," + F(t.width) + "," + F(t.height) + "]";
         }
         static Color Tom(Color c) { var g = GUI.color; var o = new Color(c.r * g.r, c.g * g.g, c.b * g.b, c.a * g.a); if (!GUI.enabled) o.a *= .5f; return o; }
         public static string Textura(Texture t)

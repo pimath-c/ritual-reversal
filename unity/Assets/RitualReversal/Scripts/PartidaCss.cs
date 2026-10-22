@@ -47,6 +47,14 @@ namespace RitualReversal
         static float SubidaPx(GUIStyle st) { return Ar(SubidaEm(st.font) * st.fontSize); }
         static float AlturaNormal(GUIStyle st) { return SubidaPx(st) + Ar(DescidaEm(st.font) * st.fontSize); }
         static float LN(float px) { return Ar(px) + Ar(px * .2f); }
+        // line-height normal quando a linha usa um glifo que a fonte não tem: o Chromium junta as medidas da fonte reserva
+        // (a DejaVu Sans: subida .928, descida .236) às da fonte, e a linha cresce (o ☉ de 12 px dá 15 no lugar de 14)
+        static float AlturaNormalCom(string txt, GUIStyle st)
+        {
+            bool falta = false; if (st.font != null) foreach (var ch in txt) if (ch > ' ' && !st.font.HasCharacter(ch)) { falta = true; break; }
+            if (!falta) return AlturaNormal(st);
+            return Mathf.Max(SubidaPx(st), Ar(.928f * st.fontSize)) + Mathf.Max(AlturaNormal(st) - SubidaPx(st), Ar(.236f * st.fontSize));
+        }
         // o meio de um vertical-align: middle numa linha normal da Barlow (topo em 0): a linha de base menos meia altura-x (.506)
         static float MeioX(float px) { return Ar(px) - .253f * px; }
         static float LNs(float px) { return Ar(px * .905f) + Ar(px * .363f); }
@@ -62,24 +70,96 @@ namespace RitualReversal
             s.font = f ?? fonteCond; s.normal.textColor = cor; estilosCss[k] = s; return s;
         }
         static float Larg(string txt, GUIStyle st) { return st.CalcSize(new GUIContent(txt)).x; }
+        // y arredondado no pixel da tela, passando pela matriz do GUI (escala da interface e transformações sem giro):
+        // primeiro em 1/64 de pixel (o LayoutUnit do Chromium, que tira o erro do float), depois meio pixel para cima
+        static float PixelY(float y)
+        {
+            var m = GUI.matrix; bool reta = m.m10 == 0 && m.m11 != 0; float c = OrigemRecorte.y, py = reta ? (y + c) * m.m11 + m.m13 : y;
+            py = Mathf.Floor(Mathf.Round(py * 64) / 64 + .5f); return reta ? (py - m.m13) / m.m11 - c : py;
+        }
+        // a largura de um espaço: o CalcSize não conta o espaço no fim do texto, então mede entre duas letras
+        static float LargEspaco(GUIStyle st) { return Larg("i i", st) - Larg("ii", st); }
         static string SemCor(string t) { return System.Text.RegularExpressions.Regex.Replace(t, "</?color[^>]*>", ""); }
-        // uma linha de texto numa caixa de linha do CSS (topo y, altura lh), alinhada em x..x+w pelo alinhamento do estilo
+        // uma linha de texto numa caixa de linha do CSS (topo y, altura lh), alinhada em x..x+w pelo alinhamento do estilo;
+        // a meia entrelinha entra inteira, para baixo, como no Chromium (FontHeight::AddLeading: ascent += half_leading.Floor()),
+        // e a linha de base cai no pixel mais próximo da tela, como o Skia desenha o texto
         void Linha(float x, float y, float w, float lh, string txt, GUIStyle st, float sombra = 0)
         {
-            float base_ = y + (lh - AlturaNormal(st)) / 2 + SubidaPx(st);
-            var r = new Rect(x, base_ - Mathf.Ceil(SubidaEm(st.font) * st.fontSize), w, Mathf.Ceil(AlturaNormal(st)) + 2);
-            if (sombra > 0) { var ss = new GUIStyle(st); var c = Color.black; c.a = sombra * st.normal.textColor.a; ss.normal.textColor = c; GUI.Label(new Rect(r.x, r.y + 1, r.width, r.height), SemCor(txt), ss); }
-            GUI.Label(r, txt, st);
+            float base_ = PixelY(y + Mathf.Floor((lh - AlturaNormal(st)) / 2) + SubidaPx(st));
+            // o retângulo do rótulo com a fonte no tamanho em que ela vai ser rasterizada (a de pixels da tela, ver TextoNitido)
+            float s = EscalaTexto(), fp = s == 1 ? st.fontSize : Mathf.RoundToInt(st.fontSize * s);
+            var r = new Rect(x, base_ - Mathf.Ceil(SubidaEm(st.font) * fp) / s, w, (Ar(SubidaEm(st.font) * fp) + Ar(DescidaEm(st.font) * fp) + 2) / s);
+            if (sombra > 0) { var ss = new GUIStyle(st); var c = Color.black; c.a = sombra * st.normal.textColor.a; ss.normal.textColor = c; TextoNitido(new Rect(r.x, r.y + 1, r.width, r.height), SemCor(txt), ss, false); }
+            TextoNitido(r, txt, st);
         }
-        // quebra como o navegador (nas palavras, dentro da largura) e devolve as linhas
-        static List<string> Quebrar(string txt, GUIStyle st, float w)
+
+        // ---------- texto nítido com a interface escalada ----------
+        // O IMGUI rasteriza a fonte no fontSize do estilo e só depois o GUI.matrix estica os quadriláteros: com a interface
+        // escalada (1440p, 4K, o celular) o texto sairia borrado. Aqui a fonte vai no tamanho dos pixels da tela e uma matriz
+        // de 1/s em volta do rótulo devolve o tamanho: o texto fica no mesmo lugar, rasterizado 1 para 1, como no navegador.
+        // O IMGUI soma o deslocamento do recorte (rolagem ou grupo) antes de aplicar o GUI.matrix, então o pivô precisa da
+        // origem do recorte: Rolagem e Grupo a guardam numa pilha (o BeginScrollView arredonda a rolagem, como aqui).
+        static readonly List<Vector2> recortes = new List<Vector2>();
+        static Vector2 OrigemRecorte { get { return recortes.Count > 0 ? recortes[recortes.Count - 1] : Vector2.zero; } }
+        static Vector2 Rolagem(Rect r, Vector2 rol, Rect vista)
+        {
+            var v = GUI.BeginScrollView(r, rol, vista, false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
+            recortes.Add(OrigemRecorte + r.position + new Vector2(Mathf.Round(-v.x - vista.x), Mathf.Round(-v.y - vista.y))); return v;
+        }
+        static void FimRolagem() { if (recortes.Count > 0) recortes.RemoveAt(recortes.Count - 1); GUI.EndScrollView(); }
+        static void Grupo(Rect r) { GUI.BeginGroup(r); recortes.Add(OrigemRecorte + r.position); }
+        static void FimGrupo() { if (recortes.Count > 0) recortes.RemoveAt(recortes.Count - 1); GUI.EndGroup(); }
+        // a escala do GUI.matrix quando ela é uniforme e sem giro (com giro, o texto fica como está)
+        static float EscalaTexto()
+        {
+            var m = GUI.matrix; if (m.m01 != 0 || m.m10 != 0 || Mathf.Abs(m.m00 - m.m11) > 1e-4f || m.m00 <= 0) return 1;
+            return Mathf.Abs(m.m00 - 1) < .01f ? 1 : m.m00;
+        }
+        static readonly Dictionary<GUIStyle, Dictionary<int, GUIStyle>> estilosPx = new Dictionary<GUIStyle, Dictionary<int, GUIStyle>>();
+        static RectOffset Vezes(RectOffset o, float s) { return new RectOffset(Mathf.RoundToInt(o.left * s), Mathf.RoundToInt(o.right * s), Mathf.RoundToInt(o.top * s), Mathf.RoundToInt(o.bottom * s)); }
+        // o estilo com a fonte, o padding e os tamanhos fixos em pixels da tela, sem fundo (só o texto)
+        static GUIStyle EstiloPx(GUIStyle st, float s, bool guardar)
+        {
+            int fp = Mathf.Max(1, Mathf.RoundToInt((st.fontSize > 0 ? st.fontSize : 13) * s)); Dictionary<int, GUIStyle> d = null; GUIStyle p;
+            if (guardar) { if (!estilosPx.TryGetValue(st, out d)) estilosPx[st] = d = new Dictionary<int, GUIStyle>(); if (d.TryGetValue(fp, out p)) return p; }
+            p = new GUIStyle(st) { fontSize = fp, fixedWidth = st.fixedWidth * s, fixedHeight = st.fixedHeight * s, padding = Vezes(st.padding, s), border = new RectOffset(0, 0, 0, 0) };
+            foreach (var e in new[] { p.normal, p.hover, p.active, p.focused, p.onNormal }) e.background = null;
+            if (guardar) d[fp] = p; return p;
+        }
+        static readonly System.Text.RegularExpressions.Regex reTam = new System.Text.RegularExpressions.Regex("<size=([0-9.]+)>");
+        static void TextoNitido(Rect r, string txt, GUIStyle st, bool guardar = true)
+        {
+            float s = EscalaTexto(); if (s == 1) { GUI.Label(r, txt, st); return; }
+            var sp = EstiloPx(st, s, guardar);
+            if (st.richText && txt != null && txt.IndexOf("<size=", System.StringComparison.Ordinal) >= 0)
+                txt = reTam.Replace(txt, m => "<size=" + Mathf.RoundToInt(float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) * s) + ">");
+            var m0 = GUI.matrix; var o = OrigemRecorte + r.position;
+            GUI.matrix = m0 * Matrix4x4.TRS(o, Quaternion.identity, Vector3.one) * Matrix4x4.Scale(new Vector3(1 / s, 1 / s, 1)) * Matrix4x4.TRS(-o, Quaternion.identity, Vector3.one);
+            try { GUI.Label(new Rect(r.x, r.y, r.width * s, r.height * s), txt, sp); } finally { GUI.matrix = m0; }
+        }
+        // o botão: o fundo e o clique no GUI.matrix de sempre, o texto nítido por cima (na cor do hover quando o mouse está nele)
+        static bool BotaoNitido(Rect r, string txt, GUIStyle st)
+        {
+            if (EscalaTexto() == 1) return GUI.Button(r, txt, st);
+            bool b = GUI.Button(r, new GUIContent("", txt), st);   // o texto vai só na dica (que a interface não mostra)
+            if (Event.current.type == EventType.Repaint && !string.IsNullOrEmpty(txt))
+            {
+                bool sobre = GUI.enabled && r.Contains(Event.current.mousePosition);
+                var lab = sobre && st.hover.textColor != st.normal.textColor ? EstiloHover(st) : st; TextoNitido(r, txt, lab);
+            }
+            return b;
+        }
+        static readonly Dictionary<GUIStyle, GUIStyle> estilosHover = new Dictionary<GUIStyle, GUIStyle>();
+        static GUIStyle EstiloHover(GUIStyle st) { GUIStyle h; if (!estilosHover.TryGetValue(st, out h)) { h = new GUIStyle(st); h.normal.textColor = st.hover.textColor; estilosHover[st] = h; } return h; }
+        // quebra como o navegador (nas palavras, dentro da largura) e devolve as linhas; recuo tira largura só da primeira
+        static List<string> Quebrar(string txt, GUIStyle st, float w, float recuo = 0)
         {
             var o = new List<string>(); foreach (var par in txt.Split('\n'))
             {
                 string linha = ""; foreach (var p in par.Split(' '))
                 {
                     string tenta = linha.Length == 0 ? p : linha + " " + p;
-                    if (linha.Length > 0 && Larg(tenta, st) > w) { o.Add(linha); linha = p; } else linha = tenta;
+                    if (linha.Length > 0 && Larg(tenta, st) > w - (o.Count == 0 ? recuo : 0)) { o.Add(linha); linha = p; } else linha = tenta;
                 }
                 o.Add(linha);
             }

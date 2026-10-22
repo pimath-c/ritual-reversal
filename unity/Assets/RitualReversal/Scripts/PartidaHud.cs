@@ -41,7 +41,7 @@ namespace RitualReversal
         }
         void OnGUI()
         {
-            Estilos(); ComecoNavPad();
+            Estilos(); ComecoNavPad(); recortes.Clear();   // uma passada interrompida (ExitGUI) não deixa recorte para trás
             float esc = EscalaUI(); GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = Screen.height / esc;
             // um clique que muda a tela no meio da passada deixa o resto dela sem o layout que o Layout calculou: o Unity
             // acusaria "Getting control N's position..." no console; ExitGUI encerra a passada sem erro (o próximo quadro já
@@ -148,11 +148,18 @@ namespace RitualReversal
         {
             var ctx = Sim.Contexts(g, m); if (ctx.e == null && ctx.t == null && string.IsNullOrEmpty(ctx.info)) return;
             float anel = m.sealing >= 0 ? (float)g.altars[m.sealing].seal : m.hold != null && m.hold.max > 0 ? (float)(m.hold.t / m.hold.max) : 0f;
-            float cx = W / 2, cy = H / 2 + 46 + 23; Tracos.Anel(cx, cy, 19, 4, new Color(1, 1, 1, .18f)); if (anel > 0) Tracos.Arco(cx, cy, 19, 4, Mathf.Clamp01(anel), Desenho.Hex("#f3d58e"));
-            float y = cy + 23 + 4 + 3;   // o svg de 46 px, margin-bottom 4, e o margin-top 3 do rótulo
-            if (ctx.e != null) { Rotulo(y, EntradaUnity.Nome("use"), ctx.e.label.Replace("Segure E para ", "Segure para ")); y += LN(18f) + 6 + 3; }
-            else if (!string.IsNullOrEmpty(ctx.info)) { Rotulo(y, null, ctx.info); y += LN(18f) + 6 + 3; }
-            if (ctx.t != null) Rotulo(y, EntradaUnity.Nome("use2"), ctx.t.label.Replace("Segure T para ", "Segure: "));
+            // o svg de 46 px, margin-bottom 4, e cada rótulo com margin-top 3; no toque o #interact fica centrado no ponto
+            // (translate(-50%, -50%)) e encolhe para .85 em volta do meio
+            int n = (ctx.e != null || !string.IsNullOrEmpty(ctx.info) ? 1 : 0) + (ctx.t != null ? 1 : 0); float hTudo = 46 + 4 + n * (3 + LN(18f) + 6), py = H / 2 + 46;
+            System.Action desenho = () =>
+            {
+                float topo = hudToque ? py - hTudo / 2 : py, cx = W / 2, cy = topo + 23; Tracos.Anel(cx, cy, 19, 4, new Color(1, 1, 1, .18f)); if (anel > 0) Tracos.Arco(cx, cy, 19, 4, Mathf.Clamp01(anel), Desenho.Hex("#f3d58e"));
+                float y = topo + 46 + 4 + 3;
+                if (ctx.e != null) { Rotulo(y, EntradaUnity.Nome("use"), ctx.e.label.Replace("Segure E para ", "Segure para ")); y += LN(18f) + 6 + 3; }
+                else if (!string.IsNullOrEmpty(ctx.info)) { Rotulo(y, null, ctx.info); y += LN(18f) + 6 + 3; }
+                if (ctx.t != null) Rotulo(y, EntradaUnity.Nome("use2"), ctx.t.label.Replace("Segure T para ", "Segure: "));
+            };
+            if (hudToque) ComTransformacao(W / 2, py, W / 2, py, .85f, desenho); else desenho();
         }
 
         // ---------- HUD ----------

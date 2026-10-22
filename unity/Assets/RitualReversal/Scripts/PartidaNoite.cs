@@ -57,7 +57,7 @@ namespace RitualReversal
         void TextoBase(float x, float yBase, string txt, int fs, Color c, FontStyle estilo = FontStyle.Normal)
         {
             var st = new GUIStyle(sPequeno) { fontSize = Mathf.Max(8, fs), alignment = TextAnchor.LowerCenter, wordWrap = false, richText = false, fontStyle = estilo }; st.normal.textColor = c;
-            GUI.Label(new Rect(x - 200, yBase - st.fontSize * 1.2f, 400, st.fontSize * 1.45f), txt, st);
+            TextoNitido(new Rect(x - 200, yBase - st.fontSize * 1.2f, 400, st.fontSize * 1.45f), txt, st, false);
         }
 
         static readonly string[] COL_PLACAR = { "Derrubou", "Caiu", "Reanimou", "Altares", "Tarefas", "Compras" };

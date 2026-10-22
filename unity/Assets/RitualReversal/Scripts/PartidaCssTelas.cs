@@ -95,7 +95,7 @@ namespace RitualReversal
             if (medindo) { if (ativo && !primeiroFoco.HasValue) primeiroFoco = r; return false; }
             // button.go:disabled tem opacity .35: o IMGUI já pinta o desativado com metade do alfa, o GUI.color tira o resto
             int i = padContagem++; var e0 = GUI.enabled; var c0 = GUI.color; GUI.enabled = e0 && ativo; if (!ativo) GUI.color = new Color(c0.r, c0.g, c0.b, c0.a * .7f);
-            bool b = GUI.Button(r, txt, EstiloBotao(tipo)); GUI.enabled = e0; GUI.color = c0;
+            bool b = BotaoNitido(r, txt, EstiloBotao(tipo)); GUI.enabled = e0; GUI.color = c0;
             if (b) cliqueNaPassada = true;
             if (padNav && i == padFoco && Event.current.type == EventType.Repaint)
             {

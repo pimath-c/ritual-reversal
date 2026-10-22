@@ -16,7 +16,8 @@ namespace RitualReversal
 
         // ---------------------------------------------------------------------------------------------------------------
         // Legendas: o que se ouve, de onde vem e a que distância (LEG_TXT: texto, alcance, cor)
-        class Leg { public string txt, cor; public float x = float.NaN, z = float.NaN, t; }
+        class Leg { public string txt, cor; public float x = float.NaN, z = float.NaN, t; public int ordem; }
+        int legOrdem;
         readonly Dictionary<string, Leg> LEG = new Dictionary<string, Leg>();
         static readonly Dictionary<string, object[]> LEG_TXT = new Dictionary<string, object[]>
         {
@@ -39,36 +40,50 @@ namespace RitualReversal
                 if (gg > 0) gg *= Som.Oclusao(c.x, c.z, x, z); if (gg < .012f) return;
             }
             string chave = k + (float.IsNaN(x) ? "" : ":" + Math.Floor(x / 10 + .5) + "," + Math.Floor(z / 10 + .5));
-            Leg it; if (!LEG.TryGetValue(chave, out it)) { it = new Leg(); LEG[chave] = it; }
+            Leg it; if (!LEG.TryGetValue(chave, out it)) { it = new Leg { ordem = ++legOrdem }; LEG[chave] = it; }
             it.txt = txt ?? (string)L[0]; it.cor = cor ?? (string)L[2]; it.x = x; it.z = z; it.t = k.StartsWith("rit") ? .6f : 2.8f;
             if (LEG.Count > 6) { string pior = null; foreach (var kv in LEG) if (pior == null || kv.Value.t < LEG[pior].t) pior = kv.Key; LEG.Remove(pior); }
         }
+        // #legendas: cada .lg é uma fileira flex (padding 2 12 2 8, vão de 7 px, fundo .58) com a seta de 12 × 14 girada para a
+        // origem (ou o ponto de 8 px quando é aqui, ou o anel quando não tem lugar), o texto de 15 px e o small de 13 px à parte.
+        // A coluna sobe a partir de 26 px da esquerda e 172 do fundo; no toque desce a partir do canto (W - 200, 64), alinhada à
+        // direita e com scale(.8)
         void Legendas()
         {
-            if (LEG.Count == 0) return; var P = CamP(); float yaw = (float)lookYaw, dt = dtG; float y = H - 172;
-            var mortos = new List<string>(); var st = new GUIStyle(Css("400", 15, TEXTO_LEG)) { alignment = TextAnchor.MiddleLeft };
-            foreach (var kv in LEG)
+            if (LEG.Count == 0) return; var P = CamP(); float yaw = (float)lookYaw, dt = dtG;
+            var mortos = new List<string>(); var vivos = new List<Leg>();
+            foreach (var kv in LEG) { kv.Value.t -= dt; if (kv.Value.t <= 0) mortos.Add(kv.Key); else vivos.Add(kv.Value); }
+            foreach (var k in mortos) LEG.Remove(k);
+            vivos.Sort((a, b) => a.ordem.CompareTo(b.ordem));   // a ordem de chegada (a do Map do navegador)
+            if (vivos.Count == 0) return;
+            if (hudToque) ComTransformacao(W - 200, 64, W - 200, 64, .8f, () => FileirasLegendas(vivos, P, yaw, true)); else FileirasLegendas(vivos, P, yaw, false);
+        }
+        void FileirasLegendas(List<Leg> vivos, Vector3 P, float yaw, bool toque)
+        {
+            float lh = LN(15f), lhS = LN(13f), h = lh + 4, y = toque ? 64 : H - 172 - h;
+            foreach (var it in vivos)
             {
-                var it = kv.Value; it.t -= dt; if (it.t <= 0) { mortos.Add(kv.Key); continue; }
-                float op = Mathf.Min(1, it.t / .5f); var corSeta = it.cor == "rit" ? CARMIM_HI : it.cor == "cult" ? new Color(.773f, .549f, 1f) : OURO_VIVO; corSeta.a = op;
-                var corTxt = it.cor == "rit" ? new Color(1f, .604f, .671f) : TEXTO_LEG; string resto = ""; float ang = 0; bool aqui = false, sem = float.IsNaN(it.x);
-                if (!sem)
+                float op = Mathf.Min(1, it.t / .5f); string marca = "sem", resto = ""; float ang = 0; bool perto = false;
+                if (!float.IsNaN(it.x))
                 {
                     float dx = it.x - P.x, dz = it.z - P.z, d = Mathf.Sqrt(dx * dx + dz * dz), fr = dx * -Mathf.Sin(yaw) + dz * -Mathf.Cos(yaw), di = dx * Mathf.Cos(yaw) + dz * -Mathf.Sin(yaw);
-                    ang = Mathf.Atan2(di, fr); aqui = d < 3; if (d < 10 && it.cor != "rit") corTxt = Color.white;
-                    resto = aqui ? "aqui" : LADOS[((Mathf.RoundToInt(ang / (Mathf.PI / 4)) % 8) + 8) % 8] + ", " + Mathf.RoundToInt(d) + " m";
+                    ang = Mathf.Atan2(di, fr); perto = d < 10; marca = d < 3 ? "aqui" : "seta";
+                    resto = d < 3 ? "aqui" : LADOS[((Mathf.RoundToInt(ang / (Mathf.PI / 4)) % 8) + 8) % 8] + ", " + Mathf.RoundToInt(d) + " m";
                 }
-                corTxt.a = op; var corM = MUDO; corM.a = op;
-                string txt = Cor(it.txt, corTxt) + (resto != "" ? "  <size=13>" + Cor(resto, corM) + "</size>" : "");
-                float w = Mathf.Min(560, st.CalcSize(new GUIContent(txt)).x + 40); var r = new Rect(26, y - 22, w, 22); Caixa(r, new Color(0, 0, 0, .58f * op));
-                // seta para a origem do som (gira com o rumo); ponto cheio quando é aqui; anel quando não tem lugar
-                var c0 = new Vector2(r.x + 14, r.y + 11);
-                if (sem) GUI.Label(new Rect(c0.x - 8, c0.y - 11, 16, 22), Cor("○", corSeta), new GUIStyle(st) { alignment = TextAnchor.MiddleCenter });
-                else if (aqui) GUI.Label(new Rect(c0.x - 8, c0.y - 11, 16, 22), Cor("●", corSeta), new GUIStyle(st) { alignment = TextAnchor.MiddleCenter, fontSize = 12 });
-                else { var mt = GUI.matrix; Tracos.Girar(ang * Mathf.Rad2Deg, c0); GUI.Label(new Rect(c0.x - 8, c0.y - 11, 16, 22), Cor("▲", corSeta), new GUIStyle(st) { alignment = TextAnchor.MiddleCenter, fontSize = 13 }); GUI.matrix = mt; }
-                GUI.Label(new Rect(r.x + 28, r.y, w - 30, 22), txt, st); y -= 25;
+                // .perto vem depois de .rit no CSS: perto, até o ritual fica branco
+                Color ct = perto ? Color.white : it.cor == "rit" ? new Color(1f, .604f, .671f) : TEXTO_LEG; ct.a = op;
+                Color cm = it.cor == "rit" ? CARMIM_HI : marca == "seta" && it.cor == "cult" ? new Color(.773f, .549f, 1f) : OURO_VIVO; cm.a = op;
+                var st = Css("400", 15, ct); var sm = Css("400", 13, new Color(MUDO.r, MUDO.g, MUDO.b, op));
+                float wt = Larg(it.txt, st), ws = resto != "" ? Larg(resto, sm) : 0, w = 8 + 12 + 7 + wt + (resto != "" ? 7 + ws : 0) + 12;
+                float x = toque ? W - 200 - w : 26; Caixa(new Rect(x, y, w, h), new Color(0, 0, 0, .58f * op));
+                float cx = x + 8 + 6, cy = y + 2 + lh / 2;
+                if (marca == "seta") Tracos.SetaSom(cx, cy, ang, cm);
+                else if (marca == "aqui" || it.cor == "rit") Tracos.Disco(cx, cy, 4, cm);   // .rit i.sem também é cheio
+                else Tracos.Anel(cx, cy, 3.5f, 1, cm);
+                Linha(x + 27, y + 2, wt + 4, lh, it.txt, st, .8f);
+                if (resto != "") Linha(x + 27 + wt + 7, y + 2 + (lh - lhS) / 2, ws + 4, lhS, resto, sm, .8f);
+                y += toque ? h + 3 : -(h + 3);
             }
-            foreach (var k in mortos) LEG.Remove(k);
         }
 
         // legendas que nascem dos eventos (handleEvents do navegador): o que o jogador não fez e não é passo de aliado
@@ -317,7 +332,7 @@ namespace RitualReversal
             }
             h = Mathf.Min(h + 10 + 1, H - 300); var caixa = new Rect(x, y, w, h);
             Caixa(caixa, new Color(8 / 255f, 9 / 255f, 11 / 255f, .97f)); Moldura(caixa, new Color(.91f, .878f, .816f, .16f));
-            GUI.BeginGroup(new Rect(x + 1, y + 1, w - 2, h - 2));   // o overflow:hidden
+            Grupo(new Rect(x + 1, y + 1, w - 2, h - 2));   // o overflow:hidden
             float yy = 10; Espacada(14 - 1, yy, LN(12), "CADERNO DOS ALTARES · " + EntradaUnity.Nome("caderno").ToUpper() + " FECHA", Css("400", 12, GOLD), .96f); yy += LN(12) + 4;
             for (int i = 0; i < dados.Count; i++)
             {
@@ -327,7 +342,7 @@ namespace RitualReversal
                 float yd = yl + hN; yd += Paragrafo(13, yd, wc, lhD, d[2], stD); if (d[4] != null) Paragrafo(13, yd + 1, wc, lhE, d[4], stE);
                 yy += blocos[i];
             }
-            GUI.EndGroup();
+            FimGrupo();
         }
         // letter-spacing: cada letra com o espaço a mais depois dela
         // o mesmo na linha de base; devolve a largura (cada letra soma o espaçamento, a última também, como no CSS)

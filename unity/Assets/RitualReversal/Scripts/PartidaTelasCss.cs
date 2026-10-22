@@ -29,8 +29,8 @@ namespace RitualReversal
                 var f = primeiroFoco.Value; float fy = 16 + 1 + 26 + f.y;
                 if (fy < rolPainel.y || fy + f.height > rolPainel.y + H) rolPainel.y = Mathf.Clamp(fy + f.height / 2 - H / 2, 0, h + 32 - H);
             }
-            rolPainel = GUI.BeginScrollView(new Rect(0, 0, W, H), rolPainel, new Rect(0, 0, W - 20, h + 32), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-            var rr = new Rect((W - 20 - w) / 2, 16, w, h); ComTransformacao(rr.center.x, rr.y, rr.center.x, rr.y, k, () => { PainelCss(rr); corpo(rr.x + 41, rr.y + 27, wc); }); GUI.EndScrollView();
+            rolPainel = Rolagem(new Rect(0, 0, W, H), rolPainel, new Rect(0, 0, W - 20, h + 32));
+            var rr = new Rect((W - 20 - w) / 2, 16, w, h); ComTransformacao(rr.center.x, rr.y, rr.center.x, rr.y, k, () => { PainelCss(rr); corpo(rr.x + 41, rr.y + 27, wc); }); FimRolagem();
         }
 
         // .choices: cartões em 2 ou 3 colunas, 14 px entre eles; o conteúdo no meio da altura (é um <button>)

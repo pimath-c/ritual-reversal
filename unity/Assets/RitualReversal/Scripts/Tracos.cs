@@ -11,9 +11,10 @@ namespace RitualReversal
         static Texture2D disco, seta; static readonly Dictionary<int, Texture2D> aneis = new Dictionary<int, Texture2D>();
         static Texture2D Gerar(int N, System.Func<float, float, float> cob)
         {
-            var t = new Texture2D(N, N, TextureFormat.RGBA32, false); var p = new Color[N * N];
+            // com mipmaps: um anel fino de 96 px desenhado com 11 px não se parte na amostragem
+            var t = new Texture2D(N, N, TextureFormat.RGBA32, true); var p = new Color[N * N];
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) p[y * N + x] = new Color(1, 1, 1, Mathf.Clamp01(cob((x + .5f) / N * 2 - 1, (y + .5f) / N * 2 - 1)));
-            t.SetPixels(p); t.Apply(false, true); t.wrapMode = TextureWrapMode.Clamp; t.filterMode = FilterMode.Bilinear; return t;
+            t.SetPixels(p); t.Apply(true, true); t.wrapMode = TextureWrapMode.Clamp; t.filterMode = FilterMode.Trilinear; return t;
         }
         const int N = 96;
         static Texture2D TexDisco { get { if (disco == null) disco = Gerar(N, (x, y) => (1 - Mathf.Sqrt(x * x + y * y)) * N / 2 + .5f); return disco; } }
@@ -105,6 +106,27 @@ namespace RitualReversal
         {
             int n = Mathf.Max(3, Mathf.CeilToInt(2 * meia * r / Mathf.Max(.8f, e * .45f)));
             for (int i = 0; i <= n; i++) { float a = ang - meia + 2 * meia * i / n - Mathf.PI / 2; Disco(x + Mathf.Cos(a) * r, y + Mathf.Sin(a) * r, e / 2, c); }
+        }
+        // a seta das legendas dos sons (o svg "M6 0L12 7H8V14H4V7H0Z", 12 × 14, ponta para cima), girada em volta do centro
+        static Texture2D setaSom;
+        public static void SetaSom(float x, float y, float rad, Color c)
+        {
+            if (setaSom == null)
+            {
+                var P = new[] { new Vector2(0, -7), new Vector2(6, 0), new Vector2(2, 0), new Vector2(2, 7), new Vector2(-2, 7), new Vector2(-2, 0), new Vector2(-6, 0) };
+                setaSom = Gerar(N, (u, v) =>
+                {
+                    var q = new Vector2(u * 7, -v * 7); bool dentro = false; float d = 1e9f;   // a linha 0 da textura é a de baixo
+                    for (int i = 0, j = P.Length - 1; i < P.Length; j = i++)
+                    {
+                        Vector2 a = P[j], b = P[i], ab = b - a;
+                        if ((b.y > q.y) != (a.y > q.y) && q.x < (a.x - b.x) * (q.y - b.y) / (a.y - b.y) + b.x) dentro = !dentro;
+                        float t = Mathf.Clamp01(Vector2.Dot(q - a, ab) / ab.sqrMagnitude); d = Mathf.Min(d, Vector2.Distance(q, a + ab * t));
+                    }
+                    return (dentro ? d : -d) * N / 14 + .5f;
+                });
+            }
+            var m = GUI.matrix; Girar(rad * Mathf.Rad2Deg, new Vector2(x, y)); Tinge(new Rect(x - 7, y - 7, 14, 14), setaSom, c); GUI.matrix = m;
         }
         public static void SetaJogador(float x, float y, float escala, float grausHorario, Color c)
         {

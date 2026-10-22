@@ -190,6 +190,10 @@ namespace UnityEngine
     {
         public float r, g, b, a;
         public Color(float r, float g, float b, float a = 1) { this.r = r; this.g = g; this.b = b; this.a = a; }
+        // como o do Unity: iguais quando a diferença quase some
+        public static bool operator ==(Color p, Color q) { float dr = p.r - q.r, dg = p.g - q.g, db = p.b - q.b, da = p.a - q.a; return dr * dr + dg * dg + db * db + da * da < 9.99999944E-11f; }
+        public static bool operator !=(Color p, Color q) { return !(p == q); }
+        public override bool Equals(object o) { return o is Color && this == (Color)o; } public override int GetHashCode() { return r.GetHashCode() ^ g.GetHashCode() << 2 ^ b.GetHashCode() >> 2 ^ a.GetHashCode() >> 1; }
         public static Color white { get { return new Color(1, 1, 1, 1); } }
         public static Color black { get { return new Color(0, 0, 0, 1); } }
         public static Color clear { get { return new Color(0, 0, 0, 0); } }
@@ -226,6 +230,7 @@ namespace UnityEngine
         public Rect(float x, float y, float w, float h) { this.x = x; this.y = y; width = w; height = h; }
         public float xMin { get { return x; } } public float yMin { get { return y; } } public float xMax { get { return x + width; } } public float yMax { get { return y + height; } }
         public Vector2 center { get { return new Vector2(x + width / 2, y + height / 2); } }
+        public Vector2 position { get { return new Vector2(x, y); } set { x = value.x; y = value.y; } }
         public bool Contains(Vector2 p) { return p.x >= x && p.x < xMax && p.y >= y && p.y < yMax; }
     }
     public struct Bounds

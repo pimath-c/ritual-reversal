@@ -58,8 +58,8 @@ namespace RitualReversal
             if (22 + hc + 18 <= H) { CorpoArsenal(x0 + 20, 22, w - 40, S); return; }
             // a barra de rolagem come a largura do conteúdo, como no navegador
             float wc = w - 40 - 15; medindo = true; hc = CorpoArsenal(0, 0, wc, S); medindo = false;
-            arsRolagem = GUI.BeginScrollView(new Rect(x0, 0, w, H), arsRolagem, new Rect(0, 0, w - 15, 22 + hc + 18), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-            CorpoArsenal(20, 22, wc, S); GUI.EndScrollView();
+            arsRolagem = Rolagem(new Rect(x0, 0, w, H), arsRolagem, new Rect(0, 0, w - 15, 22 + hc + 18));
+            CorpoArsenal(20, 22, wc, S); FimRolagem();
         }
         float CorpoArsenal(float x, float y, float w, SkinsFP S)
         {
@@ -113,7 +113,7 @@ namespace RitualReversal
             string of = (O != null ? O[0] : sk.oficio).ToUpperInvariant(); var stO = Css("sys", 11, co); float esp = 11 * .08f, wo = EspacadaNaBase(0, 0, of, stO, esp, false) + 14 + 2, ho = LNsis(11) + 4 + 2;
             var rp = new Rect(xi + wi - wo, yi, wo, ho); GUI.Box(rp, GUIContent.none, EstiloPilula(co)); EspacadaNaBase(rp.x + 8, rp.y + 3 + Ar(11 * subSis), of, stO, esp);
             var stB = Css("serif", 18, BONE); NaBase(xi, yi + bas, wi, sk.nome, stB);
-            if (emUso) NaBase(xi + Larg(sk.nome, stB) + Larg(" ", Css("sys", 13, GOLD)), yi + bas, 200, "· em uso", Css("sys", 13, GOLD));
+            if (emUso) NaBase(xi + Larg(sk.nome, stB) + LargEspaco(Css("sys", 13, GOLD)), yi + bas, 200, "· em uso", Css("sys", 13, GOLD));
             Paragrafo(xi, yi + hl + 6, wi, lhP, sk.texto, stP);
             return h;
         }

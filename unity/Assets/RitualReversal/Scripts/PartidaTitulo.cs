@@ -24,8 +24,8 @@ namespace RitualReversal
             if (altTitulo + 32 <= H) { float y0 = (H - altTitulo) / 2; ComTransformacao(x + w / 2, y0, x + w / 2, y0, k, () => ColunaTitulo(x, y0, w)); }
             else
             {
-                rolTitulo = GUI.BeginScrollView(new Rect(0, 0, W, H), rolTitulo, new Rect(0, 0, W - 20, altTitulo + 32), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-                ComTransformacao(x + w / 2, 16, x + w / 2, 16, k, () => ColunaTitulo(x, 16, w)); GUI.EndScrollView();
+                rolTitulo = Rolagem(new Rect(0, 0, W, H), rolTitulo, new Rect(0, 0, W - 20, altTitulo + 32));
+                ComTransformacao(x + w / 2, 16, x + w / 2, 16, k, () => ColunaTitulo(x, 16, w)); FimRolagem();
             }
         }
         float ColunaTitulo(float x, float y0, float w)

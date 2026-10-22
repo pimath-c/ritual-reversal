@@ -29,28 +29,32 @@ namespace RitualReversal
         // transform: scale(s) com o transform-origin no ponto (ox, oy) do lugar do computador, levado para (nx, ny)
         void ComTransformacao(float ox, float oy, float nx, float ny, float s, System.Action desenho)
         {
-            var m0 = GUI.matrix; GUI.matrix = m0 * Matrix4x4.TRS(new Vector3(nx, ny, 0), Quaternion.identity, new Vector3(s, s, 1)) * Matrix4x4.TRS(new Vector3(-ox, -oy, 0), Quaternion.identity, Vector3.one);
+            // o pivô no espaço depois do recorte (o IMGUI soma o deslocamento da rolagem antes do GUI.matrix)
+            var c = OrigemRecorte; var m0 = GUI.matrix; GUI.matrix = m0 * Matrix4x4.TRS(new Vector3(nx + c.x, ny + c.y, 0), Quaternion.identity, new Vector3(s, s, 1)) * Matrix4x4.TRS(new Vector3(-ox - c.x, -oy - c.y, 0), Quaternion.identity, Vector3.one);
             try { desenho(); } finally { GUI.matrix = m0; }
         }
         void Topo(string papel, string relogio, string fase, bool grande, string regra, int nos, int eles)
         {
             var stLado = Css("400", 14, MUDO); var stNum = Css("600", 30, BONE);
             var stRel = Css("600", 36, grande ? Hx("#ff5a6e") : BONE, TextAnchor.UpperCenter); var stFase = Css("serif", 14, grande ? Hx("#ff8a98") : GOLD, TextAnchor.UpperCenter);
-            var stRegra = Css("400", 11, MUDO, TextAnchor.UpperCenter);
+            var stRegra = Css("400", 11, MUDO);
             string nA = papel == "H" ? "Sua equipe (caça)" : "Sua equipe (culto)", nB = papel == "H" ? "Adversários (culto)" : "Adversários (caça)";
             if (hudToque) { nA = nB = ""; regra = ""; }   // body.toque: #top .side span e #regra somem
-            float wNA = Larg(nos.ToString(), stNum) + 12, wNB = Larg(eles.ToString(), stNum) + 12;
-            float wRel = Mathf.Max(88, Larg(relogio, stRel), Larg(fase, stFase), Larg(regra, stRegra) * 1.05f);
-            float minLado = hudToque ? 40 : 150, ladoA = Mathf.Max(minLado, Larg(nA, stLado) + wNA), ladoB = Mathf.Max(minLado, Larg(nB, stLado) + wNB), total = ladoA + 22 + wRel + 22 + ladoB;
+            // letter-spacing: .01em do lado (14 px, herdado também pelo número) e .05em da regra (11 px)
+            const float eL = .14f, eR = .55f;
+            float wNA = Larg(nos.ToString(), stNum) + nos.ToString().Length * eL + 12, wNB = Larg(eles.ToString(), stNum) + eles.ToString().Length * eL + 12;
+            float lA = EspacadaNaBase(0, 0, nA, stLado, eL, false), lB = EspacadaNaBase(0, 0, nB, stLado, eL, false), wReg = EspacadaNaBase(0, 0, regra, stRegra, eR, false);
+            float wRel = Mathf.Max(88, Larg(relogio, stRel), Larg(fase, stFase), wReg);
+            float minLado = hudToque ? 40 : 150, ladoA = Mathf.Max(minLado, lA + wNA), ladoB = Mathf.Max(minLado, lB + wNB), total = ladoA + 22 + wRel + 22 + ladoB;
             float x0 = W / 2 - total / 2, y0 = 14, hRel = 36 * 1.05f, hFase = AlturaNormal(stFase), hRegra = regra == "" ? -1 : LN(11f), hWrap = hRel + hFase + 1 + hRegra, xw = x0 + ladoA + 22;
             if (grande) Tracos.Brilho(W / 2, y0 + hRel / 2, Larg(relogio, stRel) * .8f + 18, 30, new Color(.878f, .263f, .369f, .45f));
             NaBase(xw, y0 + (hRel - AlturaNormal(stRel)) / 2 + 36 + 2, wRel, relogio, Css("600", 36, new Color(0, 0, 0, .45f), TextAnchor.UpperCenter));   // text-shadow 0 2px 10px
             Linha(xw, y0, wRel, hRel, relogio, stRel);
             Linha(xw, y0 + hRel, wRel, hFase, fase, stFase);
-            if (regra != "") Linha(xw, y0 + hRel + hFase + 1, wRel, hRegra, regra, stRegra);
+            if (regra != "") EspacadaNaBase(xw + (wRel - wReg) / 2, y0 + hRel + hFase + 1 + (hRegra - AlturaNormal(stRegra)) / 2 + SubidaPx(stRegra), regra, stRegra, eR);
             float bas = y0 + (hWrap - 36) / 2 + 30;   // a linha de base comum do nome e do número
-            float xa = x0 + ladoA - wNA; NaBase(xa + 6, bas, wNA - 12, nos.ToString(), stNum); NaBase(xa - Larg(nA, stLado), bas, Larg(nA, stLado) + 2, nA, stLado);
-            float xb = xw + wRel + 22; NaBase(xb + 6, bas, wNB - 12, eles.ToString(), stNum); NaBase(xb + wNB, bas, Larg(nB, stLado) + 2, nB, stLado);
+            float xa = x0 + ladoA - wNA; NaBase(xa + 6, bas, wNA - 12, nos.ToString(), stNum); EspacadaNaBase(xa - lA, bas, nA, stLado, eL);
+            float xb = xw + wRel + 22; NaBase(xb + 6, bas, wNB - 12, eles.ToString(), stNum); EspacadaNaBase(xb + wNB, bas, nB, stLado, eL);
         }
         // texto pela linha de base (como o alinhamento de linha do navegador entre tamanhos diferentes)
         void NaBase(float x, float baseline, float w, string txt, GUIStyle st, float sombra = 0)
@@ -103,17 +107,22 @@ namespace RitualReversal
             List<Tarefa> T; if (!g.tarefas.TryGetValue(papel, out T) || T.Count == 0) return;
             // body.toque: à esquerda, 128 px do topo, 220 de largura, letra de 11 (o título 13) e linha de 1,25
             bool tq = hudToque; float x = tq ? 12 : W - 26 - 300, y = tq ? 128 : 120, w = tq ? 220 : 300, ft = tq ? 13 : 17, fi = tq ? 11 : 14.5f, lk = tq ? 1.25f : 1.35f;
-            var tit = Css("serif", Mathf.RoundToInt(ft), GOLD); Linha(x, y, w, ft * lk, "Tarefas da equipe", tit, .9f); y += ft * lk + (tq ? 2 : 4);
+            var tit = Css("serif", Mathf.RoundToInt(ft), GOLD); Linha(x, y, w, ft * lk, "Tarefas da equipe", tit, .9f); y += ft * lk + Mathf.Max(tq ? 2 : 4, 3);   // a margem de baixo do b colapsa com a de cima (3) da primeira tarefa
             float lh = fi * lk;
             foreach (var t in T)
             {
-                var st = Css("400", tq ? 11 : 15, t.feita ? Hx("#8f978a") : Hx("#d8cfbf"));
-                string txt = (t.feita ? "✓" : "○") + " " + t.nome + (t.meta > 0 ? " " + Cor(t.prog + "/" + t.meta, MUDO) : "");
-                var ls = Quebrar(txt, st, w);
+                var cor = t.feita ? Hx("#8f978a") : Hx("#d8cfbf"); var st = Css("400", tq ? 11 : 15, cor);
+                // o ○ não existe na Barlow: o navegador pega o da fonte reserva (DejaVu Sans: avanço .873em, anel de .762em
+                // com traço de .056em, centro a .26em da linha de base); aqui ele é desenhado, igual em qualquer sistema
+                float rc = t.feita ? 0 : fi * .873f + LargEspaco(st);
+                string txt = (t.feita ? "✓ " : "") + t.nome + (t.meta > 0 ? " " + Cor(t.prog + "/" + t.meta, MUDO) : "");
+                var ls = Quebrar(txt, st, w, rc);
                 for (int i = 0; i < ls.Count; i++)
                 {
-                    Linha(x, y + i * lh, w, lh, ls[i], st, .9f);
-                    if (t.feita) { float bas = y + i * lh + (lh - AlturaNormal(st)) / 2 + st.fontSize; Caixa(new Rect(x, bas - st.fontSize * .3f, Larg(ls[i], st), 1), Hx("#8f978a")); }
+                    float xi = i == 0 ? x + rc : x; Linha(xi, y + i * lh, w, lh, ls[i], st, .9f);
+                    float bas = PixelY(y + i * lh + Mathf.Floor((lh - AlturaNormal(st)) / 2) + SubidaPx(st));
+                    if (i == 0 && !t.feita) { float r = fi * (.381f - .028f), cx = x + fi * .436f, cy = bas - fi * .2605f; Tracos.Anel(cx, cy + 1, r, fi * .056f + .6f, new Color(0, 0, 0, .9f)); Tracos.Anel(cx, cy, r, fi * .056f, cor); }
+                    if (t.feita) Caixa(new Rect(xi, bas - st.fontSize * .3f, Larg(ls[i], st), 1), Hx("#8f978a"));
                 }
                 y += ls.Count * lh + 3;
             }
@@ -161,22 +170,24 @@ namespace RitualReversal
         void KitHud(Ator m)
         {
             // body.toque: sem a fileira de ferramentas; a munição com o canto de baixo à direita em (W - 190, H - 96)
-            float xd = hudToque ? W - 190 : W - 26, hTool = 37.8f, yTools = H - 20 - hTool, yAmmo = hudToque ? H - 96 - 52 : yTools - 6 - 52;
-            string grande, peq; if (m.team == "H") { if (m.reloadT > 0) { grande = ""; peq = "recarregando…"; } else { grande = m.ammo.ToString(); peq = "/ " + m.reserve; } } else { grande = Mathf.FloorToInt((float)m.fervor).ToString(); peq = "Fervor"; }
-            var stG = Css("600", 52, BONE); var stP = Css("500", 19, MUDO); float wP = Larg(peq, stP), wG = grande.Length > 0 ? Larg(grande, stG) + Larg(" ", stG) : 0, bas = yAmmo + (52 - AlturaNormal(stG)) / 2 + 52;
-            Tracos.Brilho(xd - (wP + wG) / 2, bas - 18, (wP + wG) / 2 + 16, 30, new Color(0, 0, 0, .35f));   // text-shadow 0 2px 12px
-            if (grande.Length > 0) NaBase(xd - wP - wG, bas, wG, grande, stG, .6f); NaBase(xd - wP, bas, wP + 2, peq, stP, .6f);
-            // as ferramentas (buildTools), da direita para a esquerda
+            // as ferramentas (buildTools), da direita para a esquerda; a fileira tem a altura da mais alta (flex estica todas)
             var F = Regras.FEITICOS[m.feitico]; var L = new List<object[]>();
             if (m.team == "H") { L.Add(new object[] { EntradaUnity.Nome("sensor"), "Sensor", null, (float)(m.sensorCd / 15), false }); L.Add(new object[] { EntradaUnity.Nome("lantern"), "Lanterna", null, (float)((100 - m.carga) / 100), m.lantern }); L.Add(new object[] { EntradaUnity.Nome("flare"), "Flare", m.flares.ToString(), 0f, false }); }
             else { L.Add(new object[] { "☉", "Reagentes", m.reag.ToString(), 0f, false }); L.Add(new object[] { EntradaUnity.Nome("use"), "Chamariz", g.decoys.ToString(), 0f, false }); }
             L.Add(new object[] { EntradaUnity.Nome("abil"), F.nome, null, (float)(m.abilCd / F.cd), false });
-            var stK = Css("700", 12, GOLD, TextAnchor.UpperCenter); var stN = Css("400", 12, BONE, TextAnchor.UpperCenter); float x = xd;
+            var stK = Css("700", 12, GOLD, TextAnchor.UpperCenter); var stN = Css("400", 12, BONE, TextAnchor.UpperCenter);
+            float lhK = 0; foreach (var t in L) lhK = Mathf.Max(lhK, AlturaNormalCom((string)t[0], stK));
+            float xd = hudToque ? W - 190 : W - 26, hTool = lhK + LN(12f) + 3 + 4 + 2, yTools = H - 20 - hTool, yAmmo = hudToque ? H - 96 - 52 : yTools - 6 - 52;
+            string grande, peq; if (m.team == "H") { if (m.reloadT > 0) { grande = ""; peq = "recarregando…"; } else { grande = m.ammo.ToString(); peq = "/ " + m.reserve; } } else { grande = Mathf.FloorToInt((float)m.fervor).ToString(); peq = "Fervor"; }
+            var stG = Css("600", 52, BONE); var stP = Css("500", 19, MUDO); float wP = Larg(peq, stP), wG = grande.Length > 0 ? Larg(grande, stG) + LargEspaco(stG) : 0, bas = yAmmo + (52 - AlturaNormal(stG)) / 2 + 52;
+            Tracos.Brilho(xd - (wP + wG) / 2, bas - 18, (wP + wG) / 2 + 16, 30, new Color(0, 0, 0, .35f));   // text-shadow 0 2px 12px
+            if (grande.Length > 0) NaBase(xd - wP - wG, bas, wG, grande, stG, .6f); NaBase(xd - wP, bas, wP + 2, peq, stP, .6f);
+            float x = xd;
             for (int i = hudToque ? -1 : L.Count - 1; i >= 0; i--)
             {
                 var t = L[i]; string nome = (string)t[1] + (t[2] != null ? " <b>" + t[2] + "</b>" : ""); float tw = Mathf.Max(58, Mathf.Max(Larg((string)t[0], stK), Larg(nome, stN)) + 18); x -= tw;
                 var r = new Rect(x, yTools, tw, hTool); Caixa(r, new Color(0, 0, 0, .35f)); Moldura(r, (bool)t[4] ? GOLD : new Color(.91f, .878f, .816f, .14f));
-                Linha(r.x, r.y + 4, tw, LN(12f), (string)t[0], stK); Linha(r.x, r.y + 4 + LN(12f), tw, LN(12f), nome, stN);
+                float lk = AlturaNormalCom((string)t[0], stK); Linha(r.x, r.y + 4, tw, lk, (string)t[0], stK); Linha(r.x, r.y + 4 + lk, tw, LN(12f), nome, stN);
                 float cd = Mathf.Clamp01((float)t[3]); if (cd > 0) Caixa(new Rect(r.x + 1, r.yMax - 1 - (hTool - 2) * cd, tw - 2, (hTool - 2) * cd), new Color(0, 0, 0, .65f));
                 x -= 5;
             }
@@ -222,16 +233,19 @@ namespace RitualReversal
             else if (s > 0) nota = s >= 2 ? "Selando em dupla" : "Selando";
             else if (n == 0) nota = noCirculo.Count > 0 ? "Ninguém canaliza: quem ataca não celebra" : R.prog > R.cp ? "Círculo vazio: o ritual recua até o checkpoint" : "Círculo vazio";
             else { double mf = Sim.MareFactor(g); nota = n + " " + (n > 1 ? "canalizando" : "canalizando sozinho") + (mf > 1 ? ", Maré Profana +" + Mathf.RoundToInt((float)(mf - 1) * 100) + "%" : ""); }
-            var stT = Css("serif", 17, BONE, TextAnchor.UpperCenter); float hT = AlturaNormal(stT), hR = LN(14f), h = 1 + 10 + hT + 6 + 2 * (4 + hR) + 5 + 16 + 12 + 1, w = 440;
-            var caixa = new Rect(W / 2 - w / 2, H - 150 - h, w, h); Placa(caixa);
-            float x = caixa.x + 17, y = caixa.y + 11, wc = w - 34; Linha(x, y, wc, hT, R.name, stT); y += hT + 6;
-            Fileira(x, y + 4, wc, hR, "Ritual", (float)R.prog, Hx("#6b1224"), CrimsonHi, true); y += 4 + hR;
-            Fileira(x, y + 4, wc, hR, "Selamento", (float)R.seal, Hx("#7b5a24"), GOLD_HI, false); y += 4 + hR;
+            // #race: 440 de largura, padding 10 16 12, 150 px do fundo; body.toque: min(360px, 40vw), padding 5 10, 6 px do fundo,
+            // título de 14 e fileiras de 12 com margin-top 2
+            bool tq = hudToque; int fT = tq ? 14 : 17, fR = tq ? 12 : 14; float pv = tq ? 5 : 10, pb = tq ? 5 : 12, ph = tq ? 10 : 16, mt = tq ? 2 : 4;
+            var stT = Css("serif", fT, BONE, TextAnchor.UpperCenter); float hT = AlturaNormal(stT), hR = LN(fR), h = 1 + pv + hT + 6 + 2 * (mt + hR) + 5 + 16 + pb + 1, w = tq ? Mathf.Min(360, W * .4f) : 440;
+            var caixa = new Rect(W / 2 - w / 2, H - (tq ? 6 : 150) - h, w, h); Placa(caixa);
+            float x = caixa.x + 1 + ph, y = caixa.y + 1 + pv, wc = w - 2 - 2 * ph; Linha(x, y, wc, hT, R.name, stT); y += hT + 6;
+            Fileira(x, y + mt, wc, hR, fR, "Ritual", (float)R.prog, Hx("#6b1224"), CrimsonHi, true); y += mt + hR;
+            Fileira(x, y + mt, wc, hR, fR, "Selamento", (float)R.seal, Hx("#7b5a24"), GOLD_HI, false); y += mt + hR;
             Linha(x, y + 5, wc, 16, nota, Css("400", 13, MUDO, TextAnchor.UpperCenter));
         }
-        void Fileira(float x, float y, float w, float lh, string rotulo, float v, Color a, Color b, bool marcas)
+        void Fileira(float x, float y, float w, float lh, int tam, string rotulo, float v, Color a, Color b, bool marcas)
         {
-            var st = Css("400", 14, BONE); Linha(x, y, 78, lh, rotulo, st);
+            var st = Css("400", tam, BONE); Linha(x, y, 78, lh, rotulo, st);
             var tr = new Rect(x + 78 + 8, y + (lh - 10) / 2, w - 78 - 44 - 16, 10); Caixa(tr, Hx("#101316")); Moldura(tr, Hx("#333a42"));
             if (v > 0) PintarDegrade(new Rect(tr.x + 1, tr.y + 1, (tr.width - 2) * Mathf.Clamp01(v), 8), a, b, false);
             if (marcas) foreach (var f in new[] { .25f, .75f }) Caixa(new Rect(tr.x + 1 + (tr.width - 2) * f, tr.y - 3, 2, 16), new Color(.91f, .878f, .816f, .6f));
@@ -280,10 +294,13 @@ namespace RitualReversal
         void AnuncioHud()
         {
             if (anuncioT <= 0) return; anuncioT -= dtG; float op = Mathf.Clamp01(Mathf.Min((4.5f - anuncioT) / .6f, anuncioT / 1.2f));
-            var stB = Css("serif", 68, new Color(BONE.r, BONE.g, BONE.b, op), TextAnchor.UpperCenter); var stS = Css("400", 20, new Color(201 / 255f, 191 / 255f, 174 / 255f, op), TextAnchor.UpperCenter);
-            float hB = AlturaNormal(stB), hS = anuncioSub != "" ? 24 : 0, y = H * .3f - (hB + hS) / 2;
+            // b: clamp(40px, 6vw, 68px) (34 px no toque); o span em linha (20 px, 14 no toque) divide a linha com o strut do
+            // corpo (Barlow 16: 16 de subida, 3 de descida)
+            int tB = hudToque ? 34 : Mathf.RoundToInt(Mathf.Clamp(W * .06f, 40, 68)), tS = hudToque ? 14 : 20;
+            var stB = Css("serif", tB, new Color(BONE.r, BONE.g, BONE.b, op), TextAnchor.UpperCenter); var stS = Css("400", tS, new Color(201 / 255f, 191 / 255f, 174 / 255f, op), TextAnchor.UpperCenter);
+            float sS = Mathf.Max(16, SubidaPx(stS)), hB = AlturaNormal(stB), hS = anuncioSub != "" ? sS + Mathf.Max(3, AlturaNormal(stS) - SubidaPx(stS)) : 0, y = H * .3f - (hB + hS) / 2;
             Tracos.Brilho(W / 2, y + hB / 2 + 4, Larg(anuncio, stB) / 2 + 60, hB / 2 + 30, new Color(0, 0, 0, .55f * op));   // text-shadow 0 2px 24px
-            Linha(0, y, W, hB, anuncio, stB); if (anuncioSub != "") Linha(0, y + hB, W, hS, anuncioSub, stS, .9f);
+            Linha(0, y, W, hB, anuncio, stB); if (anuncioSub != "") NaBase(0, y + hB + sS, W, anuncioSub, stS, .9f);
         }
         // #habNota: a nota da habilidade embaixo da mira, com a barra da cor do texto à esquerda
         void NotaHabilidade()

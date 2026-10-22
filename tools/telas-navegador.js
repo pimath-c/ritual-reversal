@@ -58,6 +58,9 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   // sem o mouse capturado o jogo mostra a pausa: para o HUD, finge o mouse preso
   await ev("locked=true; paused=false; screenKey=''; scr.classList.remove('on'); for(let i=0;i<60;i++) Sim.step(game,1/30)");
   await foto('hud',2500);
+  // as legendas dos sons, iguais às do roteiro do Unity: rumo zerado e quatro sons em volta da câmera
+  await ev("LOOK.yaw=0; { const P=camera.position; legenda('shot',P.x+14,P.z-14); legenda('corvo',P.x-6,P.z+8); legenda('collect',P.x+1,P.z+1); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); }");
+  await foto('legendas',700); await ev("limparLegendas()");
   await ev("locked=false; paused=true; screenKey=''"); await foto('pausa',900); await medir('pausa',['#scrBody','#scrBody h2','#scrBody p','.cola','.cola span','.cola kbd','.btnrow']);
   await ev("openSettings()"); await foto('pausa-ajustes',900);
   await ev("settingsOpen=false; locked=true; paused=false; screenKey=''; scr.classList.remove('on'); CAD.aberto=true"); await foto('caderno',1200);
