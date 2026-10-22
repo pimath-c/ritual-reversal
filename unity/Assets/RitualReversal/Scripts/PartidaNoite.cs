@@ -259,7 +259,7 @@ namespace RitualReversal
             GUILayout.Label("Rever a noite" + (UmaNoite ? "" : " · rodada " + repR), sTitulo);
             GUILayout.Label("<size=16>" + Cor((online ? "Os inimigos só aparecem onde você os viu. " : "") + "Os rastros mostram os últimos 20 segundos de cada um.", MUDO) + "</size>", sCentro);
             float mw = Mathf.Min(r.width, (r.height - 300) * PlantaFixa.L / PlantaFixa.A); var rm0 = GUILayoutUtility.GetRect(r.width, mw * PlantaFixa.A / PlantaFixa.L); var rm = new Rect(rm0.x + (rm0.width - mw) / 2, rm0.y, mw, rm0.height);
-            PlantaBase(rm); DesenharReplay(rm, R, cores);
+            PlantaBase(rm); var rmTela = new Rect(r.x + rm.x, r.y + rm.y, rm.width, rm.height);   // os rastros giram: vão depois da área
             GUILayout.BeginHorizontal();
             string bt = repPlay ? "Pausar" : repT >= fim - .5 ? "Repetir" : "Continuar";
             if (Bt(bt, sBotao, GUILayout.Width(150))) { if (repT >= fim - .5) repT = 0; repPlay = !repPlay; }
@@ -278,6 +278,7 @@ namespace RitualReversal
             GUILayout.FlexibleSpace(); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
             if (Bt("Voltar ao resultado", sBotao, GUILayout.Height(48), GUILayout.Width(300))) repAberto = false;
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndArea();
+            DesenharReplay(rmTela, R, cores);
         }
         void DesenharReplay(Rect rm, RodadaLT R, List<Color> cores)
         {

@@ -1,5 +1,6 @@
 // Traços do IMGUI para as camadas das telas que mudam a cada quadro (marcadores da planta, rastros do replay, linha do
-// tempo): discos, anéis, arcos, segmentos, losangos e a seta do jogador, tingidos com GUI.color.
+// tempo): discos, anéis, arcos, segmentos, losangos e a seta do jogador, tingidos com GUI.color. Os que giram (segmento,
+// losango, seta) só valem fora de GUILayout.BeginArea e de rolagens.
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -45,13 +46,17 @@ namespace RitualReversal
             }
         }
         static void Tinge(Rect r, Texture2D t, Color c) { var o = GUI.color; GUI.color = c; GUI.DrawTexture(r, t); GUI.color = o; }
+        // gira o que vier depois em volta de p (graus no sentido horário da tela). O GUIUtility.RotateAroundPivot põe o giro
+        // por fora do GUI.matrix sem passar o pivô pela escala: fora de 1080 linhas de tela o giro sai em volta do ponto errado.
+        // Aqui o giro entra por dentro da matriz; vale fora de áreas e grupos (lá dentro o deslocamento do grupo ficaria de fora)
+        public static void Girar(float graus, Vector2 p) { GUI.matrix = GUI.matrix * Matrix4x4.TRS(p, Quaternion.Euler(0, 0, graus), Vector3.one) * Matrix4x4.TRS(-p, Quaternion.identity, Vector3.one); }
         public static void Disco(float x, float y, float r, Color c) { Tinge(new Rect(x - r, y - r, 2 * r, 2 * r), TexDisco, c); }
         // stroke do SVG: a espessura fica metade para dentro e metade para fora do raio
         public static void Anel(float x, float y, float r, float e, Color c) { float R = r + e / 2; Tinge(new Rect(x - R, y - R, 2 * R, 2 * R), Anel(e / R), c); }
         public static void Seg(Vector2 a, Vector2 b, float e, Color c)
         {
             var d = b - a; float len = d.magnitude; if (len < .01f) return; var m = GUI.matrix;
-            GUIUtility.RotateAroundPivot(Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg, a); Tinge(new Rect(a.x, a.y - e / 2, len, e), Texture2D.whiteTexture, c); GUI.matrix = m;
+            Girar(Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg, a); Tinge(new Rect(a.x, a.y - e / 2, len, e), Texture2D.whiteTexture, c); GUI.matrix = m;
         }
         public static void Polilinha(IList<Vector2> p, float e, Color c) { for (int i = 0; i + 1 < p.Count; i++) Seg(p[i], p[i + 1], e, c); }
         // arco do progresso (stroke-dasharray com rotate(-90)): de cima, no sentido horário
@@ -62,13 +67,13 @@ namespace RitualReversal
         }
         public static void Losango(float x, float y, float meio, Color c, Color borda)
         {
-            var m = GUI.matrix; GUIUtility.RotateAroundPivot(45, new Vector2(x, y));
+            var m = GUI.matrix; Girar(45, new Vector2(x, y));
             if (borda.a > 0) Tinge(new Rect(x - meio - .7f, y - meio - .7f, 2 * meio + 1.4f, 2 * meio + 1.4f), Texture2D.whiteTexture, borda);
             Tinge(new Rect(x - meio, y - meio, 2 * meio, 2 * meio), Texture2D.whiteTexture, c); GUI.matrix = m;
         }
         public static void SetaJogador(float x, float y, float escala, float grausHorario, Color c)
         {
-            var m = GUI.matrix; GUIUtility.RotateAroundPivot(grausHorario, new Vector2(x, y)); float R = 9 * escala; Tinge(new Rect(x - R, y - R, 2 * R, 2 * R), Seta, c); GUI.matrix = m;
+            var m = GUI.matrix; Girar(grausHorario, new Vector2(x, y)); float R = 9 * escala; Tinge(new Rect(x - R, y - R, 2 * R, 2 * R), Seta, c); GUI.matrix = m;
         }
     }
 }

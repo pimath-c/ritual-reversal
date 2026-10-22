@@ -41,7 +41,8 @@ commits em português.
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/exportar-primeira-pessoa.js   # mudou arma.js/skins.js? regrava Resources/primeira-pessoa.*
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
     [THREE_DIR=<three@0.128.0>] NODE_PATH=$(npm root -g) node tools/unity-noite.js   # fim da noite do Unity (planta, gráfico, placar) numa noite de bots (Mono)
-    node tools/unity-telas.js               # telas do Unity (IMGUI) por todo o jogo e online contra o servidor, sem exceção e com Begin/End pareados (Mono)
+    [FOTOS=dist/telas/unity] node tools/unity-telas.js   # telas do Unity (IMGUI) por todo o jogo e online, layout do Unity em miniatura; FOTOS= grava PNG (Mono, Pillow)
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v6)
@@ -207,7 +208,13 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   tiro, linha de quadros/ping); brilho em `Pos.brilho`; pausa com a cola das teclas.
   Sem abrir o Unity, `tools/unity-telas.js` roda o `PartidaLocal` inteiro (Update e as duas passadas do OnGUI) contra
   `tools/cs/UnityFalso.cs` + `IMGUIFalso.cs` pelo roteiro de `tools/cs/TesteTelas.cs` (título, menus, noite de cada lado,
-  resumo, resultado, relatório, replay, perfil, tutorial, desafio, Arsenal); botões "apertados" pelo texto.
+  resumo, resultado, relatório, replay, perfil, tutorial, desafio, Arsenal); botões "apertados" pelo texto, no MouseUp.
+  O `IMGUIFalso.cs` tem o GUILayout do Unity em miniatura (o algoritmo do GUILayoutGroup: margens que se fundem, FlexibleSpace
+  com peso 10000, rolagem, áreas) e mede o texto com os TTF de verdade (cmap/hmtx); acusa o "Getting control N's position..."
+  quando o Repaint pede controles que o Layout não teve. Um clique que muda a tela no meio da passada é encerrado com
+  `GUIUtility.ExitGUI()` (`cliqueNaPassada` no `Bt`, try/catch em `OnGUI`). Com `FOTOS=` o Repaint grava o que desenhou e
+  `tools/foto-imgui.py` faz o PNG (texto rico sem `<u>`, que o Unity não tem; negrito e itálico sintéticos). Giros no IMGUI:
+  `Tracos.Girar` (o `RotateAroundPivot` erra o pivô com o GUI.matrix escalado, fora de 1080p); só fora de áreas.
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).

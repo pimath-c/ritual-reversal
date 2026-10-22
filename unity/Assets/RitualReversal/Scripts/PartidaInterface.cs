@@ -65,7 +65,7 @@ namespace RitualReversal
                 var c0 = new Vector2(r.x + 14, r.y + 11);
                 if (sem) GUI.Label(new Rect(c0.x - 8, c0.y - 11, 16, 22), Cor("○", corSeta), new GUIStyle(st) { alignment = TextAnchor.MiddleCenter });
                 else if (aqui) GUI.Label(new Rect(c0.x - 8, c0.y - 11, 16, 22), Cor("●", corSeta), new GUIStyle(st) { alignment = TextAnchor.MiddleCenter, fontSize = 12 });
-                else { var mt = GUI.matrix; GUIUtility.RotateAroundPivot(ang * Mathf.Rad2Deg, c0); GUI.Label(new Rect(c0.x - 8, c0.y - 11, 16, 22), Cor("▲", corSeta), new GUIStyle(st) { alignment = TextAnchor.MiddleCenter, fontSize = 13 }); GUI.matrix = mt; }
+                else { var mt = GUI.matrix; Tracos.Girar(ang * Mathf.Rad2Deg, c0); GUI.Label(new Rect(c0.x - 8, c0.y - 11, 16, 22), Cor("▲", corSeta), new GUIStyle(st) { alignment = TextAnchor.MiddleCenter, fontSize = 13 }); GUI.matrix = mt; }
                 GUI.Label(new Rect(r.x + 28, r.y, w - 30, 22), txt, st); y -= 25;
             }
             foreach (var k in mortos) LEG.Remove(k);

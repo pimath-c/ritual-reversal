@@ -42,6 +42,14 @@ namespace RitualReversal
         {
             Estilos(); ComecoNavPad();
             float esc = Screen.height / 1080f; GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = 1080f;
+            // um clique que muda a tela no meio da passada deixa o resto dela sem o layout que o Layout calculou: o Unity
+            // acusaria "Getting control N's position..." no console; ExitGUI encerra a passada sem erro (o próximo quadro já
+            // desenha a tela nova)
+            try { Telas(); }
+            catch (System.ArgumentException) { if (!cliqueNaPassada) throw; GUIUtility.ExitGUI(); }
+        }
+        void Telas()
+        {
             if (reconectando) { TelaReconexao(); return; }
             if (g == null) { if (online && noLobby) TelaLobby(); else TelaTitulo(); ToastConquista(); return; }
             switch (g.phase)

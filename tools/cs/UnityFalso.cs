@@ -235,12 +235,42 @@ namespace UnityEngine
         public Vector3 min { get { return center - extents; } } public Vector3 max { get { return center + extents; } }
         public void Encapsulate(Vector3 p) { var a = Vector3.Min(min, p); var b = Vector3.Max(max, p); center = (a + b) / 2; size = b - a; }
     }
+    // matriz de verdade (linha, coluna), para o GUI.matrix das fotos das telas; new Matrix4x4() é zero, como no Unity
     public struct Matrix4x4
     {
-        public static Matrix4x4 identity { get { return new Matrix4x4(); } }
-        public static Matrix4x4 TRS(Vector3 p, Quaternion q, Vector3 s) { return new Matrix4x4(); } public static Matrix4x4 Translate(Vector3 p) { return new Matrix4x4(); } public static Matrix4x4 Rotate(Quaternion q) { return new Matrix4x4(); }
-        public static Matrix4x4 Frustum(float l, float r, float b, float t, float n, float f) { return new Matrix4x4(); }
-        public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) { return a; }
+        public float m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33;
+        public float this[int l, int c]
+        {
+            get { switch (l * 4 + c) { case 0: return m00; case 1: return m01; case 2: return m02; case 3: return m03; case 4: return m10; case 5: return m11; case 6: return m12; case 7: return m13; case 8: return m20; case 9: return m21; case 10: return m22; case 11: return m23; case 12: return m30; case 13: return m31; case 14: return m32; default: return m33; } }
+            set { switch (l * 4 + c) { case 0: m00 = value; break; case 1: m01 = value; break; case 2: m02 = value; break; case 3: m03 = value; break; case 4: m10 = value; break; case 5: m11 = value; break; case 6: m12 = value; break; case 7: m13 = value; break; case 8: m20 = value; break; case 9: m21 = value; break; case 10: m22 = value; break; case 11: m23 = value; break; case 12: m30 = value; break; case 13: m31 = value; break; case 14: m32 = value; break; default: m33 = value; break; } }
+        }
+        public static Matrix4x4 identity { get { return new Matrix4x4 { m00 = 1, m11 = 1, m22 = 1, m33 = 1 }; } }
+        public static Matrix4x4 TRS(Vector3 p, Quaternion q, Vector3 s)
+        {
+            float x = q.x * 2, y = q.y * 2, z = q.z * 2, xx = q.x * x, yy = q.y * y, zz = q.z * z, xy = q.x * y, xz = q.x * z, yz = q.y * z, wx = q.w * x, wy = q.w * y, wz = q.w * z;
+            return new Matrix4x4
+            {
+                m00 = (1 - (yy + zz)) * s.x, m01 = (xy - wz) * s.y, m02 = (xz + wy) * s.z, m03 = p.x,
+                m10 = (xy + wz) * s.x, m11 = (1 - (xx + zz)) * s.y, m12 = (yz - wx) * s.z, m13 = p.y,
+                m20 = (xz - wy) * s.x, m21 = (yz + wx) * s.y, m22 = (1 - (xx + yy)) * s.z, m23 = p.z, m33 = 1
+            };
+        }
+        public static Matrix4x4 Translate(Vector3 p) { return TRS(p, Quaternion.identity, new Vector3(1, 1, 1)); }
+        public static Matrix4x4 Rotate(Quaternion q) { return TRS(Vector3.zero, q, new Vector3(1, 1, 1)); }
+        public static Matrix4x4 Scale(Vector3 s) { return TRS(Vector3.zero, Quaternion.identity, s); }
+        public static Matrix4x4 Frustum(float l, float r, float b, float t, float n, float f)
+        {
+            return new Matrix4x4 { m00 = 2 * n / (r - l), m02 = (r + l) / (r - l), m11 = 2 * n / (t - b), m12 = (t + b) / (t - b), m22 = -(f + n) / (f - n), m23 = -2 * f * n / (f - n), m32 = -1 };
+        }
+        public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b)
+        {
+            var o = new Matrix4x4();
+            for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) { float v = 0; for (int k = 0; k < 4; k++) v += a[i, k] * b[k, j]; o[i, j] = v; }
+            return o;
+        }
+        public Vector3 MultiplyPoint3x4(Vector3 p) { return new Vector3(m00 * p.x + m01 * p.y + m02 * p.z + m03, m10 * p.x + m11 * p.y + m12 * p.z + m13, m20 * p.x + m21 * p.y + m22 * p.z + m23); }
+        public Vector3 MultiplyPoint(Vector3 p) { return MultiplyPoint3x4(p); }
+        public Vector3 MultiplyVector(Vector3 p) { return new Vector3(m00 * p.x + m01 * p.y + m02 * p.z, m10 * p.x + m11 * p.y + m12 * p.z, m20 * p.x + m21 * p.y + m22 * p.z); }
     }
 
     public enum ColorSpace { Gamma, Linear }
@@ -427,15 +457,15 @@ namespace UnityEngine
     public class Texture : Object { public TextureWrapMode wrapMode; public FilterMode filterMode; public int anisoLevel, width, height; public float mipMapBias; }
     public class Texture2D : Texture
     {
-        public Color32[] pixels; public bool linear; static int seq;
+        public Color32[] pixels; public bool linear; static int seq; public int versao; static Texture2D branca;
         public readonly int id = ++seq;
         public Texture2D(int w, int h, TextureFormat f = TextureFormat.RGBA32, bool mip = true, bool linear = false) { width = w; height = h; this.linear = linear; pixels = new Color32[w * h]; }
         public void SetPixels32(Color32[] p) { pixels = (Color32[])p.Clone(); }
         public void SetPixels(Color[] p) { pixels = new Color32[p.Length]; for (int i = 0; i < p.Length; i++) pixels[i] = p[i]; }
         public Color32[] GetPixels32() { return pixels; }
         public void SetPixel(int x, int y, Color c) { pixels[y * width + x] = c; }
-        public void Apply(bool mip = true, bool naoLer = false) { }
-        public static Texture2D whiteTexture { get { var t = new Texture2D(1, 1); t.pixels[0] = new Color32(255, 255, 255, 255); return t; } }
+        public void Apply(bool mip = true, bool naoLer = false) { versao++; }
+        public static Texture2D whiteTexture { get { if (branca == null) { branca = new Texture2D(1, 1); branca.pixels[0] = new Color32(255, 255, 255, 255); } return branca; } }
     }
     public class Material : Object
     {
@@ -491,8 +521,11 @@ namespace UnityEngine
                 var p = System.IO.Path.Combine(pasta, n + ".json"); if (System.IO.File.Exists(p)) return new TextAsset(System.IO.File.ReadAllText(p)) as T;
                 p = System.IO.Path.Combine(pasta, n + ".bytes"); if (System.IO.File.Exists(p)) return new TextAsset(System.IO.File.ReadAllBytes(p)) as T;
             }
+            // a fonte só leva o caminho do TTF (o IMGUI de mentira mede o texto com ele)
+            if (typeof(T).Name == "Font") { var p = System.IO.Path.Combine(pasta, n + ".ttf"); if (System.IO.File.Exists(p)) { var f = (T)Activator.CreateInstance(typeof(T)); f.name = System.IO.Path.GetFileName(n); typeof(T).GetField("arquivo").SetValue(f, p); return f; } }
             return null;
-        }        public static T[] LoadAll<T>(string n) where T : Object { return new T[0]; }
+        }
+        public static T[] LoadAll<T>(string n) where T : Object { return new T[0]; }
     }
     public class Camera : Behaviour { public float fieldOfView = 60, nearClipPlane = .1f, farClipPlane = 1000, aspect = 16 / 9f; public static Camera main; public Matrix4x4 projectionMatrix; public void ResetProjectionMatrix() { } public Vector3 WorldToScreenPoint(Vector3 p) { return new Vector3(960, 540, 1); } }
     public class AudioListener : Behaviour { public static float volume = 1; }
