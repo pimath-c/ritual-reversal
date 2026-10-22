@@ -159,7 +159,7 @@ namespace RitualReversal
         {
             servidor = "localhost:" + porta; nomeJogador = "Teste"; Conectar(true, ""); Esperar(() => noLobby && lobbySlots.Count == 4);
             if (!noLobby) { falhas.Add("online: não entrou no lobby (" + erroRede + ")"); return; }
-            Esperar(() => false, 10); Foto("lobby"); { var c0 = salaCodigo; salaCodigo = "KQXT"; Foto("lobby-kqxt"); salaCodigo = c0; } Apertar("Difíceis", 2); Esperar(() => lobbyDif == "dificil", 100); if (lobbyDif != "dificil") falhas.Add("online: a dificuldade do lobby não chegou (" + lobbyDif + ")");
+            Esperar(() => false, 10); Foto("lobby"); { var c0 = salaCodigo; salaCodigo = "KQXT"; Foto("lobby-kqxt"); rascunhoLobby = "boa noite"; Foto("lobby-1440p", 1 / 30f, 2560, 1440); rascunhoLobby = ""; salaCodigo = c0; } Apertar("Difíceis", 2); Esperar(() => lobbyDif == "dificil", 100); if (lobbyDif != "dificil") falhas.Add("online: a dificuldade do lobby não chegou (" + lobbyDif + ")");
             labAberto = true; Apertar("2:00", 2); Esperar(() => lobbyLab != null && lobbyLab.crepusculo == 120, 100); if (lobbyLab == null || lobbyLab.crepusculo != 120) falhas.Add("online: o laboratório do lobby não chegou");
             rascunhoLobby = "boa noite"; Apertar("Enviar", 2); Esperar(() => chat.Count > 0, 100); if (chat.Count == 0) falhas.Add("online: o chat do lobby não voltou");
             Apertar("Começar a partida", 2); Esperar(() => g != null, 200); if (g == null) { falhas.Add("online: a partida não começou"); return; }

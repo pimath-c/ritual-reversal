@@ -229,6 +229,28 @@ namespace RitualReversal
             }
             return b;
         }
+        // o campo de texto: o fundo (com a borda de 1 px, dourada no foco) no GUI.matrix de sempre e o campo em si, sem fundo,
+        // sob a matriz de 1/s com a fonte em pixels da tela; o TextEditor mede o cursor no mesmo espaço do campo
+        static readonly Dictionary<GUIStyle, GUIStyle[]> fundosCampo = new Dictionary<GUIStyle, GUIStyle[]>();
+        static string CampoNitido(Rect r, string valor, int max, GUIStyle st, string nome, bool area = false)
+        {
+            float s = EscalaTexto();
+            if (s == 1) { if (nome != null) GUI.SetNextControlName(nome); return area ? GUI.TextArea(r, valor ?? "", max, st) : GUI.TextField(r, valor ?? "", max, st); }
+            GUIStyle[] f; if (!fundosCampo.TryGetValue(st, out f))
+            {
+                f = new GUIStyle[2]; for (int i = 0; i < 2; i++) { f[i] = new GUIStyle { border = st.border }; f[i].normal.background = i == 1 && st.focused.background != null ? st.focused.background : st.normal.background; }
+                fundosCampo[st] = f;
+            }
+            if (Event.current.type == EventType.Repaint) GUI.Box(r, GUIContent.none, f[nome != null && GUI.GetNameOfFocusedControl() == nome ? 1 : 0]);
+            var sp = EstiloPx(st, s, true); var m0 = GUI.matrix; var o = OrigemRecorte + r.position;
+            GUI.matrix = m0 * Matrix4x4.TRS(o, Quaternion.identity, Vector3.one) * Matrix4x4.Scale(new Vector3(1 / s, 1 / s, 1)) * Matrix4x4.TRS(-o, Quaternion.identity, Vector3.one);
+            try
+            {
+                if (nome != null) GUI.SetNextControlName(nome); var rr = new Rect(r.x, r.y, r.width * s, r.height * s);
+                return area ? GUI.TextArea(rr, valor ?? "", max, sp) : GUI.TextField(rr, valor ?? "", max, sp);
+            }
+            finally { GUI.matrix = m0; }
+        }
         static readonly Dictionary<GUIStyle, GUIStyle> estilosHover = new Dictionary<GUIStyle, GUIStyle>();
         static GUIStyle EstiloHover(GUIStyle st) { GUIStyle h; if (!estilosHover.TryGetValue(st, out h)) { h = new GUIStyle(st); h.normal.textColor = st.hover.textColor; estilosHover[st] = h; } return h; }
         // quebra como o navegador (nas palavras, dentro da largura) e devolve as linhas; recuo tira largura só da primeira

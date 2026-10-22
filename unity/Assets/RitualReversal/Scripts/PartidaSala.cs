@@ -82,7 +82,7 @@ namespace RitualReversal
                 var t = TexBotao(new Color(8 / 255f, 9 / 255f, 11 / 255f, .92f), new Color(8 / 255f, 9 / 255f, 11 / 255f, .92f), cb, false); st.normal.background = st.focused.background = st.hover.background = t;
                 st.normal.textColor = st.focused.textColor = st.hover.textColor = BONE; estilosBotao[k] = st;
             }
-            GUI.SetNextControlName("chatJogo"); chatTexto = GUI.TextField(r, chatTexto ?? "", 140, st);
+            chatTexto = CampoNitido(r, chatTexto, 140, st, "chatJogo");
             if (chatFocar) { GUI.FocusControl("chatJogo"); chatFocar = false; }
             if (chatTexto.Length == 0) Linha(r.x + 11, r.y + 8, r.width - 22, LNsans(15), chatTodos ? "Para todos, inclusive os adversários · Tab: só a equipe" : "Para a sua equipe · Tab: para todos · Enter envia, Esc cancela", Css("sans", 15, Hx("#757575")));
         }

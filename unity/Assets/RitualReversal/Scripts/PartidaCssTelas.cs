@@ -126,7 +126,7 @@ namespace RitualReversal
             // esticado numa .linha (align-items: stretch), o texto do campo fica no meio da altura
             int pv = Mathf.RoundToInt((r.height - 2 - 24) / 2) + 1; GUIStyle st;
             if (!camposCss.TryGetValue(pv, out st)) { st = new GUIStyle(sCampoCss) { padding = new RectOffset(11, 11, pv, pv) }; camposCss[pv] = st; }
-            GUI.SetNextControlName(nome); var v = GUI.TextField(r, valor ?? "", max, st);
+            var v = CampoNitido(r, valor, max, st, nome);
             if (string.IsNullOrEmpty(v) && dica != null) Linha(r.x + 11, r.y + pv, r.width - 22, 24, dica, Css("400", 20, new Color(.46f, .46f, .46f)));
             return v;
         }

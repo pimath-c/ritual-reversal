@@ -200,7 +200,7 @@ namespace RitualReversal
                 for (int i = 0; i < PERGUNTAS_PLAYTEST.Length; i++)
                 {
                     y += 8; float hl = Ps(x, y, w, PERGUNTAS_PLAYTEST[i], stQ, 18); y += hl + 4;
-                    if (!medindo) { string novo = GUI.TextArea(new Rect(x, y, w, ha), resp[i] ?? "", 600, sPergunta); if (novo != resp[i]) { resp[i] = novo; GuardarRespostas(); } }
+                    if (!medindo) { string novo = CampoNitido(new Rect(x, y, w, ha), resp[i], 600, sPergunta, "pergunta" + i, true); if (novo != resp[i]) { resp[i] = novo; GuardarRespostas(); } }
                     y += ha;
                 }
                 y += 8 + P(x, y, w, "Cada pessoa responde no próprio aparelho. Mande o relatório para quem organiza o playtest: o arquivo traz o registro inteiro da noite.", 15, MUDO, 1.45f, TextAnchor.UpperCenter, 64, true);

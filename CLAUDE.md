@@ -239,7 +239,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   floor (o AddLeading do Chromium) e a linha de base cai no pixel da tela (`PixelY`: 1/64 e meio pixel para cima, pela
   matriz); glifo que falta na fonte aumenta a linha como a reserva DejaVu (`AlturaNormalCom`, o ☉ do kit do culto);
   `LargEspaco` (o CalcSize ignora espaço no fim). Texto nítido com a interface escalada (1440p, 4K, celular): `TextoNitido`/
-  `BotaoNitido` rasterizam a fonte no tamanho dos pixels e põem uma matriz 1/s em volta; para isso toda rolagem e grupo
+  `BotaoNitido`/`CampoNitido` (fundo à parte, campo sob a matriz) rasterizam a fonte no tamanho dos pixels e põem uma matriz 1/s em volta; para isso toda rolagem e grupo
   passa por `Rolagem`/`FimRolagem`/`Grupo`/`FimGrupo` (pilha `recortes`, a origem que o IMGUI soma antes do GUI.matrix;
   o `ComTransformacao` usa a mesma origem). Nada de `GUI.BeginScrollView`/`BeginGroup`/`GUI.Label` direto nas telas.
   Símbolos que a Barlow/IM Fell não têm (◆ ✓ ✕ ✚ ✶ ☉ ◎ ☠...): no navegador vêm da reserva do sistema (DejaVu Sans no
@@ -266,8 +266,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   renderização do URP; PlayerPrefs "rr-autores"). `tools/telas-navegador.js` com `CELULAR=1` fotografa o navegador como celular
   (914 × 411 a 2,625×, toque ligado) e mede o HUD; o `RoteiroCelular` do `TesteTelas.cs` faz o mesmo no Unity falso com dedos.
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); a linha "Movimento
-  bruto do mouse" (o Input System já lê o mouse sem aceleração); os campos de texto (TextField/TextArea) ainda sem o texto
-  nítido em telas escaladas; letras de tamanho fracionário do CSS (14,5, 11,5) saem no inteiro mais perto.
+  bruto do mouse" (o Input System já lê o mouse sem aceleração); letras de tamanho fracionário do CSS (14,5, 11,5) saem no
+  inteiro mais perto.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
