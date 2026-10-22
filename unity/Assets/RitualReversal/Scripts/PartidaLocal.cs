@@ -62,6 +62,7 @@ namespace RitualReversal
             double raw = Mathf.Max(.001f, Time.unscaledDeltaTime), dt = System.Math.Min(.05, raw);
             if (online) ProcessarRede();
             if (g == null) { AtualizarVisual((float)System.Math.Min(.25, raw)); return; }
+            if (arsenal) { PassoArsenal(dt); ultimaEntrada = null; g.events.Clear(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }   // Arsenal: a noite fica parada
             var m = Eu();
             bool jogando = g.phase == "play";
             bool ativo = jogando && Travado() && lojaAberta == null;

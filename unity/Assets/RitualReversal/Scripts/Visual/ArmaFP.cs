@@ -943,6 +943,25 @@ namespace RitualReversal.Visual
         }
         // decaimento do clarão (o index.html faz: opacidade − dt·14)
         public void Clarao(float dt) { if (!ok) return; flashOp = Mathf.Max(0, flashOp - dt * 14); Mat.Opacidade(mFlash, flashOp); }
+        // vistas da vitrine e do Arsenal (camVista do arma.js): uma câmera presa à do jogador, de outro ângulo. Aqui a própria
+        // câmera vai para lá e a raiz da primeira pessoa faz o caminho inverso, então a arma fica onde estava em relação ao
+        // jogador. p e alvo no espaço da câmera do three; fov da vista.
+        static readonly Dictionary<string, double[]> VISTAS = new Dictionary<string, double[]>
+        {
+            { "ladoPerto", new[] { -.4, -.06, -.36, .1, -.21, -.44, 40 } }, { "cimaPerto", new[] { .1, .2, -.38, .1, -.2, -.42, 40 } }, { "lado", new[] { -.62, -.12, -.36, .12, -.2, -.42, 50 } },
+            { "cima", new[] { .12, .45, -.4, .12, -.2, -.42, 50 } }, { "frente", new[] { .18, -.12, -1.15, .12, -.2, -.42, 50 } }, { "direita", new[] { .75, -.1, -.4, .12, -.2, -.42, 50 } }, { "perto", new[] { -.05, -.06, -.12, .15, -.22, -.45, 62 } }
+        };
+        public float Vista(Camera cam, string nome, float fovJogo)
+        {
+            double[] v; if (nome == null || !VISTAS.TryGetValue(nome, out v)) { vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity; return fovJogo; }
+            var p = new V3d(v[0], v[1], v[2]); var t = new V3d(v[3], v[4], v[5]); var up = nome.StartsWith("cima") ? new V3d(0, 0, -1) : new V3d(0, 1, 0);
+            // Matrix4.lookAt do three para câmera: z aponta do alvo para o olho
+            var z = (p - t).Norm(); var x = up.Cross(z).Norm(); var y = z.Cross(x); var m = new double[16]; m[0] = x.x; m[1] = x.y; m[2] = x.z; m[4] = y.x; m[5] = y.y; m[6] = y.z; m[8] = z.x; m[9] = z.y; m[10] = z.z; m[15] = 1;
+            var Rt = Qd.DeMatriz(m); var Ri = Rt.Inv(); var pi = -(p.Rot(Ri));
+            var ct = cam.transform; var cr = ct.rotation; ct.position = ct.position + cr * new Vector3((float)p.x, (float)p.y, -(float)p.z); ct.rotation = cr * new Quaternion(-(float)Rt.x, -(float)Rt.y, (float)Rt.z, (float)Rt.w);
+            vm.localRotation = new Quaternion(-(float)Ri.x, -(float)Ri.y, (float)Ri.z, (float)Ri.w); vm.localPosition = new Vector3((float)pi.x, (float)pi.y, -(float)pi.z);
+            return (float)v[6];
+        }
         // nós na ordem da exportação (tools/unity-fp.js)
         public Transform[] Nos { get { return T; } }
     }

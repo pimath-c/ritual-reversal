@@ -45,7 +45,7 @@ namespace RitualReversal
             {
                 case "pick": TelaEscolha(); break;
                 case "intro": TelaIntro(); break;
-                case "play": Hud(); if (lojaAberta != null) TelaLoja(); else if (!Travado()) TelaPausa(); break;
+                case "play": if (arsenal) { PainelArsenal(); break; } Hud(); if (lojaAberta != null) TelaLoja(); else if (!Travado()) TelaPausa(); break;
                 case "summary": TelaResumo(); break;
                 case "final": TelaFinal(); break;
             }
@@ -62,6 +62,7 @@ namespace RitualReversal
             if (GUILayout.Button(Cor("Caçar", OURO) + "\nvocê e um bot contra dois Cultistas", sBotao, GUILayout.Height(90))) NovaPartida(true);
             if (GUILayout.Button(Cor("Celebrar", CARMIM_VIVO) + "\nvocê e um bot contra dois Caçadores", sBotao, GUILayout.Height(90))) NovaPartida(false);
             GUILayout.EndHorizontal();
+            if (GUILayout.Button(Cor("Arsenal", OURO) + "  <size=15>as skins das armas, na mão, sob a luz de estúdio</size>", sBotao)) IniciarArsenal();
             GUILayout.BeginHorizontal(); GUILayout.Label("Bots inimigos", sPequeno, GUILayout.Width(150));
             foreach (var d in new[] { new[] { "facil", "Fácil" }, new[] { "normal", "Normal" }, new[] { "dificil", "Difícil" } })
                 if (GUILayout.Button((dificuldade == d[0] ? "● " : "") + d[1], sBotao, GUILayout.Width(150))) { dificuldade = d[0]; PlayerPrefs.SetString("rr-dif", dificuldade); }

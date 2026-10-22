@@ -180,8 +180,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   marcos; luz comum em `Resources/RitualReversalLuz.hlsl`, também usada pela primeira pessoa; PlayerPrefs "rr-ilustrado" = 0
   volta ao URP/Lit). Etapa GRADE: `Resources/RitualReversalGrade.shader` (contorno a nanquim e névoa rasteira, em sRGB depois
   do ACES), posta por `Pos.cs` no renderizador do URP como FullScreenPassRendererFeature, por reflexão, e tirada no fim.
-  Faltam: clima (chuva, raios); a tela do Arsenal; a maior parte da interface da v5.3 em diante (bússola, legendas, espectador, caderno, replay, perfil, tutorial,
-  laboratório, relatório, mostrador do círculo, lances).
+  Interface do navegador no Unity (IMGUI, `partial class PartidaLocal`): `PartidaInterface.cs` tem legendas dos sons,
+  bússola, faixa dos lances, tela de queda e espectador, caderno dos altares (J); `MundoAltares.cs` tem o mostrador do
+  círculo (`Resources/RitualReversalMostrador.shader`, `PiscarMostrador`). `PartidaArsenal.cs` é o Arsenal do menu
+  (partida local parada, `ArmaFP.Forcar`/`Vista`/`LuzEstudio`, enquadramento deslocado como o setViewOffset do three).
+  Faltam: clima (chuva, raios); replay, perfil, tutorial, laboratório, relatório e o resto das telas de fim de noite.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
@@ -190,9 +193,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Kenney/Sonniss estiverem liberados na rede do ambiente.
 - Playtests com 4 pessoas antes de mais conteúdo.
 - Unity igual ao oficial (pedido do dono): feitos o mundo da v6, reagentes, velas, execução, ambiente, a primeira pessoa
-  da v5.9 e as skins; falta a lista em "Visual do protótipo no Unity" (Arsenal, GRADE/RIMLUZ, clima e a interface).
+  da v5.9, as skins, o Arsenal, GRADE/RIMLUZ e parte da interface; falta a lista em "Visual do protótipo no Unity".
 - v6 sem gente: equilíbrio entre bots ficou em 38–40% para o culto; os sons novos não foram ouvidos (ambiente sem áudio).
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
-  Os shaders Ilustrado, PrimeiraPessoa e Grade nunca compilaram num Unity de verdade (só o C# é conferido aqui); se o
+  Os shaders Ilustrado, PrimeiraPessoa, Grade e Mostrador nunca compilaram num Unity de verdade (só o C# é conferido aqui); se o
   mundo ficar rosa, PlayerPrefs "rr-ilustrado" = 0 volta ao URP/Lit.
 - Play Store: falta APK/AAB assinado e conta de desenvolvedor.
