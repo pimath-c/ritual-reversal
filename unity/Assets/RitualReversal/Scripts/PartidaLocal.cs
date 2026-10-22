@@ -47,8 +47,10 @@ namespace RitualReversal
         static void Travar(bool sim) { Cursor.lockState = sim ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !sim; }
         public void Acao(Acao a) { if (online) EnviarAcao(a); else if (g != null) Sim.Act(g, EU, a); }
 
+        string capturando; int capturaQuadro;   // a ação esperando a tecla nova (Ajustes)
         void Update()
         {
+            if (capturando != null && Time.frameCount > capturaQuadro + 1) { var c = EntradaUnity.Capturar(); if (c == "Escape") capturando = null; else if (c != null) { EntradaUnity.Definir(capturando, c); capturando = null; } }
             double raw = Mathf.Max(.001f, Time.unscaledDeltaTime), dt = System.Math.Min(.05, raw);
             if (online) ProcessarRede();
             if (g == null) { BuscarSalas(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }

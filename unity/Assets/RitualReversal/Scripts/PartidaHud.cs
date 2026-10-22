@@ -145,6 +145,16 @@ namespace RitualReversal
             float br = PlayerPrefs.GetFloat("rr-brilho", 1);
             GUILayout.BeginHorizontal(); GUILayout.Label("Brilho " + Mathf.RoundToInt(br * 100) + "%", sPequeno, GUILayout.Width(230)); float br2 = Mathf.Round(GUILayout.HorizontalSlider(br, .6f, 1.8f, GUILayout.Width(380)) * 20) / 20; GUILayout.EndHorizontal(); if (br2 != br) PlayerPrefs.SetFloat("rr-brilho", br2);
             if (pos != null) pos.brilho = PlayerPrefs.GetFloat("rr-brilho", 1);
+            // controles: clique numa linha e aperte a tecla ou o botão do mouse (Esc cancela; se a tecla já estiver em uso, as duas trocam)
+            GUILayout.Space(10); GUILayout.Label("<b>" + Cor("CONTROLES", OURO) + "</b>", sPequeno);
+            foreach (var a in EntradaUnity.ACOES)
+            {
+                GUILayout.BeginHorizontal(); GUILayout.Label("<size=15>" + a[1] + "</size>", sPequeno, GUILayout.Width(420));
+                if (GUILayout.Button(capturando == a[0] ? Cor("aperte…", OURO_VIVO) : EntradaUnity.Nome(a[0]), sBotao, GUILayout.Width(190))) { capturando = a[0]; capturaQuadro = Time.frameCount; }
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.Label("<size=14>" + Cor("Clique numa linha e aperte a tecla ou o botão do mouse. Esc cancela. Se a tecla já estiver em uso, as duas ações trocam de lugar.", MUDO) + "</size>", sPequeno);
+            if (GUILayout.Button("Restaurar padrão", sBotao, GUILayout.Width(260))) { EntradaUnity.Padrao(); capturando = null; }
             if (mundo != null) mundo.claroesSuaves = PlayerPrefs.GetInt("rr-suave", 0) == 1;
             GUILayout.Label("<size=14>" + Cor("Reduzidos: relâmpagos ficam mais fracos. Ouro e azul troca o carmim do culto por azul na planta e no replay (ajuda com daltonismo vermelho-verde).", MUDO) + "</size>", sPequeno);
             if (GUI.changed) SalvarAjustes();
@@ -162,9 +172,10 @@ namespace RitualReversal
             if (comRolagem) { Ajustes(); }
             else
             {
-                string papel = MeuPapel(); var L = new List<string[]> { new[] { "WASD", "Andar" }, new[] { "Shift", "Correr" }, new[] { "C", "Agachar" }, new[] { "Clique", "Atacar" }, new[] { "Botão dir.", "Feitiço" }, new[] { "E", "Interagir" } };
-                if (papel == "H") { L.Add(new[] { "Q", "Sensor" }); L.Add(new[] { "F", "Lanterna" }); L.Add(new[] { "G", "Flare" }); L.Add(new[] { "R", "Recarregar" }); } else L.Add(new[] { "T", "Transferir" });
-                L.Add(new[] { "Tab", "Planta" }); L.Add(new[] { "J", "Caderno" }); L.Add(new[] { "Z", "Ping" }); L.Add(new[] { "V", "Frases" }); L.Add(new[] { "I", "Inspecionar" }); if (online) L.Add(new[] { "Enter", "Chat" });
+                string papel = MeuPapel(); System.Func<string, string> kb = EntradaUnity.Nome; string andar = kb("fwd") == "W" && kb("left") == "A" && kb("back") == "S" && kb("right") == "D" ? "WASD" : kb("fwd") + " " + kb("left") + " " + kb("back") + " " + kb("right");
+                var L = new List<string[]> { new[] { andar, "Andar" }, new[] { kb("sprint"), "Correr" }, new[] { kb("agachar"), "Agachar" }, new[] { kb("fire"), "Atacar" }, new[] { kb("abil"), "Feitiço" }, new[] { kb("use"), "Interagir" } };
+                if (papel == "H") { L.Add(new[] { kb("sensor"), "Sensor" }); L.Add(new[] { kb("lantern"), "Lanterna" }); L.Add(new[] { kb("flare"), "Flare" }); L.Add(new[] { kb("reload"), "Recarregar" }); } else L.Add(new[] { kb("use2"), "Transferir" });
+                L.Add(new[] { kb("map"), "Planta" }); L.Add(new[] { kb("caderno"), "Caderno" }); L.Add(new[] { kb("ping"), "Ping" }); L.Add(new[] { kb("falas"), "Frases" }); L.Add(new[] { kb("inspecionar"), "Inspecionar" }); if (online) L.Add(new[] { "Enter", "Chat" });
                 GUILayout.Space(8);
                 for (int i = 0; i < L.Count; i += 4) { GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); for (int k = i; k < Mathf.Min(L.Count, i + 4); k++) GUILayout.Label("<b>" + Cor(L[k][0], OURO_VIVO) + "</b> " + L[k][1], sPequeno, GUILayout.Width(190)); GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
             }
@@ -296,7 +307,7 @@ namespace RitualReversal
             GUI.Label(new Rect(W - 324, H - 124, 300, 50), "<size=36>" + arma + "</size>", new GUIStyle(sTexto) { alignment = TextAnchor.MiddleRight });
             Kit(m); LinhaRede();
             string dica = "";
-            if (m.st == "alive") { if (m.team == "H") { if (m.reloadT <= 0 && m.ammo == 0) dica = m.reserve > 0 ? "Sem munição: R para recarregar" : "Sem munição: volte ao spawn para repor"; else if (m.reloadT <= 0 && m.ammo <= 2) dica = "Munição baixa (" + m.ammo + ")"; } else if (m.fervor < CFG.sigilCusto) dica = "Fervor esgotado: pare de conjurar um instante para recuperar"; }
+            if (m.st == "alive") { if (m.team == "H") { if (m.reloadT <= 0 && m.ammo == 0) dica = m.reserve > 0 ? "Sem munição: " + EntradaUnity.Nome("reload") + " para recarregar" : "Sem munição: volte ao spawn para repor"; else if (m.reloadT <= 0 && m.ammo <= 2) dica = "Munição baixa (" + m.ammo + ")"; } else if (m.fervor < CFG.sigilCusto) dica = "Fervor esgotado: pare de conjurar um instante para recuperar"; }
             if (dica != "") GUI.Label(new Rect(W - 624, H - 150, 600, 30), dica, new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleRight });
             var bf = new List<string>(); if (papel == "H" && g.buff.ess > g.t) bf.Add("Essência Profana: selamento a 125% (" + Mathf.CeilToInt((float)(g.buff.ess - g.t)) + " s)"); if (papel == "C" && g.buff.selo > g.t) bf.Add("Selo de Luz: próximo ritual +10% (" + Mathf.CeilToInt((float)(g.buff.selo - g.t)) + " s)"); if (m.runeT > 0) bf.Add("Runa ativa (" + Mathf.CeilToInt((float)m.runeT) + " s)");
             if (bf.Count > 0) GUI.Label(new Rect(W / 2 - 400, H - 40, 800, 30), string.Join("   ", bf.ToArray()), new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleCenter });

@@ -28,12 +28,12 @@ namespace RitualReversal
             var lista = new System.Collections.Generic.List<System.Action<Rect>>();
             if (m.team == "H")
             {
-                lista.Add(r => Ferramenta(r, "Q", "Sensor", null, (float)(m.sensorCd / 15), false));
-                lista.Add(r => Ferramenta(r, "F", "Lanterna", null, (float)((100 - m.carga) / 100), m.lantern));
-                lista.Add(r => Ferramenta(r, "G", "Flare", m.flares.ToString(), 0, false));
+                lista.Add(r => Ferramenta(r, EntradaUnity.Nome("sensor"), "Sensor", null, (float)(m.sensorCd / 15), false));
+                lista.Add(r => Ferramenta(r, EntradaUnity.Nome("lantern"), "Lanterna", null, (float)((100 - m.carga) / 100), m.lantern));
+                lista.Add(r => Ferramenta(r, EntradaUnity.Nome("flare"), "Flare", m.flares.ToString(), 0, false));
             }
-            else { lista.Add(r => Ferramenta(r, "☉", "Reagentes", m.reag.ToString(), 0, false)); lista.Add(r => Ferramenta(r, "E", "Chamariz", g.decoys.ToString(), 0, false)); }
-            lista.Add(r => Ferramenta(new Rect(r.x - 30, r.y, r.width + 30, r.height), "Botão dir.", F.nome.Length > 12 ? F.nome.Split(' ')[0] : F.nome, null, (float)(m.abilCd / F.cd), false));
+            else { lista.Add(r => Ferramenta(r, "☉", "Reagentes", m.reag.ToString(), 0, false)); lista.Add(r => Ferramenta(r, EntradaUnity.Nome("use"), "Chamariz", g.decoys.ToString(), 0, false)); }
+            lista.Add(r => Ferramenta(new Rect(r.x - 30, r.y, r.width + 30, r.height), EntradaUnity.Nome("abil"), F.nome.Length > 12 ? F.nome.Split(' ')[0] : F.nome, null, (float)(m.abilCd / F.cd), false));
             float x = W - 26 - 30 - lista.Count * w - (lista.Count - 1) * gap;
             for (int i = 0; i < lista.Count; i++) lista[i](new Rect(x + 30 + i * (w + gap), y, w, h));
         }

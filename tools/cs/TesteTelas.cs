@@ -61,6 +61,11 @@ namespace RitualReversal
             TQuadros(20);
             foreach (var m in new[] { "aprender", "como", "perfil", "novidades", "ajustes" }) { telaMenu = m; TQuadros(6); }
             telaMenu = null; TQuadros(3); labAberto = true; TQuadros(3); labAberto = false;
+            // trocar a tecla do Sensor nos Ajustes: clique na linha, aperte X; depois F, que é da Lanterna: as duas trocam
+            telaMenu = "ajustes"; TQuadros(2); capturando = "sensor"; capturaQuadro = Time.frameCount; TQuadros(2); Input.apertadas.Add(KeyCode.X); TQuadro();
+            if (EntradaUnity.Nome("sensor") != "X") falhas.Add("teclas: o Sensor não ficou no X (" + EntradaUnity.Nome("sensor") + ")");
+            EntradaUnity.Definir("sensor", "KeyF"); if (EntradaUnity.Nome("sensor") != "F" || EntradaUnity.Nome("lantern") != "X") falhas.Add("teclas: a troca com a Lanterna não aconteceu");
+            Apertar("Restaurar padrão", 2); if (EntradaUnity.Nome("sensor") != "Q" || EntradaUnity.Nome("lantern") != "F") falhas.Add("teclas: o padrão não voltou"); telaMenu = null; TQuadros(2);
             // uma noite como Caçador: o botão do título, a entrada, a noite inteira em passos de 0,5 s
             papelSolo = "H"; Apertar("Jogar sozinho, com bots", 2);
             AteFase("play", 400);

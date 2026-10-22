@@ -3,6 +3,7 @@
 // RB feitiço, LT ou clique no analógico esquerdo corre; A interage, B agacha, X recarrega, Y lanterna, LB sensor; direcional
 // para a esquerda transfere, para baixo sinalizador, para cima as frases; clique no analógico direito marca (ping); Select a
 // planta; Start pausa. Os botões entram como as teclas correspondentes em Segurando/Apertou.
+using System.Collections.Generic;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -14,6 +15,46 @@ namespace RitualReversal
 
     public static class EntradaUnity
     {
+        // ---------- teclas configuráveis (SET.binds do navegador: os mesmos nomes de ação e os códigos do KeyboardEvent) ----------
+        public static readonly string[][] ACOES = {
+            new[]{"fwd","Andar para frente","KeyW"}, new[]{"back","Andar para trás","KeyS"}, new[]{"left","Passo à esquerda","KeyA"}, new[]{"right","Passo à direita","KeyD"},
+            new[]{"sprint","Correr","ShiftLeft"}, new[]{"agachar","Agachar (segurar): devagar e quase sem som","KeyC"}, new[]{"fire","Atacar","Mouse0"}, new[]{"abil","Habilidade da classe","Mouse2"},
+            new[]{"use","Interagir (segurar)","KeyE"}, new[]{"use2","Transferência (segurar)","KeyT"}, new[]{"sensor","Sensor Áurico","KeyQ"}, new[]{"lantern","Lanterna","KeyF"},
+            new[]{"flare","Flare","KeyG"}, new[]{"reload","Recarregar","KeyR"}, new[]{"inspecionar","Inspecionar a arma","KeyI"}, new[]{"map","Planta da catedral","Tab"},
+            new[]{"ping","Marcar para a equipe","KeyZ"}, new[]{"falas","Frases rápidas","KeyV"}, new[]{"caderno","Caderno dos altares","KeyJ"} };
+        static Dictionary<string, string> binds;
+        public static Dictionary<string, string> Binds
+        {
+            get
+            {
+                if (binds != null) return binds; binds = new Dictionary<string, string>(); foreach (var a in ACOES) binds[a[0]] = a[2];
+                var s = PlayerPrefs.GetString("rr-binds", ""); var d = s.Length > 0 ? RitualReversal.Simulacao.Json.Ler(s) as Dictionary<string, object> : null;
+                if (d != null) foreach (var kv in d) if (binds.ContainsKey(kv.Key) && kv.Value is string) binds[kv.Key] = (string)kv.Value;
+                return binds;
+            }
+        }
+        // a ação recebe a tecla; se outra ação já usava essa tecla, as duas trocam de lugar (como no navegador)
+        public static void Definir(string acao, string codigo)
+        {
+            var B = Binds; string ant = B[acao]; foreach (var k in new List<string>(B.Keys)) if (k != acao && B[k] == codigo) B[k] = ant; B[acao] = codigo; Salvar();
+        }
+        public static void Padrao() { PlayerPrefs.DeleteKey("rr-binds"); binds = null; }
+        static void Salvar() { var j = new JsonEscrita(); foreach (var kv in Binds) j.Txt(kv.Key, kv.Value); PlayerPrefs.SetString("rr-binds", j.ToString()); PlayerPrefs.Save(); }
+        static readonly Dictionary<string, string> NOMES = new Dictionary<string, string> { {"Space","Espaço"},{"ShiftLeft","Shift esq."},{"ShiftRight","Shift dir."},{"ControlLeft","Ctrl esq."},{"ControlRight","Ctrl dir."},{"AltLeft","Alt esq."},{"AltRight","Alt dir."},{"Tab","Tab"},{"Enter","Enter"},{"Backquote","`"},{"ArrowUp","↑"},{"ArrowDown","↓"},{"ArrowLeft","←"},{"ArrowRight","→"},{"CapsLock","CapsLock"},{"Mouse0","Botão esq."},{"Mouse1","Botão meio"},{"Mouse2","Botão dir."},{"Mouse3","Mouse 4"},{"Mouse4","Mouse 5"} };
+        public static string NomeCodigo(string c) { string n; if (c == null) return "—"; if (NOMES.TryGetValue(c, out n)) return n; if (c.StartsWith("Key")) return c.Substring(3); if (c.StartsWith("Digit")) return c.Substring(5); if (c.StartsWith("Numpad")) return "Num " + c.Substring(6); return c; }
+        // o nome da tecla de uma ação, para os textos do HUD (o kb() do navegador)
+        public static string Nome(string acao) { string c; return Binds.TryGetValue(acao, out c) ? NomeCodigo(c) : "—"; }
+        static string Acao(Tecla t)
+        {
+            switch (t)
+            {
+                case Tecla.W: return "fwd"; case Tecla.S: return "back"; case Tecla.A: return "left"; case Tecla.D: return "right"; case Tecla.Shift: return "sprint"; case Tecla.C: return "agachar";
+                case Tecla.E: return "use"; case Tecla.T: return "use2"; case Tecla.Q: return "sensor"; case Tecla.F: return "lantern"; case Tecla.G: return "flare"; case Tecla.R: return "reload";
+                case Tecla.I: return "inspecionar"; case Tecla.Tab: return "map"; case Tecla.Z: return "ping"; case Tecla.V: return "falas"; case Tecla.J: return "caderno";
+            }
+            return null;   // Esc, Enter, N e os números das frases não mudam
+        }
+        static int BotaoMouse(string c) { return c != null && c.StartsWith("Mouse") && c.Length == 6 ? c[5] - '0' : -1; }   // Mouse0 esq., Mouse1 meio, Mouse2 dir.
 #if ENABLE_INPUT_SYSTEM
         static Key Mapear(Tecla t)
         {
@@ -34,12 +75,37 @@ namespace RitualReversal
             }
             return null;
         }
+        // código do navegador -> tecla do Input System ("KeyW" -> W, "Digit1" -> Digit1, "ShiftLeft" -> LeftShift...)
+        static readonly Dictionary<string, Key> ESPECIAIS = new Dictionary<string, Key> { {"ShiftLeft",Key.LeftShift},{"ShiftRight",Key.RightShift},{"ControlLeft",Key.LeftCtrl},{"ControlRight",Key.RightCtrl},{"AltLeft",Key.LeftAlt},{"AltRight",Key.RightAlt},{"ArrowUp",Key.UpArrow},{"ArrowDown",Key.DownArrow},{"ArrowLeft",Key.LeftArrow},{"ArrowRight",Key.RightArrow},{"Backquote",Key.Backquote},{"CapsLock",Key.CapsLock},{"Space",Key.Space},{"Tab",Key.Tab},{"Enter",Key.Enter} };
+        static Key ParaKey(string c)
+        {
+            Key k; if (c == null) return Key.None; if (ESPECIAIS.TryGetValue(c, out k)) return k;
+            string n = c.StartsWith("Key") ? c.Substring(3) : c.StartsWith("Numpad") ? "Numpad" + c.Substring(6) : c; return System.Enum.TryParse(n, out k) ? k : Key.None;
+        }
+        static string DeKey(Key k) { foreach (var kv in ESPECIAIS) if (kv.Value == k) return kv.Key; string n = k.ToString(); if (n.Length == 1) return "Key" + n; return n; }
+        static bool Codigo(string c, bool apertou)
+        {
+            int b = BotaoMouse(c); var m = UnityEngine.InputSystem.Mouse.current;
+            if (b >= 0) { if (m == null) return false; var bc = b == 0 ? m.leftButton : b == 2 ? m.rightButton : m.middleButton; return bc != null && (apertou ? bc.wasPressedThisFrame : bc.isPressed); }
+            var kb = Keyboard.current; var key = ParaKey(c); if (kb == null || key == Key.None) return false; var kc = kb[key]; return kc != null && (apertou ? kc.wasPressedThisFrame : kc.isPressed);
+        }
+        // a tecla ou o botão do mouse apertado neste quadro, como código do navegador (para trocar a tecla nos Ajustes)
+        public static string Capturar()
+        {
+            var m = UnityEngine.InputSystem.Mouse.current; if (m != null) { if (m.leftButton.wasPressedThisFrame) return "Mouse0"; if (m.rightButton.wasPressedThisFrame) return "Mouse2"; if (m.middleButton != null && m.middleButton.wasPressedThisFrame) return "Mouse1"; }
+            var kb = Keyboard.current; if (kb == null) return null; foreach (var k in kb.allKeys) if (k != null && k.wasPressedThisFrame) return DeKey(k.keyCode); return null;
+        }
         public static bool Segurando(Tecla t)
         {
-            var k = Keyboard.current; if (k != null && k[Mapear(t)].isPressed) return true; var p = Gamepad.current; if (p == null) return false;
+            var a = Acao(t); var k = Keyboard.current;
+            if (a != null ? Codigo(Binds[a], false) : (k != null && k[Mapear(t)].isPressed)) return true; var p = Gamepad.current; if (p == null) return false;
             var b = Botao(p, t); return (b != null && b.isPressed) || (t == Tecla.Shift && p.leftStickButton.isPressed);
         }
-        public static bool Apertou(Tecla t) { var k = Keyboard.current; if (k != null && k[Mapear(t)].wasPressedThisFrame) return true; var p = Gamepad.current; var b = p != null ? Botao(p, t) : null; return b != null && b.wasPressedThisFrame; }
+        public static bool Apertou(Tecla t)
+        {
+            var a = Acao(t); var k = Keyboard.current;
+            if (a != null ? Codigo(Binds[a], true) : (k != null && k[Mapear(t)].wasPressedThisFrame)) return true; var p = Gamepad.current; var b = p != null ? Botao(p, t) : null; return b != null && b.wasPressedThisFrame;
+        }
         static float Zona(float v) { return Mathf.Abs(v) < .18f ? 0 : Mathf.Sign(v) * (Mathf.Abs(v) - .18f) / .82f; }
         // os analógicos com a zona morta do navegador (y para cima, como no Input System)
         public static Vector2 PadAndar() { var p = Gamepad.current; if (p == null) return Vector2.zero; var v = p.leftStick.ReadValue(); return new Vector2(Zona(v.x), Zona(v.y)); }
@@ -51,9 +117,9 @@ namespace RitualReversal
         public static bool PadStart() { var p = Gamepad.current; return p != null && p.startButton.wasPressedThisFrame; }
         // pixels neste quadro, y para cima
         public static Vector2 Mouse() { var m = UnityEngine.InputSystem.Mouse.current; return m != null ? m.delta.ReadValue() : Vector2.zero; }
-        public static bool Atirando() { var m = UnityEngine.InputSystem.Mouse.current; var p = Gamepad.current; return (m != null && m.leftButton.isPressed) || (p != null && p.rightTrigger.isPressed); }
-        public static bool CliqueEsq() { var m = UnityEngine.InputSystem.Mouse.current; return m != null && m.leftButton.wasPressedThisFrame; }
-        public static bool CliqueDir() { var m = UnityEngine.InputSystem.Mouse.current; var p = Gamepad.current; return (m != null && m.rightButton.wasPressedThisFrame) || (p != null && p.rightShoulder.wasPressedThisFrame); }
+        public static bool Atirando() { var p = Gamepad.current; return Codigo(Binds["fire"], false) || (p != null && p.rightTrigger.isPressed); }
+        public static bool CliqueEsq() { return Codigo(Binds["fire"], true); }
+        public static bool CliqueDir() { var p = Gamepad.current; return Codigo(Binds["abil"], true) || (p != null && p.rightShoulder.wasPressedThisFrame); }
 #else
         static KeyCode Mapear(Tecla t)
         {
@@ -65,12 +131,28 @@ namespace RitualReversal
                 case Tecla.Esc: return KeyCode.Escape; case Tecla.Z: return KeyCode.Z; case Tecla.C: return KeyCode.C; case Tecla.I: return KeyCode.I; case Tecla.J: return KeyCode.J; case Tecla.N: return KeyCode.N; case Tecla.V: return KeyCode.V; case Tecla.D1: return KeyCode.Alpha1; case Tecla.D2: return KeyCode.Alpha2; case Tecla.D3: return KeyCode.Alpha3; case Tecla.D4: return KeyCode.Alpha4; case Tecla.D5: return KeyCode.Alpha5; case Tecla.D6: return KeyCode.Alpha6; default: return KeyCode.Return;
             }
         }
-        public static bool Segurando(Tecla t) { return Input.GetKey(Mapear(t)); }
-        public static bool Apertou(Tecla t) { return Input.GetKeyDown(Mapear(t)); }
+        static readonly Dictionary<string, KeyCode> ESPECIAIS = new Dictionary<string, KeyCode> { {"ShiftLeft",KeyCode.LeftShift},{"ShiftRight",KeyCode.RightShift},{"ControlLeft",KeyCode.LeftControl},{"ControlRight",KeyCode.RightControl},{"AltLeft",KeyCode.LeftAlt},{"AltRight",KeyCode.RightAlt},{"ArrowUp",KeyCode.UpArrow},{"ArrowDown",KeyCode.DownArrow},{"ArrowLeft",KeyCode.LeftArrow},{"ArrowRight",KeyCode.RightArrow},{"Backquote",KeyCode.BackQuote},{"CapsLock",KeyCode.CapsLock},{"Space",KeyCode.Space},{"Tab",KeyCode.Tab},{"Enter",KeyCode.Return} };
+        static KeyCode ParaKey(string c)
+        {
+            KeyCode k; if (c == null) return KeyCode.None; if (ESPECIAIS.TryGetValue(c, out k)) return k; int b = BotaoMouse(c); if (b >= 0) return KeyCode.Mouse0 + (b == 2 ? 1 : b == 1 ? 2 : b);
+            string n = c.StartsWith("Key") ? c.Substring(3) : c.StartsWith("Digit") ? "Alpha" + c.Substring(5) : c.StartsWith("Numpad") ? "Keypad" + c.Substring(6) : c; return System.Enum.TryParse(n, out k) ? k : KeyCode.None;
+        }
+        public static string Capturar()
+        {
+            if (Input.GetMouseButtonDown(0)) return "Mouse0"; if (Input.GetMouseButtonDown(1)) return "Mouse2"; if (Input.GetMouseButtonDown(2)) return "Mouse1";
+            foreach (KeyCode k in System.Enum.GetValues(typeof(KeyCode)))
+            {
+                if (k >= KeyCode.Mouse0 || !Input.GetKeyDown(k)) continue; foreach (var kv in ESPECIAIS) if (kv.Value == k) return kv.Key; string n = k.ToString();
+                if (n.StartsWith("Alpha")) return "Digit" + n.Substring(5); if (n.StartsWith("Keypad")) return "Numpad" + n.Substring(6); return n.Length == 1 ? "Key" + n : n;
+            }
+            return null;
+        }
+        public static bool Segurando(Tecla t) { var a = Acao(t); return Input.GetKey(a != null ? ParaKey(Binds[a]) : Mapear(t)); }
+        public static bool Apertou(Tecla t) { var a = Acao(t); return Input.GetKeyDown(a != null ? ParaKey(Binds[a]) : Mapear(t)); }
         public static Vector2 Mouse() { return new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")) * 10f; }
-        public static bool Atirando() { return Input.GetMouseButton(0); }
-        public static bool CliqueEsq() { return Input.GetMouseButtonDown(0); }
-        public static bool CliqueDir() { return Input.GetMouseButtonDown(1); }
+        public static bool Atirando() { return Input.GetKey(ParaKey(Binds["fire"])); }
+        public static bool CliqueEsq() { return Input.GetKeyDown(ParaKey(Binds["fire"])); }
+        public static bool CliqueDir() { return Input.GetKeyDown(ParaKey(Binds["abil"])); }
         // sem o Input System, sem controle
         public static Vector2 PadAndar() { return Vector2.zero; } public static Vector2 PadOlhar() { return Vector2.zero; }
         public static bool PadCima() { return false; } public static bool PadBaixo() { return false; } public static bool PadA() { return false; } public static bool PadB() { return false; } public static bool PadStart() { return false; }

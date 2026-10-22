@@ -12,7 +12,7 @@ namespace UnityEngine
     public enum FontStyle { Normal, Bold, Italic, BoldAndItalic }
     public enum TextClipping { Overflow, Clip }
     public enum EventType { MouseDown, MouseUp, MouseMove, MouseDrag, KeyDown, KeyUp, ScrollWheel, Repaint, Layout, Used }
-    public enum KeyCode { None, Return, KeypadEnter, Escape, Tab, Space, LeftShift, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Alpha1, Alpha2, Alpha3, Alpha4, Alpha5, Alpha6 }
+    public enum KeyCode { None, Return, KeypadEnter, Escape, Tab, Space, LeftShift, RightShift, LeftControl, RightControl, LeftAlt, RightAlt, UpArrow, DownArrow, LeftArrow, RightArrow, BackQuote, CapsLock, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Alpha0, Alpha1, Alpha2, Alpha3, Alpha4, Alpha5, Alpha6, Alpha7, Alpha8, Alpha9, Mouse0 = 323, Mouse1, Mouse2, Mouse3, Mouse4, Mouse5, Mouse6 }
     public enum CursorLockMode { None, Locked, Confined }
     public enum ScaleMode { StretchToFill, ScaleAndCrop, ScaleToFit }
     public class RectOffset { public int left, right, top, bottom; public RectOffset() { } public RectOffset(int l, int r, int t, int b) { left = l; right = r; top = t; bottom = b; } }

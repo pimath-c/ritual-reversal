@@ -209,6 +209,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `tools/cs/UnityFalso.cs` + `IMGUIFalso.cs` pelo roteiro de `tools/cs/TesteTelas.cs` (título, menus, noite de cada lado,
   resumo, resultado, relatório, replay, perfil, tutorial, desafio, Arsenal); botões "apertados" pelo texto.
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
+  Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
+  (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); controles de
   toque; navegar os menus pelo controle (no navegador, cima/baixo passa pelos botões e A confirma).
 
