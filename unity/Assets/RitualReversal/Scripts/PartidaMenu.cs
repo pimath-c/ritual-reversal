@@ -132,13 +132,13 @@ namespace RitualReversal
             var corT = tutFim ? GOLD_HI : CrimsonHi; var stP = Css("400", 16, Hx("#e6dccb"));
             string tit = tutFim ? "TUTORIAL COMPLETO" : "APRENDER · PASSO " + (tutI + 1) + " DE " + passosTut.Count;
             string p = tutFim ? "Você já sabe o básico de " + (tutPapel == "H" ? "caçar" : "celebrar") + ". Termine a noite contra os bots ou saia pela pausa (Esc)." : passosTut[tutI].t;
-            float hp = AlturaParagrafo(p, stP, wc, 16 * 1.4f), h = 10 + 14.4f + 4 + hp + 6 + (tutFim ? 0 : 13 * 1.2f + 6 + 3) + 12;
+            float hp = AlturaParagrafo(p, stP, wc, 16 * 1.4f), h = 10 + LN(12) + 4 + hp + 6 + (tutFim ? 0 : LN(13f) + 6 + 3) + 12;
             Caixa(new Rect(x, y, w, h), new Color(8 / 255f, 9 / 255f, 11 / 255f, .85f)); Caixa(new Rect(x, y, 3, h), corT);
-            float yy = y + 10, xc = x + 3 + 14; Espacada(xc, yy, 14.4f, tit, Css("400", 12, corT), .96f); yy += 14.4f + 4;
+            float yy = y + 10, xc = x + 3 + 14; Espacada(xc, yy, LN(12), tit, Css("400", 12, corT), .96f); yy += LN(12) + 4;
             yy += Paragrafo(xc, yy, wc, 16 * 1.4f, p, stP) + 6;
             if (!tutFim)
             {
-                Linha(xc, yy, wc, 13 * 1.2f, "N pula este passo", Css("400", 13, MUDO)); yy += 13 * 1.2f + 6;
+                Linha(xc, yy, wc, LN(13f), "N pula este passo", Css("400", 13, MUDO)); yy += LN(13f) + 6;
                 Caixa(new Rect(xc, yy, wc, 3), Hx("#2a2f36")); Caixa(new Rect(xc, yy, wc * tutI / passosTut.Count, 3), CrimsonHi);
             }
         }

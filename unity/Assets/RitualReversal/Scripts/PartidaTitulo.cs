@@ -45,7 +45,7 @@ namespace RitualReversal
             {
                 var D = DesafioDe(HojeDesafio()); object rec; var des = O(Perfil(), "desafios"); bool tem = des.TryGetValue(HojeDesafio(), out rec) && rec != null;
                 string sub = "Hoje você " + (D[1] == "H" ? "caça" : "celebra") + ", " + Mundo.CLIMAS[D[2]].nome.ToLowerInvariant() + ", contra bots difíceis" + (tem ? " · recorde " + System.Convert.ToInt32(rec) : "");
-                float wd = Mathf.Max(Larg("Desafio da noite", Css("600", 20, BONE)), Larg(sub, Css("400", 13, MUDO))) + 58, hd = 1 + 10 + 24 + 2 + 13 * 1.2f + 10 + 1;
+                float wd = Mathf.Max(Larg("Desafio da noite", Css("600", 20, BONE)), Larg(sub, Css("400", 13, MUDO))) + 58, hd = 1 + 10 + 24 + 2 + LN(13f) + 10 + 1;
                 if (BotaoDuasLinhas(new Rect(x, y, wd, hd), "Desafio da noite", sub, "ghost")) IniciarDesafio(); y += hd + 12;
             }
             float xl = x; float hl = AlturaBotao("lk");
@@ -80,7 +80,7 @@ namespace RitualReversal
         float PainelLabCss(float x, float y, float w, Lab lab, System.Action<Lab> muda)
         {
             var L = Lab.De(lab); var mud = LabMudancas(L); float wc = w - 26, xc = x + 13;
-            var stS = Css("400", 15, BONE); var stSb = Css("500", 15, GOLD_HI); float lhS = 15 * 1.2f;
+            var stS = Css("400", 15, BONE); var stSb = Css("500", 15, GOLD_HI); float lhS = LN(15f);
             string res = "Laboratório de playtest", extra = mud.Count > 0 ? " · " + mud.Count + (mud.Count > 1 ? " regras alteradas" : " regra alterada") : "";
             string aviso = "Para testar com pessoas: mude uma regra por vez e compare as noites no relatório do fim da partida. A primeira opção de cada linha é a regra normal." + (muda == null ? " Só o anfitrião muda." : "");
             bool links = muda != null && mud.Count > 0;
@@ -99,7 +99,8 @@ namespace RitualReversal
             if (!medindo)
             {
                 Linha(xc, yy, 20, lhS, labAberto ? "▼" : "▶", Css("400", 11, BONE)); float xs = xc + 15, bas = yy + (lhS - 18) / 2 + 15;
-                NaBase(xs, bas, 400, res, stS); if (extra != "") NaBase(xs + Larg(res, stS), bas, 300, extra, stSb);
+                // summary com letter-spacing .04em (o b dentro também)
+                float wr = EspacadaNaBase(xs, bas, res, stS, .6f); if (extra != "") EspacadaNaBase(xs + wr, bas, extra, stSb, .6f);
             }
             if (BotaoCss(new Rect(x + 1, yy - 2, w - 2, lhS + 4), res, "nada")) { labAberto = !labAberto; PlayerPrefs.SetInt("rr-lab-aberto", labAberto ? 1 : 0); }
             yy += lhS;
@@ -117,11 +118,11 @@ namespace RitualReversal
         {
             var stN = Css("400", 14, MUDO); float h = AlturaBotao("lab"), xx = x, yy = y; var v = ValorLab(L, R.k);
             float wn = Mathf.Max(170, Larg(R.nome, stN)) + 4 + 6;
-            if (!medindo) Linha(xx, yy + (h - 16.8f) / 2, wn, 16.8f, R.nome, stN); xx += wn;
+            if (!medindo) Linha(xx, yy + (h - LN(14)) / 2, wn, LN(14), R.nome, stN); xx += wn;
             foreach (var op in R.ops)
             {
                 bool sel = Igual(op.v, v);
-                if (muda == null) { if (sel) { if (!medindo) Linha(xx, yy + (h - 16.8f) / 2, 200, 16.8f, op.txt, Css("500", 14, GOLD_HI)); xx += Larg(op.txt, Css("500", 14, GOLD_HI)) + 6; } continue; }
+                if (muda == null) { if (sel) { if (!medindo) Linha(xx, yy + (h - LN(14)) / 2, 200, LN(14), op.txt, Css("500", 14, GOLD_HI)); xx += Larg(op.txt, Css("500", 14, GOLD_HI)) + 6; } continue; }
                 float wb = LarguraBotao(op.txt, sel ? "labSel" : "lab"); if (xx + wb > x + w + .5f) { xx = x; yy += h + 6; }
                 if (BotaoCss(new Rect(xx, yy, wb, h), op.txt, sel ? "labSel" : "lab") && !sel) { muda(ComValor(L, R.k, op.v)); som.Tocar("click"); }
                 xx += wb + 6;

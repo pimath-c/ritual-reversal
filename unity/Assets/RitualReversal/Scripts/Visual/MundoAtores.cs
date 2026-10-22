@@ -225,7 +225,9 @@ namespace RitualReversal.Visual
             {
                 if (a == eu) continue; vistos.Add(a.id); Boneco b;
                 if (a.hidden) { if (bonecos.TryGetValue(a.id, out b)) { b.g.gameObject.SetActive(false); b.px = null; } continue; } // fora de vista (online): guarda o boneco escondido
-                if (!bonecos.TryGetValue(a.id, out b)) { b = new Boneco(atoresRaiz, a.team, a.cls); bonecos[a.id] = b; }
+                // os ids recomeçam a cada partida: o boneco guardado de outra noite (outro lado, classe ou nome) é refeito
+                if (bonecos.TryGetValue(a.id, out b) && (b.team != a.team || b.cls != a.cls || b.nome != a.name)) { b.Destruir(); bonecos.Remove(a.id); b = null; }
+                if (b == null) { b = new Boneco(atoresRaiz, a.team, a.cls) { nome = a.name }; bonecos[a.id] = b; }
                 float x = (float)a.x, z = (float)a.z;
                 b.Animar(this, a, x, z, (float)a.yaw, Mathf.Max(dt, .001f), t, g.altars);
                 // Véu: silhueta escura e translúcida. Some quase por completo de longe; de perto ou sob a lanterna dá para ver o vulto.

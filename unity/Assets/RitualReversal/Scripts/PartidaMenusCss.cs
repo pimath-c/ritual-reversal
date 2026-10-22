@@ -19,7 +19,7 @@ namespace RitualReversal
         // table.res: 17 px, células com padding 6 × 8 e a linha de baixo; a primeira coluna leva o resto da largura
         float Tabela(float x, float y, float w, string[] cab, List<string[]> linhas, float[] largNum, Color?[] corPrimeira = null)
         {
-            float lh = 17 * 1.2f, hl = 6 + lh + 6 + 1, yy = y + 10; var stTh = Css("500", 17, MUDO); var stTd = Css("400", 17, BONE);
+            float lh = LN(17f), hl = 6 + lh + 6 + 1, yy = y + 10; var stTh = Css("500", 17, MUDO); var stTd = Css("400", 17, BONE);
             System.Action<string[], bool, Color?> linha = (cel, th, c0) =>
             {
                 if (!medindo)
@@ -55,8 +55,8 @@ namespace RitualReversal
         float Passo(float x, float y, float w, int n, string t, string d)
         {
             var stB = Css("600", 16, GOLD, TextAnchor.UpperCenter); var stT = Css("600", 18, BONE); var stD = Css("400", 16, Hx("#c9c1b2"));
-            float xt = x + 28 + 12, wt = w - 40; if (!medindo) { var r = new Rect(x, y, 28, 28); Moldura(r, GOLD); Linha(r.x, r.y + 4, 28, 19.2f, n.ToString(), stB); Linha(xt, y, wt, 18 * 1.2f, t, stT); }
-            float h = 18 * 1.2f + Ps(xt, y + 18 * 1.2f, wt, d, stD, 16 * 1.4f); return Mathf.Max(28, h);
+            float xt = x + 28 + 12, wt = w - 40; if (!medindo) { var r = new Rect(x, y, 28, 28); Moldura(r, GOLD); Linha(r.x, r.y + 4, 28, LN(16), n.ToString(), stB); Linha(xt, y, wt, LN(18f), t, stT); }
+            float h = LN(18f) + Ps(xt, y + LN(18f), wt, d, stD, 16 * 1.4f); return Mathf.Max(28, h);
         }
         void TelaComoJogarCss()
         {

@@ -3,6 +3,8 @@
 // painel à direita escolhe a arma, a skin, uma ação (inspecionar, recarregar ou lançar sigilo, sacar), a vista e a luz.
 // Nada muda no jogo além da aparência: a escolha vale nas partidas (PlayerPrefs "rr-skins").
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using RitualReversal.Simulacao;
 using RitualReversal.Visual;
@@ -43,41 +45,83 @@ namespace RitualReversal
             esq += W0 * (f - 1) * larg / (W0 * f); top -= H0 * (f - 1) * .75f * alt / (H0 * f); larg *= 1 / f; alt *= 1 / f;
             cam.projectionMatrix = Matrix4x4.Frustum(esq, esq + larg, top - alt, top, n, cam.farClipPlane);
         }
+        // #arsenal: a coluna de 400 px à direita (padding 22 20 18) sobre o degradê, na fonte do sistema (system-ui):
+        // o h2, a coleção em ouro, o texto, as abas das armas, um cartão por skin (ofício numa pílula à direita, o nome em
+        // IM Fell, "em uso", a descrição), as ações, a vista, a luz e o Voltar ao menu. Rola se não couber.
         void PainelArsenal()
         {
             if (fp == null || fp.arma == null || fp.arma.skins == null) return;
-            var S = fp.arma.skins; float w = Mathf.Min(400, W); var r = new Rect(W - w, 0, w, H); Caixa(r, new Color(.031f, .027f, .035f, .94f));
-            GUILayout.BeginArea(new Rect(r.x + 20, 22, w - 40, H - 40)); arsRolagem = GUILayout.BeginScrollView(arsRolagem);
-            GUILayout.Label("<size=30>Arsenal</size>", sTexto); GUILayout.Label("<size=13>" + Cor(S.colecao, OURO) + "</size>", sPequeno);
-            GUILayout.Label("<size=13>" + Cor(S.colecaoTexto + " Nada muda no jogo além da aparência; tudo é livre para escolher.", MUDO) + "</size>", sPequeno);
-            var sb = new GUIStyle(sBotao) { fontSize = 14, padding = new RectOffset(6, 6, 8, 8) };
-            GUILayout.BeginHorizontal();
-            foreach (var k in new[] { new[] { "carabina", "Carabina" }, new[] { "revolver", "Revólver" }, new[] { "cetro", "Cetro" } })
-                if (Bt(arsArma == k[0] ? Cor(k[1], OURO_VIVO) : k[1], sb)) { arsArma = k[0]; ArsenalForca("sacar"); som.Tocar("click"); }
-            GUILayout.EndHorizontal(); GUILayout.Space(8);
+            var S = fp.arma.skins; float w = Mathf.Min(400, W), x0 = W - w;
+            Color c0 = new Color(5 / 255f, 5 / 255f, 6 / 255f, 0), c1 = new Color(5 / 255f, 5 / 255f, 6 / 255f, .86f), c2 = new Color(5 / 255f, 5 / 255f, 6 / 255f, .94f);
+            PintarDegrade(new Rect(x0, 0, w * .14f, H), c0, c1, false); PintarDegrade(new Rect(x0 + w * .14f, 0, w * .86f, H), c1, c2, false);
+            medindo = true; float hc = CorpoArsenal(0, 0, w - 40, S); medindo = false;
+            if (22 + hc + 18 <= H) { CorpoArsenal(x0 + 20, 22, w - 40, S); return; }
+            // a barra de rolagem come a largura do conteúdo, como no navegador
+            float wc = w - 40 - 15; medindo = true; hc = CorpoArsenal(0, 0, wc, S); medindo = false;
+            arsRolagem = GUI.BeginScrollView(new Rect(x0, 0, w, H), arsRolagem, new Rect(0, 0, w - 15, 22 + hc + 18), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
+            CorpoArsenal(20, 22, wc, S); GUI.EndScrollView();
+        }
+        float CorpoArsenal(float x, float y, float w, SkinsFP S)
+        {
+            float y0 = y;
+            var stH = Css("serif", 30, BONE); if (!medindo) EspacadaNaBase(x, y + SubidaPx(stH), "Arsenal", stH, .6f); y += LNs(30);
+            // .col: margem 2 0 12; p.txt: 13 px, linha de 1,45, margem 0 0 12 (o 12 de cima se funde com o da .col)
+            y += 2; if (!medindo) Linha(x, y, w, LNsis(13), S.colecao, Css("sys", 13, GOLD)); y += LNsis(13) + 12;
+            y += Ps(x, y, w, S.colecaoTexto + " Nada muda no jogo além da aparência; tudo é livre para escolher.", Css("sys", 13, MUDO), 13 * 1.45f) + 12;
+            var armas = new[] { new[] { "carabina", "Carabina" }, new[] { "revolver", "Revólver" }, new[] { "cetro", "Cetro" } };
+            y += AbasArsenal(x, y, w, armas.Select(a => a[1]).ToArray(), i => armas[i][0] == arsArma, i => { arsArma = armas[i][0]; ArsenalForca("sacar"); som.Tocar("click"); }) + 12;
             string usada = S.Escolhida(arsArma);
-            foreach (var sk in S.catalogo[arsArma])
+            foreach (var sk in S.catalogo[arsArma]) y += CartaoSkin(x, y, w, S, sk, sk.id == usada) + 8;
+            // .acoes: margem 10 0 6 (o 10 engole o 8 do último cartão)
+            y += 2; bool cetro = arsArma == "cetro";
+            y += AbasArsenal(x, y, w, new[] { "Inspecionar", cetro ? "Lançar sigilo" : "Recarregar", "Sacar" }, i => false, i =>
             {
-                string[] O; S.oficios.TryGetValue(sk.oficio, out O); Color co; if (O == null || !ColorUtility.TryParseHtmlString(O[1], out co)) co = OSSO;
-                string t = "<size=12>" + Cor(O != null ? O[0] : sk.oficio, co) + "</size>\n<b>" + sk.nome + "</b>" + (sk.id == usada ? "  <size=12>" + Cor("· em uso", OURO) + "</size>" : "") + "\n<size=13>" + Cor(sk.texto, new Color(.81f, .776f, .714f)) + "</size>";
-                if (Bt(t, new GUIStyle(sb) { alignment = TextAnchor.UpperLeft, wordWrap = true, richText = true })) { fp.arma.TrocarSkin(arsArma, sk.id); ArsenalForca("inspecao"); som.Tocar("click"); }
-            }
-            GUILayout.Space(6); GUILayout.BeginHorizontal();
-            if (Bt("Inspecionar", sb)) ArsenalForca("inspecao");
-            if (arsArma == "cetro") { if (Bt("Lançar sigilo", sb)) { ArsenalForca("pronta"); StartCoroutine(Depois(.06f, () => fp.arma.DisparoForcado(null))); } }
-            else if (Bt("Recarregar", sb)) ArsenalForca("recarga", true, 3, 0);
-            if (Bt("Sacar", sb)) ArsenalForca("sacar");
-            GUILayout.EndHorizontal(); GUILayout.Space(8);
-            GUILayout.Label("<size=13>" + Cor("Vista", MUDO) + "</size>", sPequeno); GUILayout.BeginHorizontal();
-            foreach (var v in new[] { new[] { "", "Jogador" }, new[] { "ladoPerto", "De lado" }, new[] { "perto", "De perto" } })
-                if (Bt((arsVista ?? "") == v[0] ? Cor(v[1], OURO_VIVO) : v[1], sb)) { arsVista = v[0] == "" ? null : v[0]; if (fp.arma.forca != null) fp.arma.forca.vista = arsVista; }
-            GUILayout.EndHorizontal();
-            GUILayout.Label("<size=13>" + Cor("Luz", MUDO) + "</size>", sPequeno); GUILayout.BeginHorizontal();
-            if (Bt(!arsEstudio ? Cor("Da noite", OURO_VIVO) : "Da noite", sb)) arsEstudio = false;
-            if (Bt(arsEstudio ? Cor("Estúdio", OURO_VIVO) : "Estúdio", sb)) arsEstudio = true;
-            GUILayout.EndHorizontal(); GUILayout.Space(14);
-            if (Bt("Voltar ao menu", sb)) SairArsenal();
-            GUILayout.EndScrollView(); GUILayout.EndArea();
+                if (i == 0) ArsenalForca("inspecao"); else if (i == 2) ArsenalForca("sacar");
+                else if (cetro) { ArsenalForca("pronta"); StartCoroutine(Depois(.06f, () => fp.arma.DisparoForcado(null))); } else ArsenalForca("recarga", true, 3, 0);
+            }) + 6;
+            // .rot: 12 px apagado, margem 10 0 4 (funde com o 6 das ações e com o 12 das abas)
+            var stR = Css("sys", 12, MUDO);
+            y += 4; if (!medindo) Linha(x, y, w, LNsis(12), "Vista", stR); y += LNsis(12) + 4;
+            var vistas = new[] { new[] { "", "Jogador" }, new[] { "ladoPerto", "De lado" }, new[] { "perto", "De perto" } };
+            y += AbasArsenal(x, y, w, vistas.Select(v => v[1]).ToArray(), i => (arsVista ?? "") == vistas[i][0], i => { arsVista = vistas[i][0] == "" ? null : vistas[i][0]; if (fp.arma.forca != null) fp.arma.forca.vista = arsVista; }) + 12;
+            if (!medindo) Linha(x, y, w, LNsis(12), "Luz", stR); y += LNsis(12) + 4;
+            y += AbasArsenal(x, y, w, new[] { "Da noite", "Estúdio" }, i => (i == 1) == arsEstudio, i => arsEstudio = i == 1) + 12;
+            // button.go.ghost.sair: inline-block com margem de 14 em cima (não se funde com a das abas)
+            y += 14; float hb = AlturaBotao("ghost"); if (BotaoCss(new Rect(x, y, w, hb), "Voltar ao menu", "ghost")) SairArsenal(); y += hb;
+            return y - y0;
+        }
+        // .abas / .acoes: botões de largura igual (flex: 1), 6 px entre eles, padding 8 × 6, cantos de 6 px
+        float AbasArsenal(float x, float y, float w, string[] textos, System.Func<int, bool> sel, System.Action<int> clique)
+        {
+            int n = textos.Length; float bw = (w - 6 * (n - 1)) / n, bh = LNsis(13) + 16 + 2;
+            for (int i = 0; i < n; i++) { bool s = sel(i); if (BotaoCss(new Rect(x + i * (bw + 6), y, bw, bh), textos[i], s ? "arsAbaSel" : "arsAba") && !s) clique(i); }
+            return bh;
+        }
+        // .skin: borda clara de 1 px com cantos de 8, padding 10 × 12; a pílula do ofício (float: right, 11 px em
+        // maiúsculas, letter-spacing .08em, borda na cor dele); o nome em IM Fell 18 na linha do corpo (16 px do sistema)
+        // com o "· em uso" em letra menor; o p de 12,5 px com linha de 1,45, 6 px abaixo
+        float CartaoSkin(float x, float y, float w, SkinsFP S, SkinsFP.Skin sk, bool emUso)
+        {
+            float wi = w - 26; var stP = Css("sys", 12, emUso ? Hx("#cfc6b6") : MUDO); float lhP = 12.5f * 1.45f;
+            float hl = Mathf.Max(Ar(16 * subSis), 16) + Mathf.Max(Ar(16 * descSis), 7), bas = Mathf.Max(Ar(16 * subSis), 16);
+            float h = 1 + 10 + hl + 6 + AlturaParagrafo(sk.texto, stP, wi, lhP) + 10 + 1; var r = new Rect(x, y, w, h);
+            if (BotaoCss(r, "", emUso ? "arsSkinSel|mudo" : "arsSkin|mudo") && !emUso) { fp.arma.TrocarSkin(arsArma, sk.id); ArsenalForca("inspecao"); som.Tocar("click"); }
+            if (medindo) return h;
+            string[] O; S.oficios.TryGetValue(sk.oficio, out O); Color co; if (O == null || !ColorUtility.TryParseHtmlString(O[1], out co)) co = BONE;
+            float xi = x + 13, yi = y + 11;
+            // a pílula: altura da linha de 11 px + 2 × 2 de padding + borda
+            string of = (O != null ? O[0] : sk.oficio).ToUpperInvariant(); var stO = Css("sys", 11, co); float esp = 11 * .08f, wo = EspacadaNaBase(0, 0, of, stO, esp, false) + 14 + 2, ho = LNsis(11) + 4 + 2;
+            var rp = new Rect(xi + wi - wo, yi, wo, ho); GUI.Box(rp, GUIContent.none, EstiloPilula(co)); EspacadaNaBase(rp.x + 8, rp.y + 3 + Ar(11 * subSis), of, stO, esp);
+            var stB = Css("serif", 18, BONE); NaBase(xi, yi + bas, wi, sk.nome, stB);
+            if (emUso) NaBase(xi + Larg(sk.nome, stB) + Larg(" ", Css("sys", 13, GOLD)), yi + bas, 200, "· em uso", Css("sys", 13, GOLD));
+            Paragrafo(xi, yi + hl + 6, wi, lhP, sk.texto, stP);
+            return h;
+        }
+        readonly Dictionary<string, GUIStyle> pilulas = new Dictionary<string, GUIStyle>();
+        GUIStyle EstiloPilula(Color c)
+        {
+            string k = ColorUtility.ToHtmlStringRGBA(c); GUIStyle s; if (pilulas.TryGetValue(k, out s)) return s;
+            s = new GUIStyle(GUIStyle.none) { border = new RectOffset(10, 10, 10, 10) }; s.normal.background = TexArredondada(new Color(0, 0, 0, 0), c, 10); pilulas[k] = s; return s;
         }
     }
 }

@@ -2411,7 +2411,10 @@ function syncActors(dt){
   const seen=new Set(), now=performance.now();
   for(const a of V.actors){ if(a.cid===meCid) continue; seen.add(a.id);
     let m=actorMeshes.get(a.id); if(a.hidden){ if(m) m.visible=false; continue; } // fora de vista: guarda o boneco escondido em vez de recriar
-    if(!m){ m=makeCharacter(a.team,a.cls); vestirAtor(m,a); actorMeshes.set(a.id,m); }
+    // os ids recomeçam a cada partida e o boneco só some durante a noite: o guardado de outra partida (outro lado, classe
+    // ou nome) é refeito, senão um Caçador herda o boneco de um Cultista (sem clarão) e o quadro quebra
+    if(m&&(m.userData.team!==a.team||m.userData.cls!==a.cls||m.userData.nome!==a.name)){ world.remove(m); if(m.userData.veu) m.userData.veu.forEach(v=>v.cl.dispose()); descartar(m); actorMeshes.delete(a.id); m=null; }
+    if(!m){ m=makeCharacter(a.team,a.cls); m.userData.team=a.team; m.userData.cls=a.cls; m.userData.nome=a.name; vestirAtor(m,a); actorMeshes.set(a.id,m); }
     const x=a._rx!=null?a._rx:a.x, z=a._rz!=null?a._rz:a.z, yaw=a._ryaw!=null?a._ryaw:a.yaw;
     animateActor(m,a,x,z,yaw,dt||.016,now);
     // Véu: silhueta escura e translúcida. Some quase por completo de longe; de perto ou sob a lanterna dá para ver o vulto.

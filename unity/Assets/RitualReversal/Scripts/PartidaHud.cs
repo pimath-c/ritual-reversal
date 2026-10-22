@@ -21,7 +21,7 @@ namespace RitualReversal
         {
             if (sTexto != null) return;
             branco = Texture2D.whiteTexture;
-            fonteCond = Resources.Load<Font>("Fontes/BarlowCondensed-Medium"); fonteCond400 = Resources.Load<Font>("Fontes/BarlowCondensed-Regular") ?? fonteCond; fonteCond600 = Resources.Load<Font>("Fontes/BarlowCondensed-SemiBold") ?? fonteCond; fonteCond700 = Resources.Load<Font>("Fontes/BarlowCondensed-Bold") ?? fonteCond; fonteSerif = Resources.Load<Font>("Fontes/IMFellEnglish-Regular"); fonteSerifIt = Resources.Load<Font>("Fontes/IMFellEnglish-Italic");
+            CarregarFonteSistema(); fonteCond = Resources.Load<Font>("Fontes/BarlowCondensed-Medium"); fonteCond400 = Resources.Load<Font>("Fontes/BarlowCondensed-Regular") ?? fonteCond; fonteCond600 = Resources.Load<Font>("Fontes/BarlowCondensed-SemiBold") ?? fonteCond; fonteCond700 = Resources.Load<Font>("Fontes/BarlowCondensed-Bold") ?? fonteCond; fonteSerif = Resources.Load<Font>("Fontes/IMFellEnglish-Regular"); fonteSerifIt = Resources.Load<Font>("Fontes/IMFellEnglish-Italic");
             sTexto = new GUIStyle(GUI.skin.label) { fontSize = 20, wordWrap = true, richText = true }; sTexto.normal.textColor = OSSO; if (fonteCond != null) sTexto.font = fonteCond;
             sPequeno = new GUIStyle(sTexto) { fontSize = 16 };
             sTitulo = new GUIStyle(sTexto) { fontSize = 40, alignment = TextAnchor.MiddleCenter, fontStyle = fonteSerif != null ? FontStyle.Normal : FontStyle.Bold }; if (fonteSerif != null) sTitulo.font = fonteSerif;
@@ -64,23 +64,7 @@ namespace RitualReversal
         }
 
         // ---------- telas ----------
-        void TelaEscolha()
-        {
-            if (MeuPapel() != "C")
-            {
-                var r0 = Janela(760, 230); GUILayout.BeginArea(r0); GUILayout.Label("Os Cultistas estão escolhendo os altares", sTitulo);
-                GUILayout.Label("Você vai caçar nesta rodada. Assim que eles confirmarem, você escolhe sua classe.", sCentro); GUILayout.EndArea(); return;
-            }
-            float w = Mathf.Min(900, W - 40), hm = (w - 60) * VB_A / VB_L; var r = Janela(w, hm + 250); GUILayout.BeginArea(r);
-            GUILayout.Label("Escolham 3 altares", sTitulo);
-            int parceiros = g.slots.Count(s => s.cid != null && Sim.RoleOf(g, s.team) == "C");
-            GUILayout.Label("Os Caçadores não sabem quais são. Altares perto da sua entrada (leste) são mais rápidos de alcançar, e mais óbvios." + (parceiros > 1 ? " Seu parceiro vê e altera a mesma seleção." : ""), sCentro);
-            var rm = GUILayoutUtility.GetRect(r.width, hm); PlantaEscolha(rm);
-            GUILayout.Space(8); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (Bt("Sortear", sBotao, GUILayout.Width(200))) Acao(new Acao { type = "pickRandom" });
-            GUI.enabled = g.picks.Count == 3; if (Bt("Confirmar " + g.picks.Count + " de 3", sBotao, GUILayout.Width(260))) Acao(new Acao { type = "pickConfirm" }); GUI.enabled = true;
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndArea();
-        }
+        void TelaEscolha() { TelaEscolhaCss(); }
         static string Lado(Altar A)
         {
             string ns = A.z < -60 ? "floresta, norte" : A.z > 60 ? "floresta, sul" : A.z < 0 ? "catedral, lado norte" : "catedral, lado sul";
@@ -156,19 +140,41 @@ namespace RitualReversal
         bool pausaAjustes;
         void TelaPausa() { TelaPausaCss(); }
 
+        // lojaScreen: o nome do mercador, os óbolos no .lede, um .item por mercadoria (nome e descrição à esquerda, o
+        // botão dourado com o preço ou, desativado, o motivo) e o Voltar à noite
         void TelaLoja()
         {
             var n = Mapa.NPCS.Find(x => x.id == lojaAberta); var m = Eu(); if (n == null || m == null) return;
-            var r = Janela(760, 120 + 92 * n.vende.Count); GUILayout.BeginArea(r);
-            GUILayout.Label(char.ToUpper(n.nome[0]) + n.nome.Substring(1) + "   " + Cor(m.obolos + " óbolos", OURO), sGrande);
-            foreach (var id in n.vende)
+            var itens = n.vende.Where(k => Regras.ITENS[k].time == null || Regras.ITENS[k].time == m.team).ToList();
+            PainelTela("loja" + n.id + m.obolos + "|" + m.reag + (m.amuleto ? 1 : 0) + g.momento, 800, (x, y, w) =>
             {
-                var it = Regras.ITENS[id]; bool serve = (it.time == null || it.time == m.team) && (n.time == null || n.time == m.team);
-                GUI.enabled = serve && m.obolos >= it.preco;
-                if (Bt("<b>" + it.nome + "</b>  " + Cor(it.preco + " óbolos", OURO) + "\n<size=16>" + it.desc + "</size>", sBotao, GUILayout.Height(80))) Acao(new Acao { type = "comprar", npc = n.id, item = id });
-                GUI.enabled = true;
-            }
-            GUILayout.Label("E ou Esc fecha a loja.", sPequeno); GUILayout.EndArea();
+                float y0 = y; y += H2(x, y, w, char.ToUpper(n.nome[0]) + n.nome.Substring(1));
+                // o style="text-align:left" vence o .lede, mas a margem 0 auto 14 dele tem !important: a caixa de 64ch fica no meio
+                var stL = Css("serifIt", 20, MUDO); float wl = Mathf.Min(w, Larg("0", stL) * 64);
+                if (!medindo) Linha(x + (w - wl) / 2, y, wl, 20 * 1.45f, "Você tem <b>" + m.obolos + "</b> óbolos.", stL);
+                y += 20 * 1.45f + 14;
+                var stB = Css("serif", 20, BONE); var stS = Css("400", 15, Hx("#c9c1b2")); float hb = AlturaNormal(stB);
+                for (int i = 0; i < itens.Count; i++)
+                {
+                    var k = itens[i]; var it = Regras.ITENS[k];
+                    string bloq = it.momento > 0 && g.momento < it.momento ? "Só a partir da Vigília" : k == "amuleto" && m.amuleto ? "Já tem um" : k == "reagente" && m.reag >= 2 ? "Mãos cheias" : m.obolos < it.preco ? "Faltam " + (it.preco - m.obolos) : "";
+                    string bt = bloq != "" ? bloq : it.preco + " óbolos", tipo = bloq != "" ? "lojaGhost" : "lojaGold";
+                    float wb = Mathf.Max(120, LarguraBotao(bt, tipo)), hbt = AlturaBotao(tipo), wt = w - 26 - 14 - wb;
+                    // o span de 15 px quebra dentro da linha do corpo (16 px, normal: 19 px)
+                    float ht = hb + AlturaParagrafo(it.desc, stS, wt, LN(16)), hi = Mathf.Max(ht, hbt), r0 = y + (i > 0 ? 10 : 0);
+                    var caixa = new Rect(x, r0, w, 1 + 10 + hi + 10 + 1);
+                    if (!medindo)
+                    {
+                        Caixa(caixa, new Color(14 / 255f, 16 / 255f, 19 / 255f, .8f)); Moldura(caixa, BORDA_OP);
+                        float ty = r0 + 11 + (hi - ht) / 2; Linha(x + 13, ty, wt, hb, it.nome, stB);
+                        var ls = Quebrar(it.desc, stS, wt); for (int l = 0; l < ls.Count; l++) NaBase(x + 13, ty + hb + l * LN(16) + 16, wt, ls[l], stS);
+                    }
+                    if (BotaoCss(new Rect(x + w - 13 - wb, r0 + 11 + (hi - hbt) / 2, wb, hbt), bt, tipo, bloq == "")) Acao(new Acao { type = "comprar", npc = n.id, item = k });
+                    y = r0 + caixa.height;
+                }
+                y += FileiraBotoes(x, y, w, "Voltar à noite", "ghost", true, (System.Action)(() => { lojaAberta = null; Travar(true); }));
+                return y - y0;
+            });
         }
 
         static readonly string[][] LINHAS = {
@@ -191,7 +197,7 @@ namespace RitualReversal
         void Rotulo(float y, string tecla, string txt)
         {
             // #interact .lbl: 18 px, fundo escuro, padding 3 × 10; a tecla em kbd dourado com moldura e 6 px depois dela
-            var st = Css("400", 18, BONE); var sk = Css("700", 18, GOLD); float lh = 18 * 1.2f;
+            var st = Css("400", 18, BONE); var sk = Css("700", 18, GOLD); float lh = LN(18f);
             float wk = tecla != null ? Larg(tecla, sk) + 10 + 2 : 0, wt = Larg(txt.Replace("<", "<\u200B"), st), w = wk + (tecla != null ? 6 : 0) + wt + 20, x = W / 2 - w / 2;
             Caixa(new Rect(x, y, w, lh + 6), new Color(8 / 255f, 9 / 255f, 11 / 255f, .72f));
             if (tecla != null) { Moldura(new Rect(x + 10, y + 3, wk, lh), GOLD); Linha(x + 10 + 6, y + 3, wk, lh, tecla, sk); }
@@ -203,8 +209,8 @@ namespace RitualReversal
             float anel = m.sealing >= 0 ? (float)g.altars[m.sealing].seal : m.hold != null && m.hold.max > 0 ? (float)(m.hold.t / m.hold.max) : 0f;
             float cx = W / 2, cy = H / 2 + 46 + 23; Tracos.Anel(cx, cy, 19, 4, new Color(1, 1, 1, .18f)); if (anel > 0) Tracos.Arco(cx, cy, 19, 4, Mathf.Clamp01(anel), Desenho.Hex("#f3d58e"));
             float y = cy + 23 + 4 + 3;   // o svg de 46 px, margin-bottom 4, e o margin-top 3 do rótulo
-            if (ctx.e != null) { Rotulo(y, EntradaUnity.Nome("use"), ctx.e.label.Replace("Segure E para ", "Segure para ")); y += 18 * 1.2f + 6 + 3; }
-            else if (!string.IsNullOrEmpty(ctx.info)) { Rotulo(y, null, ctx.info); y += 18 * 1.2f + 6 + 3; }
+            if (ctx.e != null) { Rotulo(y, EntradaUnity.Nome("use"), ctx.e.label.Replace("Segure E para ", "Segure para ")); y += LN(18f) + 6 + 3; }
+            else if (!string.IsNullOrEmpty(ctx.info)) { Rotulo(y, null, ctx.info); y += LN(18f) + 6 + 3; }
             if (ctx.t != null) Rotulo(y, EntradaUnity.Nome("use2"), ctx.t.label.Replace("Segure T para ", "Segure: "));
         }
 

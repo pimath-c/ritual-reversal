@@ -122,7 +122,7 @@ namespace RitualReversal
             {
                 float x = px(gr * Mathf.Deg2Rad); if (float.IsNaN(x)) continue; float op = mascara(x); string nome = null;
                 switch (gr) { case 0: nome = "N"; break; case 45: nome = "NE"; break; case 90: nome = "L"; break; case 135: nome = "SE"; break; case 180: nome = "S"; break; case 225: nome = "SO"; break; case 270: nome = "O"; break; case 315: nome = "NO"; break; }
-                if (nome != null) Linha(x0 + x - 30, y0 + 6, 60, 13 * 1.2f, nome, Css("600", 13, A(gr == 0 ? CrimsonHi : Hx("#cfc6b6"), op), TextAnchor.UpperCenter), .9f);
+                if (nome != null) Linha(x0 + x - 30, y0 + 6, 60, LN(13f), nome, Css("600", 13, A(gr == 0 ? CrimsonHi : Hx("#cfc6b6"), op), TextAnchor.UpperCenter), .9f);
                 else Caixa(new Rect(x0 + x, y0, 1, 6), new Color(.91f, .878f, .816f, .35f * op));
             }
             Action<double, double, Color, string, bool> mk = (x, z, c, ch, grande) =>
@@ -175,7 +175,7 @@ namespace RitualReversal
             Color cs = lanceAtual.c ? CrimsonHi : GOLD_HI, ct = lanceAtual.meu ? GOLD_HI : BONE, cb = Hx("#c9bfae"); cs.a = ct.a = cb.a = op;
             var stS = Css("400", 11, cs); var stB = Css("serif", 22, ct, TextAnchor.UpperCenter); var stP = Css("400", 14, cb, TextAnchor.UpperCenter);
             string peq = "LANCE DA NOITE"; float esp = 11 * .24f, wS = 0; foreach (var ch in peq) wS += (ch == ' ' ? Larg("a a", stS) - Larg("aa", stS) : Larg(ch.ToString(), stS)) + esp;
-            float hS = 11 * 1.2f, hB = AlturaNormal(stB), hP = 16 * 1.2f, w = Mathf.Max(wS, Mathf.Max(Larg(lanceAtual.tit, stB), Larg(lanceAtual.sub, stP))) + 88, h = 4 + hS + hB + hP + 6, x = W / 2 - w / 2;
+            float hS = LN(11f), hB = AlturaNormal(stB), hP = LN(16f), w = Mathf.Max(wS, Mathf.Max(Larg(lanceAtual.tit, stB), Larg(lanceAtual.sub, stP))) + 88, h = 4 + hS + hB + hP + 6, x = W / 2 - w / 2;
             var o = GUI.color; GUI.color = new Color(1, 1, 1, op); GUI.DrawTexture(new Rect(x, y, w, h), TexFaixaLance); GUI.color = o;
             var borda = lanceAtual.c ? new Color(.878f, .263f, .369f, .6f * op) : new Color(.953f, .835f, .557f, .55f * op); Caixa(new Rect(x, y, w, 1), borda); Caixa(new Rect(x, y + h - 1, w, 1), borda);
             Espacada(W / 2 - wS / 2 + esp / 2, y + 4, hS, peq, stS, esp);
@@ -255,10 +255,10 @@ namespace RitualReversal
             else GUI.DrawTexture(new Rect(0, 0, W, H), TexQueda);
             var stH = Css("serif", esp ? 34 : 44, BONE, TextAnchor.UpperCenter); var stP = Css("400", 20, MUDO, TextAnchor.UpperCenter); var stQ = Css("400", 20, BONE, TextAnchor.UpperCenter); var stE = Css("400", 16, Hx("#cfc6b6"), TextAnchor.UpperCenter);
             string acomp = m.st == "dead" ? (espAlvo != null ? "Acompanhando " + Cor("<b>" + espAlvo.name + "</b>", GOLD_HI) + (espN > 1 ? " · " + EntradaUnity.Nome("fire") + " troca" : "") : "Nenhum aliado de pé: vendo onde você caiu") : "";
-            float hH = AlturaNormal(stH), hP = 24, h = hH + 6 + hP + 6 + (espQuem != "" ? 6 + hP + 6 : 6) + (acomp != "" ? 8 + 19.2f : 0), y = esp ? 190 : H / 2 - h / 2;
+            float hH = AlturaNormal(stH), hP = 24, h = hH + 6 + hP + 6 + (espQuem != "" ? 6 + hP + 6 : 6) + (acomp != "" ? 8 + LN(16) : 0), y = esp ? 190 : H / 2 - h / 2;
             Linha(0, y, W, hH, tit, stH); y += hH + 6; Linha(0, y, W, hP, sub, stP); y += hP + 6;
             if (espQuem != "") { Linha(0, y + 6, W, hP, espQuem, stQ); y += 6 + hP + 6; } else y += 6;
-            if (acomp != "") Linha(0, y + 8, W, 19.2f, acomp, stE);
+            if (acomp != "") Linha(0, y + 8, W, LN(16), acomp, stE);
         }
 
         // ---------------------------------------------------------------------------------------------------------------
@@ -306,7 +306,7 @@ namespace RitualReversal
             if (!cadernoAberto || g == null || g.phase != "play") return;
             if (cadId != g.matchId) { cadId = g.matchId; notasCad.Clear(); }
             float x = W - 26 - 360, y = 120, w = 360, wc = w - 28; var stN = Css("serif", 17, BONE); var stD = Css("400", 14, Hx("#cfc6b6")); var stE = Css("400", 12, MUDO);
-            float hN = AlturaNormal(stN), lhD = 13.5f * 1.2f, lhE = 12.5f * 1.2f; var blocos = new List<float>(); float h = 1 + 10 + 14.4f + 4;
+            float hN = AlturaNormal(stN), lhD = LN(13.5f), lhE = LN(12.5f); var blocos = new List<float>(); float h = 1 + 10 + LN(12) + 4;
             var dados = new List<string[]>();
             for (int i = 0; i < g.altars.Count; i++)
             {
@@ -317,18 +317,25 @@ namespace RitualReversal
             h = Mathf.Min(h + 10 + 1, H - 300); var caixa = new Rect(x, y, w, h);
             Caixa(caixa, new Color(8 / 255f, 9 / 255f, 11 / 255f, .97f)); Moldura(caixa, new Color(.91f, .878f, .816f, .16f));
             GUI.BeginGroup(new Rect(x + 1, y + 1, w - 2, h - 2));   // o overflow:hidden
-            float yy = 10; Espacada(14 - 1, yy, 14.4f, "CADERNO DOS ALTARES · " + EntradaUnity.Nome("caderno").ToUpper() + " FECHA", Css("400", 12, GOLD), .96f); yy += 14.4f + 4;
+            float yy = 10; Espacada(14 - 1, yy, LN(12), "CADERNO DOS ALTARES · " + EntradaUnity.Nome("caderno").ToUpper() + " FECHA", Css("400", 12, GOLD), .96f); yy += LN(12) + 4;
             for (int i = 0; i < dados.Count; i++)
             {
-                var d = dados[i]; Caixa(new Rect(13, yy, wc, 1), Hx("#262b31")); float yl = yy + 1 + 5, bas = yl + (hN - AlturaNormal(stN)) / 2 + SubidaEm(stN.font) * 17;
+                var d = dados[i]; Caixa(new Rect(13, yy, wc, 1), Hx("#262b31")); float yl = yy + 1 + 5, bas = yl + (hN - AlturaNormal(stN)) / 2 + SubidaPx(stN);
                 NaBase(13, bas, wc, d[0], stN); var cc = CorCaderno(d[3]); var stI = Css("600", 13, cc); float xi = 13 + Larg(d[0], stN) + 8, wi = Larg(d[1], stI) + 12;
-                float topoI = bas - 13 - (AlturaNormal(stI) - 13 * 1.2f) / 2; Moldura(new Rect(xi, topoI, wi, 13 * 1.2f), cc); NaBase(xi + 6, bas, wi, d[1], stI);
+                float topoI = bas - 13 - (AlturaNormal(stI) - LN(13f)) / 2; Moldura(new Rect(xi, topoI, wi, LN(13f)), cc); NaBase(xi + 6, bas, wi, d[1], stI);
                 float yd = yl + hN; yd += Paragrafo(13, yd, wc, lhD, d[2], stD); if (d[4] != null) Paragrafo(13, yd + 1, wc, lhE, d[4], stE);
                 yy += blocos[i];
             }
             GUI.EndGroup();
         }
         // letter-spacing: cada letra com o espaço a mais depois dela
+        // o mesmo na linha de base; devolve a largura (cada letra soma o espaçamento, a última também, como no CSS)
+        float EspacadaNaBase(float x, float bas, string txt, GUIStyle st, float esp, bool desenha = true)
+        {
+            float espaco = Larg("a a", st) - Larg("aa", st), x0 = x;
+            foreach (var ch in txt) { string c = ch.ToString(); if (ch != ' ' && desenha) NaBase(x, bas, 40, c, st); x += (ch == ' ' ? espaco : Larg(c, st)) + esp; }
+            return x - x0;
+        }
         void Espacada(float x, float y, float lh, string txt, GUIStyle st, float esp)
         {
             float espaco = Larg("a a", st) - Larg("aa", st);   // o espaço sozinho pode medir zero

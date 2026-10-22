@@ -179,7 +179,7 @@ namespace RitualReversal
         string ListaProntos() { return string.Join("   ", g.slots.Where(s => s.cid != null).Select(s => { bool p; g.ready.TryGetValue(s.cid, out p); return s.name + " " + (p ? "✓" : "…"); }).ToArray()); }
 
         void TelaResumo() { EstilosNoite(); TelaResumoCss(); }
-        void TelaFinal() { EstilosNoite(); if (repAberto) { TelaReplay(); return; } if (relAberto) { TelaRelatorio(); return; } TelaFinalCss(); }
+        void TelaFinal() { EstilosNoite(); if (repAberto) { TelaReplayCss(); return; } if (relAberto) { TelaRelatorioCss(); return; } TelaFinalCss(); }
         // local: grava o registro (com dificuldade, laboratório e papel, como o navegador) na pasta de dados do jogo;
         // online: o servidor guarda o arquivo, o navegador do sistema baixa
         void BaixarRegistro()

@@ -18,13 +18,13 @@ namespace RitualReversal
             int n = Mathf.Max(1, Mathf.FloorToInt((w + 8) / (220 + 8))); float cw = (w - 8 * (n - 1)) / n; var stB = Css("serif", 17, BONE); var stS = Css("400", 13, Hx("#c9bfae")); var stT = Css("400", 12, MUDO, TextAnchor.UpperRight);
             for (int i = 0; i < L.Count; i += n)
             {
-                float hl = 0; for (int j = i; j < Mathf.Min(L.Count, i + n); j++) hl = Mathf.Max(hl, 7 + AlturaNormal(stB) + AlturaParagrafo(L[j].sub, stS, cw - 22, 19.2f) + 7);
+                float hl = 0; for (int j = i; j < Mathf.Min(L.Count, i + n); j++) hl = Mathf.Max(hl, 7 + AlturaNormal(stB) + AlturaParagrafo(L[j].sub, stS, cw - 22, LN(16)) + 7);
                 for (int j = i; j < Mathf.Min(L.Count, i + n); j++)
                 {
                     if (medindo) continue; var l = L[j]; bool meu = eu != null && l.quem.Contains(eu.name); var r = new Rect(x + (j - i) * (cw + 8), y, cw, hl);
                     Caixa(r, meu ? new Color(60 / 255f, 46 / 255f, 20 / 255f, .55f) : new Color(16 / 255f, 14 / 255f, 12 / 255f, .75f)); Caixa(new Rect(r.x, r.y, 2, r.height), l.culto ? CrimsonHi : GOLD_HI);
-                    Linha(r.x + 12, r.y + 7, cw - 22, 19.2f, Noite.Relogio(l.t), stT); Linha(r.x + 12, r.y + 7, cw - 22 - Larg(Noite.Relogio(l.t), stT) - 6, AlturaNormal(stB), l.tit, stB);
-                    Paragrafo(r.x + 12, r.y + 7 + AlturaNormal(stB), cw - 22, 19.2f, l.sub, stS);
+                    Linha(r.x + 12, r.y + 7, cw - 22, LN(16), Noite.Relogio(l.t), stT); Linha(r.x + 12, r.y + 7, cw - 22 - Larg(Noite.Relogio(l.t), stT) - 6, AlturaNormal(stB), l.tit, stB);
+                    Paragrafo(r.x + 12, r.y + 7 + AlturaNormal(stB), cw - 22, LN(16), l.sub, stS);
                 }
                 y += hl + 8;
             }
@@ -35,14 +35,14 @@ namespace RitualReversal
         {
             var P = log != null ? Noite.Premios(log) : null; if (P == null || P.Count == 0) return 0; var eu = Eu(); float y0 = y;
             y += H3(x, y, w, "Destaques da noite") - 6 + 6;
-            float cw = (w - 16) / 3; var stB = Css("serif", 18, GOLD_HI); var stN = Css("400", 17, BONE); var stM = Css("400", 13, MUDO); float h = 1 + 8 + AlturaNormal(stB) + 20.4f + 15.6f + 8 + 1;
+            float cw = (w - 16) / 3; var stB = Css("serif", 18, GOLD_HI); var stN = Css("400", 17, BONE); var stM = Css("400", 13, MUDO); float h = 1 + 8 + AlturaNormal(stB) + LN(17) + LN(13) + 8 + 1;
             var lista = P.Take(6).ToList();
             for (int i = 0; i < lista.Count; i++)
             {
                 var r = new Rect(x + (i % 3) * (cw + 8), y + (i / 3) * (h + 8), cw, h); if (medindo) continue; var p = lista[i]; bool meu = eu != null && p.quem == eu.name;
                 Caixa(r, new Color(14 / 255f, 16 / 255f, 19 / 255f, .8f)); Moldura(r, meu ? GOLD_HI : BORDA_OP); if (meu) Moldura(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), new Color(GOLD_HI.r, GOLD_HI.g, GOLD_HI.b, .4f));
-                float yy = r.y + 9; Linha(r.x + 11, yy, cw - 22, AlturaNormal(stB), p.nome, stB); yy += AlturaNormal(stB); Linha(r.x + 11, yy, cw - 22, 20.4f, p.quem, stN); yy += 20.4f;
-                Linha(r.x + 11, yy, cw - 22, 15.6f, p.verbo + " " + p.n + " " + (p.n == 1 ? p.um : p.varios), stM);
+                float yy = r.y + 9; Linha(r.x + 11, yy, cw - 22, AlturaNormal(stB), p.nome, stB); yy += AlturaNormal(stB); Linha(r.x + 11, yy, cw - 22, LN(17), p.quem, stN); yy += LN(17);
+                Linha(r.x + 11, yy, cw - 22, LN(13), p.verbo + " " + p.n + " " + (p.n == 1 ? p.um : p.varios), stM);
             }
             y += ((lista.Count + 2) / 3) * (h + 8) - 8;
             return y - y0;
@@ -54,7 +54,7 @@ namespace RitualReversal
             foreach (var P in rods)
             {
                 y += H3(x, y, w, UmaNoite || rods.Count < 2 ? "Placar da noite" : "Placar da rodada " + P.r) - 6 - 10 + 6;
-                float lh = 17 * 1.2f, hl = 6 + lh + 6 + 1, yy = y + 10; float[] cols = { 170, 150 }; float numW = (w - cols[0] - cols[1]) / 6;
+                float lh = LN(17f), hl = 6 + lh + 6 + 1, yy = y + 10; float[] cols = { 170, 150 }; float numW = (w - cols[0] - cols[1]) / 6;
                 System.Action<string[], bool, Color?, bool> linha = (cel, th, c0, meu) =>
                 {
                     if (!medindo)
@@ -95,13 +95,13 @@ namespace RitualReversal
             }
             y += hs + 2;
             // .ltLeg: os altares que tiveram ritual e o selamento, 14 px, quebrando
-            var stL = Css("400", 14, MUDO); float xx = x, lh = 16.8f; var itens = new List<KeyValuePair<string, Color?>>();
+            var stL = Css("400", 14, MUDO); float xx = x, lh = LN(14); var itens = new List<KeyValuePair<string, Color?>>();
             for (int i = 0; i < g.altars.Count; i++) if (R.am.Any(q => i < q.a.Length && q.a[i] != null)) itens.Add(new KeyValuePair<string, Color?>(g.altars[i].name, Hx(Noite.COR_ALT[i % 6])));
             itens.Add(new KeyValuePair<string, Color?>("Selamento", null));
             foreach (var it in itens)
             {
                 float iw = 14 + 6 + Larg(it.Key, stL); if (xx + iw > x + w && xx > x) { xx = x; y += lh + 4; }
-                if (!medindo) { if (it.Value.HasValue) Caixa(new Rect(xx, y + lh / 2 - 1.5f, 14, 3), it.Value.Value); else for (int k = 0; k < 2; k++) Caixa(new Rect(xx + k * 7, y + lh / 2 - 1.5f, 4, 3), GOLD_HI); Linha(xx + 20, y, iw, lh, it.Key, stL); }
+                if (!medindo) { if (it.Value.HasValue) Caixa(new Rect(xx, y + MeioX(14) - 1.5f, 14, 3), it.Value.Value); else for (int k = 0; k < 2; k++) Caixa(new Rect(xx + k * 7, y + MeioX(14) - 1.5f, 4, 3), GOLD_HI); Linha(xx + 20, y, iw, lh, it.Key, stL); }
                 xx += iw + 14;
             }
             y += lh;
@@ -109,21 +109,29 @@ namespace RitualReversal
             var ev = mk.Where(m => m.tipo != "momento").Take(12).ToList();
             if (ev.Count > 0)
             {
-                y += 6; float cw = (w - 22) / 2; var stE = Css("400", 14, Hx("#cfc6b6")); var stB = Css("600", 14, GOLD); int meia = (ev.Count + 1) / 2; float hy = 0;
-                for (int c = 0; c < 2; c++)
-                {
-                    float yy = y;
-                    for (int i = c * meia; i < Mathf.Min(ev.Count, (c + 1) * meia); i++)
-                    {
-                        string t = Noite.Relogio(ev[i].rt); float wt = Larg(t, stB) + 4; float hh = AlturaParagrafo(ev[i].txt, stE, cw - wt, 16.8f);
-                        if (!medindo) { Linha(x + c * (cw + 22), yy + 2, wt, 16.8f, t, stB); Paragrafo(x + c * (cw + 22) + wt, yy + 2, cw - wt, 16.8f, ev[i].txt, stE); }
-                        yy += 2 + hh + 2;
-                    }
-                    hy = Mathf.Max(hy, yy - y);
-                }
-                y += hy;
+                var stE = Css("400", 14, Hx("#cfc6b6")); var stB = Css("600", 14, GOLD);
+                y += 6 + ListaMarcos(x, y + 6, w, ev.Select(m => new[] { Noite.Relogio(m.rt), m.txt }).ToList(), i => stE, stB);
             }
             return y - y0;
+        }
+        // ul.ltEv: columns: 2 com 22 px entre elas, cada li com 2 px em cima e embaixo (fundidos entre vizinhos), o b do tempo
+        // com 4 px depois e o texto que quebra por baixo dele. As colunas se equilibram pela altura (break-inside: avoid):
+        // a menor altura em que tudo cabe, a primeira coluna enchida até ela; as margens que encostam na quebra somem.
+        float ListaMarcos(float x, float y, float w, List<string[]> itens, System.Func<int, GUIStyle> estTexto, GUIStyle stB)
+        {
+            int n = itens.Count; if (n == 0) return 0; float cw = (w - 22) / 2;
+            System.Func<int, List<KeyValuePair<string, GUIStyle>>> partes = i => new List<KeyValuePair<string, GUIStyle>> { new KeyValuePair<string, GUIStyle>(itens[i][0], stB), new KeyValuePair<string, GUIStyle>(itens[i][1], estTexto(i)) };
+            var h = new float[n]; for (int i = 0; i < n; i++) h[i] = Fluxo(0, 0, cw, LN(14), 14, partes(i), true, 4);
+            System.Func<int, float> c1 = k => { if (k == 0) return 0; float t = 2; for (int i = 0; i < k; i++) t += h[i] + (i > 0 ? 2 : 0); return t + (k == n ? 2 : 0); };
+            System.Func<int, float> c2 = k => { if (k == n) return 0; float t = 2; for (int i = k; i < n; i++) t += h[i] + (i > k ? 2 : 0); return t; };
+            float alt = float.MaxValue; for (int k = 0; k <= n; k++) alt = Mathf.Min(alt, Mathf.Max(c1(k), c2(k)));
+            int corte = 0; for (int k = 0; k <= n; k++) if (c1(k) <= alt + .01f && c2(k) <= alt + .01f) corte = k;
+            if (!medindo)
+            {
+                float yy = y + 2; for (int i = 0; i < corte; i++) { Fluxo(x, yy, cw, LN(14), 14, partes(i), false, 4); yy += h[i] + 2; }
+                yy = y; for (int i = corte; i < n; i++) { Fluxo(x + cw + 22, yy, cw, LN(14), 14, partes(i), false, 4); yy += h[i] + 2; }
+            }
+            return alt;
         }
         // statsTable: table.res com o cabeçalho "Registro da partida"
         float RegistroCss(float x, float y, float w)
@@ -139,11 +147,11 @@ namespace RitualReversal
             if (!desAtivo || desFeito == null) return 0; var r = desFeito; float y0 = y; y += 12;
             var stS = Css("400", 12, GOLD); var stB = Css("serif", 34, GOLD_HI); var stP = Css("400", 15, Hx("#cfc6b6")); var stE = Css("400", 15, CrimsonHi);
             string partes = string.Join(" · ", ((List<string>)r["partes"]).ToArray()), em = (bool)r["recorde"] ? "Novo recorde do dia!" : "Recorde do dia: " + r["melhor"];
-            float hp = AlturaParagrafo(partes, stP, w - 30, 18), h = 1 + 10 + 14.4f + AlturaNormal(stB) + hp + 18 + 10 + 1;
+            float hp = AlturaParagrafo(partes, stP, w - 30, 18), h = 1 + 10 + LN(12) + AlturaNormal(stB) + hp + 18 + 10 + 1;
             if (!medindo)
             {
                 var c = new Rect(x, y, w, h); Caixa(c, new Color(38 / 255f, 32 / 255f, 20 / 255f, .6f)); Moldura(c, GOLD); float yy = y + 11;
-                Espacada(x + 15, yy, 14.4f, ("Desafio da noite · " + desData).ToUpperInvariant(), stS, .96f); yy += 14.4f; Linha(x + 15, yy, w - 30, AlturaNormal(stB), r["p"] + " pontos", stB); yy += AlturaNormal(stB);
+                Espacada(x + 15, yy, LN(12), ("Desafio da noite · " + desData).ToUpperInvariant(), stS, .96f); yy += LN(12); Linha(x + 15, yy, w - 30, AlturaNormal(stB), r["p"] + " pontos", stB); yy += AlturaNormal(stB);
                 yy += Paragrafo(x + 15, yy, w - 30, 18, partes, stP); Linha(x + 15, yy, w - 30, 18, em, stE);
             }
             return 12 + h + 12;

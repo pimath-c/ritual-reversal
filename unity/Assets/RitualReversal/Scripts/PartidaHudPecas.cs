@@ -34,7 +34,7 @@ namespace RitualReversal
             float wNA = Larg(nos.ToString(), stNum) + 12, wNB = Larg(eles.ToString(), stNum) + 12;
             float wRel = Mathf.Max(88, Larg(relogio, stRel), Larg(fase, stFase), Larg(regra, stRegra) * 1.05f);
             float ladoA = Mathf.Max(150, Larg(nA, stLado) + wNA), ladoB = Mathf.Max(150, Larg(nB, stLado) + wNB), total = ladoA + 22 + wRel + 22 + ladoB;
-            float x0 = W / 2 - total / 2, y0 = 14, hRel = 36 * 1.05f, hFase = AlturaNormal(stFase), hRegra = 11 * 1.2f, hWrap = hRel + hFase + 1 + hRegra, xw = x0 + ladoA + 22;
+            float x0 = W / 2 - total / 2, y0 = 14, hRel = 36 * 1.05f, hFase = AlturaNormal(stFase), hRegra = LN(11f), hWrap = hRel + hFase + 1 + hRegra, xw = x0 + ladoA + 22;
             if (grande) Tracos.Brilho(W / 2, y0 + hRel / 2, Larg(relogio, stRel) * .8f + 18, 30, new Color(.878f, .263f, .369f, .45f));
             NaBase(xw, y0 + (hRel - AlturaNormal(stRel)) / 2 + 36 + 2, wRel, relogio, Css("600", 36, new Color(0, 0, 0, .45f), TextAnchor.UpperCenter));   // text-shadow 0 2px 10px
             Linha(xw, y0, wRel, hRel, relogio, stRel);
@@ -47,7 +47,7 @@ namespace RitualReversal
         // texto pela linha de base (como o alinhamento de linha do navegador entre tamanhos diferentes)
         void NaBase(float x, float baseline, float w, string txt, GUIStyle st, float sombra = 0)
         {
-            float lh = AlturaNormal(st); Linha(x, baseline - SubidaEm(st.font) * st.fontSize - (lh - AlturaNormal(st)) / 2, w, lh, txt, st, sombra);
+            float lh = AlturaNormal(st); Linha(x, baseline - SubidaPx(st), w, lh, txt, st, sombra);
         }
 
         // #strip: um losango por altar com o sinal do que a equipe sabe, o nome e a barra do ritual
@@ -127,8 +127,8 @@ namespace RitualReversal
         // #vitals: a classe, vida, sanidade e óbolos, presos embaixo à esquerda
         void Vitais(Ator m, bool economia)
         {
-            float x = 26, w = 250, hRole = 19 * 1.268f, hMet = 7 + 17 * 1.2f + 2 + 5, hBolsa = economia ? 8 + 17 * 1.2f : 0, y = H - 22 - (hRole + 2 * hMet + hBolsa);
-            var cl = Regras.CLASSES[m.cls]; var stR = Css("serif", 19, m.team == "H" ? GOLD : CrimsonHi); float bas = y + (hRole - AlturaNormal(stR)) / 2 + SubidaEm(stR.font) * 19;
+            float x = 26, w = 250, hRole = LNs(19f), hMet = 7 + LN(17f) + 2 + 5, hBolsa = economia ? 8 + LN(17f) : 0, y = H - 22 - (hRole + 2 * hMet + hBolsa);
+            var cl = Regras.CLASSES[m.cls]; var stR = Css("serif", 19, m.team == "H" ? GOLD : CrimsonHi); float bas = y + (hRole - AlturaNormal(stR)) / 2 + SubidaPx(stR);
             NaBase(x, bas, 200, cl.name, stR, .9f); NaBase(x + Larg(cl.name, stR) + 6, bas, 150, m.team == "H" ? "Caçador" : "Cultista", Css("400", 14, MUDO), .9f);
             y += hRole;
             string san = m.sanity < 15 ? "Sanidade: pânico, você se denuncia" : m.sanity < 40 ? "Sanidade: abalado" : m.sanity < 70 ? "Sanidade: inquieto" : "Sanidade";
@@ -139,7 +139,7 @@ namespace RitualReversal
         void Medidor(float x, float y, float w, string rotulo, string valor, float frac, Color a, Color b, float escudo)
         {
             y += 7; var stL = Css("400", 13, MUDO); var stV = Css("600", 17, BONE, TextAnchor.UpperRight);
-            Linha(x, y, w - 60, 13 * 1.2f, rotulo, stL); Linha(x + w - 120, y, 120, 17 * 1.2f, valor, stV); y += 17 * 1.2f + 2;
+            Linha(x, y, w - 60, LN(13f), rotulo, stL); Linha(x + w - 120, y, 120, LN(17f), valor, stV); y += LN(17f) + 2;
             var tr = new Rect(x, y, w, 5); Caixa(tr, new Color(1, 1, 1, .1f)); frac = Mathf.Clamp01(frac);
             if (frac > 0) PintarDegrade(new Rect(x, y, w * frac, 5), a, b, false);
             if (escudo > 0) Caixa(new Rect(tr.xMax - w * Mathf.Clamp01(escudo), y, w * Mathf.Clamp01(escudo), 5), new Color(200 / 255f, 120 / 255f, 1, .7f));
@@ -163,7 +163,7 @@ namespace RitualReversal
             {
                 var t = L[i]; string nome = (string)t[1] + (t[2] != null ? " <b>" + t[2] + "</b>" : ""); float tw = Mathf.Max(58, Mathf.Max(Larg((string)t[0], stK), Larg(nome, stN)) + 18); x -= tw;
                 var r = new Rect(x, yTools, tw, hTool); Caixa(r, new Color(0, 0, 0, .35f)); Moldura(r, (bool)t[4] ? GOLD : new Color(.91f, .878f, .816f, .14f));
-                Linha(r.x, r.y + 4, tw, 12 * 1.2f, (string)t[0], stK); Linha(r.x, r.y + 4 + 12 * 1.2f, tw, 12 * 1.2f, nome, stN);
+                Linha(r.x, r.y + 4, tw, LN(12f), (string)t[0], stK); Linha(r.x, r.y + 4 + LN(12f), tw, LN(12f), nome, stN);
                 float cd = Mathf.Clamp01((float)t[3]); if (cd > 0) Caixa(new Rect(r.x + 1, r.yMax - 1 - (hTool - 2) * cd, tw - 2, (hTool - 2) * cd), new Color(0, 0, 0, .65f));
                 x -= 5;
             }
@@ -206,7 +206,7 @@ namespace RitualReversal
             else if (s > 0) nota = s >= 2 ? "Selando em dupla" : "Selando";
             else if (n == 0) nota = noCirculo.Count > 0 ? "Ninguém canaliza: quem ataca não celebra" : R.prog > R.cp ? "Círculo vazio: o ritual recua até o checkpoint" : "Círculo vazio";
             else { double mf = Sim.MareFactor(g); nota = n + " " + (n > 1 ? "canalizando" : "canalizando sozinho") + (mf > 1 ? ", Maré Profana +" + Mathf.RoundToInt((float)(mf - 1) * 100) + "%" : ""); }
-            var stT = Css("serif", 17, BONE, TextAnchor.UpperCenter); float hT = AlturaNormal(stT), hR = 14 * 1.2f, h = 1 + 10 + hT + 6 + 2 * (4 + hR) + 5 + 16 + 12 + 1, w = 440;
+            var stT = Css("serif", 17, BONE, TextAnchor.UpperCenter); float hT = AlturaNormal(stT), hR = LN(14f), h = 1 + 10 + hT + 6 + 2 * (4 + hR) + 5 + 16 + 12 + 1, w = 440;
             var caixa = new Rect(W / 2 - w / 2, H - 150 - h, w, h); Placa(caixa);
             float x = caixa.x + 17, y = caixa.y + 11, wc = w - 34; Linha(x, y, wc, hT, R.name, stT); y += hT + 6;
             Fileira(x, y + 4, wc, hR, "Ritual", (float)R.prog, Hx("#6b1224"), CrimsonHi, true); y += 4 + hR;

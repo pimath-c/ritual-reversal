@@ -13,12 +13,20 @@ namespace RitualReversal
         Vector2 rolPainel; string painelChave;
         // .screen + .panel.plate: largura min(800, tela − 32), padding 26 × 40 × 24, no meio; o corpo recebe (x, y, largura)
         // e devolve a altura do conteúdo. Quando não cabe, a tela inteira rola
+        Rect? primeiroFoco;   // o primeiro botão ativo ou campo da tela, achado na passada que mede
         void PainelTela(string chave, float largura, System.Func<float, float, float, float> corpo)
         {
-            if (painelChave != chave) { painelChave = chave; rolPainel = Vector2.zero; }
+            bool nova = painelChave != chave; if (nova) { painelChave = chave; rolPainel = Vector2.zero; }
             FundoTela(); float w = Mathf.Min(largura, W - 32), wc = w - 82;
-            medindo = true; float hc = corpo(0, 0, wc); medindo = false; float h = 1 + 26 + hc + 24 + 1;
+            primeiroFoco = null; medindo = true; float hc = corpo(0, 0, wc); medindo = false; float h = 1 + 26 + hc + 24 + 1;
             if (h + 32 <= H) { var r = new Rect((W - w) / 2, (H - h) / 2, w, h); PainelCss(r); corpo(r.x + 41, r.y + 27, wc); return; }
+            // o setScreen do navegador foca o primeiro botão (ou campo) da tela nova, e o focus() o traz para a vista: no meio
+            // da tela se estava fora dela, sem passar do fim da rolagem
+            if (nova && primeiroFoco.HasValue)
+            {
+                var f = primeiroFoco.Value; float fy = 16 + 1 + 26 + f.y;
+                if (fy < rolPainel.y || fy + f.height > rolPainel.y + H) rolPainel.y = Mathf.Clamp(fy + f.height / 2 - H / 2, 0, h + 32 - H);
+            }
             rolPainel = GUI.BeginScrollView(new Rect(0, 0, W, H), rolPainel, new Rect(0, 0, W - 20, h + 32), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
             var rr = new Rect((W - 20 - w) / 2, 16, w, h); PainelCss(rr); corpo(rr.x + 41, rr.y + 27, wc); GUI.EndScrollView();
         }
@@ -30,7 +38,7 @@ namespace RitualReversal
             for (int i0 = 0; i0 < itens.Count; i0 += colunas)
             {
                 float hl = 0; var alts = new List<float>();
-                for (int i = i0; i < Mathf.Min(itens.Count, i0 + colunas); i++) { float a = AlturaNormal(stB) + 4 + AlturaParagrafo(itens[i][1], stS, cw - 30, 16 * 1.35f) + (itens[i][2] != "" ? 6 + 14 * 1.2f : 0); alts.Add(a); hl = Mathf.Max(hl, a); }
+                for (int i = i0; i < Mathf.Min(itens.Count, i0 + colunas); i++) { float a = AlturaNormal(stB) + 4 + AlturaParagrafo(itens[i][1], stS, cw - 30, 16 * 1.35f) + (itens[i][2] != "" ? 6 + LN(14f) : 0); alts.Add(a); hl = Mathf.Max(hl, a); }
                 float hc = hl + 24 + 2;
                 for (int i = i0; i < Mathf.Min(itens.Count, i0 + colunas); i++)
                 {
@@ -42,7 +50,7 @@ namespace RitualReversal
                         if (s) Moldura(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), GOLD_HI);   // o inset 0 0 0 1px
                         float cy = r.y + 1 + 12 + (hl - alts[i - i0]) / 2, cx = r.x + 15;
                         Linha(cx, cy, cw - 30, AlturaNormal(stB), itens[i][0], stB); cy += AlturaNormal(stB) + 4;
-                        cy += Paragrafo(cx, cy, cw - 30, 16 * 1.35f, itens[i][1], stS) + 6; if (itens[i][2] != "") Linha(cx, cy, cw - 30, 14 * 1.2f, itens[i][2], stM);
+                        cy += Paragrafo(cx, cy, cw - 30, 16 * 1.35f, itens[i][1], stS) + 6; if (itens[i][2] != "") Linha(cx, cy, cw - 30, LN(14f), itens[i][2], stM);
                     }
                     GUI.enabled = e0;
                 }
@@ -104,9 +112,9 @@ namespace RitualReversal
         // .set: rótulo de 200 px | controle | valor de 64 px, 14 px entre eles, 12 px entre as linhas, 17 px
         float LinhaAjuste(float x, float y, float w, string rotulo, string valor, float hControle, System.Action<Rect> controle)
         {
-            float h = Mathf.Max(17 * 1.2f, hControle); var stL = Css("400", 17, BONE); var stV = Css("600", 17, GOLD_HI, TextAnchor.UpperRight);
+            float h = Mathf.Max(LN(17f), hControle); var stL = Css("400", 17, BONE); var stV = Css("600", 17, GOLD_HI, TextAnchor.UpperRight);
             float xc = x + 200 + 14, wc = w - 200 - 64 - 28;
-            if (!medindo) { Linha(x, y + (h - 20.4f) / 2, 200, 20.4f, rotulo, stL); if (valor != null) Linha(xc + wc + 14, y + (h - 20.4f) / 2, 64, 20.4f, valor, stV); }
+            if (!medindo) { Linha(x, y + (h - LN(17)) / 2, 200, LN(17), rotulo, stL); if (valor != null) Linha(xc + wc + 14, y + (h - LN(17)) / 2, 64, LN(17), valor, stV); }
             controle(new Rect(xc, y + (h - hControle) / 2, wc, hControle)); return h;
         }
         // input[type=range] com accent dourado: a trilha preenchida até o botão
@@ -162,15 +170,15 @@ namespace RitualReversal
             y -= 12; y += P(x, y, w, "Reduzidos: relâmpagos, o clarão do Grande Ritual e a cegueira do Flash ficam mais fracos, e a câmera não treme com a sanidade baixa. Ouro e azul troca o carmim do culto por azul no placar, nos altares do HUD, na planta e no replay (ajuda com daltonismo vermelho-verde).", 15, MUDO, 1.45f, TextAnchor.UpperCenter, 64, true);
             y += H3(x, y, w, "Controles") - 6 + 8;
             // .binds: duas colunas de 6 × 14; cada linha com o nome e a tecla emoldurada
-            float bw = (w - 14) / 2, bh = 1 + 6 + 16 * 1.2f + 6 + 1; var stN = Css("400", 16, BONE);
+            float bw = (w - 14) / 2, bh = 1 + 6 + LN(16f) + 6 + 1; var stN = Css("400", 16, BONE);
             for (int i = 0; i < EntradaUnity.ACOES.Length; i++)
             {
                 var a = EntradaUnity.ACOES[i]; var r = new Rect(x + (i % 2) * (bw + 14), y + (i / 2) * (bh + 6), bw, bh); bool cap = capturando == a[0];
                 if (BotaoCss(r, a[1], (cap ? "choiceSel" : "choice") + "|mudo")) { capturando = a[0]; capturaQuadro = Time.frameCount; }
                 if (!medindo)
                 {
-                    Linha(r.x + 11, r.y + 7, bw - 22, 19.2f, a[1], stN); string kk = cap ? "aperte…" : EntradaUnity.Nome(a[0]); var stK = Css("700", 16, cap ? CrimsonHi : GOLD_HI, TextAnchor.UpperCenter);
-                    float kw = Mathf.Max(34, Larg(kk, stK) + 14 + 2); var rk = new Rect(r.xMax - 11 - kw, r.y + 7, kw, 19.2f); Moldura(rk, Hx("#4a525c")); Linha(rk.x, rk.y, kw, 19.2f, kk, stK);
+                    Linha(r.x + 11, r.y + 7, bw - 22, LN(16), a[1], stN); string kk = cap ? "aperte…" : EntradaUnity.Nome(a[0]); var stK = Css("700", 16, cap ? CrimsonHi : GOLD_HI, TextAnchor.UpperCenter);
+                    float kw = Mathf.Max(34, Larg(kk, stK) + 14 + 2); var rk = new Rect(r.xMax - 11 - kw, r.y + 7, kw, LN(16)); Moldura(rk, Hx("#4a525c")); Linha(rk.x, rk.y, kw, LN(16), kk, stK);
                 }
             }
             y += ((EntradaUnity.ACOES.Length + 1) / 2) * (bh + 6) - 6;
@@ -205,7 +213,7 @@ namespace RitualReversal
             var L = new List<string[]> { new[] { andar, "Andar" }, new[] { kb("sprint"), "Correr" }, new[] { kb("agachar"), "Agachar" }, new[] { kb("fire"), "Atacar" }, new[] { kb("abil"), "Feitiço" }, new[] { kb("use"), "Interagir" } };
             if (papel == "H") { L.Add(new[] { kb("sensor"), "Sensor" }); L.Add(new[] { kb("lantern"), "Lanterna" }); L.Add(new[] { kb("flare"), "Flare" }); L.Add(new[] { kb("reload"), "Recarregar" }); } else L.Add(new[] { kb("use2"), "Transferir" });
             L.Add(new[] { kb("map"), "Planta" }); L.Add(new[] { kb("caderno"), "Caderno" }); L.Add(new[] { kb("ping"), "Ping" }); L.Add(new[] { kb("falas"), "Frases" }); if (online) L.Add(new[] { "Enter", "Chat" });
-            var stK = Css("700", 14, GOLD_HI); var stN = Css("400", 14, MUDO); float lh = 14 * 1.2f, maxW = Mathf.Min(620, w);
+            var stK = Css("700", 14, GOLD_HI); var stN = Css("400", 14, MUDO); float lh = LN(14f), maxW = Mathf.Min(620, w);
             var larg = L.Select(i => Larg(i[0], stK) + 10 + 2 + 6 + Larg(i[1], stN)).ToList();
             var linhas = new List<List<int>> { new List<int>() }; float acc = 0;
             for (int i = 0; i < L.Count; i++) { float add = (linhas[linhas.Count - 1].Count > 0 ? 16 : 0) + larg[i]; if (acc + add > maxW && linhas[linhas.Count - 1].Count > 0) { linhas.Add(new List<int>()); acc = 0; add = larg[i]; } linhas[linhas.Count - 1].Add(i); acc += add; }

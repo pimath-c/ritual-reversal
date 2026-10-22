@@ -88,6 +88,7 @@ namespace RitualReversal
             AteFase("play", 400);
             TQuadros(60, .05f); Foto("hud", .05f); Travar(false); TQuadros(6, .05f); Foto("pausa", .05f); pausaAjustes = true; TQuadros(4, .05f); Foto("pausa-ajustes", .05f); pausaAjustes = false; Travar(true);   // a pausa
             cadernoAberto = true; TQuadros(10, .05f); Foto("caderno", .05f); cadernoAberto = false; falasAbertas = true; falasT = 4; TQuadros(10, .05f); Foto("falas", .05f);
+            falasAbertas = false; { var n = Mapa.NPCS.Find(x => x.id == "ermitao"); var m = Eu(); m.x = n.x + 1; m.z = n.z; m.obolos = 5; lojaAberta = "ermitao"; Travar(false); TQuadros(4, .05f); Foto("loja", .05f); lojaAberta = null; Travar(true); }   // a loja do Ermitão
             Input.apertadas.Add(KeyCode.V); TQuadro(.05f); Input.apertadas.Add(KeyCode.Alpha1); TQuadro(.05f);   // uma frase pelas teclas
             Input.seguradas.Add(KeyCode.Tab); TQuadros(10, .05f); Foto("planta", .05f); Foto("planta-720p", .05f, 1280, 720); Input.seguradas.Clear();     // a planta
             TQuadros(150, .05f, 9); Foto("hud-depois", .05f);
@@ -95,7 +96,7 @@ namespace RitualReversal
             AteFase("final", 400); TQuadros(20); Foto("resultado");
             if (g != null && g.phase == "final")
             {
-                Apertar("Relatório do playtest", 10); Foto("relatorio"); Apertar("Copiar como texto", 2); Apertar("Voltar", 3);
+                Apertar("Relatório do playtest", 10); Foto("relatorio"); var rol0 = rolPainel; rolPainel = Vector2.zero; Foto("relatorio-topo"); rolPainel = rol0; Apertar("Copiar como texto", 2); Apertar("Voltar", 3);
                 Apertar("Rever a noite", 5); repVel = 80; TQuadros(120); Foto("replay"); Foto("replay-1440p", 1 / 30f, 2560, 1440); Apertar("Voltar ao resultado", 3);
                 Apertar("Baixar registro", 3);
             }
@@ -116,7 +117,7 @@ namespace RitualReversal
         {
             servidor = "localhost:" + porta; nomeJogador = "Teste"; Conectar(true, ""); Esperar(() => noLobby && lobbySlots.Count == 4);
             if (!noLobby) { falhas.Add("online: não entrou no lobby (" + erroRede + ")"); return; }
-            Esperar(() => false, 10); Foto("lobby"); Apertar("Difíceis", 2); Esperar(() => lobbyDif == "dificil", 100); if (lobbyDif != "dificil") falhas.Add("online: a dificuldade do lobby não chegou (" + lobbyDif + ")");
+            Esperar(() => false, 10); Foto("lobby"); { var c0 = salaCodigo; salaCodigo = "KQXT"; Foto("lobby-kqxt"); salaCodigo = c0; } Apertar("Difíceis", 2); Esperar(() => lobbyDif == "dificil", 100); if (lobbyDif != "dificil") falhas.Add("online: a dificuldade do lobby não chegou (" + lobbyDif + ")");
             labAberto = true; Apertar("2:00", 2); Esperar(() => lobbyLab != null && lobbyLab.crepusculo == 120, 100); if (lobbyLab == null || lobbyLab.crepusculo != 120) falhas.Add("online: o laboratório do lobby não chegou");
             rascunhoLobby = "boa noite"; Apertar("Enviar", 2); Esperar(() => chat.Count > 0, 100); if (chat.Count == 0) falhas.Add("online: o chat do lobby não voltou");
             Apertar("Começar a partida", 2); Esperar(() => g != null, 200); if (g == null) { falhas.Add("online: a partida não começou"); return; }
@@ -124,6 +125,7 @@ namespace RitualReversal
             for (int i = 0; i < 600 && g != null && g.phase != "play"; i++) { if (g.phase == "intro") GUILayout.Apertar("Estou pronto"); System.Threading.Thread.Sleep(15); TQuadro(1 / 30f); }
             if (g == null || g.phase != "play") { falhas.Add("online: não chegou ao jogo (" + (g != null ? g.phase : "sem jogo") + ")"); return; }
             Travar(true); Esperar(() => false, 60);
+            { var c0 = salaCodigo; salaCodigo = "KQXT"; reconectando = true; reconAte = Time.realtimeSinceStartup + 58; reconTent = 0; Foto("reconexao"); reconectando = false; salaCodigo = c0; }   // a tela de reconexão, sem cair de verdade
             Input.apertadas.Add(KeyCode.Return); TQuadro(1 / 30f); if (!chatAberto) falhas.Add("online: Enter não abriu o chat da partida");
             chatTexto = "estou indo"; TQuadro(1 / 30f); Foto("chat-jogo"); teclaGUI = KeyCode.Return; TQuadro(1 / 30f); if (chatAberto) falhas.Add("online: Enter não enviou o chat");
             Esperar(() => feed.Any(f => f.msg.Contains("estou indo")), 100); if (!feed.Any(f => f.msg.Contains("estou indo"))) falhas.Add("online: a mensagem da partida não voltou para a equipe");

@@ -75,11 +75,23 @@ namespace RitualReversal
             float dt = dtG; conqT -= dt;
             if (conqT <= 0) { if (conqAtual != null && conqT < -.5f) conqAtual = null; if (conqAtual == null && filaConq.Count > 0 && conqT < -.6f) { conqAtual = filaConq[0]; filaConq.RemoveAt(0); conqT = 4.5f; if (som != null) som.Tocar("sealed"); } }
             if (conqAtual == null) return;
-            float dentro = Mathf.Clamp01(Mathf.Min((4.5f - conqT) / .5f, (conqT + .5f) / .5f)); float x = W - 22 - 300 + (1 - Mathf.SmoothStep(0, 1, dentro)) * 360, y = H - 150 - 96;
-            Caixa(new Rect(x, y, 300, 96), new Color(.11f, .094f, .059f, .95f)); Caixa(new Rect(x, y, 300, 1), OURO); Caixa(new Rect(x, y + 95, 300, 1), OURO); Caixa(new Rect(x, y, 1, 96), OURO); Caixa(new Rect(x + 299, y, 1, 96), OURO);
-            GUI.Label(new Rect(x + 14, y + 8, 272, 18), "<size=12>" + Cor("CONQUISTA", OURO) + "</size>", sPequeno);
-            GUI.Label(new Rect(x + 14, y + 26, 272, 28), "<b>" + Cor(conqAtual[1], OURO_VIVO) + "</b>", sTexto);
-            GUI.Label(new Rect(x + 14, y + 56, 272, 36), "<size=14>" + conqAtual[2] + "</size>", sPequeno);
+            // #conquista: entra e sai pela direita com o transform do CSS (.5 s, cubic-bezier(.2,.9,.3,1.2), que passa um pouco do ponto)
+            float dx = conqT > 0 ? 360 * (1 - CurvaCss(.2f, .9f, .3f, 1.2f, (4.5f - conqT) / .5f)) : 360 * CurvaCss(.2f, .9f, .3f, 1.2f, -conqT / .5f);
+            float w = 300, x = W - 22 - w + dx; var stDesc = Css("400", 14, Hx("#cfc6b6"));
+            var linhas = Quebrar(conqAtual[2], stDesc, w - 30); float h = 2 + 20 + LN(12) + LNs(22f) + linhas.Count * LN(16), y = H - 150 - h;
+            var r = new Rect(x, y, w, h); PintarDegrade(r, new Color(38 / 255f, 32 / 255f, 20 / 255f, .95f), new Color(18 / 255f, 15 / 255f, 10 / 255f, .95f), true); Moldura(r, GOLD);
+            float yy = y + 11; Espacada(x + 15, yy, LN(12), "CONQUISTA", Css("400", 12, GOLD), .96f); yy += LN(12);
+            Linha(x + 15, yy, w - 30, LNs(22f), conqAtual[1], Css("serif", 22, GOLD_HI)); yy += LNs(22f);
+            // o span fica numa linha do corpo (16 px, line-height normal 19,2 px): linha de base 16 px abaixo do topo, o que a
+            // caixa de 20,8 px do Linha dá para um texto de 14 px
+            foreach (var l in linhas) { Linha(x + 15, yy, w - 30, 21f, l, stDesc); yy += LN(16); }
+        }
+        // cubic-bezier do CSS: acha o t em que a curva passa por x e devolve o y
+        static float CurvaCss(float x1, float y1, float x2, float y2, float x)
+        {
+            x = Mathf.Clamp01(x); float a = 0, b = 1, t = x;
+            for (int i = 0; i < 30; i++) { t = (a + b) / 2; float u = 1 - t, bx = 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t; if (bx < x) a = t; else b = t; }
+            float v = 1 - t; return 3 * v * v * t * y1 + 3 * v * t * t * y2 + t * t * t;
         }
 
         // ---------- tela do perfil ----------

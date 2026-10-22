@@ -31,7 +31,14 @@ namespace UnityEngine
         public RectOffset Copia() { return new RectOffset(left, right, top, bottom); }
     }
     // a fonte guarda de onde veio (Resources.Load<Font>("Fontes/X") tem name "X", como no Unity)
-    public class Font : Object { public string arquivo; }
+    public class Font : Object
+    {
+        public string arquivo; public int fontSize = 16;
+        // as fontes do sistema que o Unity acharia aqui (o system-ui do Chromium deste ambiente é a DejaVu Sans)
+        static readonly string[][] SISTEMA = { new[] { "DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" }, new[] { "Liberation Sans", "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf" } };
+        public static string[] GetOSInstalledFontNames() { var o = new List<string>(); foreach (var f in SISTEMA) if (File.Exists(f[1])) o.Add(f[0]); return o.ToArray(); }
+        public static Font CreateDynamicFontFromOSFont(string nome, int tam) { foreach (var f in SISTEMA) if (f[0] == nome && File.Exists(f[1])) return new Font { name = nome, arquivo = f[1], fontSize = tam }; return null; }
+    }
     public class GUIStyleState { public Color textColor = Color.white; public Texture2D background; public GUIStyleState Copia() { return new GUIStyleState { textColor = textColor, background = background }; } }
     public class GUIStyle
     {
@@ -112,6 +119,7 @@ namespace UnityEngine
         public static void DrawTexture(Rect r, Texture t) { DrawTexture(r, t, ScaleMode.StretchToFill); }
         public static void DrawTexture(Rect r, Texture t, ScaleMode m) { if (t == null) throw new Exception("GUI.DrawTexture com textura nula"); Desenho2D.Textura(r, t, Color.white, null, m); }
         public static string TextField(Rect r, string t, int max, GUIStyle s) { string n = proximoNome; proximoNome = null; Desenho2D.Estilo(r, t, s, false, n != null && n == foco); return t; }
+        public static string TextArea(Rect r, string t, int max, GUIStyle s) { string n = proximoNome; proximoNome = null; Desenho2D.Estilo(r, t, s, false, n != null && n == foco); return t; }
         public static void SetNextControlName(string n) { proximoNome = n; } public static void FocusControl(string n) { foco = n; } public static string GetNameOfFocusedControl() { return foco ?? ""; }
         public static bool Button(Rect r, string t) { return Button(r, t, skin.button); }
         public static bool Button(Rect r, string t, GUIStyle s) { Desenho2D.Estilo(r, t, s); return GUILayout.Apertado(t); }

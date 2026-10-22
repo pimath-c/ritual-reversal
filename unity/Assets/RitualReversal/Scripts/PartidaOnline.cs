@@ -168,38 +168,7 @@ namespace RitualReversal
             if (online && rede != null && !rede.aberta && !rede.fechada) GUILayout.Label("Conectando…", sPequeno);
             if (erroRede.Length > 0) GUILayout.Label(Cor(erroRede, CARMIM_VIVO), sPequeno);
         }
-        void TelaLobby()
-        {
-            EstilosNoite(); var r = Janela(Mathf.Min(980, W - 40), Mathf.Min(H - 40, 1000)); GUILayout.BeginArea(r); rolPerfil = GUILayout.BeginScrollView(rolPerfil);
-            GUILayout.Label("Sala", sTitulo); GUILayout.Label("<size=56><b>" + salaCodigo + "</b></size>", sCentro);
-            GUILayout.Label("Mande este código para seus amigos. Vagas sem jogador ficam com bots.", sCentro); GUILayout.Space(10);
-            GUILayout.BeginHorizontal();
-            for (int col = 0; col < 2; col++)
-            {
-                GUILayout.BeginVertical(); GUILayout.Label(col == 0 ? Cor("Equipe A", OURO) : Cor("Equipe B", CARMIM_VIVO), sCentro);
-                for (int i = col * 2; i < col * 2 + 2 && i < lobbySlots.Count; i++)
-                {
-                    var s = lobbySlots[i]; string txt = s.name + (s.cid != null ? (s.cid == hostCid ? " (anfitrião)" : "") : " (bot)") + (s.cid == EU ? " (você)" : "");
-                    GUI.enabled = s.cid == null; if (Bt(txt, sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "slot").Num("i", i)); GUI.enabled = true;
-                }
-                GUILayout.EndVertical();
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.Label((UmaNoite ? "A Equipe A caça e a Equipe B celebra." : "A Equipe A caça na rodada 1 e celebra na rodada 2.") + " Clique numa vaga de bot para trocar de lugar." + (lobbyPublica ? " Esta sala aparece na lista de salas abertas." : ""), sPequeno); GUILayout.Space(8);
-            LobbyExtra(hostCid == EU); GUILayout.Space(8);
-            GUILayout.BeginHorizontal();
-            if (hostCid == EU) { if (Bt("Começar a partida", sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "start")); }
-            else GUILayout.Label("Aguardando o anfitrião começar…", sCentro);
-            if (Bt("Sair da sala", sBotao, GUILayout.Height(52), GUILayout.Width(220))) SairOnline("");
-            GUILayout.EndHorizontal(); GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
-        void TelaReconexao()
-        {
-            var r = Janela(700, 240); GUILayout.BeginArea(r);
-            GUILayout.Label("Conexão perdida", sTitulo);
-            GUILayout.Label("Um bot está jogando no seu lugar. Tentando voltar à sala " + salaCodigo + "… tentativa " + (reconTent + 1) + ", sua vaga fica guardada por mais " + Mathf.CeilToInt(Mathf.Max(0, reconAte - Time.realtimeSinceStartup)) + " s", sCentro);
-            if (Bt("Voltar ao menu", sBotao)) SairOnline("");
-            GUILayout.EndArea();
-        }
+        void TelaLobby() { EstilosNoite(); TelaLobbyCss(); }
+        void TelaReconexao() { TelaReconexaoCss(); }
     }
 }

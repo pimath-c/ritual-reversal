@@ -41,17 +41,17 @@ namespace RitualReversal
             var m = Eu(); if (!falasAbertas || m == null || g == null || g.phase != "play") { falasAbertas = false; return; }
             falasT -= dtG; if (falasT <= 0) { falasAbertas = false; return; }
             // #falas: embaixo da mira (50% + 90), largura pelo conteúdo (mínimo 250), cada frase com a tecla emoldurada
-            var stB = Css("400", 16, BONE); var stK = Css("700", 16, GOLD_HI); float lh = 16 * 1.2f, hb = 3 + lh + 3, wMax = 0;
+            var stB = Css("400", 16, BONE); var stK = Css("700", 16, GOLD_HI); float lh = LN(16f), hb = 3 + lh + 3, wMax = 0;
             for (int f = 0; f < 6; f++) wMax = Mathf.Max(wMax, 4 + Larg((f + 1).ToString(), stK) + 12 + 8 + Larg(TextoFala(f, m.team), stB) + 4);
-            float w = Mathf.Max(250, wMax + 22), h = 1 + 8 + 14.4f + 2 + 3 + 6 * hb + 5 * 3 + 8 + 1, x = W / 2 - w / 2, y = H / 2 + 90;
+            float w = Mathf.Max(250, wMax + 22), h = 1 + 8 + LN(12) + 2 + 3 + 6 * hb + 5 * 3 + 8 + 1, x = W / 2 - w / 2, y = H / 2 + 90;
             var caixa = new Rect(x, y, w, h); Caixa(caixa, new Color(8 / 255f, 9 / 255f, 11 / 255f, .86f)); Moldura(caixa, new Color(.91f, .878f, .816f, .18f));
-            Espacada(x + 11, y + 9, 14.4f, "FRASES PARA A EQUIPE", Css("400", 12, GOLD), .96f);
-            float yy = y + 9 + 14.4f + 2 + 3;
+            Espacada(x + 11, y + 9, LN(12), "FRASES PARA A EQUIPE", Css("400", 12, GOLD), .96f);
+            float yy = y + 9 + LN(12) + 2 + 3;
             for (int f = 0; f < 6; f++)
             {
                 var r = new Rect(x + 11, yy, w - 22, hb); bool sobre = r.Contains(Event.current.mousePosition), sel = f == falaSel && padNav;
                 if (sel) Caixa(r, new Color(.953f, .835f, .557f, .1f));
-                string n = (f + 1).ToString(); float wk = Larg(n, stK) + 12; Moldura(new Rect(r.x + 4, yy + 3 + (lh - 16 * 1.2f) / 2, wk, 16 * 1.2f), Hx("#4a525c")); Linha(r.x + 4 + 6, yy + 3, wk, lh, n, stK);
+                string n = (f + 1).ToString(); float wk = Larg(n, stK) + 12; Moldura(new Rect(r.x + 4, yy + 3 + (lh - LN(16f)) / 2, wk, LN(16f)), Hx("#4a525c")); Linha(r.x + 4 + 6, yy + 3, wk, lh, n, stK);
                 Linha(r.x + 4 + wk + 8, yy + 3, r.width, lh, TextoFala(f, m.team), sobre || sel ? Css("400", 16, GOLD_HI) : stB);
                 if (sobre && Event.current.type == EventType.MouseDown) { Falar(f); Event.current.Use(); }
                 yy += hb + 3;

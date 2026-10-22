@@ -141,7 +141,7 @@ namespace RitualReversal.Visual
         public Transform robe, aba; public float robeZ, abaX;
         public GameObject rune, flash; public Material mRune, mFlash;
         public Pecas.Cetro cetro;
-        public string team; public float escala = 1;
+        public string team, cls, nome; public float escala = 1;
         readonly List<Material> pisca = new List<Material>(); readonly List<Color> piscaE = new List<Color>();
         public readonly List<Material> todas = new List<Material>(); readonly List<Renderer> rends = new List<Renderer>(); readonly List<Material[]> originais = new List<Material[]>();
         readonly List<GameObject> sprites = new List<GameObject>();
@@ -160,7 +160,7 @@ namespace RitualReversal.Visual
 
         public Boneco(Transform pai, string team, string cls)
         {
-            this.team = team; var k = new Kit();
+            this.team = team; this.cls = cls; var k = new Kit();
             g = Mundo.Grupo(pai, team + " " + cls); bodyT = Mundo.Grupo(g, "corpo"); body = new Junta { t = bodyT };
             if (team == "C")
             {

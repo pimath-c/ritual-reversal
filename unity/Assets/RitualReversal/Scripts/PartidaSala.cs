@@ -108,12 +108,18 @@ namespace RitualReversal
                 if (ev.keyCode == KeyCode.Tab) { chatTodos = !chatTodos; ev.Use(); }
                 else if (ev.keyCode == KeyCode.Escape) { chatAberto = false; ev.Use(); return; }
             }
-            var r = new Rect(18, 76, 350, 34); Caixa(r, new Color(.031f, .035f, .043f, .92f)); var cb = chatTodos ? CARMIM_HI : OURO;
-            Caixa(new Rect(r.x, r.y, r.width, 1), cb); Caixa(new Rect(r.x, r.yMax - 1, r.width, 1), cb); Caixa(new Rect(r.x, r.y, 1, r.height), cb); Caixa(new Rect(r.xMax - 1, r.y, 1, r.height), cb);
-            var st = new GUIStyle(GUI.skin.textField) { fontSize = 15 }; st.normal.background = st.focused.background = null; st.normal.textColor = st.focused.textColor = OSSO;
-            GUI.SetNextControlName("chatJogo"); chatTexto = GUI.TextField(new Rect(r.x + 8, r.y + 5, r.width - 16, 24), chatTexto ?? "", 140, st);
+            // #chatJogo input: 350 px a 18, 76; 15 px no sans-serif do sistema, padding 7 × 10, fundo escuro e borda de 1 px em
+            // ouro (carmim quando vai para todos); o placeholder no cinza do navegador
+            var r = new Rect(18, 76, 350, LNsans(15) + 14 + 2); var cb = chatTodos ? CrimsonHi : GOLD; string k = chatTodos ? "chatTodos" : "chatEquipe";
+            GUIStyle st; if (!estilosBotao.TryGetValue(k, out st))
+            {
+                st = new GUIStyle(Css("sans", 15, BONE)) { padding = new RectOffset(11, 11, 8, 8), border = new RectOffset(1, 1, 1, 1), clipping = TextClipping.Clip, alignment = TextAnchor.UpperLeft };
+                var t = TexBotao(new Color(8 / 255f, 9 / 255f, 11 / 255f, .92f), new Color(8 / 255f, 9 / 255f, 11 / 255f, .92f), cb, false); st.normal.background = st.focused.background = st.hover.background = t;
+                st.normal.textColor = st.focused.textColor = st.hover.textColor = BONE; estilosBotao[k] = st;
+            }
+            GUI.SetNextControlName("chatJogo"); chatTexto = GUI.TextField(r, chatTexto ?? "", 140, st);
             if (chatFocar) { GUI.FocusControl("chatJogo"); chatFocar = false; }
-            if (chatTexto.Length == 0) GUI.Label(new Rect(r.x + 10, r.y + 7, r.width - 16, 22), "<size=13>" + Cor(chatTodos ? "Para todos, inclusive os adversários · Tab: só a equipe" : "Para a sua equipe · Tab: para todos · Enter envia, Esc cancela", MUDO) + "</size>", sPequeno);
+            if (chatTexto.Length == 0) Linha(r.x + 11, r.y + 8, r.width - 22, LNsans(15), chatTodos ? "Para todos, inclusive os adversários · Tab: só a equipe" : "Para a sua equipe · Tab: para todos · Enter envia, Esc cancela", Css("sans", 15, Hx("#757575")));
         }
     }
 }

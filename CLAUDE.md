@@ -42,7 +42,7 @@ commits em português.
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
     [THREE_DIR=<three@0.128.0>] NODE_PATH=$(npm root -g) node tools/unity-noite.js   # fim da noite do Unity (planta, gráfico, placar) numa noite de bots (Mono)
     [FOTOS=dist/telas/unity] node tools/unity-telas.js   # telas do Unity (IMGUI) por todo o jogo e online, layout do Unity em miniatura; FOTOS= grava PNG (Mono, Pillow)
-    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes
+    [MEDIR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v6)
@@ -228,7 +228,14 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   com a grade .set e as teclas em .binds, pausa com a .cola). Ajustes sem as linhas que o Unity não tem (toque, resolução
   adaptativa, mouse bruto). `PartidaMenusCss.cs`: Aprender a jogar, Como jogar (.passo), Novidades, Perfil (`Tabela` =
   table.res, .conqs); `PartidaNoiteCss.cs`: resumo e resultado (.lances, .premios, table.placar, .ltBox, statsTable,
-  .desafio; a .btnrow quebra linha).
+  .desafio; a .btnrow quebra linha). `PartidaFimCss.cs`: escolha dos altares, Rever a noite e relatório (`TabelaCols` é o
+  table-layout automático do CSS: mínima e máxima de cada coluna, colspan, células no meio da linha); `ListaMarcos` é a
+  ul.ltEv (colunas equilibradas pela altura). `PartidaLobbyCss.cs`: sala (vagas, .difOnline, chat `ChatLista` com `Fluxo`,
+  texto em linha com estilos diferentes) e reconexão; a loja é o `TelaLoja` (PartidaHud); o Arsenal (`PainelArsenal`) usa a
+  fonte da interface do sistema (`fonteSistema`, o system-ui do navegador; `fonteSans` é o sans-serif do chat da partida),
+  com cantos redondos (`TexArredondada`). Alturas de linha como o Chromium: line-height normal = subida e descida
+  arredondadas (`AlturaNormal`, `LN` Barlow, `LNs` IM Fell, `LNsis`, `LNsans`); `MeioX` é o vertical-align: middle;
+  `PainelTela` rola até o primeiro botão da tela nova, como o focus() do setScreen.
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).
