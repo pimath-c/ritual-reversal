@@ -98,6 +98,7 @@ namespace RitualReversal
             if (EntradaUnity.Apertou(Tecla.R)) botoes.r++;
             if (EntradaUnity.Apertou(Tecla.Z)) Pingar(m);
             if (EntradaUnity.Apertou(Tecla.I) && fp != null) fp.PedirInspecao(); // inspeção da arma (v5.9)
+            if (EntradaUnity.Apertou(Tecla.J)) cadernoAberto = !cadernoAberto;   // caderno dos altares (v5.3)
             if (EntradaUnity.CliqueDir()) { botoes.ab++; if (m.st == "alive" && m.abilCd > 0) Anunciar("Habilidade recarregando: " + Mathf.CeilToInt((float)m.abilCd) + " s", .9f); }
             if (EntradaUnity.Apertou(Tecla.E) && m.st == "alive")
             {
@@ -143,7 +144,10 @@ namespace RitualReversal
                         {
                             string team = e.Str("team"); int to = e.Int("to");
                             if (team != null && team != papel) break; if (to >= 0 && to != eu) break;
-                            string cls = e.Str("cls") ?? ""; Feed(e.Str("msg"), cls); if (cls.Contains("big")) Anunciar(e.Str("msg"));
+                            string cls = e.Str("cls") ?? "", msg = e.Str("msg") ?? "";
+                            // o reagente coletado ganha o nome do que foi colhido (o mais perto de quem coletou)
+                            if (msg.StartsWith("Reagente coletado") && m != null && Mapa.REAG.Count > 0) { int ri = 0; for (int j = 1; j < Mapa.REAG.Count; j++) if (Sim.Dist(Mapa.REAG[j], m) < Sim.Dist(Mapa.REAG[ri], m)) ri = j; msg = "Coletado: " + NomeReagente(ri) + msg.Substring("Reagente coletado".Length); }
+                            Feed(msg, cls); AnotarCaderno(msg); if (cls.Contains("big")) Anunciar(msg);
                             break;
                         }
                     case "hurt": if (e.Int("a") == eu) hurtT = .35f; break;

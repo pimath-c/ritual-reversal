@@ -239,8 +239,11 @@ namespace RitualReversal
             string nome = GA != null ? "Grande Ritual em " + GA.name + (papel == "C" || GA.localized ? ": " + Mathf.FloorToInt((float)GA.prog * 100) + "%" : "") : prox != null ? CFG.momentoNome[mi] + ", " + prox + " em seguida" : CFG.momentoNome[mi] + ", depois o amanhecer";
             GUI.Label(new Rect(W / 2 - 200, 10, 400, 40), Relogio(Sim.FimMomento(g, mi) - g.rt), sRelogio);
             GUI.Label(new Rect(W / 2 - 300, 48, 600, 26), Cor(nome, GA != null ? CARMIM_VIVO : OURO), sCentro);
-            int fendas = Sim.Fendas(g), farois = Sim.Farois(g);
-            GUI.Label(new Rect(W / 2 - 300, 74, 600, 24), Cor("Fendas " + fendas, CARMIM_VIVO) + "   ·   " + Cor("Faróis " + farois, OURO), sCentro);
+            int fendas = Sim.Fendas(g), farois = Sim.Farois(g), nos = papel == "C" ? fendas : farois, eles = papel == "C" ? farois : fendas;
+            // placar como no navegador: a sua equipe à esquerda, a regra da noite embaixo
+            GUI.Label(new Rect(W / 2 - 420, 70, 360, 30), "<size=15>" + Cor(papel == "H" ? "Sua equipe (caça)" : "Sua equipe (culto)", MUDO) + "</size>  <size=26><b>" + nos + "</b></size>", new GUIStyle(sTexto) { alignment = TextAnchor.MiddleRight });
+            GUI.Label(new Rect(W / 2 + 60, 70, 360, 30), "<size=26><b>" + eles + "</b></size>  <size=15>" + Cor(papel == "H" ? "Adversários (culto)" : "Adversários (caça)", MUDO) + "</size>", new GUIStyle(sTexto) { alignment = TextAnchor.MiddleLeft });
+            GUI.Label(new Rect(W / 2 - 300, 74, 600, 24), "<size=14>" + Cor(g.lab != null && g.lab.formato == "placar" ? "2 rituais decidem · a noite vai até o amanhecer" : "Quem levar 2 dos 3 rituais vence", MUDO) + "</size>", sCentro);
 
             // altares
             float x0 = W / 2 - 3 * 150;
@@ -252,6 +255,8 @@ namespace RitualReversal
                 else if (papel == "H") { string k = g.know[i]; if (A.state == "active" && A.localized) { ch = "!"; c = CARMIM_VIVO; barra = true; } else if (k == "desperto") { ch = "◆"; c = ROXO_VIVO; } else if (k == "confirmado") { ch = "◆"; c = ROXO_VIVO; } else if (k == "chamariz") { ch = "◆"; c = CINZA * 2f; } else if (k == "descartado") { ch = "✕"; c = CINZA; } else if (k == "purgado") { ch = "○"; c = OURO; } else if (k == "visto") { ch = "·"; c = CINZA * .8f; } }
                 else { if (A.state == "active") { ch = "!"; c = CARMIM_VIVO; barra = true; } else if (A.state == "awake") { ch = "◆"; c = A.decoy ? CINZA * 2f : ROXO_VIVO; } else { ch = A.chosen ? "○" : "·"; c = A.chosen ? CARMIM_VIVO : CINZA; } }
                 var rr = new Rect(x0 + i * 150, 102, 144, 44); Caixa(rr, new Color(0, 0, 0, .45f));
+                // eco do coro (v5.5): os dois altares do setor ficam marcados para a caça
+                if (papel == "H" && g.eco != null && Sim.SETORES.Any(S => S.id == g.eco.setor && S.altares.Contains(i))) { var ce = new Color(.84f, .72f, .94f, .55f + .3f * Mathf.Sin(Time.time * 4)); Caixa(new Rect(rr.x, rr.y, rr.width, 2), ce); Caixa(new Rect(rr.x, rr.yMax - 2, rr.width, 2), ce); }
                 GUI.Label(new Rect(rr.x, rr.y, rr.width, 26), Cor(ch + " " + A.name, c), sCentro);
                 if (barra) Barra(new Rect(rr.x + 8, rr.y + 32, rr.width - 16, 6), (float)A.prog, CARMIM_VIVO);
             }
@@ -279,7 +284,7 @@ namespace RitualReversal
             GUI.Label(new Rect(352, H - 118, 100, 30), Mathf.CeilToInt((float)System.Math.Max(0, m.hp)).ToString(), sTexto);
             string san = m.sanity < 15 ? "Sanidade: pânico, você se denuncia" : m.sanity < 40 ? "Sanidade: abalado" : m.sanity < 70 ? "Sanidade: inquieto" : "Sanidade";
             Barra(new Rect(24, H - 82, 320, 10), (float)(m.sanity / 100), new Color(.45f, .55f, .8f)); GUI.Label(new Rect(24, H - 70, 420, 26), san, sPequeno);
-            GUI.Label(new Rect(24, H - 44, 600, 26), Cor(Mathf.FloorToInt(m.obolos) + " óbolos", OURO) + (m.team == "C" ? "   Reagentes " + m.reag + "/" + CFG.carry + "   Chamarizes " + g.decoys : "   Sinalizadores " + m.flares + "   Lanterna " + Mathf.RoundToInt((float)m.carga) + "%" + (m.sensorCd > 0 ? "   Sensor " + Mathf.CeilToInt((float)m.sensorCd) + " s" : "   Sensor pronto")), sPequeno);
+            GUI.Label(new Rect(24, H - 44, 600, 26), (g.lab == null || g.lab.economia ? Cor(Mathf.FloorToInt(m.obolos) + " óbolos", OURO) : "") + (m.team == "C" ? "   Reagentes " + m.reag + "/" + CFG.carry + "   Chamarizes " + g.decoys : "   Sinalizadores " + m.flares + "   Lanterna " + Mathf.RoundToInt((float)m.carga) + "%" + (m.sensorCd > 0 ? "   Sensor " + Mathf.CeilToInt((float)m.sensorCd) + " s" : "   Sensor pronto")), sPequeno);
 
             // munição, fervor e feitiço
             string arma = m.team == "H" ? (m.reloadT > 0 ? "recarregando…" : m.ammo + " <size=18>/ " + m.reserve + "</size>") : Mathf.FloorToInt((float)m.fervor) + " <size=18>Fervor</size>";
@@ -329,9 +334,13 @@ namespace RitualReversal
                 var rr = new Rect(W / 2 - 220, 160, 440, 92); Caixa(rr, new Color(0, 0, 0, .5f));
                 GUI.Label(new Rect(rr.x, rr.y + 4, rr.width, 24), R.name, sCentro);
                 Barra(new Rect(rr.x + 20, rr.y + 32, 400, 10), (float)R.prog, CARMIM_VIVO); Barra(new Rect(rr.x + 20, rr.y + 48, 400, 10), (float)R.seal, OURO);
-                int n = g.actors.Count(c => c.team == "C" && c.st == "alive" && Sim.InCircle(c, R)), s = g.actors.Count(h => h.team == "H" && h.sealing == R.i); string nota;
-                if (s > 0) nota = s >= 2 ? "Selando em dupla" : "Selando";
-                else if (n == 0) nota = R.prog > R.cp ? "Círculo vazio: o ritual recua até o checkpoint" : "Círculo vazio";
+                // v5.5: quem lançou sigilo há menos de CFG.ataqueCanal não canaliza
+                System.Func<Ator, bool> atacando = c => CFG.ataqueCanal > 0 && g.t - c.ataqueT < CFG.ataqueCanal;
+                var noCirculo = g.actors.Where(c => c.team == "C" && c.st == "alive" && Sim.InCircle(c, R)).ToList();
+                int n = noCirculo.Count(c => !atacando(c)), s = g.actors.Count(h => h.team == "H" && h.sealing == R.i); string nota;
+                if (papel == "C" && m.team == "C" && Sim.InCircle(m, R) && atacando(m)) nota = "Você atacou: a sua canalização parou por um instante";
+                else if (s > 0) nota = s >= 2 ? "Selando em dupla" : "Selando";
+                else if (n == 0) nota = noCirculo.Count > 0 ? "Ninguém canaliza: quem ataca não celebra" : R.prog > R.cp ? "Círculo vazio: o ritual recua até o checkpoint" : "Círculo vazio";
                 else { double mf = Sim.MareFactor(g); nota = n + " " + (n > 1 ? "canalizando" : "canalizando sozinho") + (mf > 1 ? ", Maré Profana +" + Mathf.RoundToInt((float)(mf - 1) * 100) + "%" : ""); }
                 GUI.Label(new Rect(rr.x, rr.y + 62, rr.width, 26), "<size=16>Ritual " + Mathf.FloorToInt((float)R.prog * 100) + "% · Selo " + Mathf.FloorToInt((float)R.seal * 100) + "% · " + nota + "</size>", sCentro);
             }
@@ -341,9 +350,9 @@ namespace RitualReversal
             if (blindT > 0) { blindT -= dtG; Caixa(new Rect(0, 0, W, H), new Color(1, 1, 1, Mathf.Clamp01(blindT / 1.2f))); }
             if (atordT > 0) { atordT -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.95f, .84f, .55f, atordT * .35f)); }
             if (claraoGrande > 0) { claraoGrande -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.8f, .05f, .1f, Mathf.Clamp01(claraoGrande / 1.2f) * .85f)); }
-            if (m.st == "dead") { Caixa(new Rect(0, 0, W, H), new Color(0, 0, 0, .6f)); GUI.Label(new Rect(0, H / 2 - 60, W, 50), "Você morreu", sTitulo); GUI.Label(new Rect(0, H / 2, W, 30), "Retorno em " + Mathf.CeilToInt((float)m.respawnT) + " s", sCentro); }
-            else if (m.st == "down") { Caixa(new Rect(0, 0, W, H), new Color(.2f, 0, 0, .45f)); GUI.Label(new Rect(0, H / 2 - 60, W, 50), "Você está caído", sTitulo); GUI.Label(new Rect(0, H / 2, W, 30), "Um aliado pode te reanimar. Sangrando: " + Mathf.CeilToInt((float)m.downT) + " s" + (m.revUsed ? " (sem reanimação neste ciclo)" : ""), sCentro); }
+            TelaQueda(m);
 
+            Bussola(m, papel); Legendas(); FaixaLance(); Caderno(papel);
             if (EntradaUnity.Segurando(Tecla.Tab)) Planta(m, papel);
         }
 

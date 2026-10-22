@@ -3,6 +3,7 @@
 // para eles: bonecos animados, sigilos, pegadas, sal, mercadores, pontos de tarefa, partículas e a câmera.
 // O blockout do importador sai de cena quando a partida começa (a colisão é a da simulação, igual à do protótipo).
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using RitualReversal.Simulacao;
 using RitualReversal.Visual;
@@ -27,7 +28,7 @@ namespace RitualReversal
             if (raizBlockout != null) foreach (Transform c in raizBlockout) if (c != transform) c.gameObject.SetActive(false);
             mundo = Mundo.Construir(); fp = new PrimeiraPessoa(cam);
             try { pos = new Pos(cam); } catch (System.Exception e) { Debug.LogWarning("Ritual Reversal: sem pós-processamento (" + e.Message + ")"); }
-            som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => som.Tocar("corvo", x, z);
+            som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => { som.Tocar("corvo", x, z); Legenda("corvo", x, z); };
             // v5.8: impactos e momentos do ritual tocam pelo Som; a arma avisa o meio do ciclo (alavanca, cão) e o passo
             mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
             fp.AoPasso = () => som.Tocar("mystep"); fp.camFx = PlayerPrefs.GetFloat("rr-camfx", 1);
@@ -50,6 +51,7 @@ namespace RitualReversal
             {
                 bool correndo = ultimaEntrada != null && ultimaEntrada.sp && ultimaEntrada.mz < 0 && m.moving && m.st == "alive";
                 fp.Atualizar(m, g, (float)m.x, (float)m.z, m.moving, ultimaEntrada != null ? (float)ultimaEntrada.mx : 0, ultimaEntrada != null ? (float)ultimaEntrada.mz : 0, correndo, (float)lookYaw, (float)lookPitch, dt, agora);
+                EstadoProprio(m); if (m.st == "dead") Espectar(m, dt); else { espAlvo = null; espPos = null; }
             }
             else
             {
@@ -60,7 +62,7 @@ namespace RitualReversal
             var c = CamP(); float yawCam = jogando ? (float)lookYaw : -cam.transform.eulerAngles.y * Mathf.Deg2Rad;
             mundo.Atualizar(g, papel, m, c, yawCam, dt);
             mundo.MostrarPartida(jogando);
-            if (jogando) { mundo.SyncActors(g, papel, m, c, (float)lookYaw, dt); mundo.SyncNoite(g, c, dt); }
+            if (jogando) { mundo.SyncActors(g, papel, m, c, (float)lookYaw, dt); mundo.SyncNoite(g, c, dt); LegendasDosRituais(papel); }
             mundo.AtualizarEfeitosQuadro(dt);
             // som: ouvinte, rituais, passos, alucinações, coração, sino
             som.ouvinte = c; som.yawOuvinte = yawCam; som.Rituais(jogando ? g : null, papel, mundo.GRk, dt);
@@ -113,6 +115,7 @@ namespace RitualReversal
             if ((e.type == "sensor" || e.type == "evp" || e.type == "blind" || e.type == "stun") && e.Int("a") != eu) return;
             if (e["to"] != null && e.Int("to") != eu) return;
             if (mundo != null) mundo.EventoVisual(e, eu, fp.BocaMundo(mundo.raiz));
+            LegendaDoEvento(e, papel, eu);
             float x = (float)e.Num("x"), z = (float)e.Num("z");
             switch (e.type)
             {
@@ -137,6 +140,7 @@ namespace RitualReversal
                     if (e.Int("a") == eu)
                     {
                         som.Tocar("hurt"); float lado = 0;
+                        RegistrarGolpe(e);
                         if (e["sx"] != null) { float sx = (float)e.Num("sx"), sz = (float)e.Num("sz"); DirecaoDano(sx, sz); var cp = CamP(); lado = Mathf.Sign((sx - cp.x) * Mathf.Cos((float)lookYaw) - (sz - cp.z) * Mathf.Sin((float)lookYaw)); }
                         fp.Golpe(lado);
                     }
@@ -146,9 +150,23 @@ namespace RitualReversal
                     {
                         // o revólver do Exorcista arma o cão no fim da recarga
                         var at = g.actors.Find(a => a.id == e.Int("a")); float v = at != null && at.cls == "exorcista" ? 1 : 0;
-                        if (e.Int("a") == eu) som.Tocar("reload", float.NaN, float.NaN, v); else som.Tocar("reload", x, z, v); break;
+                        if (e.Int("a") != eu) som.Tocar("reload", x, z, v); break;   // a própria recarga soa pelos eventos do clipe (ArmaFP)
                     }
                 case "presage": som.Tocar("presage"); break;
+                case "selando":
+                    if (papel == "C") { int ai = e.Int("altar"); var A = ai >= 0 && ai < g.altars.Count ? g.altars[ai] : null; som.Tocar("selando", x, z); Legenda("selando", x, z, "Selando o ritual em " + (A != null ? A.name : "um altar"), "cult", 400); }
+                    break;
+                case "eco":
+                    {
+                        // v5.5: o coro ecoa em dois altares do setor; se a equipe já descartou um, a dedução aponta o outro
+                        var L = new List<Altar>(); var la = e["altares"] as System.Collections.IList; if (la != null) foreach (var o in la) { int i = System.Convert.ToInt32(o); if (i >= 0 && i < g.altars.Count) L.Add(g.altars[i]); }
+                        if (L.Count == 0) break; float ex = (float)L.Average(A => A.x), ez = (float)L.Average(A => A.z);
+                        som.Tocar("eco", ex, ez); Legenda("eco", ex, ez, "Coro distante: " + string.Join(" ou ", L.Select(A => A.name).ToArray()), "rit", 400);
+                        var poss = papel == "H" && g.know != null ? L.Where(A => AltarPossivel(A.i)).ToList() : L;
+                        if (poss.Count == 1 && L.Count == 2) { var fora = L.First(A => A != poss[0]); Anunciar("Dedução: " + fora.name + " foi descartado, o ritual deve estar em " + poss[0].name, 4); som.Tocar("sealed"); Feed("Dedução: " + fora.name + " foi descartado, então o eco aponta " + poss[0].name + ".", "h"); }
+                        else Anunciar("O coro ecoa: " + string.Join(" ou ", L.Select(A => A.name).ToArray()), 3.5f);
+                        break;
+                    }
                 case "sensor": som.Tocar("ping", float.NaN, float.NaN, (float)e.Num("v")); break;
                 case "evp": som.Tocar("whisper", x, z); som.Tocar("evp", x, z); mundo.RevelarEVP(x, z); break;
                 case "blind": NotaHab("Você foi cegado", new Color(1, .96f, .82f)); break;
@@ -198,11 +216,12 @@ namespace RitualReversal
                 case "lance":
                     {
                         if (e.Str("team") != null && e.Str("team") != papel) break;
-                        string t = TextoLance(e); if (t != null) { Feed("Lance da noite: " + t, "big"); som.Tocar("sealed"); }
+                        MostrarLance(e);   // faixa do lance (PartidaInterface.cs)
                         break;
                     }
             }
         }
+        bool AltarPossivel(int i) { string k = g.know != null && i < g.know.Length ? g.know[i] : null, st = g.altars[i].state; return k != "descartado" && k != "chamariz" && st != "fenda" && st != "farol"; }
         // investigação com progresso: quando um sinal descarta um altar, a caça vê quantos ainda podem ser do culto;
         // resíduo de reagente toca a descoberta; o Chamariz desmascarado se desfaz em cinza
         string[] knowAnt; string knowPartida;

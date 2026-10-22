@@ -18,6 +18,7 @@ namespace RitualReversal.Visual
             // v5.8: oito runas em volta do círculo (acendem, pulsam, tremem sob o selo, convergem no Farol, estouram na Fenda)
             public RunaR[] ru = new RunaR[8]; public string rvSt; public float rvProg, rvSeal, contest; public bool somSelo;
             public VelaR[] velas; // v6: o relógio de velas (MundoReagentes.cs)
+            public Transform dial; public Material mDial; public float dialOp, dialFl; // v5.6: o mostrador no chão (Resources/RitualReversalMostrador.shader)
         }
         public class RunaR { public GameObject go; public Material m; public float bx, bz, flash, choque, op; public float? acende, converge, explode; }
         public Action<float> AoTremor; Vector3 camRit;   // empurrão de câmera nos grandes momentos, se o jogador está perto
@@ -42,6 +43,11 @@ namespace RitualReversal.Visual
                 A.mCirculo = Mat.Brilho(Mat.Hex(0x6b3a8a, .05f), Tex.Runa(), Mat.Mistura.Aditiva, false, false); A.circulo = Malha(Geo.Plano((float)CFG.circleR * 2.15f, (float)CFG.circleR * 2.15f), A.mCirculo, A.g, "círculo", false).transform; A.circulo.localPosition = new Vector3(0, .04f, 0); A.circulo.localRotation = Q(-PI / 2, 0, 0);
                 A.mSelo = Mat.Brilho(Mat.Hex(0xf3d58e, 0), Tex.Runa(), Mat.Mistura.Aditiva, false, false); A.selo = Malha(Geo.Plano((float)CFG.circleR * 2.15f, (float)CFG.circleR * 2.15f), A.mSelo, A.g, "selo", false).transform; A.selo.localPosition = new Vector3(0, .06f, 0); A.selo.localRotation = Q(-PI / 2, 0, 0);
                 A.mFeixe = Mat.Brilho(Mat.Hex(0xe0435e, 0), Tex.Feixe(), Mat.Mistura.Aditiva, false, false); A.feixe = Malha(Geo.Cilindro(.55f, .9f, 40, 16, 1, true), A.mFeixe, A.g, "feixe", false).transform; A.feixe.localPosition = new Vector3(0, 20, 0);
+                // mostrador no chão: a borda no raio do círculo, o progresso (com os pontos de controle) e o selo
+                { var sh = Shader.Find("RitualReversal/Mostrador"); if (sh != null && sh.isSupported)
+                  { float Rc = (float)CFG.circleR, lado = 2 * (Rc + .6f); A.mDial = new Material(sh) { name = "mostrador", renderQueue = 3003 };
+                    A.mDial.SetFloat("_R", Rc); A.mDial.SetFloat("_Lado", lado); A.mDial.SetVector("_Cp", new Vector4((float)CFG.cps[0], (float)CFG.cps[1], 0, 0));
+                    A.dial = Malha(Geo.Plano(lado, lado), A.mDial, A.g, "mostrador", false).transform; A.dial.localPosition = new Vector3(0, .07f, 0); A.dial.localRotation = Q(-PI / 2, 0, 0); A.dial.gameObject.SetActive(false); } }
                 A.luz = LuzPonto(A.g, 0x6b3a8a, 0, 20, 2, "luz do altar"); A.luz.transform.localPosition = new Vector3(0, 2.4f, 0); A.luz.enabled = false;
                 // brasas
                 int EN = 70; A.ep = new Vector3[EN]; A.es = new float[EN];
@@ -87,6 +93,7 @@ namespace RitualReversal.Visual
         {
             if (i < 0 || i >= AV.Count) return; var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z;
             foreach (var r in A.ru) { r.converge = 0; r.flash = 1.2f; r.go.SetActive(true); }   // as runas se fecham no altar
+            PiscarMostrador(A, 0xf3d58e);
             GarantirAtores(); Coluna(x, z, 0xf3d58e, 1.8f, 1.2f); AnelChao(x, z, 8, 0xf3d58e, 1); AnelChao(x, z, (float)CFG.circleR + 2, 0xffe6a8, 1.3f, Tex.Runa());
             Particulas(x, 1.2f, z, 70, 0xf3d58e, 3.2f, 1.5f, -1.5f, 2.4f); Clarao(x, 2.4f, z, 0xffd08a, 8); if (AoTremor != null && Perto(x, z, 25)) AoTremor(1.4f);
         }
@@ -94,6 +101,7 @@ namespace RitualReversal.Visual
         {
             if (i < 0 || i >= AV.Count) return; var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z;
             foreach (var r in A.ru) { r.explode = 0; r.flash = 1.4f; r.go.SetActive(true); }    // as runas estouram para fora
+            PiscarMostrador(A, 0xff3a5a);
             GarantirAtores(); Coluna(x, z, 0xb01830, 2.2f, 1.5f); AnelChao(x, z, 10, 0xff2a40, 1.2f); AnelChao(x, z, (float)CFG.circleR + 3, 0x9a40ff, 1.5f, Tex.Runa());
             Particulas(x, .6f, z, 80, 0x5a0a14, 2.6f, 2.2f, -1, 2.6f); Particulas(x, 1, z, 40, 0xb050ff, 2, 1.6f, -.8f, 1.6f); Clarao(x, 2, z, 0xff2040, 9); if (AoTremor != null && Perto(x, z, 30)) AoTremor(2);
         }
@@ -101,6 +109,7 @@ namespace RitualReversal.Visual
         {
             if (i < 0 || i >= AV.Count || AV[i].rvSt != "active") return; var A = AV[i]; float x = A.g.localPosition.x, z = A.g.localPosition.z;
             foreach (var r in A.ru) { r.choque = .4f; r.flash = Mathf.Max(r.flash, .6f); }
+            PiscarMostrador(A, tipo == "selo" ? 0xff3a5a : 0xf3d58e);
             GarantirAtores(); Particulas(x, 1, z, 26, tipo == "selo" ? 0xf3d58e : 0xff3a5a, 4, .5f, 6, 1); AnelChao(x, z, (float)CFG.circleR + .5f, tipo == "selo" ? 0xffe0a0 : 0xff3a5a, .35f);
         }
         static readonly Color CARMIM_R = Mat.Hex(0xff3a5a), OURO_R = Mat.Hex(0xf3d58e);
@@ -184,7 +193,15 @@ namespace RitualReversal.Visual
                 }
                 O.opR = Mathf.Lerp(O.opR, rv * .9f, .2f); Mat.Cor(O.mRunas, HexA(0xf0d8ff, O.opR));
                 AnimarRitual(i, A, O, st, papel, dt, t); AnimarVelas(g, A, O, st, dt, t);
+                if (O.mDial != null)
+                {
+                    bool ve2 = st == "active"; O.dialOp = Mathf.Lerp(O.dialOp, ve2 ? 1 : 0, .12f); O.dialFl = Mathf.Max(0, O.dialFl - Mathf.Max(dt, .016f) * 1.4f);
+                    O.mDial.SetFloat("_Op", O.dialOp); O.mDial.SetFloat("_Prog", ve2 ? (float)A.prog : 0); O.mDial.SetFloat("_Selo", ve2 ? (float)A.seal : 0); O.mDial.SetFloat("_Fl", O.dialFl);
+                    O.dial.gameObject.SetActive(O.dialOp > .01f);
+                }
             }
         }
+        // a onda do mostrador (Fenda, Farol, interrupção): cor de tela, sem conversão
+        void PiscarMostrador(AltarV A, int hex) { if (A.mDial == null) return; A.dialFl = 1; A.mDial.SetVector("_CorF", new Vector4(((hex >> 16) & 255) / 255f, ((hex >> 8) & 255) / 255f, (hex & 255) / 255f, 1)); }
     }
 }

@@ -255,6 +255,8 @@ namespace RitualReversal.Visual
             {
                 case "shot": Ruido(x, z, 55, .28f, Tipo.PassaBaixa, 1600, .7f, .9f); Tom(x, z, 55, 160, 50, .18f, Onda.Seno, .6f); break;
                 case "sigil": Tom(x, z, 35, 720, 160, .35f, Onda.Triangulo, .35f); Ruido(x, z, 35, .3f, Tipo.PassaFaixa, 2400, 3, .25f); break;
+                case "lance": Tom(N, N, 1, 523, 523, .45f, Onda.Triangulo, .1f); Tom(N, N, 1, 784, 784, .8f, Onda.Triangulo, .11f, .15f); break;
+                case "eco": { float[] fs = { 196, 247, 294 }; for (int i = 0; i < 3; i++) Tom(x, z, 320, fs[i], fs[i] * .985f, 2.6f, Onda.Triangulo, .11f, i * .14f); break; }   // eco do coro (v5.5)
                 case "step": Ruido(x, z, 16, .09f, Tipo.PassaBaixa, 520, .8f, .55f); break;
                 case "passoForte": Ruido(x, z, 24, .1f, Tipo.PassaBaixa, 620, .8f, .75f); break;
                 case "mystep": Ruido(N, N, 1, .07f, Tipo.PassaBaixa, 420, .8f, .12f); break;
