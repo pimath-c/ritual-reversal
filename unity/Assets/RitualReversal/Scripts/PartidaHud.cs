@@ -100,17 +100,21 @@ namespace RitualReversal
         {
             string papel = MeuPapel(); bool Hc = papel == "H"; string meu; if (!g.cls.TryGetValue(EU, out meu)) meu = Regras.CLASS_BY_TEAM[papel][0];
             string fe; if (!g.feit.TryGetValue(EU, out fe)) fe = Regras.FEIT_BY_TEAM[papel][0]; bool pronto; g.ready.TryGetValue(EU, out pronto);
-            var r = Janela(1100, 820); GUILayout.BeginArea(r);
+            var LB = g.lab ?? Lab.De(null); var mud = LabMudancas(LB); string crep = Relogio(LB.crepusculo); var CLn = Mundo.CLIMAS[Mundo.ClimaDaRodada(g)];
+            var r = Janela(1100, 880); GUILayout.BeginArea(r);
             GUILayout.Label(Cor("Esta noite você é " + (Hc ? "Caçador" : "Cultista"), Hc ? OURO : CARMIM_VIVO), sTitulo);
+            GUILayout.Label("<i>" + CLn.nome + ": " + CLn.sub.ToLowerInvariant() + ".</i>", sTexto);
             GUILayout.Label(Hc
-                ? "No <b>Crepúsculo</b> (3 min), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto. Negocie com o Ermitão, na cabana perto do acampamento. Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Resista até o amanhecer."
-                : "No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério e consagre seus altares em silêncio. Negocie com a Carpideira, no cemitério. Os reagentes livres ficam no Claustro. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir.", sTexto);
+                ? "No <b>Crepúsculo</b> (" + crep + "), leia os sinais nos santuários da floresta, que descartam altares que o culto não escolheu, e acenda sentinelas: elas avisam quando alguém consagra um altar por perto." + (LB.economia ? " Negocie com o Ermitão, na cabana perto do acampamento." : "") + " Fique nas trilhas: a mata fechada é escura e abala a sanidade. Na <b>Vigília</b>, os altares despertam: purgue, investigue e sele. Quando um ritual começa, o coro logo ecoa o setor dele: dois altares possíveis, e o que você descartou decide para onde correr. Resista até o amanhecer."
+                : "No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério, ao leste da catedral, e consagre seus altares em silêncio." + (LB.economia ? " Negocie com a Carpideira, no oratório perto do seu acampamento." : "") + " Os reagentes ficam na mata, ao sul do desfiladeiro (e nas cabeceiras das pontes). Agachado (C) você anda devagar e quase sem barulho. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir. Quem ataca não canaliza; você sente quando a caça começa a selar o seu ritual.", sTexto);
+            if (mud.Count > 0) GUILayout.Label(Cor("Laboratório de playtest: " + string.Join(" · ", mud.ToArray()) + ".", OURO_VIVO), sPequeno);
             GUILayout.Space(8); GUILayout.Label("<b>Arquétipo</b>", sTexto); GUILayout.BeginHorizontal();
             foreach (var c in Regras.CLASS_BY_TEAM[papel]) { var C = Regras.CLASSES[c]; if (GUILayout.Button((c == meu ? Cor("● ", OURO) : "") + "<b>" + C.name + "</b>\n" + C.text + "\n<size=15>" + C.hp + " de vida</size>", sBotao, GUILayout.Height(170)) && !pronto) Acao(new Acao { type = "cls", cls = c }); }
             GUILayout.EndHorizontal(); GUILayout.Space(8); GUILayout.Label("<b>Feitiço</b> (clique direito)", sTexto); GUILayout.BeginHorizontal();
             foreach (var f in Regras.FEIT_BY_TEAM[papel]) { var F = Regras.FEITICOS[f]; if (GUILayout.Button((f == fe ? Cor("● ", OURO) : "") + "<b>" + F.nome + "</b>\n" + F.text + "\n<size=15>recarga de " + F.cd + " s</size>", sBotao, GUILayout.Height(150)) && !pronto) Acao(new Acao { type = "feit", f = f }); }
             GUILayout.EndHorizontal(); GUILayout.Space(14);
             GUI.enabled = !pronto; if (GUILayout.Button(pronto ? "Aguardando os outros" : "Estou pronto", sBotao, GUILayout.Height(56))) Acao(new Acao { type = "ready" }); GUI.enabled = true;
+            GUILayout.Label((online ? ListaProntos() : "") + TextoTempo(), sCentro);
             GUILayout.EndArea();
         }
 
@@ -244,7 +248,15 @@ namespace RitualReversal
                 float idade = agora - a.t; if (idade > 9f) continue; var c = a.cls.Contains("h") ? OURO : a.cls.Contains("c") ? CARMIM_VIVO : OSSO; c.a = Mathf.Clamp01((9f - idade) / 2f);
                 var st = new GUIStyle(sPequeno); st.normal.textColor = c; GUI.Label(new Rect(20, fy, 520, 44), a.msg, st); fy += 40;
             }
-            if (anuncioT > 0) { anuncioT -= dtG; var st = new GUIStyle(sGrande); var c = OSSO; c.a = Mathf.Clamp01(anuncioT); st.normal.textColor = c; GUI.Label(new Rect(W / 2 - 500, 250, 1000, 50), anuncio, st); }
+            if (anuncioT > 0)
+            {
+                // entra em 0,6 s e sai em 1,2 s, como a transição de opacidade do navegador
+                anuncioT -= dtG; float op = Mathf.Clamp01(Mathf.Min((4.5f - anuncioT) / .6f, anuncioT / 1.2f));
+                var st = new GUIStyle(sGrande) { fontSize = 64, wordWrap = false, richText = false }; var c = OSSO; c.a = op; st.normal.textColor = c;
+                var ss = new GUIStyle(sGrande) { fontSize = 20, wordWrap = true, richText = false }; var c2 = new Color(.79f, .75f, .68f, op); ss.normal.textColor = c2;
+                float y = H * .3f; Caixa(new Rect(W / 2 - 420, y - 52, 840, 120), new Color(0, 0, 0, .28f * op));
+                GUI.Label(new Rect(W / 2 - 700, y - 50, 1400, 76), anuncio, st); if (anuncioSub != "") GUI.Label(new Rect(W / 2 - 600, y + 26, 1200, 40), anuncioSub, ss);
+            }
 
             // vida, sanidade e classe
             var cl = Regras.CLASSES[m.cls];

@@ -364,6 +364,7 @@ namespace UnityEngine
         public void SetPositionAndRotation(Vector3 p, Quaternion q) { localPosition = p; localRotation = q; }
         public void SetAsLastSibling() { }
     }
+    public enum MeshTopology { Triangles, Quads, Lines, LineStrip, Points }
     public class Mesh : Object
     {
         public Rendering.IndexFormat indexFormat; public Bounds bounds;
@@ -378,6 +379,8 @@ namespace UnityEngine
         public void Clear() { vertices = new Vector3[0]; normals = new Vector3[0]; uv = new Vector2[0]; uv2 = new Vector2[0]; colors = new Color[0]; triangles = new int[0]; }
         public void RecalculateNormals() { }
         public void MarkDynamic() { }
+        public MeshTopology topologia = MeshTopology.Triangles; public int[] linhas = new int[0];
+        public void SetIndices(int[] i, MeshTopology t, int s) { topologia = t; if (t == MeshTopology.Triangles) triangles = i; else linhas = i; }
         public int vertexCount { get { return vertices.Length; } }
     }
     public class MeshFilter : Component { public Mesh sharedMesh; public Mesh mesh { get { return sharedMesh; } set { sharedMesh = value; } } }

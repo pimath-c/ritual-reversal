@@ -78,7 +78,12 @@ namespace RitualReversal
 
             if (g.phase != faseAnterior)
             {
-                if (g.phase == "play") { var eu = Eu(); if (eu != null) { lookYaw = eu.yaw; lookPitch = 0; } Travar(true); }
+                if (g.phase == "play")
+                {
+                    var eu = Eu(); if (eu != null) { lookYaw = eu.yaw; lookPitch = 0; } Travar(true);
+                    // o clima da rodada, se não for noite limpa
+                    var CL = Visual.Mundo.CLIMAS[Visual.Mundo.ClimaDaRodada(g)]; if (CL.nome != "Noite limpa") StartCoroutine(Depois(.9f, () => { if (g != null && g.phase == "play") Anunciar(CL.nome, CL.sub); }));
+                }
                 else { Travar(false); lojaAberta = null; }
                 faseAnterior = g.phase;
             }
@@ -101,7 +106,7 @@ namespace RitualReversal
             if (EntradaUnity.Apertou(Tecla.Z)) Pingar(m);
             if (EntradaUnity.Apertou(Tecla.I) && fp != null) fp.PedirInspecao(); // inspeção da arma (v5.9)
             if (EntradaUnity.Apertou(Tecla.J)) cadernoAberto = !cadernoAberto;   // caderno dos altares (v5.3)
-            if (EntradaUnity.CliqueDir()) { botoes.ab++; if (m.st == "alive" && m.abilCd > 0) Anunciar("Habilidade recarregando: " + Mathf.CeilToInt((float)m.abilCd) + " s", .9f); }
+            if (EntradaUnity.CliqueDir()) { botoes.ab++; if (m.st == "alive" && m.abilCd > 0) { FeiticoDef F; Regras.FEITICOS.TryGetValue(m.feitico ?? "", out F); NotaHab((F != null ? F.nome : "Feitiço") + " recarregando: " + Mathf.CeilToInt((float)m.abilCd) + " s", MUDO); som.Tocar("vazio"); } }
             if (EntradaUnity.Apertou(Tecla.E) && m.st == "alive")
             {
                 var ctx = Sim.Contexts(g, m);
@@ -130,10 +135,11 @@ namespace RitualReversal
         // ---------- eventos da simulação ----------
         class Aviso { public string msg, cls; public float t; }
         readonly List<Aviso> feed = new List<Aviso>();
-        string anuncio; float anuncioT, hurtT, hitT, blindT, sensorT; double sensorV;
+        string anuncio, anuncioSub = ""; float anuncioT, hurtT, hitT, blindT, sensorT; double sensorV;
 
         void Feed(string msg, string cls) { feed.Add(new Aviso { msg = msg, cls = cls ?? "", t = Time.unscaledTime }); if (feed.Count > 7) feed.RemoveAt(0); }
-        void Anunciar(string msg, float s = 3f) { anuncio = msg; anuncioT = s; }
+        // o #anuncio do navegador: título grande, a linha de baixo menor, 4,5 s
+        void Anunciar(string titulo, string sub = "") { anuncio = titulo; anuncioSub = sub ?? ""; anuncioT = 4.5f; }
 
         void TratarEventos(List<Evento> evs, Ator m)
         {
@@ -149,13 +155,13 @@ namespace RitualReversal
                             string cls = e.Str("cls") ?? "", msg = e.Str("msg") ?? "";
                             // o reagente coletado ganha o nome do que foi colhido (o mais perto de quem coletou)
                             if (msg.StartsWith("Reagente coletado") && m != null && Mapa.REAG.Count > 0) { int ri = 0; for (int j = 1; j < Mapa.REAG.Count; j++) if (Sim.Dist(Mapa.REAG[j], m) < Sim.Dist(Mapa.REAG[ri], m)) ri = j; msg = "Coletado: " + NomeReagente(ri) + msg.Substring("Reagente coletado".Length); }
-                            Feed(msg, cls); AnotarCaderno(msg); if (cls.Contains("big")) Anunciar(msg);
+                            Feed(msg, cls); AnotarCaderno(msg);
                             break;
                         }
                     case "hurt": if (e.Int("a") == eu) hurtT = .35f; break;
                     case "blind": if (e.Int("a") == eu) blindT = 1.5f; break;
                     case "sensor": if (e.Int("a") == eu) { sensorV = e.Num("v"); sensorT = 4f; } break;
-                    case "momento": Anunciar(e.Str("nome") + (e.Int("i") == 1 ? ": os altares despertam" : ": os rituais aceleram e a névoa se fecha"), 4.5f); break;
+                    case "momento": Anunciar(e.Str("nome"), e.Int("i") == 1 ? "Os altares despertam" : "Os rituais aceleram e a névoa se fecha"); break;
                 }
                 EventoAudiovisual(e, papel, eu);
             }

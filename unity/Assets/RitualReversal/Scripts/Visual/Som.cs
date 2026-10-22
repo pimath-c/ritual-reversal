@@ -73,6 +73,7 @@ namespace RitualReversal.Visual
             }
             List<Gravacao> z, co; if (grav.TryGetValue("zumbido_laco", out z) && grav.TryGetValue("coro_laco", out co)) { lacoZ = z[0]; lacoC = co[0]; }
             for (int i = 0; i < AMB_LACOS.Length; i++) { List<Gravacao> L; if (grav.TryGetValue(AMB_LACOS[i], out L)) { lacoAmb[i] = L[0]; pAmb[i] = rnd.NextDouble() * L[0].d.Length; } }
+            { List<Gravacao> L; if (grav.TryGetValue("chuva_laco", out L)) { lacoChuva = L[0]; pChuva = rnd.NextDouble() * L[0].d.Length; } }
         }
         // ---------- v6: ambiente por lugar ----------
         // Os fundos se misturam conforme onde o ouvinte está (dentro da catedral a noite lá fora fica abafada); na mata, de vez
@@ -89,6 +90,9 @@ namespace RitualReversal.Visual
             alvoAmb[3] = jogo && !dentro ? Mathf.Clamp01(1 - (cha - 10) / 35) * .6f : 0; alvoAmb[4] = jogo && !dentro ? Mathf.Clamp01(1 - (forno - 3) / 20) * .5f : 0;
             if (jogo && mata && !dentro) { ambProx -= dt; if (ambProx <= 0) { ambProx = Random.Range(18f, 42f); float a = Random.Range(0, Mathf.PI * 2), d = Random.Range(18f, 34f); Amostra(Random.value < .55f ? "coruja" : "rangido", P.x + Mathf.Cos(a) * d, P.z + Mathf.Sin(a) * d, 60, .45f); } }
         }
+        // clima: a chuva gravada (sem a gravação, ruído) num passa-alta de 700 Hz e num passa-baixa que fecha sob o telhado
+        Gravacao lacoChuva; double pChuva; float gChuva, alvoChuva, corteChuva = 4200, corteChuvaAlvo = 4200; readonly Biquad chuvaHp = new Biquad(), chuvaLp = new Biquad();
+        public void Chuva(float chuva, bool coberto) { alvoChuva = chuva > .05f ? .09f * chuva * (coberto ? .55f : 1) : 0; corteChuvaAlvo = coberto ? 650 : 4200; }
         Gravacao lacoZ, lacoC; // sussurros e coro gravados dos rituais em andamento
         public bool Tem(string nome) { return grav.ContainsKey(nome); }
         // toca uma gravação; devolve false se ela não existe (quem chamou usa a síntese). indice >= 0 escolhe a variação.
@@ -370,6 +374,8 @@ namespace RitualReversal.Visual
             coroBp.Ajustar(Tipo.PassaFaixa, 720, 2.2, sr);
             for (int i = 0; i < gAmb.Length; i++) gAmb[i] += (alvoAmb[i] - gAmb[i]) * (1 - Mathf.Exp(-kBloco / .8f));
             grande += (grandeAlvo - grande) * (1 - Mathf.Exp(-kBloco / (grandeAlvo > grande ? 1.5f : .8f)));
+            gChuva += (alvoChuva - gChuva) * (1 - Mathf.Exp(-kBloco / .4f)); corteChuva += (corteChuvaAlvo - corteChuva) * (1 - Mathf.Exp(-kBloco / .3f));
+            if (gChuva > .0005f) { chuvaHp.Ajustar(Tipo.PassaAlta, 700, 1, sr); chuvaLp.Ajustar(Tipo.PassaBaixa, corteChuva, 1, sr); }
             for (int s = 0; s < n; s++)
             {
                 double t = agoraAudio + s * dtS; double L = 0, R = 0;
@@ -381,6 +387,12 @@ namespace RitualReversal.Visual
                 {
                     var lg = lacoAmb[ia]; if (lg == null || gAmb[ia] < .0005f) continue;
                     pAmb[ia] += (double)lg.sr / sr; if (pAmb[ia] >= lg.d.Length - 1) pAmb[ia] -= lg.d.Length - 1; double am = lg.d[(int)pAmb[ia]] * gAmb[ia]; L += am; R += am;
+                }
+                if (gChuva > .0005f)
+                {
+                    double ch;
+                    if (lacoChuva != null) { pChuva += (double)lacoChuva.sr / sr; if (pChuva >= lacoChuva.d.Length - 1) pChuva -= lacoChuva.d.Length - 1; ch = lacoChuva.d[(int)pChuva]; } else ch = rnd.NextDouble() * 2 - 1;
+                    ch = chuvaLp.Passo(chuvaHp.Passo(ch)) * gChuva; L += ch; R += ch;
                 }
                 // rituais
                 foreach (var O in AV)

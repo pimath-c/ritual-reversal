@@ -190,7 +190,10 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   o registro vem do caminho `log` do snapshot final (UnityWebRequest). `Desenho.cs` rasteriza a planta fixa do navegador
   (`PlantaFixa`) e o gráfico da noite em textura; `Tracos.cs` desenha no IMGUI o que muda a cada quadro; `PartidaPlanta.cs`
   é a planta do Tab e a escolha dos altares. `tools/unity-noite.js` confere tudo no Mono (e fotografa a planta do navegador).
-  Faltam: clima (chuva, raios); perfil, tutorial, desafio, dicas, laboratório e relatório do playtest.
+  Clima: `Visual/MundoClima.cs` (`CLIMAS`, `ClimaDe` com o mesmo hash do navegador, `ChaveClima` sem o que vem depois de #,
+  riscos de chuva que não caem sob o telhado, dois clarões e o trovão via `AoTrovao`, névoa e estrelas por clima); o laço da
+  chuva gravada fica no `Som.cs` (`Chuva`). `PartidaLab.cs` é o laboratório (`LAB_UI`, `LabMudancas`, `PainelLab`).
+  Faltam: perfil, tutorial, desafio, dicas e relatório do playtest; o menu e o lobby ainda sem o laboratório.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);

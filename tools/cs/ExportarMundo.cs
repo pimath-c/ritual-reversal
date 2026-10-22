@@ -90,7 +90,8 @@ public static class ExportarMundo
     static void Partida(Mundo mundo)
     {
         var slots = new List<Slot> { new Slot("A", "local", "Você"), new Slot("A", null, "Irmã Beatriz"), new Slot("B", null, "Irmão Cinza"), new Slot("B", null, "Madre Vesper") };
-        var g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = "teste-unity" });
+        var g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = "teste-unity-5" });   // este código sorteia tempestade: chuva e relâmpagos
+        int trovoes = 0; mundo.AoTrovao = d => trovoes++;
         Sim.Act(g, "local", new Acao { type = "ready" }); const double dt = 1 / 30.0; int q = 0;
         try
         {
@@ -105,11 +106,12 @@ public static class ExportarMundo
                 if (q == 1200) { var A = g.altars[1]; A.state = "farol"; } if (q == 1500) g.altars[2].state = "fenda";
                 var cam = new Vector3((float)(eu != null ? eu.x : 0), 1.67f, (float)(eu != null ? eu.z : 0)); string papel = Sim.RoleOf(g, "A");
                 mundo.Atualizar(g, papel, eu, cam, (float)(eu != null ? eu.yaw : 0), (float)dt);
+                mundo.AtualizarClima(g, cam, (float)dt);
                 mundo.SyncActors(g, papel, eu, cam, 0, (float)dt); mundo.SyncNoite(g, cam, (float)dt); mundo.AtualizarEfeitosQuadro((float)dt);
             }
         }
         catch (Exception e) { Console.WriteLine("ERRO no quadro " + q + " (fase " + g.phase + "): " + e); Environment.Exit(1); }
-        Console.WriteLine("partida no visual do Unity: " + q + " quadros sem exceção (fase " + g.phase + ", execuções " + mundo.fxExecucoes + ")");
+        Console.WriteLine("partida no visual do Unity: " + q + " quadros sem exceção (fase " + g.phase + ", execuções " + mundo.fxExecucoes + ", clima " + mundo.climaTipo + ", chuva " + mundo.climaChuva.ToString("0.00", C) + ", trovões " + trovoes + ")");
     }
     static Vector3 Escala(Transform tr, Transform raiz) { var s = Vector3.one; for (var t = tr; t != raiz && t != null; t = t.parent) s = Vector3.Scale(s, t.localScale); return s; }
     static string Esc(string s) { return (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\""); }

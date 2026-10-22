@@ -35,6 +35,8 @@ namespace RitualReversal
             // primeira pessoa (ArmaFP): os sons dos clipes são gravações; sem a gravação, a síntese do Som
             fp.arma.AoTocar = (k, vol, max, varia) => { if (!som.Amostra(k, vol: vol, max: max, varia: varia)) som.Tocar(k); return true; };
             fp.arma.raizMundo = mundo.raiz; mundo.AoExecutar = E => fp.Executou();
+            // trovão: ruído grave e um tom que cai, mais tarde quanto mais longe o relâmpago (o atraso já passou)
+            mundo.AoTrovao = d => { som.Ruido(float.NaN, float.NaN, 1, 2.8f + d, Som.Tipo.PassaBaixa, 150, .8f, .9f); som.Tom(float.NaN, float.NaN, 1, 48, 26, 2.4f, Som.Onda.Seno, .5f); Legenda("trovao", float.NaN, float.NaN, "Trovão"); };
         }
 
         void LimparVisual() { if (mundo != null) mundo.Limpar(); if (som != null) som.Silenciar(); }
@@ -62,6 +64,8 @@ namespace RitualReversal
             }
             var c = CamP(); float yawCam = jogando ? (float)lookYaw : -cam.transform.eulerAngles.y * Mathf.Deg2Rad;
             mundo.Atualizar(g, papel, m, c, yawCam, dt);
+            mundo.AtualizarClima(g, c, dt); bool noite = g != null && g.phase == "play";
+            som.chuva = mundo.climaChuva; som.Chuva(noite ? mundo.climaChuva : 0, Mapa.Carregado && Mapa.Coberto(c.x, c.z));
             mundo.MostrarPartida(jogando);
             if (jogando) { mundo.SyncActors(g, papel, m, c, (float)lookYaw, dt); mundo.SyncNoite(g, c, dt); LegendasDosRituais(papel); }
             mundo.AtualizarEfeitosQuadro(dt);
@@ -90,7 +94,7 @@ namespace RitualReversal
                 if (pos != null) pos.Atualizar(s, mundo.GRk, Mathf.Clamp01(hurtT / .35f), Mathf.Clamp01(blindT / 1.5f));
             }
             else { if (pos != null) pos.Atualizar(100, 0, 0, 0); veuExe = 0; }
-            if (pos != null) pos.Grade(cam, g != null ? g.momento : 0, mundo.GRk, 1, dt, agora);
+            if (pos != null) pos.Grade(cam, g != null ? g.momento : 0, mundo.GRk, mundo.climaNevoa, dt, agora);
         }
 
         // retorno imediato da arma (predictFire): som, clarão e coice antes da simulação confirmar
@@ -165,8 +169,8 @@ namespace RitualReversal
                         if (L.Count == 0) break; float ex = (float)L.Average(A => A.x), ez = (float)L.Average(A => A.z);
                         som.Tocar("eco", ex, ez); Legenda("eco", ex, ez, "Coro distante: " + string.Join(" ou ", L.Select(A => A.name).ToArray()), "rit", 400);
                         var poss = papel == "H" && g.know != null ? L.Where(A => AltarPossivel(A.i)).ToList() : L;
-                        if (poss.Count == 1 && L.Count == 2) { var fora = L.First(A => A != poss[0]); Anunciar("Dedução: " + fora.name + " foi descartado, o ritual deve estar em " + poss[0].name, 4); som.Tocar("sealed"); Feed("Dedução: " + fora.name + " foi descartado, então o eco aponta " + poss[0].name + ".", "h"); }
-                        else Anunciar("O coro ecoa: " + string.Join(" ou ", L.Select(A => A.name).ToArray()), 3.5f);
+                        if (poss.Count == 1 && L.Count == 2) { var fora = L.First(A => A != poss[0]); Anunciar("Dedução", fora.name + " foi descartado: o ritual deve estar em " + poss[0].name); som.Tocar("sealed"); Feed("Dedução: " + fora.name + " foi descartado, então o eco aponta " + poss[0].name + ".", "h"); }
+                        else Anunciar("O coro ecoa", string.Join(" ou ", L.Select(A => A.name).ToArray()));
                         break;
                     }
                 case "sensor": som.Tocar("ping", float.NaN, float.NaN, (float)e.Num("v")); break;
@@ -177,7 +181,7 @@ namespace RitualReversal
                 case "grande":
                     som.Tocar("doom"); som.Tocar("sinoGrande"); StartCoroutine(Depois(2.3f, () => som.Tocar("sinoGrande"))); StartCoroutine(Depois(4.6f, () => som.Tocar("sinoGrande")));
                     mundo.EspantarCorvos(); claraoGrande = 1.2f; fp.kickP += .05f;
-                    { int ai = e.Int("altar"); Anunciar("O Grande Ritual" + (ai >= 0 && ai < g.altars.Count ? ": " + g.altars[ai].name + ", a catedral inteira ouve" : ""), 4.5f); }
+                    { int ai = e.Int("altar"); Anunciar("O Grande Ritual", ai >= 0 && ai < g.altars.Count ? g.altars[ai].name + ": a catedral inteira ouve" : "A catedral inteira ouve"); }
                     break;
                 case "hab":
                     {
@@ -202,7 +206,7 @@ namespace RitualReversal
                         var m = g.actors.Find(a => a.id == eu); bool meu = m != null && por.Contains(m.name), fenda = e.type == "doom";
                         string tit = fenda ? (meu ? "Você abriu uma Fenda" : "Uma Fenda se abriu") : (meu ? "Você selou o ritual" : "Um Farol se acendeu");
                         string sub = por.Count == 0 ? alt : ListaNomes(por) + (fenda ? (por.Count > 1 ? " completaram o ritual" : " completou o ritual") + (alt != "" ? " em " + alt : "") : (por.Count > 1 ? " selaram " : " selou ") + alt);
-                        Anunciar(tit + (sub != "" ? ": " + sub : ""), 4.5f); break;
+                        Anunciar(tit, sub); break;
                     }
                 case "interrupcao":
                     {
