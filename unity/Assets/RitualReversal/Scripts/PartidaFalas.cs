@@ -15,10 +15,15 @@ namespace RitualReversal
         static readonly string[] FALAS = { "Preciso de ajuda!", "Estou indo", "Recuar!", "Inimigo aqui!", "Obrigado" };
         static string TextoFala(int f, string team) { return f == 5 ? (team == "C" ? "Vou iniciar o ritual" : "Vou purgar este altar") : f >= 0 && f < FALAS.Length ? FALAS[f] : ""; }
         bool falasAbertas; float falasT;
+        int falaSel;
         void AtalhosFalas()
         {
             if (EntradaUnity.Apertou(Tecla.V)) { falasAbertas = !falasAbertas; falasT = 4; }
+            // controle: direcional para cima abre; aberto, cima e baixo escolhem, A envia, B fecha
+            if (!falasAbertas && EntradaUnity.PadCima()) { falasAbertas = true; falaSel = 0; falasT = 6; return; }
             if (!falasAbertas) return;
+            if (EntradaUnity.PadCima()) { falaSel = (falaSel + 5) % 6; falasT = 6; } if (EntradaUnity.PadBaixo()) { falaSel = (falaSel + 1) % 6; falasT = 6; }
+            if (EntradaUnity.PadA()) { Falar(falaSel); return; } if (EntradaUnity.PadB()) { falasAbertas = false; return; }
             var T = new[] { Tecla.D1, Tecla.D2, Tecla.D3, Tecla.D4, Tecla.D5, Tecla.D6 }; for (int i = 0; i < T.Length; i++) if (EntradaUnity.Apertou(T[i])) { Falar(i); return; }
         }
         void Falar(int f) { falasAbertas = false; Acao(new Acao { type = "fala", i = f }); }
@@ -41,7 +46,7 @@ namespace RitualReversal
             for (int f = 0; f < 6; f++)
             {
                 var r = new Rect(x + 10, y + 30 + f * 26, w - 20, 24); bool sobre = r.Contains(Event.current.mousePosition);
-                GUI.Label(r, Cor("[" + (f + 1) + "]", OURO_VIVO) + "  " + Cor(TextoFala(f, m.team), sobre ? OURO_VIVO : OSSO), st);
+                if (f == falaSel) Caixa(r, new Color(.953f, .835f, .557f, .1f)); GUI.Label(r, Cor("[" + (f + 1) + "]", OURO_VIVO) + "  " + Cor(TextoFala(f, m.team), sobre || f == falaSel ? OURO_VIVO : OSSO), st);
                 if (sobre && Event.current.type == EventType.MouseDown) { Falar(f); Event.current.Use(); }
             }
         }

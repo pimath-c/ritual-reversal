@@ -59,6 +59,7 @@ namespace RitualReversal
             if (jogando) LerAtalhos(m, ativo);
             var inp = LerEntrada(ativo);
             bool pausado = jogando && !Travado() && lojaAberta == null;
+            if (pausado && EntradaUnity.PadStart()) { Travar(true); pausado = false; }   // Start do controle volta ao jogo
             ultimaEntrada = inp;
             if (online) { inp.viewT = ServerNow() - .1; PassoOnline(inp, dt); m = Eu(); if (m != null && jogando) PreverTiro(m, (float)dt, inp.fire); }
             else if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); PreverTiro(m, (float)dt, inp.fire); Sim.Step(g, dt); }
@@ -116,6 +117,10 @@ namespace RitualReversal
                 lookYaw -= d.x * .0022 * sensibilidade; lookPitch = JS.Clamp(lookPitch + d.y * .0022 * sensibilidade, -1.45, 1.45);
                 if (EntradaUnity.Segurando(Tecla.W)) mz -= 1; if (EntradaUnity.Segurando(Tecla.S)) mz += 1;
                 if (EntradaUnity.Segurando(Tecla.A)) mx -= 1; if (EntradaUnity.Segurando(Tecla.D)) mx += 1;
+                // controle: o analógico esquerdo soma ao teclado; o direito olha (curva quadrática, a sensibilidade do mouse)
+                var pa = EntradaUnity.PadAndar(); mx = JS.Clamp(mx + pa.x, -1, 1); mz = JS.Clamp(mz - pa.y, -1, 1);
+                var po = EntradaUnity.PadOlhar(); double k = 2.8 * sensibilidade * Time.unscaledDeltaTime;
+                lookYaw -= System.Math.Sign(po.x) * po.x * po.x * k; lookPitch = JS.Clamp(lookPitch + System.Math.Sign(po.y) * po.y * po.y * k * .8, -1.45, 1.45);
             }
             return new Entrada
             {
