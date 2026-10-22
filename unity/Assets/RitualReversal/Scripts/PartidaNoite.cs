@@ -53,19 +53,6 @@ namespace RitualReversal
         }
 
         // ---------- pedaços das telas ----------
-        GUIStyle sH3, sCel, sCelN; readonly Dictionary<Color, GUIStyle> fundos = new Dictionary<Color, GUIStyle>();
-        void EstilosNoite()
-        {
-            if (sH3 != null) return;
-            sH3 = new GUIStyle(sTexto) { fontSize = 19, fontStyle = fonteSerif != null ? FontStyle.Normal : FontStyle.Bold, wordWrap = false }; sH3.normal.textColor = OURO; if (fonteSerif != null) sH3.font = fonteSerif;   // os h3 do navegador são serifados
-            sCel = new GUIStyle(sPequeno) { fontSize = 15, wordWrap = false, clipping = TextClipping.Clip }; sCelN = new GUIStyle(sCel) { alignment = TextAnchor.MiddleRight };
-        }
-        GUIStyle Fundo(Color c)
-        {
-            GUIStyle s; if (fundos.TryGetValue(c, out s)) return s;
-            var t = new Texture2D(1, 1); t.SetPixel(0, 0, c); t.Apply(); s = new GUIStyle { padding = new RectOffset(12, 12, 8, 8), margin = new RectOffset(4, 4, 4, 4) }; s.normal.background = t; fundos[c] = s; return s;
-        }
-        void H3(string t) { GUILayout.Space(14); GUILayout.Label(t.ToUpperInvariant(), sH3); }
         // texto com âncora no meio e y na linha de base (como o <text> do SVG)
         void TextoBase(float x, float yBase, string txt, int fs, Color c, FontStyle estilo = FontStyle.Normal)
         {
@@ -73,113 +60,14 @@ namespace RitualReversal
             GUI.Label(new Rect(x - 200, yBase - st.fontSize * 1.2f, 400, st.fontSize * 1.45f), txt, st);
         }
 
-        void LancesDaNoite(List<Registro> log)
-        {
-            var L = Noite.Lances(log); if (L.Count == 0) return; var eu = Eu(); H3("Lances da noite");
-            for (int i = 0; i < L.Count; i += 2)
-            {
-                GUILayout.BeginHorizontal();
-                for (int j = i; j < Mathf.Min(L.Count, i + 2); j++)
-                {
-                    var l = L[j]; bool meu = eu != null && l.quem.Contains(eu.name);
-                    GUILayout.BeginVertical(Fundo(l.culto ? new Color(.12f, .035f, .055f, .85f) : new Color(.1f, .085f, .05f, .85f)), GUILayout.Width(440));
-                    GUILayout.Label("<size=12>" + Cor(Noite.Relogio(l.t), MUDO) + "</size>", sPequeno);
-                    GUILayout.Label("<b>" + Cor(l.tit, meu ? OURO_VIVO : l.culto ? CARMIM_HI : OSSO) + "</b>", sPequeno);
-                    GUILayout.Label("<size=14>" + Cor(l.sub, new Color(.79f, .75f, .68f)) + "</size>", sPequeno);
-                    GUILayout.EndVertical();
-                }
-                GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            }
-        }
-        void Destaques(List<Registro> log)
-        {
-            var P = Noite.Premios(log); if (P.Count == 0) return; var eu = Eu(); H3("Destaques da noite");
-            for (int i = 0; i < P.Count; i += 3)
-            {
-                GUILayout.BeginHorizontal();
-                for (int j = i; j < Mathf.Min(P.Count, i + 3); j++)
-                {
-                    var p = P[j]; bool meu = eu != null && p.quem == eu.name;
-                    GUILayout.BeginVertical(Fundo(meu ? new Color(.16f, .13f, .06f, .9f) : new Color(.07f, .07f, .08f, .85f)), GUILayout.Width(290));
-                    GUILayout.Label("<b>" + Cor(p.nome, meu ? OURO_VIVO : OURO) + "</b>", sPequeno); GUILayout.Label(p.quem, sPequeno);
-                    GUILayout.Label("<size=13>" + Cor(p.verbo + " " + p.n + " " + (p.n == 1 ? p.um : p.varios), MUDO) + "</size>", sPequeno);
-                    GUILayout.EndVertical();
-                }
-                GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            }
-        }
         static readonly string[] COL_PLACAR = { "Derrubou", "Caiu", "Reanimou", "Altares", "Tarefas", "Compras" };
-        void PlacarJogadores(List<Registro> log)
-        {
-            var rods = Noite.Placar(log); var eu = Eu();
-            foreach (var P in rods)
-            {
-                H3(UmaNoite || rods.Count < 2 ? "Placar da noite" : "Placar da rodada " + P.r);
-                GUILayout.BeginHorizontal(); GUILayout.Label(Cor("Jogador", MUDO), sCel, GUILayout.Width(230)); GUILayout.Label(Cor("Classe", MUDO), sCel, GUILayout.Width(170));
-                foreach (var c in COL_PLACAR) GUILayout.Label(Cor(c, MUDO), sCelN, GUILayout.Width(84)); GUILayout.EndHorizontal();
-                foreach (var L in P.linhas)
-                {
-                    bool meu = eu != null && L.nome == eu.name;
-                    GUILayout.BeginHorizontal(Fundo(meu ? new Color(.16f, .13f, .06f, .7f) : new Color(0, 0, 0, .25f)));
-                    GUILayout.Label("<b>" + Cor(L.nome, L.team == "H" ? OURO_VIVO : CARMIM_HI) + "</b>" + (L.humano ? "" : " <size=12>" + Cor("bot", MUDO) + "</size>"), sCel, GUILayout.Width(218));
-                    GUILayout.Label(L.classe, sCel, GUILayout.Width(170)); foreach (var v in L.v) GUILayout.Label(v.ToString(), sCelN, GUILayout.Width(84));
-                    GUILayout.EndHorizontal();
-                }
-            }
-        }
-        void TabelaRegistro()
-        {
-            Estatisticas r1, r2; if (!g.stats.TryGetValue(1, out r1)) return; g.stats.TryGetValue(2, out r2);
-            H3("Registro da partida");
-            GUILayout.BeginHorizontal(); GUILayout.Label("", sCel, GUILayout.Width(330)); GUILayout.Label(Cor("Rodada 1", MUDO), sCelN, GUILayout.Width(110)); if (r2 != null) GUILayout.Label(Cor("Rodada 2", MUDO), sCelN, GUILayout.Width(110)); GUILayout.EndHorizontal();
-            foreach (var l in LINHAS)
-            {
-                GUILayout.BeginHorizontal(); GUILayout.Label(l[1], sCel, GUILayout.Width(330)); GUILayout.Label(Valor(r1, l[0]), sCelN, GUILayout.Width(110));
-                if (r2 != null) GUILayout.Label(Valor(r2, l[0]), sCelN, GUILayout.Width(110)); GUILayout.EndHorizontal();
-            }
-        }
 
-        // linha do tempo da rodada (graficoNoite): o fundo é uma textura; nomes dos momentos, ícones e legenda por cima
-        void GraficoNoite(int r, float w)
-        {
-            RodadaLT R; if (!LT.rod.TryGetValue(r, out R) || R.am.Count == 0) return;
-            var log = LogDaNoite(); var mk = Noite.MarcosFinais(R, log, r); double T = Noite.DuracaoGrafico(R);
-            string chave = LT.id + "|" + r + "|" + R.am.Count; Texture2D tex;
-            if (!texGraficos.TryGetValue(chave, out tex)) { foreach (var t in texGraficos.Values) Destroy(t); texGraficos.Clear(); texGraficos[chave] = tex = Noite.Grafico(R, g.lab, g.altars.Count); }
-            H3(UmaNoite ? "A noite" : "A noite, rodada " + r);
-            var rr = GUILayoutUtility.GetRect(w, w * 180 / Noite.GW, GUILayout.Width(w)); float s = rr.width / Noite.GW, y0 = rr.y + 14 * s;
-            System.Func<double, float> X = t => rr.x + Noite.GX(t, T) * s;
-            GUI.DrawTexture(new Rect(rr.x, y0, rr.width, Noite.GH * s), tex);
-            for (int i = 0; i < CFG.momentoAte.Length; i++)
-            {
-                double a = i > 0 ? Noite.FimMomento(g.lab, i - 1) : 0; if (a >= T) continue;
-                TextoBase(X((a + System.Math.Min(Noite.FimMomento(g.lab, i), T)) / 2), y0 + (Noite.GH + 14) * s, CFG.momentoNome[i], Mathf.RoundToInt(11 * s), Desenho.Hex("#8f877b"));
-            }
-            string dica = null; var mouse = Event.current.mousePosition;
-            foreach (var m in mk)
-            {
-                string[] ic; if (!Noite.IC.TryGetValue(m.tipo, out ic)) ic = new[] { "•", "#cccccc" }; float x = X(m.rt);
-                TextoBase(x, y0 - 2 * s, ic[0], Mathf.RoundToInt(12 * s), Desenho.Hex(ic[1]));
-                if (Mathf.Abs(mouse.x - x) < 6 * s && mouse.y > y0 - 16 * s && mouse.y < y0 + 2 * s) dica = Noite.Relogio(m.rt) + " · " + m.txt;
-            }
-            if (dica != null) { var st = new GUIStyle(sPequeno) { fontSize = 14, wordWrap = false }; var tam = st.CalcSize(new GUIContent(dica)); var rd = new Rect(Mathf.Min(mouse.x + 12, rr.xMax - tam.x - 10), mouse.y + 14, tam.x + 12, tam.y + 6); Caixa(rd, new Color(0, 0, 0, .9f)); GUI.Label(new Rect(rd.x + 6, rd.y + 3, tam.x, tam.y), dica, st); }
-            // legenda: os altares que tiveram ritual e o selamento
-            GUILayout.BeginHorizontal();
-            for (int i = 0; i < g.altars.Count; i++)
-            {
-                if (!R.am.Any(q => i < q.a.Length && q.a[i] != null)) continue;
-                var rq = GUILayoutUtility.GetRect(14, 18, GUILayout.Width(14)); Caixa(new Rect(rq.x, rq.y + 5, 10, 10), Desenho.Hex(Noite.COR_ALT[i % 6])); GUILayout.Label("<size=13>" + g.altars[i].name + "</size>", sPequeno, GUILayout.ExpandWidth(false)); GUILayout.Space(10);
-            }
-            { var rq = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(18)); for (int k = 0; k < 3; k++) Caixa(new Rect(rq.x + k * 6, rq.y + 9, 4, 2), Desenho.Hex("#f3d58e")); GUILayout.Label("<size=13>Selamento</size>", sPequeno, GUILayout.ExpandWidth(false)); }
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            foreach (var m in mk.Where(m => m.tipo != "momento").Take(12)) GUILayout.Label("<size=14><b>" + Noite.Relogio(m.rt) + "</b>  " + m.txt + "</size>", sPequeno);
-        }
 
         string TextoTempo() { return g.timers ? " (" + Mathf.CeilToInt((float)System.Math.Max(0, g.phaseT)) + " s)" : ""; }
         string ListaProntos() { return string.Join("   ", g.slots.Where(s => s.cid != null).Select(s => { bool p; g.ready.TryGetValue(s.cid, out p); return s.name + " " + (p ? "✓" : "…"); }).ToArray()); }
 
-        void TelaResumo() { EstilosNoite(); TelaResumoCss(); }
-        void TelaFinal() { EstilosNoite(); if (repAberto) { TelaReplayCss(); return; } if (relAberto) { TelaRelatorioCss(); return; } TelaFinalCss(); }
+        void TelaResumo() { TelaResumoCss(); }
+        void TelaFinal() { if (repAberto) { TelaReplayCss(); return; } if (relAberto) { TelaRelatorioCss(); return; } TelaFinalCss(); }
         // local: grava o registro (com dificuldade, laboratório e papel, como o navegador) na pasta de dados do jogo;
         // online: o servidor guarda o arquivo, o navegador do sistema baixa
         void BaixarRegistro()
@@ -198,37 +86,6 @@ namespace RitualReversal
         bool repAberto, repPlay, repArrastando; int repR = 1; double repT; float repVel = 20;
         void AbrirReplay(int r) { repAberto = true; repR = r; repT = 0; repPlay = true; som.Tocar("click"); }
         static readonly string[][] COR_REP = { new[] { "#f3d58e", "#c99a3e" }, new[] { "#ff6a7e", "#b8243e" } }; static readonly string[] COR_REP_D = { "#8ec4ff", "#4a7fd8" };
-        void TelaReplay()
-        {
-            RodadaLT R; if (!LT.TemReplay(repR) || !LT.rod.TryGetValue(repR, out R)) { repAberto = false; return; }
-            var P = R.pos; double fim = P[P.Count - 1].rt;
-            bool dalt = PlayerPrefs.GetInt("rr-dalt", 0) == 1; var nTime = new Dictionary<string, int> { { "H", 0 }, { "C", 0 } };
-            var cores = R.atores.Select(o => { var L = o.team == "C" ? (dalt ? COR_REP_D : COR_REP[1]) : o.team == "H" ? COR_REP[0] : null; if (L == null) return Desenho.Hex("#cccccc"); return Desenho.Hex(L[(nTime[o.team]++) % 2]); }).ToList();
-            float lw = Mathf.Min(1000, W - 40); var r = Janela(lw, H - 60); GUILayout.BeginArea(r);
-            GUILayout.Label("Rever a noite" + (UmaNoite ? "" : " · rodada " + repR), sTitulo);
-            GUILayout.Label("<size=16>" + Cor((online ? "Os inimigos só aparecem onde você os viu. " : "") + "Os rastros mostram os últimos 20 segundos de cada um.", MUDO) + "</size>", sCentro);
-            float mw = Mathf.Min(r.width, (r.height - 300) * PlantaFixa.L / PlantaFixa.A); var rm0 = GUILayoutUtility.GetRect(r.width, mw * PlantaFixa.A / PlantaFixa.L); var rm = new Rect(rm0.x + (rm0.width - mw) / 2, rm0.y, mw, rm0.height);
-            PlantaBase(rm); var rmTela = new Rect(r.x + rm.x, r.y + rm.y, rm.width, rm.height);   // os rastros giram: vão depois da área
-            GUILayout.BeginHorizontal();
-            string bt = repPlay ? "Pausar" : repT >= fim - .5 ? "Repetir" : "Continuar";
-            if (Bt(bt, sBotao, GUILayout.Width(150))) { if (repT >= fim - .5) repT = 0; repPlay = !repPlay; }
-            GUILayout.BeginVertical(); GUILayout.Space(16);
-            float novo = GUILayout.HorizontalSlider((float)repT, 0, (float)System.Math.Ceiling(fim), GUILayout.ExpandWidth(true));
-            if (Mathf.Abs(novo - (float)repT) > .01f) repT = Mathf.Round(novo); repArrastando = GUIUtility.hotControl != 0;   // segurando o controle, o relógio não anda
-            GUILayout.EndVertical();
-            GUILayout.Label("<b>" + Relogio(repT) + "</b>", sTexto, GUILayout.Width(70));
-            foreach (var v in new[] { 10, 20, 40, 80 }) if (Bt(repVel == v ? Cor(v + "×", OURO_VIVO) : v + "×", sBotao, GUILayout.Width(66))) repVel = v;
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            for (int j = 0; j < R.atores.Count; j++) { var rq = GUILayoutUtility.GetRect(14, 18, GUILayout.Width(14)); Caixa(new Rect(rq.x, rq.y + 5, 10, 10), cores[j]); GUILayout.Label("<size=14>" + (R.atores[j].eu ? "<b>" + R.atores[j].nome + "</b>" : R.atores[j].nome) + "</size>", sPequeno, GUILayout.ExpandWidth(false)); GUILayout.Space(10); }
-            GUILayout.Label("<size=14>✚ Queda</size>", sPequeno, GUILayout.ExpandWidth(false)); GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            var mk = R.mkFinal ?? R.mk; var ult = mk.Where(m => m.tipo != "momento" && m.rt <= repT).Reverse().Take(4).ToList();
-            for (int n = 0; n < 4; n++) GUILayout.Label(n < ult.Count ? "<size=14><b>" + Relogio(ult[n].rt) + "</b>  " + (n == 0 ? Cor(ult[n].txt, OURO_VIVO) : ult[n].txt) + "</size>" : " ", sPequeno);
-            GUILayout.FlexibleSpace(); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (Bt("Voltar ao resultado", sBotao, GUILayout.Height(48), GUILayout.Width(300))) repAberto = false;
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndArea();
-            DesenharReplay(rmTela, R, cores);
-        }
         void DesenharReplay(Rect rm, RodadaLT R, List<Color> cores)
         {
             var P = R.pos; double t = repT; float s = rm.width / PlantaFixa.L;

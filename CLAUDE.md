@@ -194,14 +194,14 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   é a planta do Tab e a escolha dos altares. `tools/unity-noite.js` confere tudo no Mono (e fotografa a planta do navegador).
   Clima: `Visual/MundoClima.cs` (`CLIMAS`, `ClimaDe` com o mesmo hash do navegador, `ChaveClima` sem o que vem depois de #,
   riscos de chuva que não caem sob o telhado, dois clarões e o trovão via `AoTrovao`, névoa e estrelas por clima); o laço da
-  chuva gravada fica no `Som.cs` (`Chuva`). `PartidaLab.cs` é o laboratório (`LAB_UI`, `LabMudancas`, `PainelLab`).
+  chuva gravada fica no `Som.cs` (`Chuva`). `PartidaLab.cs` é o laboratório (`LAB_UI`, `LabMudancas`; o painel é o `PainelLabCss` do título e da sala).
   Menu: `PartidaMenu.cs` (título com o sigilo, papel solo, dificuldade, laboratório, desafio, Aprender a jogar, Como jogar,
   Novidades, Ajustes; `IniciarSolo` = startLocal; tutorial `PassosTut` com alvo na tela e na bússola, N pula; dicas `DICAS`,
   PlayerPrefs "rr-dicas"), `PartidaPerfil.cs` (perfil e conquistas em PlayerPrefs "rr-perfil", o mesmo JSON do navegador;
   desafio da noite com pontos e recorde do dia), `PartidaSala.cs` (sala pública, salas abertas por /api/salas, dificuldade,
   laboratório e chat no lobby, chat da partida com Enter/Tab/Esc, silenciar adversários).
   Relatório do playtest: `Noite.Relatorio` é o `Sim.relatorio` (o `unity-noite.js` compara os dois sobre o mesmo registro,
-  campo a campo); `PartidaRelatorio.cs` é a tela (tabelas, perguntas em PlayerPrefs "rr-resp-<partida>", copiar, baixar).
+  campo a campo); `PartidaRelatorio.cs` tem os dados (perguntas em PlayerPrefs "rr-resp-<partida>", copiar, baixar) e a tela é o `TelaRelatorioCss`.
   Frases rápidas e falas do bot aliado: `PartidaFalas.cs` (V abre, 1 a 6). Música do menu e trilha de tensão: `Visual/SomMusica.cs`
   (sintetizadas no OnAudioFilterRead; a partida passa o nível em `som.Tensao`, `AtualizarTensao` no PartidaVisual).
   Kit e mira: `PartidaKit.cs` (fileira de ferramentas com recarga, mira cruz/ponto/círculo com cor e tamanho que abre com o
@@ -212,7 +212,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   O `IMGUIFalso.cs` tem o GUILayout do Unity em miniatura (o algoritmo do GUILayoutGroup: margens que se fundem, FlexibleSpace
   com peso 10000, rolagem, áreas) e mede o texto com os TTF de verdade (cmap/hmtx); acusa o "Getting control N's position..."
   quando o Repaint pede controles que o Layout não teve. Um clique que muda a tela no meio da passada é encerrado com
-  `GUIUtility.ExitGUI()` (`cliqueNaPassada` no `Bt`, try/catch em `OnGUI`). Com `FOTOS=` o Repaint grava o que desenhou e
+  `GUIUtility.ExitGUI()` (`cliqueNaPassada` no `BotaoCss`, try/catch em `OnGUI`). Com `FOTOS=` o Repaint grava o que desenhou e
   `tools/foto-imgui.py` faz o PNG (texto rico sem `<u>`, que o Unity não tem; negrito e itálico sintéticos). Giros no IMGUI:
   `Tracos.Girar` (o `RotateAroundPivot` erra o pivô com o GUI.matrix escalado, fora de 1080p); só fora de áreas.
   HUD com as medidas do CSS "interface mais quieta" (`PartidaHudPecas.cs`: faixas escuras, `Topo`, `Faixa` de losangos,
@@ -239,7 +239,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).
-  Menus pelo controle: todo botão das telas passa por `Bt` (`PartidaNavPad.cs`): cima/baixo move o foco, A aperta, B volta.
+  Menus pelo controle (`PartidaNavPad.cs`): todo botão das telas passa por `BotaoCss`, que conta a ordem; cima/baixo move o foco, A aperta, B volta. Nenhuma tela usa mais GUILayout.
   Fontes do navegador em `Resources/Fontes` (OFL, `LEIA.txt`): Barlow Condensed no corpo e nos botões, IM Fell English nos
   títulos, seções, anúncio, lances e nomes da planta (`Estilos`, `TextoSvg`).
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); controles de toque.

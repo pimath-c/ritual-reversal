@@ -52,7 +52,7 @@ namespace RitualReversal
             foreach (var l in new[] { new[] { "aprender", "Aprender a jogar" }, new[] { "como", "Como jogar" }, new[] { "perfil", "Perfil" }, new[] { "novidades", "Novidades" }, new[] { "arsenal", "Arsenal" }, new[] { "ajustes", "Ajustes" } })
             {
                 float wk = LarguraBotao(l[1], "lk");
-                if (BotaoCss(new Rect(xl, y, wk, hl), l[1], "lk")) { som.Tocar("click"); if (l[0] == "arsenal") IniciarArsenal(); else { telaMenu = l[0]; rolPerfil = Vector2.zero; } }
+                if (BotaoCss(new Rect(xl, y, wk, hl), l[1], "lk")) { som.Tocar("click"); if (l[0] == "arsenal") IniciarArsenal(); else { telaMenu = l[0]; } }
                 xl += wk + 18;
             }
             y += hl;

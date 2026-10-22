@@ -47,11 +47,9 @@ namespace RitualReversal
         // ---------- título ----------
         void TelaTitulo()
         {
-            EstilosNoite();
             switch (telaMenu) { case "ajustes": TelaAjustes(); return; case "como": TelaComoJogar(); return; case "perfil": TelaPerfil(); return; case "novidades": TelaNovidades(); return; case "aprender": TelaAprender(); return; }
             TituloCss();
         }
-        void Voltar(string txt = "Voltar") { GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); if (Bt(txt, sBotao, GUILayout.Width(240), GUILayout.Height(50))) { telaMenu = null; som.Tocar("click"); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
 
         void TelaAprender() { TelaAprenderCss(); }
 
@@ -75,11 +73,6 @@ namespace RitualReversal
         void TelaNovidades() { TelaNovidadesCss(); }
 
 
-        void Passo(int n, string t, string d)
-        {
-            GUILayout.BeginHorizontal(); GUILayout.Label("<size=26>" + Cor(n.ToString(), OURO) + "</size>", sTexto, GUILayout.Width(34));
-            GUILayout.BeginVertical(); GUILayout.Label("<b>" + t + "</b>", sPequeno); GUILayout.Label("<size=14>" + Cor(d, new Color(.79f, .75f, .68f)) + "</size>", sPequeno); GUILayout.EndVertical(); GUILayout.EndHorizontal(); GUILayout.Space(4);
-        }
         void TelaComoJogar() { TelaComoJogarCss(); }
 
         void TelaAjustes() { PainelTela("ajustes", 800, (x, y, w) => AjustesCss(x, y, w, () => { telaMenu = null; som.Tocar("click"); })); }

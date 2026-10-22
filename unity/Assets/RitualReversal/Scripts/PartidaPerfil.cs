@@ -95,7 +95,7 @@ namespace RitualReversal
         }
 
         // ---------- tela do perfil ----------
-        Vector2 rolPerfil; bool confirmarApagar;
+        bool confirmarApagar;
         void TelaPerfil() { TelaPerfilCss(); }
 
 
@@ -129,14 +129,6 @@ namespace RitualReversal
             var p = Perfil(); var des = O(p, "desafios"); object ant; bool tem = des.TryGetValue(desData, out ant) && ant != null; int pts = (int)r["p"], a = tem ? System.Convert.ToInt32(ant) : 0;
             r["recorde"] = !tem || pts > a; if ((bool)r["recorde"]) des[desData] = (double)pts; r["melhor"] = System.Math.Max(pts, a);
             var conq = O(p, "conq"); if (!conq.ContainsKey("desafio")) { conq["desafio"] = Agora(); filaConq.Add(CONQ.First(q => q[0] == "desafio")); } SalvarPerfil(p);
-        }
-        void BlocoDesafio()
-        {
-            if (!desAtivo || desFeito == null) return; var r = desFeito;
-            GUILayout.BeginVertical(Fundo(new Color(.14f, .11f, .05f, .9f)));
-            GUILayout.Label("<size=12>" + Cor("DESAFIO DA NOITE · " + desData, OURO) + "</size>", sCentro); GUILayout.Label("<size=34><b>" + r["p"] + " pontos</b></size>", sCentro);
-            GUILayout.Label("<size=15>" + string.Join(" · ", ((List<string>)r["partes"]).ToArray()) + "</size>", sCentro);
-            GUILayout.Label("<i>" + Cor((bool)r["recorde"] ? "Novo recorde do dia!" : "Recorde do dia: " + r["melhor"], OURO_VIVO) + "</i>", sCentro); GUILayout.EndVertical();
         }
     }
 }

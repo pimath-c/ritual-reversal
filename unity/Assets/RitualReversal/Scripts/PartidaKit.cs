@@ -13,30 +13,6 @@ namespace RitualReversal
         float abertura, fpsMedia = 60;
         void AbrirMira(float v) { abertura = Mathf.Min(1, abertura + v); }
 
-        void Ferramenta(Rect r, string tecla, string nome, string num, float cd, bool aceso)
-        {
-            Caixa(r, new Color(.031f, .035f, .043f, .6f)); var b = aceso ? OURO : new Color(.2f, .227f, .259f);
-            Caixa(new Rect(r.x, r.y, r.width, 1), b); Caixa(new Rect(r.x, r.yMax - 1, r.width, 1), b); Caixa(new Rect(r.x, r.y, 1, r.height), b); Caixa(new Rect(r.xMax - 1, r.y, 1, r.height), b);
-            var st = new GUIStyle(sPequeno) { fontSize = 13, alignment = TextAnchor.UpperCenter, wordWrap = false, richText = true };
-            GUI.Label(new Rect(r.x, r.y + 3, r.width, 18), "<b>" + Cor(tecla, OURO) + "</b>", st);
-            GUI.Label(new Rect(r.x, r.y + 20, r.width, 18), nome + (num != null ? " <b>" + num + "</b>" : ""), st);
-            if (cd > 0) Caixa(new Rect(r.x, r.yMax - r.height * Mathf.Clamp01(cd), r.width, r.height * Mathf.Clamp01(cd)), new Color(0, 0, 0, .65f));
-        }
-        void Kit(Ator m)
-        {
-            float w = 74, h = 42, gap = 6, y = H - 26 - h; var F = Regras.FEITICOS[m.feitico];
-            var lista = new System.Collections.Generic.List<System.Action<Rect>>();
-            if (m.team == "H")
-            {
-                lista.Add(r => Ferramenta(r, EntradaUnity.Nome("sensor"), "Sensor", null, (float)(m.sensorCd / 15), false));
-                lista.Add(r => Ferramenta(r, EntradaUnity.Nome("lantern"), "Lanterna", null, (float)((100 - m.carga) / 100), m.lantern));
-                lista.Add(r => Ferramenta(r, EntradaUnity.Nome("flare"), "Flare", m.flares.ToString(), 0, false));
-            }
-            else { lista.Add(r => Ferramenta(r, "☉", "Reagentes", m.reag.ToString(), 0, false)); lista.Add(r => Ferramenta(r, EntradaUnity.Nome("use"), "Chamariz", g.decoys.ToString(), 0, false)); }
-            lista.Add(r => Ferramenta(new Rect(r.x - 30, r.y, r.width + 30, r.height), EntradaUnity.Nome("abil"), F.nome.Length > 12 ? F.nome.Split(' ')[0] : F.nome, null, (float)(m.abilCd / F.cd), false));
-            float x = W - 26 - 30 - lista.Count * w - (lista.Count - 1) * gap;
-            for (int i = 0; i < lista.Count; i++) lista[i](new Rect(x + 30 + i * (w + gap), y, w, h));
-        }
         // a mira: 22 px, traços de 2 px com o miolo vazio; abre com o tiro (abertura) e com o movimento
         void Mira()
         {
@@ -55,7 +31,8 @@ namespace RitualReversal
             float dt = Time.unscaledDeltaTime; if (dtG > 0 && dt > 0) fpsMedia += (1 / dt - fpsMedia) * .05f;
             string linha = Mathf.RoundToInt(fpsMedia) + " fps"; bool ruim = false;
             if (online) { int ping = Mathf.RoundToInt(this.ping); linha = "Sala " + salaCodigo + " · " + ping + " ms · " + linha; ruim = ping > 250; }
-            GUI.Label(new Rect(W - 418, 12, 400, 22), "<size=13>" + Cor(linha, ruim ? CARMIM_HI : MUDO) + "</size>", new GUIStyle(sPequeno) { alignment = TextAnchor.UpperRight, wordWrap = false });
+            // #net: 13 px apagado (carmim com ping alto), 12 px do topo e 16 da direita
+            Linha(W - 16 - 400, 12, 400, LN(13), linha, Css("400", 13, ruim ? CrimsonHi : MUDO, TextAnchor.UpperRight));
         }
     }
 }

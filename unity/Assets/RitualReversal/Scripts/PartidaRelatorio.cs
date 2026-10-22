@@ -11,7 +11,7 @@ namespace RitualReversal
 {
     public partial class PartidaLocal
     {
-        bool relAberto; Vector2 rolRel; string relMsg = ""; Dictionary<string, object> relCache; string relChave;
+        bool relAberto; string relMsg = ""; Dictionary<string, object> relCache; string relChave;
         static readonly string[] PERGUNTAS_PLAYTEST = { "Em que momento você sentiu que estava investigando de verdade?", "Em que momento sentiu que estava só correndo de um lugar a outro?",
             "Qual informação mudou a sua decisão?", "Quando você sentiu que não tinha como responder ao adversário?", "Qual mecânica você tiraria do jogo?", "Você jogaria mais uma partida? Por quê?" };
         static readonly Dictionary<string, string> CAUSA_SELO = new Dictionary<string, string> { { "caído", "caiu" }, { "empurrão", "Empurrão" }, { "atordoado", "atordoado" }, { "saiu", "saiu do círculo" }, { "soltou", "soltou o E" }, { "lutar", "parou para lutar" } };
@@ -72,72 +72,5 @@ namespace RitualReversal
             return string.Join("\n", L.ToArray());
         }
 
-        // uma linha das tabelas: o nome, o número e o que ele revela
-        void LinhaRel(string a, string b, string c)
-        {
-            GUILayout.BeginHorizontal(Fundo(new Color(0, 0, 0, .22f))); GUILayout.Label("<size=15>" + a + "</size>", sPequeno, GUILayout.Width(330)); GUILayout.Label("<size=15><b>" + b + "</b></size>", sCelN, GUILayout.Width(80));
-            GUILayout.Label("<size=13>" + Cor(c ?? "", MUDO) + "</size>", sPequeno); GUILayout.EndHorizontal();
-        }
-        void TelaRelatorio()
-        {
-            var log = LogDaNoite(); float lw = Mathf.Min(1100, W - 40); var r = Janela(lw, H - 50); GUILayout.BeginArea(r);
-            if (log == null) { GUILayout.Label("Relatório do playtest", sTitulo); GUILayout.Label("Buscando o registro da noite no servidor…", sCentro); if (Bt("Voltar", sBotao)) relAberto = false; GUILayout.EndArea(); return; }
-            string chave = g.matchId + "|" + log.Count; if (relCache == null || relChave != chave) { relCache = DadosRelatorio(); relChave = chave; }   // o IMGUI desenha várias vezes por quadro
-            var D = relCache; var resp = Respostas(); var w = D["vencedor"] as Dictionary<string, object>; var mud = ((List<object>)D["mudancas"]).Cast<string>().ToArray();
-            rolRel = GUILayout.BeginScrollView(rolRel);
-            GUILayout.Label("Relatório do playtest", sTitulo);
-            string why = w != null ? (string)w["why"] : ""; if (why.Length > 0) why = char.ToUpper(why[0]) + why.Substring(1);
-            GUILayout.Label(Cor(why + ". Regras: " + (mud.Length > 0 ? string.Join(" · ", mud) : "normais") + ".", new Color(.79f, .75f, .68f)), sCentro);
-            var mets = (List<object>)D["metricas"];
-            foreach (Dictionary<string, object> M in mets)
-            {
-                var I = Dd(M["investigacao"]); var E = Dd(M["engano"]); var C = Dd(M["combate"]); var S = Dd(M["selamento"]); var F = Dd(M["ferramentas"]); var Se = Dd(M["sessao"]);
-                if (mets.Count > 1) H3("Rodada " + M["rodada"]);
-                H3("Investigação"); string como; object cd = I["comoDescobriu"];
-                LinhaRel("Primeira verdade descoberta pela caça", Tm(I["primeiraVerdade"]), cd != null ? "por " + (COMO_DESCOBRIU.TryGetValue((string)cd, out como) ? como : (string)cd) + ". Se as pistas são úteis e a investigação tem ritmo." : "A caça nunca descobriu um altar verdadeiro.");
-                LinhaRel("Pistas novas para a caça", I["pistasNovas"].ToString(), "sinais, EVP, sentinelas, Lanterna, rastros, Sal, Sensor com sinal");
-                LinhaRel("Maior trecho sem pista nova", Tm(I["maiorIntervaloSemPista"]), "Muito longo: a caça passou tempo andando sem aprender nada.");
-                LinhaRel("Trecho médio sem pista nova", Tm(I["intervaloMedioSemPista"]), "");
-                H3("Rituais");
-                GUILayout.BeginHorizontal(); foreach (var h in new[] { new KeyValuePair<string, float>("Ritual", 170), new KeyValuePair<string, float>("Início", 80), new KeyValuePair<string, float>("Localizado", 100), new KeyValuePair<string, float>("Caça chegou", 110), new KeyValuePair<string, float>("Selos", 70), new KeyValuePair<string, float>("Resultado", 100) }) GUILayout.Label(Cor(h.Key, MUDO), sCel, GUILayout.Width(h.Value)); GUILayout.Label(Cor("A caça", MUDO), sCel); GUILayout.EndHorizontal();
-                var rits = (List<object>)M["rituais"]; if (rits.Count == 0) GUILayout.Label("Nenhum ritual começou.", sPequeno);
-                foreach (Dictionary<string, object> R in rits)
-                {
-                    GUILayout.BeginHorizontal(Fundo(new Color(0, 0, 0, .22f))); string res = (string)R["resultado"], cc; var err = ((List<object>)R["altaresErrados"]).Select(x => x as string).Distinct().ToArray(); var saiu = ((List<object>)R["cultoSaiu"]).Select(x => x as string).ToArray();
-                    GUILayout.Label((string)R["altar"], sCel, GUILayout.Width(158)); GUILayout.Label(Tm(R["inicio"]), sCel, GUILayout.Width(80)); GUILayout.Label(Sg(R["localizado"]), sCel, GUILayout.Width(100)); GUILayout.Label(Sg(R["chegada"]), sCel, GUILayout.Width(110));
-                    GUILayout.Label(R["tentativasSelo"].ToString(), sCel, GUILayout.Width(70)); GUILayout.Label(res == "farol" ? "Farol" : res == "fenda" ? "Fenda" : "—", sCel, GUILayout.Width(100));
-                    GUILayout.Label("<size=13>" + Cor((CACA_TXT.TryGetValue((string)R["caca"], out cc) ? cc : "") + (err.Length > 0 ? " (passou por " + string.Join(", ", err) + ")" : "") + (saiu.Length > 0 ? "; culto saiu do círculo: " + string.Join(", ", saiu) : ""), MUDO) + "</size>", sPequeno);
-                    GUILayout.EndHorizontal(); string td = TextoDisputa(R); if (td != "") GUILayout.Label("<size=13>" + Cor(td, MUDO) + "</size>", sPequeno);
-                }
-                GUILayout.Label("<size=13>" + Cor("Tempos contados desde o início de cada ritual. A última coluna separa \"nunca chegou\", \"foi a outro altar\", \"chegou perto e não entrou\", \"chegou tarde\" e \"chegou a tempo e perdeu o círculo\".", MUDO) + "</size>", sPequeno);
-                H3("Engano e selamento");
-                LinhaRel("Chamarizes plantados", E["chamarizes"].ToString(), E["chamarizesDesmascarados"] + " desmascarados pela Lanterna, " + E["chamarizesQueimados"] + " queimados (prenderam a caça por " + Mathf.RoundToInt((float)Nm(E["segundosPresosEmChamariz"])) + " s), " + E["evpEmChamariz"] + " EVP enganados");
-                LinhaRel("Purgas de altar verdadeiro", E["purgasDeAltarVerdadeiro"].ToString(), "a caça acertou um altar antes do ritual");
-                LinhaRel("Transferências", E["transferencias"].ToString(), F["rastrosVistos"] + " marcas de arrasto vistas, " + F["rastrosLidos"] + " lidas");
-                LinhaRel("Tentativas de selo", S["tentativas"].ToString(), S["selados"] + " viraram Farol. Interrupções: " + TextoInterrupcoes(Dd(S["interrupcoes"])));
-                H3("Combate e ferramentas");
-                LinhaRel("Quedas", C["quedas"].ToString(), "primeira aos " + Tm(C["primeiraQueda"]) + "; " + C["execucoes"] + " execuções, " + C["sangraram"] + " sangraram, " + C["reanimacoes"] + " reanimações. Se cair e reanimar é uma escolha tática.");
-                LinhaRel("Ferramentas da caça", (Nm(F["sinaisLidos"]) + Nm(F["sentinelasAcesas"]) + Nm(F["sensor"]) + Nm(F["evp"]) + Nm(F["lanterna"]) + Nm(F["sal"])).ToString(), F["sinaisLidos"] + " sinais, " + F["sentinelasAcesas"] + " sentinelas, " + F["sensor"] + " Sensor (" + F["sensorComSinal"] + " com sinal), " + F["evp"] + " EVP, " + F["lanterna"] + " Lanterna, " + F["sal"] + " Sal");
-                LinhaRel("Comunicação", (Nm(F["pings"]) + Nm(F["frases"])).ToString(), F["pings"] + " pings, " + F["frases"] + " frases rápidas");
-                LinhaRel("Saídas e reconexões", (Nm(Se["saidas"]) + Nm(Se["reconexoes"])).ToString(), Se["saidas"] + " saíram, " + Se["reconexoes"] + " voltaram");
-            }
-            H3("Perguntas para quem jogou");
-            for (int i = 0; i < PERGUNTAS_PLAYTEST.Length; i++)
-            {
-                GUILayout.Label(PERGUNTAS_PLAYTEST[i], sPequeno); string novo = GUILayout.TextArea(resp[i] ?? "", 600, new GUIStyle(GUI.skin.textArea) { fontSize = 15, wordWrap = true }, GUILayout.MinHeight(48));
-                if (novo != resp[i]) { resp[i] = novo; GuardarRespostas(); }
-            }
-            GUILayout.Label("<size=13>" + Cor("Cada pessoa responde no próprio aparelho. Mande o relatório para quem organiza o playtest: o arquivo traz o registro inteiro da noite.", MUDO) + "</size>", sCentro);
-            GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (Bt("Copiar como texto", sBotao, GUILayout.Width(240))) { GUIUtility.systemCopyBuffer = TextoRelatorio(DadosRelatorio()); relMsg = "Texto copiado."; }
-            if (Bt("Baixar relatório (.json)", sBotao, GUILayout.Width(280)))
-            {
-                try { string arq = System.IO.Path.Combine(Application.persistentDataPath, "ritual-reversal-relatorio-" + g.matchId + ".json"); System.IO.File.WriteAllText(arq, Noite.ParaJson(DadosRelatorio())); relMsg = "Arquivo salvo em " + arq; }
-                catch (System.Exception e) { relMsg = "Não consegui salvar: " + e.Message; }
-            }
-            if (Bt("Voltar", sBotao, GUILayout.Width(160))) relAberto = false;
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); if (relMsg != "") GUILayout.Label(Cor(relMsg, MUDO), sCentro);
-            GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
     }
 }

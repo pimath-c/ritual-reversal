@@ -194,7 +194,7 @@ namespace RitualReversal
                 bool anfitriao = !online || hostCid == EU; var bs = new List<object>();
                 if (LT.TemReplay(1)) bs.AddRange(new object[] { "Rever a noite", "ghost", true, (System.Action)(() => AbrirReplay(1)) });
                 if (!UmaNoite && LT.TemReplay(2)) bs.AddRange(new object[] { "Rever a rodada 2", "ghost", true, (System.Action)(() => AbrirReplay(2)) });
-                bs.AddRange(new object[] { "Relatório do playtest", "ghost", true, (System.Action)(() => { relAberto = true; relMsg = ""; rolRel = Vector2.zero; som.Tocar("click"); }) });
+                bs.AddRange(new object[] { "Relatório do playtest", "ghost", true, (System.Action)(() => { relAberto = true; relMsg = ""; som.Tocar("click"); }) });
                 bs.AddRange(new object[] { "Baixar registro (.json)", "ghost", true, (System.Action)BaixarRegistro });
                 if (anfitriao) bs.AddRange(new object[] { "Jogar de novo", "go", true, (System.Action)(() => { repAberto = false; if (!online) { g.matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss"); logIni = g.log.Count; } LimparVisual(); Acao(new Acao { type = "restart" }); }) });
                 if (online) { if (anfitriao) bs.AddRange(new object[] { "Voltar ao lobby", "ghost", true, (System.Action)(() => Enviar(new JsonEscrita().Txt("t", "lobby"))) }); bs.AddRange(new object[] { "Sair da sala", "ghost", true, (System.Action)(() => SairOnline("")) }); }

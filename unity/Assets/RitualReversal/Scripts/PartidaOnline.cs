@@ -154,21 +154,7 @@ namespace RitualReversal
             }
         }
 
-        // ---------- telas ----------
-        void TelaOnline(Rect r)
-        {
-            GUILayout.Label("<b>Jogar online</b>  <size=15>(servidor do protótipo: npm start na pasta server, ou o endereço que o anfitrião passar)</size>", sTexto);
-            GUILayout.BeginHorizontal(); GUILayout.Label("Servidor", sPequeno, GUILayout.Width(110)); servidor = GUILayout.TextField(servidor ?? "", 120, GUILayout.Width(380));
-            GUILayout.Label("Nome", sPequeno, GUILayout.Width(60)); nomeJogador = GUILayout.TextField(nomeJogador ?? "", 16, GUILayout.Width(200)); GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            if (Bt("Criar sala", sBotao, GUILayout.Height(48))) Conectar(true, "");
-            GUILayout.Label("Código", sPequeno, GUILayout.Width(70)); codigoDigitado = GUILayout.TextField(codigoDigitado ?? "", 4, GUILayout.Width(90));
-            GUI.enabled = (codigoDigitado ?? "").Trim().Length == 4; if (Bt("Entrar na sala", sBotao, GUILayout.Height(48))) Conectar(false, codigoDigitado.Trim()); GUI.enabled = true;
-            GUILayout.EndHorizontal(); SalasAbertas();
-            if (online && rede != null && !rede.aberta && !rede.fechada) GUILayout.Label("Conectando…", sPequeno);
-            if (erroRede.Length > 0) GUILayout.Label(Cor(erroRede, CARMIM_VIVO), sPequeno);
-        }
-        void TelaLobby() { EstilosNoite(); TelaLobbyCss(); }
+        void TelaLobby() { TelaLobbyCss(); }
         void TelaReconexao() { TelaReconexaoCss(); }
     }
 }

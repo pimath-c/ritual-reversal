@@ -13,7 +13,7 @@ namespace RitualReversal
     {
         string lobbyDif = "normal"; Lab lobbyLab; bool lobbyPublica;
         class LinhaChat { public string de, cid, msg, para, time; }
-        readonly List<LinhaChat> chat = new List<LinhaChat>(); string rascunhoLobby = ""; Vector2 rolChat;
+        readonly List<LinhaChat> chat = new List<LinhaChat>(); string rascunhoLobby = "";
         bool SalaPublica { get { return PlayerPrefs.GetInt("rr-sala-publica", 1) == 1; } }
         static bool MudoAdv { get { return PlayerPrefs.GetInt("rr-mudo-adv", 0) == 1; } }
 
@@ -35,7 +35,7 @@ namespace RitualReversal
             object v; System.Func<string, string> S = k => m.TryGetValue(k, out v) ? v as string : null;
             var c = new LinhaChat { de = S("de") ?? "", cid = S("cid"), msg = S("msg") ?? "", para = S("para") ?? "todos", time = S("time") };
             if (MudoAdv && c.time != null && g != null && c.time != MeuPapel()) return;   // adversários silenciados nos Ajustes
-            chat.Add(c); while (chat.Count > 40) chat.RemoveAt(0); rolChat.y = 1e6f;
+            chat.Add(c); while (chat.Count > 40) chat.RemoveAt(0);
             if (g != null && g.phase == "play") Feed(c.de + (c.para == "equipe" ? " (equipe)" : c.time != null ? " (para todos)" : "") + ": " + c.msg, "");
             else if (c.cid != EU && som != null) som.Tocar("click");
         }
@@ -56,43 +56,7 @@ namespace RitualReversal
             if (pedidoSalas != null || Time.realtimeSinceStartup - salasT < 5) return; salasT = Time.realtimeSinceStartup;
             try { var u = Conexao.Endereco(servidor); pedidoSalas = UnityEngine.Networking.UnityWebRequest.Get((u.Scheme == "wss" ? "https://" : "http://") + u.Authority + "/api/salas"); pedidoSalas.timeout = 4; pedidoSalas.SendWebRequest(); } catch { pedidoSalas = null; }
         }
-        // dentro do TelaOnline: a caixa da sala pública e a lista
-        void SalasAbertas()
-        {
-            bool pub = GUILayout.Toggle(SalaPublica, " Sala pública: aparece na lista para qualquer um entrar", new GUIStyle(GUI.skin.toggle) { fontSize = 16 });
-            if (pub != SalaPublica) PlayerPrefs.SetInt("rr-sala-publica", pub ? 1 : 0);
-            if (salas.Count == 0) return; GUILayout.Label("<b>" + Cor("Salas abertas", OURO) + "</b>", sPequeno);
-            foreach (var s in salas.ToList())
-            {
-                GUILayout.BeginHorizontal(); GUILayout.Label("<b>" + s.code + "</b>", sPequeno, GUILayout.Width(80)); GUILayout.Label(Cor(s.anfitriao + " · " + s.jogadores + " de 4", MUDO), sPequeno, GUILayout.Width(300));
-                if (Bt("Entrar", sBotao, GUILayout.Width(140))) { codigoDigitado = s.code; Conectar(false, s.code); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            }
-        }
 
-        // ---------- lobby: dificuldade, laboratório e chat ----------
-        void LobbyExtra(bool anfitriao)
-        {
-            if (lobbySlots.Any(s => s.cid == null))
-            {
-                GUILayout.BeginHorizontal(); GUILayout.Label("Bots", sPequeno, GUILayout.Width(80)); var DN = new Dictionary<string, string> { { "facil", "Fáceis" }, { "normal", "Normais" }, { "dificil", "Difíceis" } };
-                foreach (var k in DN.Keys)
-                {
-                    if (anfitriao) { if (Bt(lobbyDif == k ? Cor(DN[k], OURO_VIVO) : DN[k], sBotao, GUILayout.Width(130))) Enviar(new JsonEscrita().Txt("t", "opcoes").Txt("dif", k)); }
-                    else if (lobbyDif == k) GUILayout.Label("<b>" + DN[k] + "</b>", sPequeno, GUILayout.Width(130));
-                }
-                GUILayout.Label("<size=13>" + Cor("valem para os bots do lado sem jogadores", MUDO) + "</size>", sPequeno); GUILayout.EndHorizontal();
-            }
-            PainelLab(lobbyLab, anfitriao ? (System.Action<Lab>)(L => Enviar(new JsonEscrita().Txt("t", "opcoes").Obj("lab", LabEscrita(L)))) : null);
-            // chat da sala
-            GUILayout.BeginVertical(Fundo(new Color(0, 0, 0, .3f)), GUILayout.Height(150)); rolChat = GUILayout.BeginScrollView(rolChat, GUILayout.Height(120));
-            if (chat.Count == 0) GUILayout.Label(Cor("Ninguém falou ainda.", MUDO), sPequeno);
-            foreach (var c in chat) GUILayout.Label("<b>" + Cor(c.de, c.cid == EU ? OURO_VIVO : OSSO) + "</b>" + (c.para == "equipe" ? " <size=12>(equipe)</size>" : "") + " " + c.msg, sPequeno);
-            GUILayout.EndScrollView(); GUILayout.EndVertical();
-            GUILayout.BeginHorizontal(); var ev = Event.current; bool enter = ev.type == EventType.KeyDown && (ev.keyCode == KeyCode.Return || ev.keyCode == KeyCode.KeypadEnter) && GUI.GetNameOfFocusedControl() == "chatSala";
-            GUI.SetNextControlName("chatSala"); rascunhoLobby = GUILayout.TextField(rascunhoLobby ?? "", 140, GUILayout.ExpandWidth(true), GUILayout.Height(36));
-            if ((Bt("Enviar", sBotao, GUILayout.Width(130)) || enter) && rascunhoLobby.Trim().Length > 0) { Enviar(new JsonEscrita().Txt("t", "chat").Txt("msg", rascunhoLobby.Trim())); rascunhoLobby = ""; if (enter) ev.Use(); }
-            GUILayout.EndHorizontal();
-        }
         static JsonEscrita LabEscrita(Lab L) { return new JsonEscrita().Num("crepusculo", L.crepusculo).Txt("fogo", L.fogo).Num("execucao", L.execucao).Bool("economia", L.economia).Txt("formato", L.formato); }
 
         // ---------- chat na partida online ----------
