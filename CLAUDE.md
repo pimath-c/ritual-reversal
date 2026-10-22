@@ -198,7 +198,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   PlayerPrefs "rr-dicas"), `PartidaPerfil.cs` (perfil e conquistas em PlayerPrefs "rr-perfil", o mesmo JSON do navegador;
   desafio da noite com pontos e recorde do dia), `PartidaSala.cs` (sala pública, salas abertas por /api/salas, dificuldade,
   laboratório e chat no lobby, chat da partida com Enter/Tab/Esc, silenciar adversários).
-  Faltam: relatório do playtest; frases rápidas, música e trilha de tensão; a fileira de ferramentas e a mira configurável.
+  Relatório do playtest: `Noite.Relatorio` é o `Sim.relatorio` (o `unity-noite.js` compara os dois sobre o mesmo registro,
+  campo a campo); `PartidaRelatorio.cs` é a tela (tabelas, perguntas em PlayerPrefs "rr-resp-<partida>", copiar, baixar).
+  Faltam: frases rápidas, música e trilha de tensão; a fileira de ferramentas e a mira configurável.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);

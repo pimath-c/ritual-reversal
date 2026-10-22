@@ -48,7 +48,7 @@ namespace RitualReversal
         void PassoNoite(float dt)
         {
             if (g == null || arsenal) return; LT.Amostrar(g, EU); BaixarLogOnline();
-            RodadaLT R; if (g.phase != "final" || LT.id != g.matchId) repAberto = false;
+            RodadaLT R; if (g.phase != "final" || LT.id != g.matchId) { repAberto = false; relAberto = false; }
             if (repAberto && repPlay && !repArrastando && LT.rod.TryGetValue(repR, out R) && R.pos != null && R.pos.Count > 0) { double fim = R.pos[R.pos.Count - 1].rt; repT = System.Math.Min(fim, repT + dt * repVel); if (repT >= fim) repPlay = false; }
         }
 
@@ -197,7 +197,7 @@ namespace RitualReversal
 
         void TelaFinal()
         {
-            EstilosNoite(); if (repAberto) { TelaReplay(); return; }
+            EstilosNoite(); if (repAberto) { TelaReplay(); return; } if (relAberto) { TelaRelatorio(); return; }
             var slot = MeuSlot(); var w = Sim.Winner(g) ?? new Vencedor { why = "" }; bool minha = slot != null && w.win == slot.team;
             Placar A = slot != null ? g.scores[slot.team] : null, B = slot != null ? g.scores[slot.team == "A" ? "B" : "A"] : null;
             string titulo = w.win == null ? "Empate" : minha ? "Vitória da sua equipe" : "Vitória dos adversários";
@@ -220,6 +220,7 @@ namespace RitualReversal
             var sb = new GUIStyle(sBotao) { fontSize = 17 };
             if (LT.TemReplay(1) && GUILayout.Button("Rever a noite", sb, GUILayout.Height(48))) AbrirReplay(1);
             if (!UmaNoite && LT.TemReplay(2) && GUILayout.Button("Rever a rodada 2", sb, GUILayout.Height(48))) AbrirReplay(2);
+            if (GUILayout.Button("Relatório do playtest", sb, GUILayout.Height(48))) { relAberto = true; relMsg = ""; rolRel = Vector2.zero; som.Tocar("click"); }
             if (GUILayout.Button("Baixar registro (.json)", sb, GUILayout.Height(48))) BaixarRegistro();
             bool anfitriao = !online || hostCid == EU;
             if (anfitriao && GUILayout.Button("Jogar de novo", sb, GUILayout.Height(48))) { repAberto = false; if (!online) { g.matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss"); logIni = g.log.Count; } LimparVisual(); Acao(new Acao { type = "restart" }); }

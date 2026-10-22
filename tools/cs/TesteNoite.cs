@@ -62,6 +62,9 @@ public static class TesteNoite
         var js = new StringBuilder("{\"events\":["); bool p1 = true;
         foreach (var e in g.log) { if (!p1) js.Append(','); p1 = false; js.Append("{\"t\":" + e.t.ToString(C) + ",\"r\":" + e.r + ",\"ev\":\"" + e.ev + "\""); foreach (var kv in e.d) js.Append(",\"" + kv.Key + "\":" + Noite.ParaJson(kv.Value)); js.Append('}'); }
         js.Append("]}"); var lido = Noite.RegistroDoJson(js.ToString());
+        File.WriteAllText(Path.Combine(saida, "registro.json"), js.ToString());
+        // o relatório do playtest de cada rodada, para o unity-noite.js comparar com o Sim.relatorio do sim.js
+        var rel = LT.rod.Keys.OrderBy(k => k).Select(k => (object)Noite.Relatorio(g.log, k)).ToList(); File.WriteAllText(Path.Combine(saida, "relatorio.json"), Noite.ParaJson(rel));
         Func<List<Registro>, string> resumo = L => string.Join("|", Noite.Placar(L).Select(P => string.Join(";", P.linhas.Select(x => x.nome + ":" + string.Join(",", x.v.Select(v => v.ToString()).ToArray())).ToArray())).ToArray()) + "#" + string.Join("|", Noite.Premios(L).Select(p => p.nome + p.quem + p.n).ToArray()) + "#" + string.Join("|", Noite.Lances(L).Select(l => l.sub).ToArray());
         sb.Append(",\"registroOnlineIgual\":" + (resumo(lido) == resumo(g.log) ? "true" : "false") + ",\"eventos\":" + g.log.Count + "}");
         File.WriteAllText(Path.Combine(saida, "noite.json"), sb.ToString());

@@ -33,6 +33,14 @@ for(const R of N.rodadas){ if(R.amostras<60) erros.push('rodada '+R.r+': só '+R
 if(!N.placar.length||N.placar[0].linhas.length!==4) erros.push('placar sem os quatro jogadores');
 if(!N.premios.length) erros.push('nenhum destaque');
 if(!N.registroOnlineIgual) erros.push('o registro lido do JSON (online) não dá o mesmo placar, destaques e lances');
+// o relatório do playtest do Unity (Noite.Relatorio) contra o Sim.relatorio do sim.js, sobre o mesmo registro
+{ const Sim=require(path.join(ROOT,'shared','sim.js')), reg=JSON.parse(fs.readFileSync(path.join(tmp,'registro.json'),'utf8')).events, cs=JSON.parse(fs.readFileSync(path.join(tmp,'relatorio.json'),'utf8'));
+  const difs=[], cmp=(a,b,p)=>{ if(a===undefined) a=null; if(b===undefined) b=null;
+    if(a===null||b===null||typeof a!=='object'||typeof b!=='object'){ if(typeof a==='number'&&typeof b==='number'?Math.abs(a-b)>1e-9:a!==b) difs.push(p+': JS '+JSON.stringify(a)+' · C# '+JSON.stringify(b)); return; }
+    if(Array.isArray(a)!==Array.isArray(b)){ difs.push(p+': tipos diferentes'); return; }
+    for(const k of new Set([...Object.keys(a),...Object.keys(b)])) cmp(a[k],b[k],p+'.'+k); };
+  N.rodadas.forEach((R,i)=>cmp(JSON.parse(JSON.stringify(Sim.relatorio(reg,R.r))),cs[i],'relatório '+R.r));
+  if(difs.length) erros.push('relatório do playtest diferente do sim.js:\n    '+difs.slice(0,12).join('\n    ')); else console.log('relatório do playtest igual ao do sim.js ('+N.rodadas.length+' rodada'+(N.rodadas.length>1?'s':'')+', '+reg.length+' eventos)'); }
 console.log(N.vencedor+' · '+N.eventos+' eventos no registro');
 for(const R of N.rodadas) console.log('rodada '+R.r+': '+R.amostras+' amostras, '+R.marcos.length+' marcos, '+R.posicoes+' posições, '+R.quedas+' quedas; altares '+R.altares.join(', '));
 console.log('lances: '+N.lances.map(l=>l.tit).join('; ')); console.log('destaques: '+N.premios.map(p=>p.nome+' ('+p.quem+', '+p.txt+')').join('; '));

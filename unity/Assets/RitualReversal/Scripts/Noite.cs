@@ -216,6 +216,69 @@ namespace RitualReversal
             return o;
         }
 
+        // ---------- relatório do playtest (Sim.relatorio do sim.js, a mesma estrutura de saída) ----------
+        static readonly string[] INFO_CACA = { "eco", "pista_info", "evp", "sentinela", "lanterna", "decoy_spotted", "rastro_visto", "rastro_lido", "localized", "sal" };
+        static double R2(double v) { return JS.R2(v); }
+        static bool Verd(object v) { if (v == null) return false; if (v is bool) return (bool)v; if (v is string) return ((string)v).Length > 0; try { double d = System.Convert.ToDouble(v); return d != 0 && !double.IsNaN(d); } catch { return true; } }
+        static double Num(object v) { if (v == null || v is string || v is bool) return 0; try { return System.Convert.ToDouble(v); } catch { return 0; } }
+        static bool Maior(object v, double lim) { return v != null && !(v is string) && !(v is bool) && Num(v) > lim; }
+        static Dictionary<string, object> ResumoDisputa(List<Registro> L)
+        {
+            if (L.Count == 0) return null;
+            System.Func<string, Dictionary<string, object>> soma = team =>
+            {
+                var o = new Dictionary<string, object> { { "jogadores", 0 } };
+                foreach (var e in L) if (S(e, "team") == team)
+                    {
+                        o["jogadores"] = (int)o["jogadores"] + 1;
+                        foreach (var k in new[] { "perto", "circulo", "selando", "sobFogo", "canal", "atacando", "dano", "sofrido", "quedas", "derrubou" }) { object a; o[k] = R2((o.TryGetValue(k, out a) ? Num(a) : 0) + Num(e[k])); }
+                    }
+                return o;
+            };
+            return new Dictionary<string, object> { { "caca", soma("H") }, { "culto", soma("C") } };
+        }
+        static Dictionary<string, object> Contagem(IEnumerable<string> chaves) { var o = new Dictionary<string, object>(); foreach (var k in chaves) { var kk = k ?? "undefined"; object v; o[kk] = (o.TryGetValue(kk, out v) ? (int)v : 0) + 1; } return o; }
+        public static Dictionary<string, object> Relatorio(List<Registro> log, int r)
+        {
+            if (r == 0) r = 1; var L = (log ?? new List<Registro>()).Where(e => (e.r == 0 ? 1 : e.r) == r).ToList();
+            System.Func<string, List<Registro>> c = k => L.Where(e => e.ev == k).ToList(); var fim = c("round_end").FirstOrDefault(); double T = fim != null ? fim.t : (L.Count > 0 ? L[L.Count - 1].t : 0);
+            var verdade = L.Where(e => (e.ev == "evp" && Verd(e["real"])) || e.ev == "sentinela" || e.ev == "lanterna" || e.ev == "rastro_lido" || e.ev == "localized").ToList();
+            var info = L.Where(e => INFO_CACA.Contains(e.ev) || (e.ev == "sensor" && Maior(e["v"], .02))).Select(e => e.t).OrderBy(t => t).ToList();
+            double maior = 0, soma = 0, ant = 0; int n = 0; foreach (var t in info.Concat(new[] { T })) { double d = t - ant; if (d > maior) maior = d; soma += d; n++; ant = t; }
+            var rituais = new List<object>();
+            foreach (var s in c("ritual_start"))
+            {
+                string alt = S(s, "altar");
+                var fimR = L.FirstOrDefault(e => (e.ev == "sealed" || e.ev == "ritual_complete") && S(e, "altar") == alt && e.t >= s.t);
+                var loc = L.FirstOrDefault(e => e.ev == "localized" && S(e, "altar") == alt && e.t >= s.t); var cheg = L.FirstOrDefault(e => e.ev == "hunter_arrive" && S(e, "altar") == alt && e.t >= s.t);
+                int sel = L.Count(e => e.ev == "seal_start" && S(e, "altar") == alt && e.t >= s.t && (fimR == null || e.t <= fimR.t));
+                var no = L.Where(e => e.t >= s.t && (fimR == null || e.t <= fimR.t)).ToList(); string resultado = fimR != null ? (fimR.ev == "sealed" ? "farol" : "fenda") : "aberto";
+                bool perto = no.Any(e => e.ev == "caca_perto" && S(e, "altar") == alt); var errados = no.Where(e => e.ev == "altar_errado" && S(e, "ritual") == alt).ToList();
+                string caca = resultado == "farol" ? "selou" : resultado == "aberto" ? "aberto" : cheg != null ? (Num(cheg["remaining"]) < CFG.sealMin ? "chegou_tarde" : "perdeu_disputa") : perto ? "perto_sem_entrar" : errados.Count > 0 ? "altar_errado" : "nunca_chegou";
+                rituais.Add(new Dictionary<string, object> {
+                    { "altar", alt }, { "inicio", s.t }, { "localizado", loc != null ? (object)R2(loc.t - s.t) : null }, { "comoLocalizou", loc != null ? loc["how"] : null }, { "chegada", cheg != null ? (object)R2(cheg.t - s.t) : null },
+                    { "restanteNaChegada", cheg != null ? cheg["remaining"] : null }, { "tentativasSelo", sel }, { "resultado", resultado }, { "caca", caca }, { "altaresErrados", errados.Select(e => e["altar"]).ToList() },
+                    { "interrupcoesSelo", no.Where(e => e.ev == "seal_stop" && S(e, "altar") == alt).Select(e => e["cause"]).ToList() }, { "cultoSaiu", no.Where(e => e.ev == "canal_saiu" && S(e, "altar") == alt).Select(e => e["motivo"]).ToList() },
+                    { "duracao", fimR != null ? (object)R2(fimR.t - s.t) : null }, { "localizarAoFim", loc != null && fimR != null ? (object)R2(fimR.t - loc.t) : null },
+                    { "disputa", ResumoDisputa(no.Where(e => e.ev == "disputa" && S(e, "altar") == alt && fimR != null && e.t == fimR.t).ToList()) },
+                    { "interrupcoes", new Dictionary<string, object> { { "selo", no.Count(e => e.ev == "interrupcao" && S(e, "altar") == alt && S(e, "tipo") == "selo") }, { "canal", no.Count(e => e.ev == "interrupcao" && S(e, "altar") == alt && S(e, "tipo") == "canal") } } } });
+            }
+            var mortes = c("death"); var purgas = c("purge");
+            return new Dictionary<string, object> {
+                { "rodada", r }, { "duracao", T }, { "fendas", c("ritual_complete").Count }, { "farois", c("sealed").Count },
+                { "investigacao", new Dictionary<string, object> { { "primeiraVerdade", verdade.Count > 0 ? (object)verdade[0].t : null }, { "comoDescobriu", verdade.Count > 0 ? verdade[0].ev : null }, { "pistasNovas", info.Count }, { "maiorIntervaloSemPista", R2(maior) }, { "intervaloMedioSemPista", n > 0 ? (object)R2(soma / n) : null } } },
+                { "ferramentas", new Dictionary<string, object> { { "sinaisLidos", c("pista_info").Count }, { "sentinelasAcesas", L.Count(e => e.ev == "ponto" && S(e, "tipo") == "sentinela") }, { "avisosDeSentinela", c("sentinela").Count },
+                    { "sensor", c("sensor").Count }, { "sensorComSinal", c("sensor").Count(e => Maior(e["v"], .02)) }, { "evp", c("evp").Count }, { "lanterna", c("lanterna").Count + c("decoy_spotted").Count },
+                    { "sal", c("sal").Count }, { "rastrosVistos", c("rastro_visto").Count }, { "rastrosLidos", c("rastro_lido").Count }, { "pings", c("ping").Count }, { "frases", c("fala").Count }, { "feiticos", Contagem(c("ability").Select(e => S(e, "feitico"))) } } },
+                { "engano", new Dictionary<string, object> { { "chamarizes", c("decoy").Count }, { "chamarizesDesmascarados", c("decoy_spotted").Count }, { "chamarizesQueimados", purgas.Count(e => Verd(e["decoy"])) },
+                    { "purgasDeAltarVerdadeiro", purgas.Count(e => !Verd(e["decoy"])) }, { "evpEmChamariz", c("evp").Count(e => !Verd(e["real"])) }, { "transferencias", c("transfer").Count },
+                    { "segundosPresosEmChamariz", R2(purgas.Sum(e => Verd(e["decoy"]) && Verd(e["isca"]) ? Num(e["isca"]) : 0)) } } },
+                { "rituais", rituais }, { "conversao", Contagem(rituais.Select(x => (string)((Dictionary<string, object>)x)["caca"])) },
+                { "lances", c("lance").Select(e => (object)new Dictionary<string, object> { { "t", e.t }, { "tipo", e["tipo"] }, { "quem", e["quem"] ?? new List<object>() }, { "altar", e["altar"] }, { "team", e["team"] }, { "v", e["v"] } }).ToList() },
+                { "selamento", new Dictionary<string, object> { { "tentativas", c("seal_start").Count }, { "interrupcoes", Contagem(c("seal_stop").Select(e => S(e, "cause"))) }, { "selados", c("sealed").Count } } },
+                { "combate", new Dictionary<string, object> { { "primeiraQueda", c("down").Count > 0 ? (object)c("down")[0].t : null }, { "quedas", c("down").Count }, { "execucoes", mortes.Count(e => S(e, "how") == "exec") }, { "sangraram", mortes.Count(e => S(e, "how") == "bleed") }, { "reanimacoes", c("revive").Count } } },
+                { "sessao", new Dictionary<string, object> { { "saidas", c("saiu").Count }, { "reconexoes", c("reconnect").Count }, { "botsReiniciados", c("bot_reiniciado").Count } } } };
+        }
         // JSON de valores simples, listas e dicionários (o registro baixado)
         public static string ParaJson(object v)
         {
