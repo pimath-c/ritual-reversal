@@ -193,7 +193,12 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Clima: `Visual/MundoClima.cs` (`CLIMAS`, `ClimaDe` com o mesmo hash do navegador, `ChaveClima` sem o que vem depois de #,
   riscos de chuva que não caem sob o telhado, dois clarões e o trovão via `AoTrovao`, névoa e estrelas por clima); o laço da
   chuva gravada fica no `Som.cs` (`Chuva`). `PartidaLab.cs` é o laboratório (`LAB_UI`, `LabMudancas`, `PainelLab`).
-  Faltam: perfil, tutorial, desafio, dicas e relatório do playtest; o menu e o lobby ainda sem o laboratório.
+  Menu: `PartidaMenu.cs` (título com o sigilo, papel solo, dificuldade, laboratório, desafio, Aprender a jogar, Como jogar,
+  Novidades, Ajustes; `IniciarSolo` = startLocal; tutorial `PassosTut` com alvo na tela e na bússola, N pula; dicas `DICAS`,
+  PlayerPrefs "rr-dicas"), `PartidaPerfil.cs` (perfil e conquistas em PlayerPrefs "rr-perfil", o mesmo JSON do navegador;
+  desafio da noite com pontos e recorde do dia), `PartidaSala.cs` (sala pública, salas abertas por /api/salas, dificuldade,
+  laboratório e chat no lobby, chat da partida com Enter/Tab/Esc, silenciar adversários).
+  Faltam: relatório do playtest; frases rápidas, música e trilha de tensão; a fileira de ferramentas e a mira configurável.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);

@@ -31,7 +31,7 @@ namespace RitualReversal
             PlayerPrefs.SetString("rr-nome", nomeJogador); PlayerPrefs.SetString("rr-servidor", servidor); PlayerPrefs.Save();
             if (rede != null) rede.Fechar();
             rede = new Conexao(); rede.Abrir(servidor); online = true; erroRede = "";
-            rede.Enviar(new JsonEscrita().Txt("t", "hello").Bool("create", criar).Txt("code", (codigo ?? "").ToUpperInvariant()).Txt("name", nomeJogador).Txt("token", token).ToString());
+            rede.Enviar(HelloExtra(new JsonEscrita().Txt("t", "hello").Bool("create", criar).Txt("code", (codigo ?? "").ToUpperInvariant()).Txt("name", nomeJogador).Txt("token", token), criar).ToString()); chat.Clear();
         }
         void SairOnline(string msg)
         {
@@ -66,12 +66,13 @@ namespace RitualReversal
                         break;
                     case "lobby":
                         {
-                            hostCid = m["host"] as string; lobbySlots.Clear();
+                            hostCid = m["host"] as string; lobbySlots.Clear(); LerLobbyExtra(m);
                             foreach (var o in (List<object>)m["slots"]) { var d = (Dictionary<string, object>)o; lobbySlots.Add(new Slot(d["team"] as string, d["cid"] as string, d["name"] as string)); }
                             if (!(m["inGame"] is bool && (bool)m["inGame"])) { g = null; quadros.Clear(); pred = null; LimparVisual(); }
                             break;
                         }
                     case "snap": AoSnapshot(m); break;
+                    case "chat": ReceberChat(m); break;
                 }
             }
             if (rede != null && rede.fechada)
@@ -163,13 +164,13 @@ namespace RitualReversal
             if (GUILayout.Button("Criar sala", sBotao, GUILayout.Height(48))) Conectar(true, "");
             GUILayout.Label("Código", sPequeno, GUILayout.Width(70)); codigoDigitado = GUILayout.TextField(codigoDigitado ?? "", 4, GUILayout.Width(90));
             GUI.enabled = (codigoDigitado ?? "").Trim().Length == 4; if (GUILayout.Button("Entrar na sala", sBotao, GUILayout.Height(48))) Conectar(false, codigoDigitado.Trim()); GUI.enabled = true;
-            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal(); SalasAbertas();
             if (online && rede != null && !rede.aberta && !rede.fechada) GUILayout.Label("Conectando…", sPequeno);
             if (erroRede.Length > 0) GUILayout.Label(Cor(erroRede, CARMIM_VIVO), sPequeno);
         }
         void TelaLobby()
         {
-            var r = Janela(900, 560); GUILayout.BeginArea(r);
+            EstilosNoite(); var r = Janela(Mathf.Min(980, W - 40), Mathf.Min(H - 40, 1000)); GUILayout.BeginArea(r); rolPerfil = GUILayout.BeginScrollView(rolPerfil);
             GUILayout.Label("Sala", sTitulo); GUILayout.Label("<size=56><b>" + salaCodigo + "</b></size>", sCentro);
             GUILayout.Label("Mande este código para seus amigos. Vagas sem jogador ficam com bots.", sCentro); GUILayout.Space(10);
             GUILayout.BeginHorizontal();
@@ -184,12 +185,13 @@ namespace RitualReversal
                 GUILayout.EndVertical();
             }
             GUILayout.EndHorizontal();
-            GUILayout.Label("A Equipe A caça na rodada 1 e celebra na rodada 2. Clique numa vaga de bot para trocar de lugar.", sPequeno); GUILayout.Space(8);
+            GUILayout.Label((UmaNoite ? "A Equipe A caça e a Equipe B celebra." : "A Equipe A caça na rodada 1 e celebra na rodada 2.") + " Clique numa vaga de bot para trocar de lugar." + (lobbyPublica ? " Esta sala aparece na lista de salas abertas." : ""), sPequeno); GUILayout.Space(8);
+            LobbyExtra(hostCid == EU); GUILayout.Space(8);
             GUILayout.BeginHorizontal();
             if (hostCid == EU) { if (GUILayout.Button("Começar a partida", sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "start")); }
             else GUILayout.Label("Aguardando o anfitrião começar…", sCentro);
             if (GUILayout.Button("Sair da sala", sBotao, GUILayout.Height(52), GUILayout.Width(220))) SairOnline("");
-            GUILayout.EndHorizontal(); GUILayout.EndArea();
+            GUILayout.EndHorizontal(); GUILayout.EndScrollView(); GUILayout.EndArea();
         }
         void TelaReconexao()
         {

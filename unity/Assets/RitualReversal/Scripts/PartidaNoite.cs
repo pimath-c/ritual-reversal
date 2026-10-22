@@ -212,6 +212,7 @@ namespace RitualReversal
                 GUILayout.Label(s.lastT.HasValue ? Relogio(s.lastT.Value) : "—", sCelN, GUILayout.Width(150)); GUILayout.Label(Mathf.RoundToInt((float)s.maxP * 100) + "%", sCelN, GUILayout.Width(170)); GUILayout.EndHorizontal();
             };
             linha(A != null && B == null ? "Sua equipe (culto)" : "Sua equipe", A); linha(B != null && A == null ? "Adversários (culto)" : "Adversários", B);
+            BlocoDesafio();
             var log = LogDaNoite();
             if (online && log == null) GUILayout.Label(Cor("Baixando o registro da noite do servidor…", MUDO), sCentro);
             LancesDaNoite(log); Destaques(log); PlacarJogadores(log); GraficoNoite(1, r.width - 30); GraficoNoite(2, r.width - 30); TabelaRegistro();

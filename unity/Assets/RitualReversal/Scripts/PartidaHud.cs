@@ -40,7 +40,7 @@ namespace RitualReversal
             Estilos();
             float esc = Screen.height / 1080f; GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = 1080f;
             if (reconectando) { TelaReconexao(); return; }
-            if (g == null) { if (online && noLobby) TelaLobby(); else TelaTitulo(); return; }
+            if (g == null) { if (online && noLobby) TelaLobby(); else TelaTitulo(); ToastConquista(); return; }
             switch (g.phase)
             {
                 case "pick": TelaEscolha(); break;
@@ -49,30 +49,10 @@ namespace RitualReversal
                 case "summary": TelaResumo(); break;
                 case "final": TelaFinal(); break;
             }
+            ToastConquista();
         }
 
         // ---------- telas ----------
-        void TelaTitulo()
-        {
-            var r = Janela(1000, 980); GUILayout.BeginArea(r);
-            GUILayout.Label(Cor("Ritual Reversal", CARMIM_VIVO), sTitulo);
-            GUILayout.Label("Dois Cultistas celebram rituais em segredo. Dois Caçadores investigam e selam. Uma noite de 18 minutos: Crepúsculo, Vigília e Hora Morta. Quem vencer dois dos três rituais vence a noite.", sCentro);
-            GUILayout.Space(20);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(Cor("Caçar", OURO) + "\nvocê e um bot contra dois Cultistas", sBotao, GUILayout.Height(90))) NovaPartida(true);
-            if (GUILayout.Button(Cor("Celebrar", CARMIM_VIVO) + "\nvocê e um bot contra dois Caçadores", sBotao, GUILayout.Height(90))) NovaPartida(false);
-            GUILayout.EndHorizontal();
-            if (GUILayout.Button(Cor("Arsenal", OURO) + "  <size=15>as skins das armas, na mão, sob a luz de estúdio</size>", sBotao)) IniciarArsenal();
-            GUILayout.BeginHorizontal(); GUILayout.Label("Bots inimigos", sPequeno, GUILayout.Width(150));
-            foreach (var d in new[] { new[] { "facil", "Fácil" }, new[] { "normal", "Normal" }, new[] { "dificil", "Difícil" } })
-                if (GUILayout.Button((dificuldade == d[0] ? "● " : "") + d[1], sBotao, GUILayout.Width(150))) { dificuldade = d[0]; PlayerPrefs.SetString("rr-dif", dificuldade); }
-            GUILayout.EndHorizontal(); GUILayout.Space(16);
-            GUILayout.Label("<b>Controles</b>: WASD anda, Shift corre, mouse mira, clique esquerdo ataca, clique direito usa o feitiço. E (segurar) interage, T (segurar) transfere o ritual. Q sensor, F lanterna, G sinalizador, R recarrega (Caçador). Tab mostra a planta. Esc pausa.", sPequeno);
-            GUILayout.Space(10); TelaOnline(r); GUILayout.Space(10); Ajustes();
-            GUILayout.Label("Porte para o Unity do protótipo: a mesma regra, os mesmos bots, o mesmo mundo, a mesma luz e o mesmo som.", sPequeno);
-            GUILayout.EndArea();
-        }
-
         void TelaEscolha()
         {
             if (MeuPapel() != "C")
@@ -139,6 +119,21 @@ namespace RitualReversal
             int q = PlayerPrefs.GetInt("rr-qualidade", Qualidade.nivel);
             for (int i = 3; i >= 0; i--) if (GUILayout.Button((q == i ? "● " : "") + NIVEIS[i], sBotao, GUILayout.Width(110))) PlayerPrefs.SetInt("rr-qualidade", i);
             GUILayout.EndHorizontal();
+            // dicas, legendas e acessibilidade (como no navegador)
+            System.Action<string, string, string[][]> linha = (rotulo, chave, ops) =>
+            {
+                GUILayout.BeginHorizontal(); GUILayout.Label(rotulo, sPequeno, GUILayout.Width(230)); int v = PlayerPrefs.GetInt(chave, int.Parse(ops[0][0]));
+                foreach (var o in ops) if (GUILayout.Button((v == int.Parse(o[0]) ? "● " : "") + o[1], sBotao, GUILayout.Width(o[1].Length > 12 ? 170 : 125))) PlayerPrefs.SetInt(chave, int.Parse(o[0]));
+                GUILayout.EndHorizontal();
+            };
+            linha("Dicas da primeira noite", "rr-dicas-on", new[] { new[] { "1", "Ligadas" }, new[] { "0", "Desligadas" } });
+            GUILayout.BeginHorizontal(); GUILayout.Space(234); if (GUILayout.Button("Rever todas as dicas", sBotao, GUILayout.Width(254))) RevisarDicas(); GUILayout.EndHorizontal();
+            linha("Legendas dos sons", "rr-legendas", new[] { new[] { "1", "Ligadas" }, new[] { "0", "Desligadas" } });
+            linha("Clarões e tremor", "rr-suave", new[] { new[] { "0", "Normais" }, new[] { "1", "Reduzidos" } });
+            linha("Cores das equipes", "rr-dalt", new[] { new[] { "0", "Ouro e carmim" }, new[] { "1", "Ouro e azul" } });
+            linha("Chat dos adversários", "rr-mudo-adv", new[] { new[] { "0", "Mostrar" }, new[] { "1", "Silenciar" } });
+            if (mundo != null) mundo.claroesSuaves = PlayerPrefs.GetInt("rr-suave", 0) == 1;
+            GUILayout.Label("<size=14>" + Cor("Reduzidos: relâmpagos ficam mais fracos. Ouro e azul troca o carmim do culto por azul na planta e no replay (ajuda com daltonismo vermelho-verde).", MUDO) + "</size>", sPequeno);
             if (GUI.changed) SalvarAjustes();
         }
         void SalvarAjustes() { PlayerPrefs.SetFloat("rr-sens", sensibilidade); if (som != null) PlayerPrefs.SetFloat("rr-vol", som.volume); if (fp != null) PlayerPrefs.SetFloat("rr-fov", fp.fovBase); }
@@ -334,7 +329,7 @@ namespace RitualReversal
             if (claraoGrande > 0) { claraoGrande -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.8f, .05f, .1f, Mathf.Clamp01(claraoGrande / 1.2f) * .85f)); }
             TelaQueda(m);
 
-            Bussola(m, papel); Legendas(); FaixaLance(); Caderno(papel);
+            Bussola(m, papel); Legendas(); FaixaLance(); Caderno(papel); PainelTutorial(); PainelDica(); ChatJogo();
             if (EntradaUnity.Segurando(Tecla.Tab)) Planta(m, papel);
         }
 
@@ -352,6 +347,8 @@ namespace RitualReversal
         void Marcadores(Ator m, string papel)
         {
             var c = CamP(); System.Func<double, double, int> dm = (x, z) => Mathf.RoundToInt(Mathf.Sqrt((float)((x - c.x) * (x - c.x) + (z - c.z) * (z - c.z))));
+            // o objetivo do tutorial (altares e reagentes no alto, pontos do chão mais baixos)
+            if (tutAtivo && tutAlvo != null && !tutFim) Marcador(new Vector3((float)tutAlvo.x, tutAlvo is Altar ? 3.4f : 1.4f, (float)tutAlvo.z), "Objetivo", dm(tutAlvo.x, tutAlvo.z) + " m", new Color(.84f, .72f, .94f), true);
             foreach (var a in g.actors)
             {
                 if (a == m || a.hidden || a.team != m.team || a.st == "dead") continue;

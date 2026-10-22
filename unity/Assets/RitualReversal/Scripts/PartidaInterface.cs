@@ -134,6 +134,7 @@ namespace RitualReversal
             if (g.lab != null && g.lab.economia) foreach (var n in Mapa.NPCS) { if ((n.time == null || n.time == m.team) && Mathf.Sqrt((float)((n.x - P.x) * (n.x - P.x) + (n.z - P.z) * (n.z - P.z))) < 60) mk(n.x, n.z, new Color(.91f, .84f, .66f), "○", 12); }
             if (g.flares != null) foreach (var f in g.flares) if (f.t > 0) mk(f.x, f.z, new Color(1f, .69f, .44f), "✦", 12);
             foreach (var p in pings) mk(p.x, p.z, new Color(.56f, .91f, 1f), "⬥", 15);
+            if (tutAtivo && tutAlvo != null && !tutFim) mk(tutAlvo.x, tutAlvo.z, new Color(.84f, .72f, .94f), "◉", 15);   // o objetivo do tutorial
             // o triângulo do rumo atual, embaixo no meio
             GUI.Label(new Rect(W / 2 - 10, y0 + 16, 20, 14), "<size=10>" + Cor("▲", OURO_VIVO) + "</size>", new GUIStyle(sm) { alignment = TextAnchor.MiddleCenter });
         }

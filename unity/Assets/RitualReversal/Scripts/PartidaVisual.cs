@@ -165,7 +165,7 @@ namespace RitualReversal
                     {
                         // v5.5: o coro ecoa em dois altares do setor; se a equipe já descartou um, a dedução aponta o outro
                         var L = new List<Altar>(); var la = e["altares"] as System.Collections.IList; if (la != null) foreach (var o in la) { int i = System.Convert.ToInt32(o); if (i >= 0 && i < g.altars.Count) L.Add(g.altars[i]); }
-                        LT.Marco(g, "eco", "Eco do coro");
+                        LT.Marco(g, "eco", "Eco do coro"); if (papel == "H") Dica("h_eco");
                         if (L.Count == 0) break; float ex = (float)L.Average(A => A.x), ez = (float)L.Average(A => A.z);
                         som.Tocar("eco", ex, ez); Legenda("eco", ex, ez, "Coro distante: " + string.Join(" ou ", L.Select(A => A.name).ToArray()), "rit", 400);
                         var poss = papel == "H" && g.know != null ? L.Where(A => AltarPossivel(A.i)).ToList() : L;

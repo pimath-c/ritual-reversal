@@ -40,16 +40,6 @@ namespace RitualReversal
 
         void Start() { CarregarPreferencias(); CriarVisual(); Travar(false); }
 
-        public void NovaPartida(bool cacador)
-        {
-            var slots = cacador
-                ? new List<Slot> { new Slot("A", EU, "Você"), new Slot("A", null, "Irmã Beatriz"), new Slot("B", null, "Irmão Cinza"), new Slot("B", null, "Madre Vesper") }
-                : new List<Slot> { new Slot("A", null, "Irmã Beatriz"), new Slot("A", null, "Irmão Tomé"), new Slot("B", EU, "Você"), new Slot("B", null, "Madre Vesper") };
-            if (online) SairOnline(""); EU = "local";
-            g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss"), dificuldade = dificuldade });
-            faseAnterior = ""; lojaAberta = null; feed.Clear(); LimparVisual();
-        }
-
         Ator Eu() { if (g == null) return null; foreach (var a in g.actors) if (a.cid == EU) return a; return null; }
         Slot MeuSlot() { if (g == null) return null; foreach (var s in g.slots) if (s.cid == EU) return s; return null; }
         string MeuPapel() { var s = MeuSlot(); return s != null ? Sim.RoleOf(g, s.team) : "H"; }
@@ -61,11 +51,11 @@ namespace RitualReversal
         {
             double raw = Mathf.Max(.001f, Time.unscaledDeltaTime), dt = System.Math.Min(.05, raw);
             if (online) ProcessarRede();
-            if (g == null) { AtualizarVisual((float)System.Math.Min(.25, raw)); return; }
+            if (g == null) { BuscarSalas(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }
             if (arsenal) { PassoArsenal(dt); ultimaEntrada = null; g.events.Clear(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }   // Arsenal: a noite fica parada
             var m = Eu();
             bool jogando = g.phase == "play";
-            bool ativo = jogando && Travado() && lojaAberta == null;
+            bool ativo = jogando && Travado() && lojaAberta == null && !chatAberto;
             if (jogando) LerAtalhos(m, ativo);
             var inp = LerEntrada(ativo);
             bool pausado = jogando && !Travado() && lojaAberta == null;
@@ -74,7 +64,7 @@ namespace RitualReversal
             else if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); PreverTiro(m, (float)dt, inp.fire); Sim.Step(g, dt); }
             else if (!jogando) Sim.Step(g, dt);
             var evs = new List<Evento>(g.events); g.events.Clear(); TratarEventos(evs, Eu());
-            PassoNoite((float)raw);
+            PassoNoite((float)raw); var eu2 = Eu(); AtualizarTutorial(eu2); AtualizarDicas((float)raw, eu2); if (g != null && g.phase == "final") { PerfilFim(); DesafioFim(); }
 
             if (g.phase != faseAnterior)
             {
@@ -99,6 +89,7 @@ namespace RitualReversal
             if (lojaAberta != null && (EntradaUnity.Apertou(Tecla.Esc) || EntradaUnity.Apertou(Tecla.E))) { lojaAberta = null; Travar(true); return; }
             if (!ativo || m == null) return;
             if (EntradaUnity.Apertou(Tecla.Esc)) { Travar(false); return; } // no editor o próprio Unity já solta o mouse; no jogo compilado, é aqui
+            if (online && EntradaUnity.Apertou(Tecla.Enter)) { AbrirChatJogo(); return; }   // chat da partida (só a equipe; Tab troca)
             if (EntradaUnity.Apertou(Tecla.Q)) botoes.q++;
             if (EntradaUnity.Apertou(Tecla.F)) botoes.f++;
             if (EntradaUnity.Apertou(Tecla.G)) botoes.g++;
@@ -106,6 +97,7 @@ namespace RitualReversal
             if (EntradaUnity.Apertou(Tecla.Z)) Pingar(m);
             if (EntradaUnity.Apertou(Tecla.I) && fp != null) fp.PedirInspecao(); // inspeção da arma (v5.9)
             if (EntradaUnity.Apertou(Tecla.J)) cadernoAberto = !cadernoAberto;   // caderno dos altares (v5.3)
+            if (EntradaUnity.Apertou(Tecla.N)) PularPassoTutorial();
             if (EntradaUnity.CliqueDir()) { botoes.ab++; if (m.st == "alive" && m.abilCd > 0) { FeiticoDef F; Regras.FEITICOS.TryGetValue(m.feitico ?? "", out F); NotaHab((F != null ? F.nome : "Feitiço") + " recarregando: " + Mathf.CeilToInt((float)m.abilCd) + " s", MUDO); som.Tocar("vazio"); } }
             if (EntradaUnity.Apertou(Tecla.E) && m.st == "alive")
             {
