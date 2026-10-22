@@ -107,6 +107,29 @@ namespace RitualReversal
             int n = Mathf.Max(3, Mathf.CeilToInt(2 * meia * r / Mathf.Max(.8f, e * .45f)));
             for (int i = 0; i <= n; i++) { float a = ang - meia + 2 * meia * i / n - Mathf.PI / 2; Disco(x + Mathf.Cos(a) * r, y + Mathf.Sin(a) * r, e / 2, c); }
         }
+        // o marcador do <summary> como o Chromium o pinta (GetCanonicalDisclosurePath): fechado (0,0)-(.86,.5)-(0,1), aberto
+        // (0,.07)-(1,.07)-(.5,.93), na caixa de lado l com o canto de cima à esquerda em (x, y)
+        static Texture2D discFechado, discAberto;
+        static Texture2D Poligono(Vector2[] P)
+        {
+            // P no quadrado [0,1]² com y para baixo; a linha 0 da textura é a de baixo
+            return Gerar(N, (u, v) =>
+            {
+                var q = new Vector2((u + 1) / 2, (1 - v) / 2); bool dentro = false; float d = 1e9f;
+                for (int i = 0, j = P.Length - 1; i < P.Length; j = i++)
+                {
+                    Vector2 a = P[j], b = P[i], ab = b - a;
+                    if ((b.y > q.y) != (a.y > q.y) && q.x < (a.x - b.x) * (q.y - b.y) / (a.y - b.y) + b.x) dentro = !dentro;
+                    float t = Mathf.Clamp01(Vector2.Dot(q - a, ab) / ab.sqrMagnitude); d = Mathf.Min(d, Vector2.Distance(q, a + ab * t));
+                }
+                return (dentro ? d : -d) * N + .5f;
+            });
+        }
+        public static void Disclosure(float x, float y, float l, bool aberto, Color c)
+        {
+            if (discFechado == null) { discFechado = Poligono(new[] { new Vector2(0, 0), new Vector2(.86f, .5f), new Vector2(0, 1) }); discAberto = Poligono(new[] { new Vector2(0, .07f), new Vector2(1, .07f), new Vector2(.5f, .93f) }); }
+            Tinge(new Rect(x, y, l, l), aberto ? discAberto : discFechado, c);
+        }
         // a seta das legendas dos sons (o svg "M6 0L12 7H8V14H4V7H0Z", 12 × 14, ponta para cima), girada em volta do centro
         static Texture2D setaSom;
         public static void SetaSom(float x, float y, float rad, Color c)

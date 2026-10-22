@@ -21,7 +21,7 @@ namespace RitualReversal
         {
             if (sTexto != null) return;
             branco = Texture2D.whiteTexture;
-            CarregarFonteSistema(); fonteCond = Resources.Load<Font>("Fontes/BarlowCondensed-Medium"); fonteCond400 = Resources.Load<Font>("Fontes/BarlowCondensed-Regular") ?? fonteCond; fonteCond600 = Resources.Load<Font>("Fontes/BarlowCondensed-SemiBold") ?? fonteCond; fonteCond700 = Resources.Load<Font>("Fontes/BarlowCondensed-Bold") ?? fonteCond; fonteSerif = Resources.Load<Font>("Fontes/IMFellEnglish-Regular"); fonteSerifIt = Resources.Load<Font>("Fontes/IMFellEnglish-Italic");
+            CarregarFonteSistema(); fonteCond = Resources.Load<Font>("Fontes/BarlowCondensed-Medium"); fonteCond400 = Resources.Load<Font>("Fontes/BarlowCondensed-Regular") ?? fonteCond; fonteCond600 = Resources.Load<Font>("Fontes/BarlowCondensed-SemiBold") ?? fonteCond; fonteCond700 = Resources.Load<Font>("Fontes/BarlowCondensed-Bold") ?? fonteCond; fonteSerif = Resources.Load<Font>("Fontes/IMFellEnglish-Regular"); fonteSerifIt = Resources.Load<Font>("Fontes/IMFellEnglish-Italic"); fonteSimbolo = Resources.Load<Font>("Fontes/DejaVuSans"); fonteSimboloN = Resources.Load<Font>("Fontes/DejaVuSans-Bold");
             sTexto = new GUIStyle(GUI.skin.label) { fontSize = 20, wordWrap = true, richText = true }; sTexto.normal.textColor = OSSO; if (fonteCond != null) sTexto.font = fonteCond;
             sPequeno = new GUIStyle(sTexto) { fontSize = 16 };
         }

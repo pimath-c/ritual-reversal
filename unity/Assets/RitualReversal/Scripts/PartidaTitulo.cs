@@ -100,7 +100,8 @@ namespace RitualReversal
             // o marcador do details (▼ aberto, ▶ fechado) e o resumo; clicar troca
             if (!medindo)
             {
-                Linha(xc, yy, 20, lhS, labAberto ? "▼" : "▶", Css("400", 11, BONE)); float xs = xc + 15, bas = yy + (lhS - 18) / 2 + 15;
+                // o marcador: a caixa de 2/3 da subida (10 px na Barlow de 15) com o pé na linha de base, e o texto 16 px depois
+                float xs = xc + 16, bas = yy + (lhS - 18) / 2 + 15; Tracos.Disclosure(xc, PixelY(bas) - 10, 10, labAberto, BONE);
                 // summary com letter-spacing .04em (o b dentro também)
                 float wr = EspacadaNaBase(xs, bas, res, stS, .6f); if (extra != "") EspacadaNaBase(xs + wr, bas, extra, stSb, .6f);
             }

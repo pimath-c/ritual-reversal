@@ -22,7 +22,7 @@ namespace RitualReversal
             float s = r.width / VB_L; int fs = Mathf.Max(8, Mathf.RoundToInt(tam * s));
             var st = new GUIStyle(sPequeno) { fontSize = fs, alignment = TextAnchor.LowerCenter, wordWrap = false, fontStyle = italico ? FontStyle.Italic : negrito ? FontStyle.Bold : FontStyle.Normal, richText = false };
             if (italico && fonteSerifIt != null) { st.font = fonteSerifIt; st.fontStyle = FontStyle.Normal; } else if (serif && fonteSerif != null) st.font = fonteSerif;   // os nomes dos lugares e dos altares, como no SVG
-            st.normal.textColor = c; TextoNitido(new Rect(r.x + x * s - 160, r.y + y * s - fs * 1.15f, 320, fs * 1.4f), txt, st, false);
+            st.normal.textColor = c; TextoNitido(new Rect(r.x + x * s - 160, r.y + y * s - fs * 1.15f, 320, fs * 1.4f), txt, SoSimbolos(st, txt), false);
         }
         Vector2 PontoSvg(Rect r, double x, double z) { float s = r.width / VB_L; return new Vector2(r.x + PX(x) * s, r.y + PZ(z) * s); }
 

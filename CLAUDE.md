@@ -242,6 +242,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `BotaoNitido` rasterizam a fonte no tamanho dos pixels e põem uma matriz 1/s em volta; para isso toda rolagem e grupo
   passa por `Rolagem`/`FimRolagem`/`Grupo`/`FimGrupo` (pilha `recortes`, a origem que o IMGUI soma antes do GUI.matrix;
   o `ComTransformacao` usa a mesma origem). Nada de `GUI.BeginScrollView`/`BeginGroup`/`GUI.Label` direto nas telas.
+  Símbolos que a Barlow/IM Fell não têm (◆ ✓ ✕ ✚ ✶ ☉ ◎ ☠...): no navegador vêm da reserva do sistema (DejaVu Sans no
+  Linux); o Unity leva a DejaVu Sans e a Bold em `Resources/Fontes` (`fonteSimbolo`/`fonteSimboloN`, licença em
+  LICENCA-DejaVu.txt) e o `Linha`/`Larg` partem o texto em `Trechos` (fora das etiquetas), com negrito para 600/700 e o
+  itálico do estilo; `SoSimbolos` faz o mesmo no TextoBase/TextoSvg. `Css(..., FontStyle)`: a bússola é <i> (itálico).
+  O marcador do <summary> é o caminho do Chromium (`Tracos.Disclosure`, caixa de 2/3 da subida com o pé na linha de base).
   O "○" das tarefas é desenhado (anel com as medidas do glifo da DejaVu); as legendas dos sons são a fileira flex do .lg
   (seta `Tracos.SetaSom`, ponto/anel de 8 px, small à parte; no toque à direita com scale .8). Fotos: `foto-imgui.py`
   superamostra o que gira; `MANTER=1` deixa o JSON; a foto "legendas" põe os mesmos sons nos dois roteiros.

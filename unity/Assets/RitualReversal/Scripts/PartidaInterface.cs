@@ -137,13 +137,14 @@ namespace RitualReversal
             {
                 float x = px(gr * Mathf.Deg2Rad); if (float.IsNaN(x)) continue; float op = mascara(x); string nome = null;
                 switch (gr) { case 0: nome = "N"; break; case 45: nome = "NE"; break; case 90: nome = "L"; break; case 135: nome = "SE"; break; case 180: nome = "S"; break; case 225: nome = "SO"; break; case 270: nome = "O"; break; case 315: nome = "NO"; break; }
-                if (nome != null) Linha(x0 + x - 30, y0 + 6, 60, LN(13f), nome, Css("600", 13, A(gr == 0 ? CrimsonHi : Hx("#cfc6b6"), op), TextAnchor.UpperCenter), .9f);
+                // os pontos e os marcadores são <i>: itálico (sintético, a Barlow e a DejaVu daqui não têm o itálico)
+                if (nome != null) Linha(x0 + x - 30, y0 + 6, 60, LN(13f), nome, Css("600", 13, A(gr == 0 ? CrimsonHi : Hx("#cfc6b6"), op), TextAnchor.UpperCenter, FontStyle.Italic), .9f);
                 else Caixa(new Rect(x0 + x, y0, 1, 6), new Color(.91f, .878f, .816f, .35f * op));
             }
             Action<double, double, Color, string, bool> mk = (x, z, c, ch, grande) =>
             {
                 float b = Mathf.Atan2((float)(x - P.x), -(float)(z - P.z)), q = px(b); if (float.IsNaN(q)) return;
-                int tam = grande ? 15 : 12; Linha(x0 + q - 20, y0 + (grande ? 1 : 3), 40, tam, ch, Css("400", tam, A(c, mascara(q)), TextAnchor.UpperCenter), .9f);
+                int tam = grande ? 15 : 12; Linha(x0 + q - 20, y0 + (grande ? 1 : 3), 40, tam, ch, Css("400", tam, A(c, mascara(q)), TextAnchor.UpperCenter, FontStyle.Italic), .9f);
             };
             foreach (var a in g.actors)
             {

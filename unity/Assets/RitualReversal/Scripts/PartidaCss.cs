@@ -11,9 +11,13 @@ namespace RitualReversal
     public partial class PartidaLocal
     {
         static Font fonteCond400, fonteCond600, fonteCond700;
+        // a fonte dos símbolos que a Barlow e a IM Fell não têm (◆ ✓ ✕ ✚ ✶ ☉...): no navegador eles vêm da fonte reserva do
+        // sistema, a DejaVu Sans no Linux; aqui ela vem junto, para não depender da reserva do sistema (no Android e no
+        // Windows faltam glifos)
+        static Font fonteSimbolo, fonteSimboloN;
         // subida e descida de cada fonte (hhea, em em): a altura "normal" da linha no navegador é a soma
-        static float SubidaEm(Font f) { return f != null && f == fonteSistema ? subSis : f != null && f == fonteSans ? subSans : f != null && f == fonteSerif || f != null && f == fonteSerifIt ? .905f : 1f; }
-        static float DescidaEm(Font f) { return f != null && f == fonteSistema ? descSis : f != null && f == fonteSans ? descSans : f != null && f == fonteSerif || f != null && f == fonteSerifIt ? .363f : .2f; }
+        static float SubidaEm(Font f) { return f == null ? 1f : f == fonteSistema ? subSis : f == fonteSans ? subSans : f == fonteSerif || f == fonteSerifIt ? .905f : f == fonteSimbolo || f == fonteSimboloN ? .928f : 1f; }
+        static float DescidaEm(Font f) { return f == null ? .2f : f == fonteSistema ? descSis : f == fonteSans ? descSans : f == fonteSerif || f == fonteSerifIt ? .363f : f == fonteSimbolo || f == fonteSimboloN ? .236f : .2f; }
         // o system-ui do navegador (o painel do Arsenal e o campo do chat da partida): a fonte da interface do sistema
         // operacional, com as métricas dela (hhea); a primeira da lista que estiver instalada
         static Font fonteSistema; static float subSis = .928f, descSis = .236f;
@@ -61,15 +65,81 @@ namespace RitualReversal
 
         readonly Dictionary<string, GUIStyle> estilosCss = new Dictionary<string, GUIStyle>();
         // peso: 400, 500, 600, 700 (Barlow) ou "serif"/"serifIt"
-        GUIStyle Css(string peso, int tam, Color cor, TextAnchor al = TextAnchor.UpperLeft)
+        GUIStyle Css(string peso, int tam, Color cor, TextAnchor al = TextAnchor.UpperLeft, FontStyle fs = FontStyle.Normal)
         {
-            string k = peso + "|" + tam + "|" + ColorUtility.ToHtmlStringRGBA(cor) + "|" + (int)al; GUIStyle s;
+            string k = peso + "|" + tam + "|" + ColorUtility.ToHtmlStringRGBA(cor) + "|" + (int)al + "|" + (int)fs; GUIStyle s;
             if (estilosCss.TryGetValue(k, out s)) return s;
             var f = peso == "sys" ? fonteSistema ?? fonteCond400 : peso == "sans" ? fonteSans ?? fonteCond400 : peso == "serif" ? fonteSerif : peso == "serifIt" ? fonteSerifIt : peso == "700" ? fonteCond700 : peso == "600" ? fonteCond600 : peso == "500" ? fonteCond : fonteCond400;
-            s = new GUIStyle(GUI.skin.label) { fontSize = tam, wordWrap = false, richText = true, alignment = al, padding = new RectOffset(0, 0, 0, 0), margin = new RectOffset(0, 0, 0, 0), clipping = TextClipping.Overflow, fontStyle = FontStyle.Normal };
+            s = new GUIStyle(GUI.skin.label) { fontSize = tam, wordWrap = false, richText = true, alignment = al, padding = new RectOffset(0, 0, 0, 0), margin = new RectOffset(0, 0, 0, 0), clipping = TextClipping.Overflow, fontStyle = fs };
             s.font = f ?? fonteCond; s.normal.textColor = cor; estilosCss[k] = s; return s;
         }
-        static float Larg(string txt, GUIStyle st) { return st.CalcSize(new GUIContent(txt)).x; }
+        static float Larg(string txt, GUIStyle st)
+        {
+            var tr = Trechos(txt, st); if (tr == null) return st.CalcSize(new GUIContent(txt)).x;
+            float w = 0; foreach (var t in tr) w += LargTrecho(t.s, t.st); return w;
+        }
+
+        // ---------- trechos com a fonte reserva ----------
+        // O Chromium desenha cada caractere que a fonte não tem com a fonte reserva, na mesma linha de base; aqui o texto se
+        // parte em trechos (fora das etiquetas do texto rico) e os que a fonte não tem vão na fonte dos símbolos, com o peso
+        // (600 e 700 viram negrito, como a DejaVu Sans Bold) e o itálico do estilo
+        struct Trecho { public string s; public GUIStyle st; }
+        static readonly Dictionary<Font, Dictionary<char, bool>> glifos = new Dictionary<Font, Dictionary<char, bool>>();
+        static bool Falta(Font f, char c)
+        {
+            if (c < 0x2000 || f == null || f == fonteSimbolo || f == fonteSimboloN || f == fonteSistema || f == fonteSans) return false;
+            Dictionary<char, bool> d; if (!glifos.TryGetValue(f, out d)) glifos[f] = d = new Dictionary<char, bool>();
+            bool falta; if (!d.TryGetValue(c, out falta)) d[c] = falta = !f.HasCharacter(c); return falta;
+        }
+        static readonly Dictionary<GUIStyle, GUIStyle> estilosSimbolo = new Dictionary<GUIStyle, GUIStyle>(), estilosEsq = new Dictionary<GUIStyle, GUIStyle>();
+        static GUIStyle EstiloSimbolo(GUIStyle st)
+        {
+            GUIStyle s; if (!estilosSimbolo.TryGetValue(st, out s)) estilosSimbolo[st] = s = NovoEstiloSimbolo(st); return s;
+        }
+        // para os estilos feitos na hora (TextoBase, TextoSvg): o texto que é só símbolo vai inteiro na fonte dos símbolos
+        static GUIStyle SoSimbolos(GUIStyle st, string txt)
+        {
+            if (fonteSimbolo == null || st.font == null || string.IsNullOrEmpty(txt)) return st;
+            foreach (var c in txt) if (c != ' ' && !Falta(st.font, c)) return st;
+            return NovoEstiloSimbolo(st);
+        }
+        static GUIStyle NovoEstiloSimbolo(GUIStyle st)
+        {
+            GUIStyle s; bool negrito = st.font == fonteCond600 || st.font == fonteCond700 || st.fontStyle == FontStyle.Bold || st.fontStyle == FontStyle.BoldAndItalic, it = st.fontStyle == FontStyle.Italic || st.fontStyle == FontStyle.BoldAndItalic;
+            if (negrito && fonteSimboloN != null) s = new GUIStyle(st) { font = fonteSimboloN, fontStyle = it ? FontStyle.Italic : FontStyle.Normal };
+            else s = new GUIStyle(st) { font = fonteSimbolo, fontStyle = negrito ? (it ? FontStyle.BoldAndItalic : FontStyle.Bold) : it ? FontStyle.Italic : FontStyle.Normal };
+            return s;
+        }
+        static GUIStyle Esq(GUIStyle st)
+        {
+            if (st.alignment == TextAnchor.UpperLeft) return st; GUIStyle s; if (estilosEsq.TryGetValue(st, out s)) return s;
+            s = new GUIStyle(st) { alignment = TextAnchor.UpperLeft }; estilosEsq[st] = s; return s;
+        }
+        // null quando não há o que trocar (o caminho de sempre)
+        static List<Trecho> Trechos(string txt, GUIStyle st)
+        {
+            if (fonteSimbolo == null || string.IsNullOrEmpty(txt) || st == null || st.font == null) return null;
+            bool algum = false; int prof = 0;
+            for (int i = 0; i < txt.Length; i++) { char c = txt[i]; if (c == '<' && st.richText) { int f = txt.IndexOf('>', i); if (f > i) { prof += txt[i + 1] == '/' ? -1 : 1; i = f; continue; } } if (prof == 0 && Falta(st.font, c)) { algum = true; break; } }
+            if (!algum) return null;
+            var o = new List<Trecho>(); var sb = new System.Text.StringBuilder(); bool simb = false; prof = 0; var ss = EstiloSimbolo(st);
+            for (int i = 0; i < txt.Length; i++)
+            {
+                char c = txt[i];
+                if (c == '<' && st.richText) { int f = txt.IndexOf('>', i); if (f > i) { if (simb) { o.Add(new Trecho { s = sb.ToString(), st = ss }); sb.Length = 0; simb = false; } prof += txt[i + 1] == '/' ? -1 : 1; sb.Append(txt, i, f - i + 1); i = f; continue; } }
+                bool e = prof == 0 && Falta(st.font, c);
+                if (e != simb && sb.Length > 0) { o.Add(new Trecho { s = sb.ToString(), st = simb ? ss : st }); sb.Length = 0; }
+                simb = e; sb.Append(c);
+            }
+            if (sb.Length > 0) o.Add(new Trecho { s = sb.ToString(), st = simb ? ss : st }); return o;
+        }
+        // a largura de um trecho com os espaços do fim (que o CalcSize não conta)
+        static float LargTrecho(string s, GUIStyle st)
+        {
+            int n = 0; while (n < s.Length && s[s.Length - 1 - n] == ' ') n++;
+            if (n == s.Length) return n * LargEspaco(st);
+            return st.CalcSize(new GUIContent(s)).x + n * LargEspaco(st);
+        }
         // y arredondado no pixel da tela, passando pela matriz do GUI (escala da interface e transformações sem giro):
         // primeiro em 1/64 de pixel (o LayoutUnit do Chromium, que tira o erro do float), depois meio pixel para cima
         static float PixelY(float y)
@@ -86,6 +156,16 @@ namespace RitualReversal
         void Linha(float x, float y, float w, float lh, string txt, GUIStyle st, float sombra = 0)
         {
             float base_ = PixelY(y + Mathf.Floor((lh - AlturaNormal(st)) / 2) + SubidaPx(st));
+            var tr = Trechos(txt, st);
+            if (tr == null) { RotuloNaBase(x, base_, w, txt, st, sombra); return; }
+            // os trechos um depois do outro na mesma linha de base, alinhados pelo total
+            var lw = new float[tr.Count]; float total = 0; for (int i = 0; i < tr.Count; i++) total += lw[i] = LargTrecho(tr[i].s, tr[i].st);
+            var al = st.alignment; float xx = al == TextAnchor.UpperCenter || al == TextAnchor.MiddleCenter || al == TextAnchor.LowerCenter ? x + (w - total) / 2 : al == TextAnchor.UpperRight || al == TextAnchor.MiddleRight || al == TextAnchor.LowerRight ? x + w - total : x;
+            for (int i = 0; i < tr.Count; i++) { RotuloNaBase(xx, base_, lw[i] + 4, tr[i].s, Esq(tr[i].st), sombra); xx += lw[i]; }
+        }
+        // o rótulo com a linha de base já no pixel (base_)
+        void RotuloNaBase(float x, float base_, float w, string txt, GUIStyle st, float sombra)
+        {
             // o retângulo do rótulo com a fonte no tamanho em que ela vai ser rasterizada (a de pixels da tela, ver TextoNitido)
             float s = EscalaTexto(), fp = s == 1 ? st.fontSize : Mathf.RoundToInt(st.fontSize * s);
             var r = new Rect(x, base_ - Mathf.Ceil(SubidaEm(st.font) * fp) / s, w, (Ar(SubidaEm(st.font) * fp) + Ar(DescidaEm(st.font) * fp) + 2) / s);
