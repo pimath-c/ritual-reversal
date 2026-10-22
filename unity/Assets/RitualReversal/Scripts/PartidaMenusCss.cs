@@ -123,13 +123,15 @@ namespace RitualReversal
             {
                 float y0 = y; y += H2(x, y, w, "Seu perfil", TextAnchor.UpperCenter);
                 y += Lede(x, y, w, partidas + (partidas == 1 ? " partida" : " partidas") + " · " + vit + (vit == 1 ? " vitória" : " vitórias") + ", " + der + (der == 1 ? " derrota" : " derrotas") + (emp > 0 ? ", " + emp + (emp == 1 ? " empate" : " empates") : "") + " · " + nc + " de " + CONQ.Length + " conquistas");
-                float cw = (w - 18) / 2, ya = y, yb = y; var num = new[] { 100f, 100f };
+                // as tabelas são table.res com o layout automático do CSS (TabelaCols): as colunas de números se alargam
+                float cw = (w - 18) / 2, ya = y, yb = y; var c3 = new[] { new Col(), new Col(true), new Col(true) };
                 ya += H3(x, ya, cw, "Por papel") - 6; var pa = O(p, "papel");
-                ya += Tabela(x, ya, cw, new[] { "", "Rodadas", "Vencidas" }, new List<string[]> { new[] { "Caçador", Nn(O(pa, "H"), "rodadas").ToString(), pct(Nn(O(pa, "H"), "vitorias"), Nn(O(pa, "H"), "rodadas")) }, new[] { "Cultista", Nn(O(pa, "C"), "rodadas").ToString(), pct(Nn(O(pa, "C"), "vitorias"), Nn(O(pa, "C"), "rodadas")) } }, num, new Color?[] { GOLD, CrimsonHi });
+                ya += TabelaCols(x, ya, cw, c3, new[] { "", "Rodadas", "Vencidas" }, new List<string[]> { new[] { Cor("Caçador", GOLD), Nn(O(pa, "H"), "rodadas").ToString(), pct(Nn(O(pa, "H"), "vitorias"), Nn(O(pa, "H"), "rodadas")) }, new[] { Cor("Cultista", CrimsonHi), Nn(O(pa, "C"), "rodadas").ToString(), pct(Nn(O(pa, "C"), "vitorias"), Nn(O(pa, "C"), "rodadas")) } });
                 ya += H3(x, ya, cw, "Classes") - 6 - 10; var cl = O(p, "classes");
-                ya += Tabela(x, ya, cw, new[] { "", "Rodadas", "Vencidas" }, Regras.CLASSES.Select(kv => { object o; var c = cl.TryGetValue(kv.Key, out o) ? o as Dictionary<string, object> : null; return new[] { kv.Value.name + " <size=13>" + Cor(kv.Value.team == "H" ? "Caçador" : "Cultista", MUDO) + "</size>", (c != null ? Nn(c, "rodadas") : 0).ToString(), c != null ? pct(Nn(c, "vitorias"), Nn(c, "rodadas")) : "—" }; }).ToList(), num);
+                // o small: font-size smaller, 17 / 1,2
+                ya += TabelaCols(x, ya, cw, c3, new[] { "", "Rodadas", "Vencidas" }, Regras.CLASSES.Select(kv => { object o; var c = cl.TryGetValue(kv.Key, out o) ? o as Dictionary<string, object> : null; return new[] { kv.Value.name + " <size=14>" + Cor(kv.Value.team == "H" ? "Caçador" : "Cultista", MUDO) + "</size>", (c != null ? Nn(c, "rodadas") : 0).ToString(), c != null ? pct(Nn(c, "vitorias"), Nn(c, "rodadas")) : "—" }; }).ToList());
                 float xb = x + cw + 18; yb += H3(xb, yb, cw, "Recordes numa partida") - 6; var rec = O(p, "recordes");
-                yb += Tabela(xb, yb, cw, null, new[] { new[] { "quedas", "Inimigos derrubados" }, new[] { "reanimacoes", "Aliados reanimados" }, new[] { "purgas", "Altares purgados" }, new[] { "rituais", "Rituais iniciados" }, new[] { "tarefas", "Tarefas cumpridas" } }.Select(k => new[] { k[1], Nn(rec, k[0]).ToString() }).ToList(), new[] { 80f });
+                yb += TabelaCols(xb, yb, cw, new[] { new Col(), new Col(true) }, null, new[] { new[] { "quedas", "Inimigos derrubados" }, new[] { "reanimacoes", "Aliados reanimados" }, new[] { "purgas", "Altares purgados" }, new[] { "rituais", "Rituais iniciados" }, new[] { "tarefas", "Tarefas cumpridas" } }.Select(k => new[] { k[1], Nn(rec, k[0]).ToString() }).ToList());
                 var hist = Lst(p, "hist");
                 if (hist.Count > 0)
                 {
@@ -139,9 +141,9 @@ namespace RitualReversal
                         var h = o as Dictionary<string, object>; if (h == null) continue; var data = new System.DateTime(1970, 1, 1).AddMilliseconds(Nn(h, "data")).ToLocalTime(); object rv; var rods = h.TryGetValue("rodadas", out rv) ? rv as List<object> : null;
                         string cls = rods == null ? "" : string.Join(" / ", rods.Select(z => { var d = z as Dictionary<string, object>; object c; string k = d != null && d.TryGetValue("cls", out c) ? c as string : ""; ClasseDef C; return k != null && Regras.CLASSES.TryGetValue(k, out C) ? C.name : k; }).ToArray());
                         string res = h.TryGetValue("resultado", out rv) ? rv as string : ""; object md;
-                        L.Add(new[] { data.ToString("dd/MM/yyyy") + (h.TryGetValue("modo", out md) && (md as string) == "online" ? " · online" : "") + "  " + cls, Cor(res, res == "vitória" ? GOLD_HI : res == "derrota" ? CrimsonHi : BONE) });
+                        L.Add(new[] { data.ToString("dd/MM/yyyy") + (h.TryGetValue("modo", out md) && (md as string) == "online" ? " · online" : ""), cls, Cor(res, res == "vitória" ? GOLD_HI : res == "derrota" ? CrimsonHi : BONE) });
                     }
-                    yb += Tabela(xb, yb, cw, null, L, new[] { 90f });
+                    yb += TabelaCols(xb, yb, cw, new[] { new Col(), new Col(), new Col(true) }, null, L);
                 }
                 y = Mathf.Max(ya, yb);
                 y += H3(x, y, w, "Conquistas") - 6; var cq = O(p, "conq");

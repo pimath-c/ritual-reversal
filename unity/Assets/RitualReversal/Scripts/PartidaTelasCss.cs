@@ -103,7 +103,9 @@ namespace RitualReversal
                 y += Cartoes(x, y, w, 3, feits.Select(f => new[] { Regras.FEITICOS[f].nome, Regras.FEITICOS[f].text, "recarga de " + Regras.FEITICOS[f].cd + " s" }).ToList(), i => feits[i] == fe, i => Acao(new Acao { type = "feit", f = feits[i] }), !pronto);
                 y += FileiraBotoes(x, y, w, pronto ? "Aguardando os outros" : "Estou pronto", Hc ? "gold" : "go", !pronto, (System.Action)(() => Acao(new Acao { type = "ready" })));
                 string esp = (online ? ListaProntos() : "") + TextoTempo();
-                if (esp.Trim().Length > 0) y += 10 + P(x, y + 10, w, esp.Trim(), 17, MUDO, 1.45f, TextAnchor.UpperCenter);
+                // p.wait dentro do painel: o .panel p (0,1,1) vence o .wait (0,1,0) em tamanho, cor e margem; do .wait só fica o
+                // text-align: center. Vazio, ainda soma a margem de 6 no fim do painel
+                y += 6; if (esp.Trim().Length > 0) y += P(x, y, w, esp.Trim(), 18, null, 1.45f, TextAnchor.UpperCenter);
                 return y - y0;
             });
         }
@@ -197,7 +199,8 @@ namespace RitualReversal
             {
                 float y0 = y; y += H2(x, y, w, online ? "Clique para jogar" : "Pausado", TextAnchor.UpperCenter);
                 var stP = Css("400", 18, Hx("#cfc7b8"), TextAnchor.UpperCenter); float wb = Mathf.Min(w, Larg("0", stP) * 64);
-                y += 6 + Ps(x + (w - wb) / 2, y + 6, wb, online ? "No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado." : "Clique para voltar ao jogo.", stP, 18 * 1.45f);
+                // o p tem margem 6, que some no 8 de baixo do h2
+                y += Ps(x + (w - wb) / 2, y, wb, online ? "No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado." : "Clique para voltar ao jogo.", stP, 18 * 1.45f);
                 if (!online) y += ColaTeclas(x, y, w);
                 y += FileiraBotoes(x, y, w, online ? "Jogar" : "Continuar", "go", true, (System.Action)(() => { pausaAjustes = false; Travar(true); }),
                     "Ajustes", "ghost", true, (System.Action)(() => { pausaAjustes = true; som.Tocar("click"); }),
@@ -223,12 +226,13 @@ namespace RitualReversal
                 float tw = ln.Sum(i => larg[i]) + 16 * (ln.Count - 1), xx = x + (w - tw) / 2;
                 foreach (var i in ln)
                 {
-                    if (!medindo) { float kw = Larg(L[i][0], stK) + 10 + 2; Moldura(new Rect(xx, yy, kw, lh), Hx("#4a525c")); Linha(xx + 6, yy, kw, lh, L[i][0], stK); Linha(xx + kw + 6, yy, 200, lh, L[i][1], stN); }
+                    // o kbd é inline: a borda fica 1 px para fora da linha, em cima e embaixo
+                    if (!medindo) { float kw = Larg(L[i][0], stK) + 10 + 2; Moldura(new Rect(xx, yy - 1, kw, lh + 2), Hx("#4a525c")); Linha(xx + 6, yy, kw, lh, L[i][0], stK); Linha(xx + kw + 6, yy, 200, lh, L[i][1], stN); }
                     xx += larg[i] + 16;
                 }
                 yy += lh + 8;
             }
-            return 14 + linhas.Count * (lh + 8) - 8 + 4;
+            return 14 + linhas.Count * (lh + 8) - 8;   // a margem de baixo (4) some no 18 da fileira que vem depois
         }
     }
 }

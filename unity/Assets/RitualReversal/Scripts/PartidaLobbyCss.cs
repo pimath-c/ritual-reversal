@@ -140,8 +140,8 @@ namespace RitualReversal
                 // o p com text-align center e margin 0 auto: a caixa de 64ch no meio
                 var st = Css("400", 18, Hx("#cfc7b8"), TextAnchor.UpperCenter); float wb = Mathf.Min(w, Larg("0", st) * 64);
                 y += Ps(x + (w - wb) / 2, y, wb, "Um bot está jogando no seu lugar. Tentando voltar à sala " + salaCodigo + "…", st, 18 * 1.45f);
-                // p.wait: margem de cima 10 (a de baixo do p anterior é 0)
-                y += 10 + P(x, y + 10, w, "Tentativa " + (reconTent + 1) + ", sua vaga fica guardada por mais " + Mathf.CeilToInt(Mathf.Max(0, reconAte - Time.realtimeSinceStartup)) + " s", 17, MUDO, 1.45f, TextAnchor.UpperCenter, 0);
+                // p.wait: o .panel p vence o .wait (18 px, cor do parágrafo, margem 6, caixa de 64ch à esquerda); só o center fica
+                y += 6 + P(x, y + 6, w, "Tentativa " + (reconTent + 1) + ", sua vaga fica guardada por mais " + Mathf.CeilToInt(Mathf.Max(0, reconAte - Time.realtimeSinceStartup)) + " s", 18, null, 1.45f, TextAnchor.UpperCenter);
                 y += FileiraBotoes(x, y, w, "Voltar ao menu", "ghost", true, (System.Action)(() => SairOnline("")));
                 return y - y0;
             });

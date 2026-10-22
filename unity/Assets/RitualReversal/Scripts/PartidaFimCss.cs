@@ -74,7 +74,7 @@ namespace RitualReversal
                 PainelTela("pickwait" + g.round, 800, (x, y, w) =>
                 {
                     float y0 = y; y += H2(x, y, w, "Os Cultistas estão escolhendo os altares"); y += P(x, y, w, "Você vai caçar nesta rodada. Assim que eles confirmarem, você escolhe sua classe.");
-                    y += 10 + P(x, y + 10, w, "Tempo restante" + TextoTempo(), 17, MUDO, 1.45f, TextAnchor.UpperCenter); return y - y0;
+                    y += 6 + P(x, y + 6, w, "Tempo restante" + TextoTempo(), 18, null, 1.45f, TextAnchor.UpperCenter); return y - y0;
                 });
                 return;
             }
@@ -83,10 +83,12 @@ namespace RitualReversal
             {
                 float y0 = y; y += H2(x, y, w, "Escolham 3 altares");
                 y += P(x, y, w, "Os Caçadores não sabem quais são. Altares perto da sua entrada (leste) são mais rápidos de alcançar, e mais óbvios." + (parceiros > 1 ? " Seu parceiro vê e altera a mesma seleção." : ""));
-                // o svg da planta: largura toda, 540 × 380
-                float hm = w * VB_A / VB_L; if (!medindo) PlantaEscolha(new Rect(x, y + 6, w, hm)); y += 6 + hm;
+                // #mapSvg: largura toda, 540 × 380, display block com margem 10 0 (engole o 6 do p; embaixo, some no 18 da fileira)
+                float hm = w * VB_A / VB_L; if (!medindo) PlantaEscolha(new Rect(x, y + 10, w, hm)); y += 10 + hm;
                 y += FileiraBotoes(x, y, w, "Sortear", "ghost", true, (System.Action)(() => Acao(new Acao { type = "pickRandom" })), "Confirmar " + g.picks.Count + " de 3", "go", g.picks.Count == 3, (System.Action)(() => Acao(new Acao { type = "pickConfirm" })));
-                if (g.timers) y += 10 + P(x, y + 10, w, "Tempo restante" + TextoTempo(), 17, MUDO, 1.45f, TextAnchor.UpperCenter);
+                // p.wait dentro do painel: o .panel p (0,1,1) vence o .wait (0,1,0) em tamanho, cor e margem; do .wait só fica o
+                // text-align: center. Vazio, ainda soma a margem de 6 no fim do painel
+                y += 6; if (g.timers) y += P(x, y, w, "Tempo restante" + TextoTempo(), 18, null, 1.45f, TextAnchor.UpperCenter);
                 return y - y0;
             });
         }

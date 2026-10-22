@@ -46,7 +46,7 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   await page.evaluate(()=>{ const d=document.querySelector('details.lab'); if(d) d.open=true; }); await foto('titulo-laboratorio');
   await page.evaluate(()=>{ const d=document.querySelector('details.lab'); if(d) d.open=false; });
   for(const [nome,v] of [['menu-aprender','aprenderAberto'],['menu-como','comoJogarAberto'],['menu-perfil','perfilAberto'],['menu-novidades','novidadesAberto'],['menu-ajustes','settingsOpen']]){
-    await ev(v+"=true; screenKey=''"); await foto(nome); await ev(v+"=false; screenKey=''"); }
+    await ev(v+"=true; screenKey=''"); await foto(nome); await medir(nome,['#scrBody','#scrBody h2','#scrBody .lede','#scrBody h3','#scrBody table','#scrBody table tr','#scrBody th','.conqs','.cq','.btnrow']); await ev(v+"=false; screenKey=''"); }
   // uma noite como Caçador
   await page.evaluate(()=>{ __T.startLocal({papel:'H'}); });
   await page.waitForFunction(()=>__T.game&&__T.game.phase==='intro',null,{timeout:30000}); await foto('intro',1200);
@@ -55,11 +55,12 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   // sem o mouse capturado o jogo mostra a pausa: para o HUD, finge o mouse preso
   await ev("locked=true; paused=false; screenKey=''; scr.classList.remove('on'); for(let i=0;i<60;i++) Sim.step(game,1/30)");
   await foto('hud',2500);
-  await ev("locked=false; paused=true; screenKey=''"); await foto('pausa',900);
+  await ev("locked=false; paused=true; screenKey=''"); await foto('pausa',900); await medir('pausa',['#scrBody','#scrBody h2','#scrBody p','.cola','.cola span','.cola kbd','.btnrow']);
   await ev("openSettings()"); await foto('pausa-ajustes',900);
   await ev("settingsOpen=false; locked=true; paused=false; screenKey=''; scr.classList.remove('on'); CAD.aberto=true"); await foto('caderno',1200);
   await ev("CAD.aberto=false; FL.aberto=true; FL.t=4; desenharFalas()"); await foto('falas',900);
-  await ev("FL.aberto=false; { const n=NPCS.find(x=>x.id==='ermitao'), m=me(); m.x=n.x+1; m.z=n.z; m.obolos=5; } lojaAberta='ermitao'; locked=false; screenKey=''"); await foto('loja',1200); await medir('loja',['#scrBody','#scrBody h2','#scrBody .lede','.loja','.loja .item','.loja .item b','.loja .item span','.loja .item button','.btnrow']);
+  await ev("FL.aberto=false; abrirChatJogo(); $('#iChatJogo').value='estou indo'"); await foto('chat-jogo',800); await medir('chat-jogo',['#chatJogo','#iChatJogo']);
+  await ev("fecharChatJogo(); { const n=NPCS.find(x=>x.id==='ermitao'), m=me(); m.x=n.x+1; m.z=n.z; m.obolos=5; } lojaAberta='ermitao'; locked=false; screenKey=''"); await foto('loja',1200); await medir('loja',['#scrBody','#scrBody h2','#scrBody .lede','.loja','.loja .item','.loja .item b','.loja .item span','.loja .item button','.btnrow']);
   await ev("lojaAberta=null; locked=true; screenKey=''; scr.classList.remove('on')");
   await ev("FL.aberto=false; $('#tabMap').style.display='grid'"); await foto('planta',1200);
   await ev("$('#tabMap').style.display='none'; for(let i=0;i<1500&&game.phase==='play';i++) Sim.step(game,.05)"); await foto('hud-depois',1500);

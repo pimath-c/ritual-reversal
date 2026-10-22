@@ -74,7 +74,8 @@ namespace RitualReversal
             }
             // #chatJogo input: 350 px a 18, 76; 15 px no sans-serif do sistema, padding 7 × 10, fundo escuro e borda de 1 px em
             // ouro (carmim quando vai para todos); o placeholder no cinza do navegador
-            var r = new Rect(18, 76, 350, LNsans(15) + 14 + 2); var cb = chatTodos ? CrimsonHi : GOLD; string k = chatTodos ? "chatTodos" : "chatEquipe";
+            // a altura da linha de um input é a subida mais a descida sem arredondar cada uma (33 px aqui, não 34)
+            var r = new Rect(18, 76, 350, Mathf.Floor(15 * (subSans + descSans)) + 14 + 2); var cb = chatTodos ? CrimsonHi : GOLD; string k = chatTodos ? "chatTodos" : "chatEquipe";
             GUIStyle st; if (!estilosBotao.TryGetValue(k, out st))
             {
                 st = new GUIStyle(Css("sans", 15, BONE)) { padding = new RectOffset(11, 11, 8, 8), border = new RectOffset(1, 1, 1, 1), clipping = TextClipping.Clip, alignment = TextAnchor.UpperLeft };
