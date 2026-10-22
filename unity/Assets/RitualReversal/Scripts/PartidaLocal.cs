@@ -161,7 +161,7 @@ namespace RitualReversal
                         }
                     case "hurt": if (e.Int("a") == eu) hurtT = .35f; break;
                     case "blind": if (e.Int("a") == eu) blindT = 1.5f; break;
-                    case "sensor": if (e.Int("a") == eu) { sensorV = e.Num("v"); sensorT = 4f; } break;
+                    case "sensor": if (e.Int("a") == eu) { sensorV = e.Num("v"); sensorT = 5f; } break;
                     case "momento": Anunciar(e.Str("nome"), e.Int("i") == 1 ? "Os altares despertam" : "Os rituais aceleram e a névoa se fecha"); break;
                 }
                 EventoAudiovisual(e, papel, eu);

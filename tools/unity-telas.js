@@ -23,5 +23,5 @@ const FOTOS=process.env.FOTOS?path.resolve(process.env.FOTOS):null; if(FOTOS){ f
 setTimeout(()=>{ const t0=Date.now(); let ok=false;
   try{ execFileSync('mono',[EXE,path.join(UN,'Resources'),porta],{stdio:['ignore','inherit','inherit'],cwd:tmp,timeout:1500000,env:Object.assign({},process.env,FOTOS?{RR_FOTOS:FOTOS}:{})}); ok=true; console.log('TELAS SEM ERRO ('+((Date.now()-t0)/1000).toFixed(0)+' s)'); }
   catch(e){ console.error('PROBLEMAS nas telas (acima)'); }
-  if(FOTOS){ try{ execFileSync('python3',['-I',path.join(__dirname,'foto-imgui.py'),FOTOS],{stdio:'inherit'}); for(const f of fs.readdirSync(FOTOS)) if(/^tex-|\.json$/.test(f)) fs.rmSync(path.join(FOTOS,f)); console.log('fotos em '+FOTOS); } catch(e){ console.error('as fotos não saíram (Pillow e numpy?)'); ok=false; } }
+  if(FOTOS){ try{ execFileSync('python3',['-I',path.join(__dirname,'foto-imgui.py'),FOTOS],{stdio:'inherit'}); if(!process.env.MANTER) for(const f of fs.readdirSync(FOTOS)) if(/^tex-|\.json$/.test(f)) fs.rmSync(path.join(FOTOS,f)); console.log('fotos em '+FOTOS); } catch(e){ console.error('as fotos não saíram (Pillow e numpy?)'); ok=false; } }
   srv.kill(); process.exit(ok?0:1); },1500);

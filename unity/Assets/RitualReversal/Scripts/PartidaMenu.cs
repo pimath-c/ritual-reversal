@@ -195,13 +195,20 @@ namespace RitualReversal
         // o quadro do tutorial, à esquerda (#tutorial)
         void PainelTutorial()
         {
-            if (!tutAtivo || g == null || g.phase != "play" || passosTut == null) return; float x = 26, y = 300, w = 330;
-            string txt; if (tutFim) txt = "<size=12>" + Cor("TUTORIAL COMPLETO", OURO) + "</size>\n<size=15>Você já sabe o básico de " + (tutPapel == "H" ? "caçar" : "celebrar") + ". Termine a noite contra os bots ou saia pela pausa (Esc).</size>";
-            else txt = "<size=12>" + Cor("APRENDER · PASSO " + (tutI + 1) + " DE " + passosTut.Count, CARMIM_HI) + "</size>\n<size=15>" + passosTut[tutI].t + "</size>\n<size=12><i>" + Cor("N pula este passo", MUDO) + "</i></size>";
-            var st = new GUIStyle(sPequeno) { wordWrap = true, richText = true }; float h = st.CalcHeight(new GUIContent(txt), w - 28) + 26;
-            Caixa(new Rect(x, y, w, h), new Color(.031f, .035f, .043f, .85f)); Caixa(new Rect(x, y, 3, h), tutFim ? OURO : CARMIM_HI);
-            GUI.Label(new Rect(x + 14, y + 8, w - 28, h - 16), txt, st);
-            if (!tutFim) { Caixa(new Rect(x + 14, y + h - 10, w - 28, 3), new Color(1, 1, 1, .12f)); Caixa(new Rect(x + 14, y + h - 10, (w - 28) * tutI / passosTut.Count, 3), CARMIM_HI); }
+            // #tutorial: 330 px à esquerda em top 300, borda carmim (dourada no fim), padding 10 × 14 × 12
+            if (!tutAtivo || g == null || g.phase != "play" || passosTut == null) return; float x = 26, y = 300, w = 330, wc = w - 3 - 28;
+            var corT = tutFim ? GOLD_HI : CrimsonHi; var stP = Css("400", 16, Hx("#e6dccb"));
+            string tit = tutFim ? "TUTORIAL COMPLETO" : "APRENDER · PASSO " + (tutI + 1) + " DE " + passosTut.Count;
+            string p = tutFim ? "Você já sabe o básico de " + (tutPapel == "H" ? "caçar" : "celebrar") + ". Termine a noite contra os bots ou saia pela pausa (Esc)." : passosTut[tutI].t;
+            float hp = AlturaParagrafo(p, stP, wc, 16 * 1.4f), h = 10 + 14.4f + 4 + hp + 6 + (tutFim ? 0 : 13 * 1.2f + 6 + 3) + 12;
+            Caixa(new Rect(x, y, w, h), new Color(8 / 255f, 9 / 255f, 11 / 255f, .85f)); Caixa(new Rect(x, y, 3, h), corT);
+            float yy = y + 10, xc = x + 3 + 14; Espacada(xc, yy, 14.4f, tit, Css("400", 12, corT), .96f); yy += 14.4f + 4;
+            yy += Paragrafo(xc, yy, wc, 16 * 1.4f, p, stP) + 6;
+            if (!tutFim)
+            {
+                Linha(xc, yy, wc, 13 * 1.2f, "N pula este passo", Css("400", 13, MUDO)); yy += 13 * 1.2f + 6;
+                Caixa(new Rect(xc, yy, wc, 3), Hx("#2a2f36")); Caixa(new Rect(xc, yy, wc * tutI / passosTut.Count, 3), CrimsonHi);
+            }
         }
 
         // ================= DICAS DA PRIMEIRA NOITE =================
@@ -269,10 +276,13 @@ namespace RitualReversal
         // o quadro da dica, à direita (#dica): entra deslizando e some depois de 8 s
         void PainelDica()
         {
+            // #dica: 300 px à direita em top 340, borda dourada; entra deslizando 16 px e some em 0,5 s
             if (dicaAtual == null || g == null || g.phase != "play") return; float op = Mathf.Clamp01(Mathf.Min((8 - dicaAberta) / .5f, dicaAberta / .5f)); if (op <= 0) return;
-            float w = 300, x = W - 26 - w + 16 * (1 - op), y = 340; var st = new GUIStyle(sPequeno) { fontSize = 15, wordWrap = true, richText = true };
-            string txt = "<size=12>" + Cor("DICA", OURO) + "</size>\n" + Cor(dicaAtual, new Color(.867f, .827f, .761f)); float h = st.CalcHeight(new GUIContent(txt), w - 28) + 20;
-            var ou = OURO; ou.a = op; Caixa(new Rect(x, y, w, h), new Color(.031f, .035f, .043f, .82f * op)); Caixa(new Rect(x, y, 2, h), ou); var o = GUI.color; GUI.color = new Color(1, 1, 1, op); GUI.Label(new Rect(x + 14, y + 9, w - 28, h - 14), txt, st); GUI.color = o;
+            float w = 300, x = W - 26 - w + 16 * (1 - op), y = 340, wc = w - 2 - 28, lh = 15 * 1.35f; var st = Css("400", 15, Hx("#ddd3c2", op));
+            float h = 9 + 12 * 1.35f + 2 + AlturaParagrafo(dicaAtual, st, wc, lh) + 10;
+            Caixa(new Rect(x, y, w, h), new Color(8 / 255f, 9 / 255f, 11 / 255f, .82f * op)); Caixa(new Rect(x, y, 2, h), new Color(GOLD.r, GOLD.g, GOLD.b, op));
+            Espacada(x + 16, y + 9, 12 * 1.35f, "DICA", Css("400", 12, new Color(GOLD.r, GOLD.g, GOLD.b, op)), .96f); Paragrafo(x + 16, y + 9 + 12 * 1.35f + 2, wc, lh, dicaAtual, st);
         }
+
     }
 }

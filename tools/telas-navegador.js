@@ -50,14 +50,14 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   await page.evaluate(()=>{ __T.sendAct({type:'ready'}); });
   await page.waitForFunction(()=>__T.game.phase==='play',null,{timeout:30000});
   // sem o mouse capturado o jogo mostra a pausa: para o HUD, finge o mouse preso
-  await ev("locked=true; paused=false; screenKey=''; for(let i=0;i<60;i++) Sim.step(game,1/30)");
+  await ev("locked=true; paused=false; screenKey=''; scr.classList.remove('on'); for(let i=0;i<60;i++) Sim.step(game,1/30)");
   await foto('hud',2500);
   await ev("locked=false; paused=true; screenKey=''"); await foto('pausa',900);
   await ev("openSettings()"); await foto('pausa-ajustes',900);
-  await ev("settingsOpen=false; locked=true; paused=false; screenKey=''; CAD.aberto=true"); await foto('caderno',1200);
-  await ev("CAD.aberto=false; FL.aberto=true; FL.t=4"); await foto('falas',900);
+  await ev("settingsOpen=false; locked=true; paused=false; screenKey=''; scr.classList.remove('on'); CAD.aberto=true"); await foto('caderno',1200);
+  await ev("CAD.aberto=false; FL.aberto=true; FL.t=4; desenharFalas()"); await foto('falas',900);
   await ev("FL.aberto=false; $('#tabMap').style.display='grid'"); await foto('planta',1200);
-  await ev("$('#tabMap').style.display='none'; for(let i=0;i<6000&&game.phase==='play';i++) Sim.step(game,.05)"); await foto('hud-depois',1500);
+  await ev("$('#tabMap').style.display='none'; for(let i=0;i<1500&&game.phase==='play';i++) Sim.step(game,.05)"); await foto('hud-depois',1500);
   // a noite acelerada até o resumo, o resultado, o relatório e o Rever a noite
   for(let k=0;k<60;k++){ const ph=await page.evaluate(()=>{ const g=__T.game; if(g.phase==='play') for(let i=0;i<900&&g.phase==='play';i++) __T.Sim.step(g,1/30); return g.phase; }); await page.waitForTimeout(300); if(ph!=='play') break; }
   await ev("locked=false; screenKey=''");
@@ -73,13 +73,13 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   await page.evaluate(()=>{ __T.sendAct({type:'pickRandom'}); __T.sendAct({type:'pickConfirm'}); });
   await page.waitForFunction(()=>__T.game.phase==='intro',null,{timeout:30000}); await page.evaluate(()=>{ __T.sendAct({type:'ready'}); });
   await page.waitForFunction(()=>__T.game.phase==='play',null,{timeout:30000});
-  await ev("locked=true; paused=false; screenKey=''; for(let i=0;i<200;i++) Sim.step(game,.05)"); await foto('hud-culto',2500);
+  await ev("locked=true; paused=false; screenKey=''; scr.classList.remove('on'); for(let i=0;i<200;i++) Sim.step(game,.05)"); await foto('hud-culto',2500);
   // o tutorial
   await ev("locked=false; startLocal({papel:'H',dificuldade:'treino',tutorial:true}); screenKey=''");
   await page.waitForFunction(()=>__T.game&&__T.game.phase!=='pick',null,{timeout:30000});
   await page.evaluate(()=>{ if(__T.game.phase==='intro') __T.sendAct({type:'ready'}); });
   await page.waitForFunction(()=>__T.game.phase==='play',null,{timeout:30000});
-  await ev("locked=true; paused=false; screenKey=''; for(let i=0;i<100;i++) Sim.step(game,.05)"); await foto('tutorial',2500);
+  await ev("locked=true; paused=false; screenKey=''; scr.classList.remove('on'); for(let i=0;i<100;i++) Sim.step(game,.05)"); await foto('tutorial',2500);
   // o Arsenal
   await ev("locked=false; startArsenal()"); await foto('arsenal',3000);
   console.log(fotos.length+' telas em '+OUT+': '+fotos.join(', '));

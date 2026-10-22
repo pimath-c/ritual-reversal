@@ -71,6 +71,41 @@ namespace RitualReversal
             if (borda.a > 0) Tinge(new Rect(x - meio - .7f, y - meio - .7f, 2 * meio + 1.4f, 2 * meio + 1.4f), Texture2D.whiteTexture, borda);
             Tinge(new Rect(x - meio, y - meio, 2 * meio, 2 * meio), Texture2D.whiteTexture, c); GUI.matrix = m;
         }
+        // um quadrado de lado l girado 45° (o .gem da faixa dos altares e os losangos dos marcadores): fundo e borda de
+        // espessura e por dentro do lado, como o border-box do navegador
+        public static void Gema(float x, float y, float l, float e, Color fundo, Color borda)
+        {
+            var m = GUI.matrix; Girar(45, new Vector2(x, y)); float h = l / 2; var b = Texture2D.whiteTexture;
+            if (fundo.a > 0) Tinge(new Rect(x - h + e, y - h + e, l - 2 * e, l - 2 * e), b, fundo);
+            if (borda.a > 0 && e > 0)
+            {
+                Tinge(new Rect(x - h, y - h, l, e), b, borda); Tinge(new Rect(x - h, y + h - e, l, e), b, borda);
+                Tinge(new Rect(x - h, y - h + e, e, l - 2 * e), b, borda); Tinge(new Rect(x + h - e, y - h + e, e, l - 2 * e), b, borda);
+            }
+            GUI.matrix = m;
+        }
+        // a moldura tracejada (outline dashed) em volta de um quadrado girado
+        public static void GemaTracejada(float x, float y, float l, float e, Color c, float traco = 4, float vao = 3, bool girada = true)
+        {
+            var m = GUI.matrix; if (girada) Girar(45, new Vector2(x, y)); float h = l / 2; var b = Texture2D.whiteTexture;
+            for (float t = 0; t < l; t += traco + vao)
+            {
+                float k = Mathf.Min(traco, l - t);
+                Tinge(new Rect(x - h + t, y - h, k, e), b, c); Tinge(new Rect(x + h - t - k, y + h - e, k, e), b, c);
+                Tinge(new Rect(x - h, y + h - t - k, e, k), b, c); Tinge(new Rect(x + h - e, y - h + t, e, k), b, c);
+            }
+            GUI.matrix = m;
+        }
+        // o brilho suave de um box-shadow ou de um drop-shadow: some até o raio r
+        static Texture2D brilho;
+        static Texture2D TexBrilho { get { if (brilho == null) brilho = Gerar(64, (x, y) => { float d2 = x * x + y * y; return d2 >= 1 ? 0 : Mathf.Exp(-d2 * 4f) * (1 - d2); }); return brilho; } }
+        public static void Brilho(float x, float y, float rx, float ry, Color c) { Tinge(new Rect(x - rx, y - ry, 2 * rx, 2 * ry), TexBrilho, c); }
+        // arco de espessura e no raio r, centrado no ângulo ang (radianos, 0 em cima, sentido horário), meia abertura em radianos
+        public static void ArcoEm(float x, float y, float r, float e, float ang, float meia, Color c)
+        {
+            int n = Mathf.Max(3, Mathf.CeilToInt(2 * meia * r / Mathf.Max(.8f, e * .45f)));
+            for (int i = 0; i <= n; i++) { float a = ang - meia + 2 * meia * i / n - Mathf.PI / 2; Disco(x + Mathf.Cos(a) * r, y + Mathf.Sin(a) * r, e / 2, c); }
+        }
         public static void SetaJogador(float x, float y, float escala, float grausHorario, Color c)
         {
             var m = GUI.matrix; Girar(grausHorario, new Vector2(x, y)); float R = 9 * escala; Tinge(new Rect(x - R, y - R, 2 * R, 2 * R), Seta, c); GUI.matrix = m;

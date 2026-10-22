@@ -510,6 +510,7 @@ namespace UnityEngine
             c = new Color(B(0), B(2), B(4), h.Length == 8 ? B(6) : 1); return true;
         }
         public static string ToHtmlStringRGB(Color c) { System.Func<float, string> B = v => ((int)System.Math.Round(Mathf.Clamp01(v) * 255)).ToString("X2"); return B(c.r) + B(c.g) + B(c.b); }
+        public static string ToHtmlStringRGBA(Color c) { System.Func<float, string> B = v => ((int)System.Math.Round(Mathf.Clamp01(v) * 255)).ToString("X2"); return B(c.r) + B(c.g) + B(c.b) + B(c.a); }
     }
     public static class Resources
     {

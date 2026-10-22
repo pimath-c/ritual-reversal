@@ -215,6 +215,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `GUIUtility.ExitGUI()` (`cliqueNaPassada` no `Bt`, try/catch em `OnGUI`). Com `FOTOS=` o Repaint grava o que desenhou e
   `tools/foto-imgui.py` faz o PNG (texto rico sem `<u>`, que o Unity não tem; negrito e itálico sintéticos). Giros no IMGUI:
   `Tracos.Girar` (o `RotateAroundPivot` erra o pivô com o GUI.matrix escalado, fora de 1080p); só fora de áreas.
+  HUD com as medidas do CSS "interface mais quieta" (`PartidaHudPecas.cs`: faixas escuras, `Topo`, `Faixa` de losangos,
+  `Tarefas`, `FeedHud`, `Vitais`, `KitHud` com o sensor, `Disputa` na `Placa`, `Marcador` por classe .mk, `MarcaAcerto`,
+  `DirecaoDano`, `AnuncioHud`, `NotaHabilidade`); `PartidaCss.cs` põe o texto como o navegador (`Css(peso, tamanho, cor)`
+  com a Barlow em 400/500/600/700, `Linha` pela altura de linha do CSS, `Paragrafo` com quebra própria, `NaBase`, sombra,
+  `Moldura`, `Degrade`); caderno, frases, tutorial, dica, bússola, faixa do lance, queda e rótulos de interação também.
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).

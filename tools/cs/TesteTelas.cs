@@ -90,7 +90,7 @@ namespace RitualReversal
             cadernoAberto = true; TQuadros(10, .05f); Foto("caderno", .05f); cadernoAberto = false; falasAbertas = true; falasT = 4; TQuadros(10, .05f); Foto("falas", .05f);
             Input.apertadas.Add(KeyCode.V); TQuadro(.05f); Input.apertadas.Add(KeyCode.Alpha1); TQuadro(.05f);   // uma frase pelas teclas
             Input.seguradas.Add(KeyCode.Tab); TQuadros(10, .05f); Foto("planta", .05f); Foto("planta-720p", .05f, 1280, 720); Input.seguradas.Clear();     // a planta
-            TQuadros(600, .05f, 9); Foto("hud-depois", .05f);
+            TQuadros(150, .05f, 9); Foto("hud-depois", .05f);
             AteFase("summary", 3000); TQuadros(10); Foto("resumo"); if (g != null && g.phase == "summary") Apertar("Ver resultado", 3);
             AteFase("final", 400); TQuadros(20); Foto("resultado");
             if (g != null && g.phase == "final")

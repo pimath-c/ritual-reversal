@@ -65,7 +65,7 @@ namespace UnityEngine
             if (wordWrap && fixedWidth == 0) { float m = 0; foreach (var p in TextoFalso.SemTags(c != null ? c.text : "", this).Split(' ', '\n')) m = Math.Max(m, CalcSize(new GUIContent(TextoFalso.ComoTexto(p, this))).x); min = Math.Min(max, m); }
         }
     }
-    public class GUIContent { public string text, tooltip; public GUIContent(string t) { text = t; } public GUIContent(string t, string tip) { text = t; tooltip = tip; } }
+    public class GUIContent { public string text, tooltip; public static readonly GUIContent none = new GUIContent(""); public GUIContent(string t) { text = t; } public GUIContent(string t, string tip) { text = t; tooltip = tip; } }
     public class GUISkin
     {
         public GUIStyle label, button, toggle, textField, textArea, box, horizontalSlider, horizontalSliderThumb, verticalScrollbar, horizontalScrollbar, scrollView; public Font font;
@@ -108,6 +108,7 @@ namespace UnityEngine
         public static void Label(Rect r, string t, GUIStyle s) { GUILayout.Texto(t); Desenho2D.Estilo(r, t, s); }
         public static void Label(Rect r, GUIContent c, GUIStyle s) { Label(r, c.text, s); }
         public static void Box(Rect r, string t, GUIStyle s) { Desenho2D.Estilo(r, t, s); }
+        public static void Box(Rect r, GUIContent c, GUIStyle s) { Desenho2D.Estilo(r, c.text, s); }
         public static void DrawTexture(Rect r, Texture t) { DrawTexture(r, t, ScaleMode.StretchToFill); }
         public static void DrawTexture(Rect r, Texture t, ScaleMode m) { if (t == null) throw new Exception("GUI.DrawTexture com textura nula"); Desenho2D.Textura(r, t, Color.white, null, m); }
         public static string TextField(Rect r, string t, int max, GUIStyle s) { string n = proximoNome; proximoNome = null; Desenho2D.Estilo(r, t, s, false, n != null && n == foco); return t; }
@@ -309,7 +310,7 @@ namespace FalsoIMGUI
     public class FonteTTF
     {
         public string nome, arquivo; public int upm = 1000, asc = 900, desc = -250, gap; readonly Dictionary<int, int> cmap = new Dictionary<int, int>(); ushort[] avanco = { 500 };
-        static int U16(byte[] b, int o) { return (b[o] << 8) | b[o + 1]; } static int S16(byte[] b, int o) { return (short)U16(b, o); } static long U32(byte[] b, int o) { return ((long)U16(b, o) << 16) | (long)U16(b, o + 2); }
+        static int U16(byte[] b, int o) { return (b[o] << 8) + b[o + 1]; } static int S16(byte[] b, int o) { return (short)U16(b, o); } static long U32(byte[] b, int o) { return ((long)U16(b, o) << 16) | (long)U16(b, o + 2); }
         public static FonteTTF Abrir(string arq, string nome)
         {
             var f = new FonteTTF { nome = nome, arquivo = arq }; if (!File.Exists(arq)) return null; var b = File.ReadAllBytes(arq);
@@ -341,7 +342,7 @@ namespace FalsoIMGUI
         public int Altura(int tam) { return (int)Math.Ceiling((asc - desc + gap) * (double)tam / upm); }
         public int Subida(int tam) { return (int)Math.Ceiling(asc * (double)tam / upm); }
     }
-    public class Corrida { public float x, y; public string s = ""; public FonteTTF f; public int tam; public bool b, i, sb, si; public Color cor; public float w; }
+    public class Corrida { public float x, y; public string s = ""; public FonteTTF f; public int tam; public bool b, i, sb, si; public Color cor; public float w; public readonly List<float> avs = new List<float>(); }
     public class LinhaTexto { public readonly List<Corrida> corridas = new List<Corrida>(); public float w, alt, sub; }
     public static class TextoFalso
     {
@@ -424,7 +425,7 @@ namespace FalsoIMGUI
                 {
                     var car = cs[k]; var cor = car.cor ?? corPadrao ?? st.normal.textColor; maiorTam = Math.Max(maiorTam, car.tam);
                     if (c == null || c.f != fs[k] || c.tam != car.tam || c.b != car.b || c.i != car.i || !cor.Equals(c.cor)) { c = new Corrida { x = px, f = fs[k], tam = car.tam, b = car.b, i = car.i, sb = sbs[k], si = sis[k], cor = cor }; L.corridas.Add(c); }
-                    c.s += char.ConvertFromUtf32(car.cp); c.w += avs[k]; px += avs[k];
+                    c.s += char.ConvertFromUtf32(car.cp); c.w += avs[k]; c.avs.Add(avs[k]); px += avs[k];
                 }
                 if (maiorTam == 0) maiorTam = a < cs.Count ? cs[Math.Min(a, cs.Count - 1)].tam : TamanhoBase(st);
                 L.w = px; L.alt = fBase.Altura(maiorTam); L.sub = fBase.Subida(maiorTam); linhas.Add(L);
@@ -714,7 +715,7 @@ namespace FalsoIMGUI
                 foreach (var c in L.corridas)
                 {
                     if (c.s.Trim().Length == 0) continue; var cor = Tom(c.cor); if (cor.a <= .001f) continue;
-                    json.Append(Cabeca("x")).Append(",\"x\":" + F(d.x + x + c.x) + ",\"y\":" + F(d.y + y + L.sub) + ",\"s\":\"" + Esc(c.s) + "\",\"f\":\"" + Esc(c.f.arquivo ?? "") + "\",\"z\":" + c.tam + ",\"w\":" + F(c.w) + (c.sb ? ",\"sb\":1" : "") + (c.si ? ",\"si\":1" : "") + ",\"c\":" + Cor(cor) + "}");
+                    json.Append(Cabeca("x")).Append(",\"x\":" + F(d.x + x + c.x) + ",\"y\":" + F(d.y + y + L.sub) + ",\"s\":\"" + Esc(c.s) + "\",\"f\":\"" + Esc(c.f.arquivo ?? "") + "\",\"z\":" + c.tam + ",\"w\":" + F(c.w) + ",\"a\":[" + string.Join(",", c.avs.ConvertAll(v => F(v)).ToArray()) + "]" + (c.sb ? ",\"sb\":1" : "") + (c.si ? ",\"si\":1" : "") + ",\"c\":" + Cor(cor) + "}");
                 }
                 y += L.alt;
             }

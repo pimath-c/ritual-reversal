@@ -64,9 +64,10 @@ namespace RitualReversal
         // planta do Tab (mapSvg com o jogador): aberta enquanto segura Tab
         void Planta(Ator m, string papel)
         {
-            float w = Mathf.Min(700, W * .9f), hS = (w - 44) * VB_A / VB_L, h = hS + 36; var caixa = new Rect((W - w) / 2, (H - h) / 2, w, h);
-            Caixa(caixa, new Color(.047f, .043f, .051f, .94f)); Caixa(new Rect(caixa.x, caixa.y, w, 1), new Color(.35f, .3f, .22f, .7f)); Caixa(new Rect(caixa.x, caixa.yMax - 1, w, 1), new Color(.35f, .3f, .22f, .7f));
-            var r = new Rect(caixa.x + 22, caixa.y + 18, w - 44, hS); float s = r.width / VB_L;
+            // #tabMap .panel: 700 px, padding 18 × 22, a placa do HUD; o SVG com margem de 10 em cima e embaixo
+            float w = Mathf.Min(700, W * .9f), hS = (w - 44) * VB_A / VB_L, h = hS + 56; var caixa = new Rect((W - w) / 2, (H - h) / 2, w, h);
+            Placa(caixa);
+            var r = new Rect(caixa.x + 22, caixa.y + 28, w - 44, hS); float s = r.width / VB_L;
             PlantaBase(r);
             foreach (var A in g.altars) { Color f, st; EstiloAltar(A, papel, out f, out st); AltarSvg(r, A, f, st); }
             if (g.lab.economia) foreach (var n in Mapa.NPCS) if (n.time == null || n.time == m.team) { var p = PontoSvg(r, n.x, n.z); Tracos.Anel(p.x, p.y, 4 * s, 1.5f * s, Desenho.Hex("#d2ad62")); }

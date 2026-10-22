@@ -140,7 +140,7 @@ namespace RitualReversal
                         // acerto confirmado pelo servidor: marca, som e pausa de impacto (o tiro previsto não mostra nada disso)
                         bool derrubou = e["derrubou"] is bool && (bool)e["derrubou"], escudo = e["escudo"] is bool && (bool)e["escudo"];
                         marcaAcerto = escudo ? "escudo" : derrubou ? "kill" : ultimoTiroCab ? "head" : "";
-                        hitT = derrubou ? .45f : ultimoTiroCab ? .3f : .15f; som.Tocar(escudo ? "bloqueio" : derrubou ? "derrubou" : ultimoTiroCab ? "cabeca" : "hit");
+                        hitT = derrubou ? .45f : ultimoTiroCab ? .3f : escudo ? .25f : .15f; som.Tocar(escudo ? "bloqueio" : derrubou ? "derrubou" : ultimoTiroCab ? "cabeca" : "hit");
                         fp.Acerto(escudo, derrubou, ultimoTiroCab); mundo.PausaImpacto(e.Int("alvo"), derrubou ? .09f : .05f); ultimoTiroCab = false;
                     }
                     break;

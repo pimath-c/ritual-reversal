@@ -132,8 +132,22 @@ class Pintor:
         dr = ImageDraw.Draw(img)
         c = k['c']
         cor = (int(round(c[0] * 255)), int(round(c[1] * 255)), int(round(c[2] * 255)), int(round(c[3] * 255)))
-        sb = 1 if k.get('sb') and tam >= 10 else 0
-        dr.text((1, asc), k['s'], font=f, fill=cor, anchor='ls', stroke_width=sb, stroke_fill=cor)
+        # negrito sintético como o do FreeType (embolden de ~1/24 do tamanho): a letra de novo, um pouco à direita
+        sb = 0
+        extra_b = max(.5, tam / 24) if k.get('sb') else 0
+        if 'a' in k and len(k['a']) == len(k['s']):
+            # cada letra no avanço que o C# calculou (arredondado por letra, como o FreeType com hinting do Unity)
+            xx = 1.0
+            for ch, av in zip(k['s'], k['a']):
+                if ch != ' ':
+                    dr.text((xx, asc), ch, font=f, fill=cor, anchor='ls')
+                    if extra_b:
+                        dr.text((xx + extra_b, asc), ch, font=f, fill=cor, anchor='ls')
+                xx += av * s
+        else:
+            dr.text((1, asc), k['s'], font=f, fill=cor, anchor='ls')
+            if extra_b:
+                dr.text((1 + extra_b, asc), k['s'], font=f, fill=cor, anchor='ls')
         if inc:
             W, H = img.size
             img = img.transform((W, H), Image.AFFINE, (1, inc, -inc * asc, 0, 1, 0), resample=Image.BILINEAR)
