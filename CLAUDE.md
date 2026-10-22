@@ -211,8 +211,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).
-  Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); controles de
-  toque; navegar os menus pelo controle (no navegador, cima/baixo passa pelos botões e A confirma).
+  Menus pelo controle: todo botão das telas passa por `Bt` (`PartidaNavPad.cs`): cima/baixo move o foco, A aperta, B volta.
+  Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); controles de toque.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);

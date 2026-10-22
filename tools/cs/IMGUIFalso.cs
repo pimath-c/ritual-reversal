@@ -74,7 +74,7 @@ namespace UnityEngine
         public static void Space(float px) { } public static void FlexibleSpace() { }
         public static GUILayoutOption Width(float w) { return null; } public static GUILayoutOption Height(float h) { return null; } public static GUILayoutOption MinHeight(float h) { return null; } public static GUILayoutOption ExpandWidth(bool e) { return null; }
     }
-    public static class GUILayoutUtility { public static Rect GetRect(float w, float h, params GUILayoutOption[] o) { return new Rect(0, 0, w, h); } }
+    public static class GUILayoutUtility { public static Rect GetRect(float w, float h, params GUILayoutOption[] o) { return new Rect(0, 0, w, h); } public static Rect GetLastRect() { return new Rect(0, 0, 100, 30); } }
     public static class Screen { public static int width = 1920, height = 1080; }
     public static class Cursor { public static CursorLockMode lockState; public static bool visible = true; }
     public static class Input

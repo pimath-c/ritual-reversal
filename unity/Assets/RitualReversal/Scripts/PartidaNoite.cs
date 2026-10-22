@@ -189,7 +189,7 @@ namespace RitualReversal
             if (!online) { var log = LogDaNoite().Where(e => e.r == g.round).ToList(); LancesDaNoite(log); Destaques(log); }
             GraficoNoite(g.round, r.width - 30); TabelaRegistro();
             GUILayout.Space(16); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUI.enabled = !pronto;
-            if (GUILayout.Button(pronto ? "Aguardando os outros" : g.round == 1 && !UmaNoite ? "Continuar para a rodada 2" : "Ver resultado", sBotao, GUILayout.Height(52), GUILayout.Width(340))) Acao(new Acao { type = "ready" });
+            if (Bt(pronto ? "Aguardando os outros" : g.round == 1 && !UmaNoite ? "Continuar para a rodada 2" : "Ver resultado", sBotao, GUILayout.Height(52), GUILayout.Width(340))) Acao(new Acao { type = "ready" });
             GUI.enabled = true; GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             GUILayout.Label((online ? ListaProntos() : "") + TextoTempo(), sCentro);
             GUILayout.EndScrollView(); GUILayout.EndArea();
@@ -218,14 +218,14 @@ namespace RitualReversal
             LancesDaNoite(log); Destaques(log); PlacarJogadores(log); GraficoNoite(1, r.width - 30); GraficoNoite(2, r.width - 30); TabelaRegistro();
             GUILayout.Space(16); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
             var sb = new GUIStyle(sBotao) { fontSize = 17 };
-            if (LT.TemReplay(1) && GUILayout.Button("Rever a noite", sb, GUILayout.Height(48))) AbrirReplay(1);
-            if (!UmaNoite && LT.TemReplay(2) && GUILayout.Button("Rever a rodada 2", sb, GUILayout.Height(48))) AbrirReplay(2);
-            if (GUILayout.Button("Relatório do playtest", sb, GUILayout.Height(48))) { relAberto = true; relMsg = ""; rolRel = Vector2.zero; som.Tocar("click"); }
-            if (GUILayout.Button("Baixar registro (.json)", sb, GUILayout.Height(48))) BaixarRegistro();
+            if (LT.TemReplay(1) && Bt("Rever a noite", sb, GUILayout.Height(48))) AbrirReplay(1);
+            if (!UmaNoite && LT.TemReplay(2) && Bt("Rever a rodada 2", sb, GUILayout.Height(48))) AbrirReplay(2);
+            if (Bt("Relatório do playtest", sb, GUILayout.Height(48))) { relAberto = true; relMsg = ""; rolRel = Vector2.zero; som.Tocar("click"); }
+            if (Bt("Baixar registro (.json)", sb, GUILayout.Height(48))) BaixarRegistro();
             bool anfitriao = !online || hostCid == EU;
-            if (anfitriao && GUILayout.Button("Jogar de novo", sb, GUILayout.Height(48))) { repAberto = false; if (!online) { g.matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss"); logIni = g.log.Count; } LimparVisual(); Acao(new Acao { type = "restart" }); }
-            if (online) { if (anfitriao && GUILayout.Button("Voltar ao lobby", sb, GUILayout.Height(48))) Enviar(new JsonEscrita().Txt("t", "lobby")); if (GUILayout.Button("Sair da sala", sb, GUILayout.Height(48))) SairOnline(""); }
-            else if (GUILayout.Button("Voltar ao menu", sb, GUILayout.Height(48))) { g = null; LimparVisual(); }
+            if (anfitriao && Bt("Jogar de novo", sb, GUILayout.Height(48))) { repAberto = false; if (!online) { g.matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss"); logIni = g.log.Count; } LimparVisual(); Acao(new Acao { type = "restart" }); }
+            if (online) { if (anfitriao && Bt("Voltar ao lobby", sb, GUILayout.Height(48))) Enviar(new JsonEscrita().Txt("t", "lobby")); if (Bt("Sair da sala", sb, GUILayout.Height(48))) SairOnline(""); }
+            else if (Bt("Voltar ao menu", sb, GUILayout.Height(48))) { g = null; LimparVisual(); }
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             if (online && !anfitriao) GUILayout.Label("O anfitrião decide o próximo passo.", sCentro);
             if (logMsg != "") GUILayout.Label(Cor(logMsg, MUDO), sCentro);
@@ -262,13 +262,13 @@ namespace RitualReversal
             PlantaBase(rm); DesenharReplay(rm, R, cores);
             GUILayout.BeginHorizontal();
             string bt = repPlay ? "Pausar" : repT >= fim - .5 ? "Repetir" : "Continuar";
-            if (GUILayout.Button(bt, sBotao, GUILayout.Width(150))) { if (repT >= fim - .5) repT = 0; repPlay = !repPlay; }
+            if (Bt(bt, sBotao, GUILayout.Width(150))) { if (repT >= fim - .5) repT = 0; repPlay = !repPlay; }
             GUILayout.BeginVertical(); GUILayout.Space(16);
             float novo = GUILayout.HorizontalSlider((float)repT, 0, (float)System.Math.Ceiling(fim), GUILayout.ExpandWidth(true));
             if (Mathf.Abs(novo - (float)repT) > .01f) repT = Mathf.Round(novo); repArrastando = GUIUtility.hotControl != 0;   // segurando o controle, o relógio não anda
             GUILayout.EndVertical();
             GUILayout.Label("<b>" + Relogio(repT) + "</b>", sTexto, GUILayout.Width(70));
-            foreach (var v in new[] { 10, 20, 40, 80 }) if (GUILayout.Button(repVel == v ? Cor(v + "×", OURO_VIVO) : v + "×", sBotao, GUILayout.Width(66))) repVel = v;
+            foreach (var v in new[] { 10, 20, 40, 80 }) if (Bt(repVel == v ? Cor(v + "×", OURO_VIVO) : v + "×", sBotao, GUILayout.Width(66))) repVel = v;
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             for (int j = 0; j < R.atores.Count; j++) { var rq = GUILayoutUtility.GetRect(14, 18, GUILayout.Width(14)); Caixa(new Rect(rq.x, rq.y + 5, 10, 10), cores[j]); GUILayout.Label("<size=14>" + (R.atores[j].eu ? "<b>" + R.atores[j].nome + "</b>" : R.atores[j].nome) + "</size>", sPequeno, GUILayout.ExpandWidth(false)); GUILayout.Space(10); }
@@ -276,7 +276,7 @@ namespace RitualReversal
             var mk = R.mkFinal ?? R.mk; var ult = mk.Where(m => m.tipo != "momento" && m.rt <= repT).Reverse().Take(4).ToList();
             for (int n = 0; n < 4; n++) GUILayout.Label(n < ult.Count ? "<size=14><b>" + Relogio(ult[n].rt) + "</b>  " + (n == 0 ? Cor(ult[n].txt, OURO_VIVO) : ult[n].txt) + "</size>" : " ", sPequeno);
             GUILayout.FlexibleSpace(); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Voltar ao resultado", sBotao, GUILayout.Height(48), GUILayout.Width(300))) repAberto = false;
+            if (Bt("Voltar ao resultado", sBotao, GUILayout.Height(48), GUILayout.Width(300))) repAberto = false;
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndArea();
         }
         void DesenharReplay(Rect rm, RodadaLT R, List<Color> cores)

@@ -65,7 +65,7 @@ namespace RitualReversal
             foreach (var s in salas.ToList())
             {
                 GUILayout.BeginHorizontal(); GUILayout.Label("<b>" + s.code + "</b>", sPequeno, GUILayout.Width(80)); GUILayout.Label(Cor(s.anfitriao + " · " + s.jogadores + " de 4", MUDO), sPequeno, GUILayout.Width(300));
-                if (GUILayout.Button("Entrar", sBotao, GUILayout.Width(140))) { codigoDigitado = s.code; Conectar(false, s.code); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
+                if (Bt("Entrar", sBotao, GUILayout.Width(140))) { codigoDigitado = s.code; Conectar(false, s.code); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             }
         }
 
@@ -77,7 +77,7 @@ namespace RitualReversal
                 GUILayout.BeginHorizontal(); GUILayout.Label("Bots", sPequeno, GUILayout.Width(80)); var DN = new Dictionary<string, string> { { "facil", "Fáceis" }, { "normal", "Normais" }, { "dificil", "Difíceis" } };
                 foreach (var k in DN.Keys)
                 {
-                    if (anfitriao) { if (GUILayout.Button(lobbyDif == k ? Cor(DN[k], OURO_VIVO) : DN[k], sBotao, GUILayout.Width(130))) Enviar(new JsonEscrita().Txt("t", "opcoes").Txt("dif", k)); }
+                    if (anfitriao) { if (Bt(lobbyDif == k ? Cor(DN[k], OURO_VIVO) : DN[k], sBotao, GUILayout.Width(130))) Enviar(new JsonEscrita().Txt("t", "opcoes").Txt("dif", k)); }
                     else if (lobbyDif == k) GUILayout.Label("<b>" + DN[k] + "</b>", sPequeno, GUILayout.Width(130));
                 }
                 GUILayout.Label("<size=13>" + Cor("valem para os bots do lado sem jogadores", MUDO) + "</size>", sPequeno); GUILayout.EndHorizontal();
@@ -90,7 +90,7 @@ namespace RitualReversal
             GUILayout.EndScrollView(); GUILayout.EndVertical();
             GUILayout.BeginHorizontal(); var ev = Event.current; bool enter = ev.type == EventType.KeyDown && (ev.keyCode == KeyCode.Return || ev.keyCode == KeyCode.KeypadEnter) && GUI.GetNameOfFocusedControl() == "chatSala";
             GUI.SetNextControlName("chatSala"); rascunhoLobby = GUILayout.TextField(rascunhoLobby ?? "", 140, GUILayout.ExpandWidth(true), GUILayout.Height(36));
-            if ((GUILayout.Button("Enviar", sBotao, GUILayout.Width(130)) || enter) && rascunhoLobby.Trim().Length > 0) { Enviar(new JsonEscrita().Txt("t", "chat").Txt("msg", rascunhoLobby.Trim())); rascunhoLobby = ""; if (enter) ev.Use(); }
+            if ((Bt("Enviar", sBotao, GUILayout.Width(130)) || enter) && rascunhoLobby.Trim().Length > 0) { Enviar(new JsonEscrita().Txt("t", "chat").Txt("msg", rascunhoLobby.Trim())); rascunhoLobby = ""; if (enter) ev.Use(); }
             GUILayout.EndHorizontal();
         }
         static JsonEscrita LabEscrita(Lab L) { return new JsonEscrita().Num("crepusculo", L.crepusculo).Txt("fogo", L.fogo).Num("execucao", L.execucao).Bool("economia", L.economia).Txt("formato", L.formato); }

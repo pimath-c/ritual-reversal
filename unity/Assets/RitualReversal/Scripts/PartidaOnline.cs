@@ -161,9 +161,9 @@ namespace RitualReversal
             GUILayout.BeginHorizontal(); GUILayout.Label("Servidor", sPequeno, GUILayout.Width(110)); servidor = GUILayout.TextField(servidor ?? "", 120, GUILayout.Width(380));
             GUILayout.Label("Nome", sPequeno, GUILayout.Width(60)); nomeJogador = GUILayout.TextField(nomeJogador ?? "", 16, GUILayout.Width(200)); GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Criar sala", sBotao, GUILayout.Height(48))) Conectar(true, "");
+            if (Bt("Criar sala", sBotao, GUILayout.Height(48))) Conectar(true, "");
             GUILayout.Label("Código", sPequeno, GUILayout.Width(70)); codigoDigitado = GUILayout.TextField(codigoDigitado ?? "", 4, GUILayout.Width(90));
-            GUI.enabled = (codigoDigitado ?? "").Trim().Length == 4; if (GUILayout.Button("Entrar na sala", sBotao, GUILayout.Height(48))) Conectar(false, codigoDigitado.Trim()); GUI.enabled = true;
+            GUI.enabled = (codigoDigitado ?? "").Trim().Length == 4; if (Bt("Entrar na sala", sBotao, GUILayout.Height(48))) Conectar(false, codigoDigitado.Trim()); GUI.enabled = true;
             GUILayout.EndHorizontal(); SalasAbertas();
             if (online && rede != null && !rede.aberta && !rede.fechada) GUILayout.Label("Conectando…", sPequeno);
             if (erroRede.Length > 0) GUILayout.Label(Cor(erroRede, CARMIM_VIVO), sPequeno);
@@ -180,7 +180,7 @@ namespace RitualReversal
                 for (int i = col * 2; i < col * 2 + 2 && i < lobbySlots.Count; i++)
                 {
                     var s = lobbySlots[i]; string txt = s.name + (s.cid != null ? (s.cid == hostCid ? " (anfitrião)" : "") : " (bot)") + (s.cid == EU ? " (você)" : "");
-                    GUI.enabled = s.cid == null; if (GUILayout.Button(txt, sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "slot").Num("i", i)); GUI.enabled = true;
+                    GUI.enabled = s.cid == null; if (Bt(txt, sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "slot").Num("i", i)); GUI.enabled = true;
                 }
                 GUILayout.EndVertical();
             }
@@ -188,9 +188,9 @@ namespace RitualReversal
             GUILayout.Label((UmaNoite ? "A Equipe A caça e a Equipe B celebra." : "A Equipe A caça na rodada 1 e celebra na rodada 2.") + " Clique numa vaga de bot para trocar de lugar." + (lobbyPublica ? " Esta sala aparece na lista de salas abertas." : ""), sPequeno); GUILayout.Space(8);
             LobbyExtra(hostCid == EU); GUILayout.Space(8);
             GUILayout.BeginHorizontal();
-            if (hostCid == EU) { if (GUILayout.Button("Começar a partida", sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "start")); }
+            if (hostCid == EU) { if (Bt("Começar a partida", sBotao, GUILayout.Height(52))) Enviar(new JsonEscrita().Txt("t", "start")); }
             else GUILayout.Label("Aguardando o anfitrião começar…", sCentro);
-            if (GUILayout.Button("Sair da sala", sBotao, GUILayout.Height(52), GUILayout.Width(220))) SairOnline("");
+            if (Bt("Sair da sala", sBotao, GUILayout.Height(52), GUILayout.Width(220))) SairOnline("");
             GUILayout.EndHorizontal(); GUILayout.EndScrollView(); GUILayout.EndArea();
         }
         void TelaReconexao()
@@ -198,7 +198,7 @@ namespace RitualReversal
             var r = Janela(700, 240); GUILayout.BeginArea(r);
             GUILayout.Label("Conexão perdida", sTitulo);
             GUILayout.Label("Um bot está jogando no seu lugar. Tentando voltar à sala " + salaCodigo + "… tentativa " + (reconTent + 1) + ", sua vaga fica guardada por mais " + Mathf.CeilToInt(Mathf.Max(0, reconAte - Time.realtimeSinceStartup)) + " s", sCentro);
-            if (GUILayout.Button("Voltar ao menu", sBotao)) SairOnline("");
+            if (Bt("Voltar ao menu", sBotao)) SairOnline("");
             GUILayout.EndArea();
         }
     }

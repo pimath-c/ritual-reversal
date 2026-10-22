@@ -115,6 +115,14 @@ namespace RitualReversal
         public static bool PadA() { var p = Gamepad.current; return p != null && p.buttonSouth.wasPressedThisFrame; }
         public static bool PadB() { var p = Gamepad.current; return p != null && p.buttonEast.wasPressedThisFrame; }
         public static bool PadStart() { var p = Gamepad.current; return p != null && p.startButton.wasPressedThisFrame; }
+        // nos menus: alguma coisa no controle (para mostrar o foco) e o passo de cima/baixo pelo direcional ou pelo analógico
+        public static bool PadAlgum() { var p = Gamepad.current; if (p == null) return false; return p.buttonSouth.wasPressedThisFrame || p.buttonEast.wasPressedThisFrame || p.dpad.up.wasPressedThisFrame || p.dpad.down.wasPressedThisFrame || p.startButton.wasPressedThisFrame || p.leftStick.ReadValue().magnitude > .5f; }
+        static float eixoAnt;
+        public static int PadMenuPasso()
+        {
+            var p = Gamepad.current; if (p == null) return 0; float e = p.leftStick.ReadValue().y; int r = 0;
+            if (p.dpad.up.wasPressedThisFrame || (e > .6f && eixoAnt <= .6f)) r = -1; if (p.dpad.down.wasPressedThisFrame || (e < -.6f && eixoAnt >= -.6f)) r = 1; eixoAnt = e; return r;
+        }
         // pixels neste quadro, y para cima
         public static Vector2 Mouse() { var m = UnityEngine.InputSystem.Mouse.current; return m != null ? m.delta.ReadValue() : Vector2.zero; }
         public static bool Atirando() { var p = Gamepad.current; return Codigo(Binds["fire"], false) || (p != null && p.rightTrigger.isPressed); }
@@ -156,6 +164,7 @@ namespace RitualReversal
         // sem o Input System, sem controle
         public static Vector2 PadAndar() { return Vector2.zero; } public static Vector2 PadOlhar() { return Vector2.zero; }
         public static bool PadCima() { return false; } public static bool PadBaixo() { return false; } public static bool PadA() { return false; } public static bool PadB() { return false; } public static bool PadStart() { return false; }
+        public static bool PadAlgum() { return false; } public static int PadMenuPasso() { return 0; }
 #endif
     }
 }

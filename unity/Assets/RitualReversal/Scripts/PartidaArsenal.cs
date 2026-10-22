@@ -53,30 +53,30 @@ namespace RitualReversal
             var sb = new GUIStyle(sBotao) { fontSize = 14, padding = new RectOffset(6, 6, 8, 8) };
             GUILayout.BeginHorizontal();
             foreach (var k in new[] { new[] { "carabina", "Carabina" }, new[] { "revolver", "Revólver" }, new[] { "cetro", "Cetro" } })
-                if (GUILayout.Button(arsArma == k[0] ? Cor(k[1], OURO_VIVO) : k[1], sb)) { arsArma = k[0]; ArsenalForca("sacar"); som.Tocar("click"); }
+                if (Bt(arsArma == k[0] ? Cor(k[1], OURO_VIVO) : k[1], sb)) { arsArma = k[0]; ArsenalForca("sacar"); som.Tocar("click"); }
             GUILayout.EndHorizontal(); GUILayout.Space(8);
             string usada = S.Escolhida(arsArma);
             foreach (var sk in S.catalogo[arsArma])
             {
                 string[] O; S.oficios.TryGetValue(sk.oficio, out O); Color co; if (O == null || !ColorUtility.TryParseHtmlString(O[1], out co)) co = OSSO;
                 string t = "<size=12>" + Cor(O != null ? O[0] : sk.oficio, co) + "</size>\n<b>" + sk.nome + "</b>" + (sk.id == usada ? "  <size=12>" + Cor("· em uso", OURO) + "</size>" : "") + "\n<size=13>" + Cor(sk.texto, new Color(.81f, .776f, .714f)) + "</size>";
-                if (GUILayout.Button(t, new GUIStyle(sb) { alignment = TextAnchor.UpperLeft, wordWrap = true, richText = true })) { fp.arma.TrocarSkin(arsArma, sk.id); ArsenalForca("inspecao"); som.Tocar("click"); }
+                if (Bt(t, new GUIStyle(sb) { alignment = TextAnchor.UpperLeft, wordWrap = true, richText = true })) { fp.arma.TrocarSkin(arsArma, sk.id); ArsenalForca("inspecao"); som.Tocar("click"); }
             }
             GUILayout.Space(6); GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Inspecionar", sb)) ArsenalForca("inspecao");
-            if (arsArma == "cetro") { if (GUILayout.Button("Lançar sigilo", sb)) { ArsenalForca("pronta"); StartCoroutine(Depois(.06f, () => fp.arma.DisparoForcado(null))); } }
-            else if (GUILayout.Button("Recarregar", sb)) ArsenalForca("recarga", true, 3, 0);
-            if (GUILayout.Button("Sacar", sb)) ArsenalForca("sacar");
+            if (Bt("Inspecionar", sb)) ArsenalForca("inspecao");
+            if (arsArma == "cetro") { if (Bt("Lançar sigilo", sb)) { ArsenalForca("pronta"); StartCoroutine(Depois(.06f, () => fp.arma.DisparoForcado(null))); } }
+            else if (Bt("Recarregar", sb)) ArsenalForca("recarga", true, 3, 0);
+            if (Bt("Sacar", sb)) ArsenalForca("sacar");
             GUILayout.EndHorizontal(); GUILayout.Space(8);
             GUILayout.Label("<size=13>" + Cor("Vista", MUDO) + "</size>", sPequeno); GUILayout.BeginHorizontal();
             foreach (var v in new[] { new[] { "", "Jogador" }, new[] { "ladoPerto", "De lado" }, new[] { "perto", "De perto" } })
-                if (GUILayout.Button((arsVista ?? "") == v[0] ? Cor(v[1], OURO_VIVO) : v[1], sb)) { arsVista = v[0] == "" ? null : v[0]; if (fp.arma.forca != null) fp.arma.forca.vista = arsVista; }
+                if (Bt((arsVista ?? "") == v[0] ? Cor(v[1], OURO_VIVO) : v[1], sb)) { arsVista = v[0] == "" ? null : v[0]; if (fp.arma.forca != null) fp.arma.forca.vista = arsVista; }
             GUILayout.EndHorizontal();
             GUILayout.Label("<size=13>" + Cor("Luz", MUDO) + "</size>", sPequeno); GUILayout.BeginHorizontal();
-            if (GUILayout.Button(!arsEstudio ? Cor("Da noite", OURO_VIVO) : "Da noite", sb)) arsEstudio = false;
-            if (GUILayout.Button(arsEstudio ? Cor("Estúdio", OURO_VIVO) : "Estúdio", sb)) arsEstudio = true;
+            if (Bt(!arsEstudio ? Cor("Da noite", OURO_VIVO) : "Da noite", sb)) arsEstudio = false;
+            if (Bt(arsEstudio ? Cor("Estúdio", OURO_VIVO) : "Estúdio", sb)) arsEstudio = true;
             GUILayout.EndHorizontal(); GUILayout.Space(14);
-            if (GUILayout.Button("Voltar ao menu", sb)) SairArsenal();
+            if (Bt("Voltar ao menu", sb)) SairArsenal();
             GUILayout.EndScrollView(); GUILayout.EndArea();
         }
     }

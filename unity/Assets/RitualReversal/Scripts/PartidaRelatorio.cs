@@ -81,7 +81,7 @@ namespace RitualReversal
         void TelaRelatorio()
         {
             var log = LogDaNoite(); float lw = Mathf.Min(1100, W - 40); var r = Janela(lw, H - 50); GUILayout.BeginArea(r);
-            if (log == null) { GUILayout.Label("Relatório do playtest", sTitulo); GUILayout.Label("Buscando o registro da noite no servidor…", sCentro); if (GUILayout.Button("Voltar", sBotao)) relAberto = false; GUILayout.EndArea(); return; }
+            if (log == null) { GUILayout.Label("Relatório do playtest", sTitulo); GUILayout.Label("Buscando o registro da noite no servidor…", sCentro); if (Bt("Voltar", sBotao)) relAberto = false; GUILayout.EndArea(); return; }
             string chave = g.matchId + "|" + log.Count; if (relCache == null || relChave != chave) { relCache = DadosRelatorio(); relChave = chave; }   // o IMGUI desenha várias vezes por quadro
             var D = relCache; var resp = Respostas(); var w = D["vencedor"] as Dictionary<string, object>; var mud = ((List<object>)D["mudancas"]).Cast<string>().ToArray();
             rolRel = GUILayout.BeginScrollView(rolRel);
@@ -129,13 +129,13 @@ namespace RitualReversal
             }
             GUILayout.Label("<size=13>" + Cor("Cada pessoa responde no próprio aparelho. Mande o relatório para quem organiza o playtest: o arquivo traz o registro inteiro da noite.", MUDO) + "</size>", sCentro);
             GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Copiar como texto", sBotao, GUILayout.Width(240))) { GUIUtility.systemCopyBuffer = TextoRelatorio(DadosRelatorio()); relMsg = "Texto copiado."; }
-            if (GUILayout.Button("Baixar relatório (.json)", sBotao, GUILayout.Width(280)))
+            if (Bt("Copiar como texto", sBotao, GUILayout.Width(240))) { GUIUtility.systemCopyBuffer = TextoRelatorio(DadosRelatorio()); relMsg = "Texto copiado."; }
+            if (Bt("Baixar relatório (.json)", sBotao, GUILayout.Width(280)))
             {
                 try { string arq = System.IO.Path.Combine(Application.persistentDataPath, "ritual-reversal-relatorio-" + g.matchId + ".json"); System.IO.File.WriteAllText(arq, Noite.ParaJson(DadosRelatorio())); relMsg = "Arquivo salvo em " + arq; }
                 catch (System.Exception e) { relMsg = "Não consegui salvar: " + e.Message; }
             }
-            if (GUILayout.Button("Voltar", sBotao, GUILayout.Width(160))) relAberto = false;
+            if (Bt("Voltar", sBotao, GUILayout.Width(160))) relAberto = false;
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); if (relMsg != "") GUILayout.Label(Cor(relMsg, MUDO), sCentro);
             GUILayout.EndScrollView(); GUILayout.EndArea();
         }

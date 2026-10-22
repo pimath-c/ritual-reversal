@@ -37,7 +37,7 @@ namespace RitualReversal
 
         void OnGUI()
         {
-            Estilos();
+            Estilos(); ComecoNavPad();
             float esc = Screen.height / 1080f; GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = 1080f;
             if (reconectando) { TelaReconexao(); return; }
             if (g == null) { if (online && noLobby) TelaLobby(); else TelaTitulo(); ToastConquista(); return; }
@@ -66,8 +66,8 @@ namespace RitualReversal
             GUILayout.Label("Os Caçadores não sabem quais são. Altares perto da sua entrada (leste) são mais rápidos de alcançar, e mais óbvios." + (parceiros > 1 ? " Seu parceiro vê e altera a mesma seleção." : ""), sCentro);
             var rm = GUILayoutUtility.GetRect(r.width, hm); PlantaEscolha(rm);
             GUILayout.Space(8); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Sortear", sBotao, GUILayout.Width(200))) Acao(new Acao { type = "pickRandom" });
-            GUI.enabled = g.picks.Count == 3; if (GUILayout.Button("Confirmar " + g.picks.Count + " de 3", sBotao, GUILayout.Width(260))) Acao(new Acao { type = "pickConfirm" }); GUI.enabled = true;
+            if (Bt("Sortear", sBotao, GUILayout.Width(200))) Acao(new Acao { type = "pickRandom" });
+            GUI.enabled = g.picks.Count == 3; if (Bt("Confirmar " + g.picks.Count + " de 3", sBotao, GUILayout.Width(260))) Acao(new Acao { type = "pickConfirm" }); GUI.enabled = true;
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndArea();
         }
         static string Lado(Altar A)
@@ -89,11 +89,11 @@ namespace RitualReversal
                 : "No <b>Crepúsculo</b>, colha ervas na floresta, profane túmulos no cemitério, ao leste da catedral, e consagre seus altares em silêncio." + (LB.economia ? " Negocie com a Carpideira, no oratório perto do seu acampamento." : "") + " Os reagentes ficam na mata, ao sul do desfiladeiro (e nas cabeceiras das pontes). Agachado (C) você anda devagar e quase sem barulho. Na <b>Vigília</b>, os rituais podem começar. O último só na <b>Hora Morta</b>, e a catedral inteira vai ouvir. Quem ataca não canaliza; você sente quando a caça começa a selar o seu ritual.", sTexto);
             if (mud.Count > 0) GUILayout.Label(Cor("Laboratório de playtest: " + string.Join(" · ", mud.ToArray()) + ".", OURO_VIVO), sPequeno);
             GUILayout.Space(8); GUILayout.Label("<b>Arquétipo</b>", sTexto); GUILayout.BeginHorizontal();
-            foreach (var c in Regras.CLASS_BY_TEAM[papel]) { var C = Regras.CLASSES[c]; if (GUILayout.Button((c == meu ? Cor("● ", OURO) : "") + "<b>" + C.name + "</b>\n" + C.text + "\n<size=15>" + C.hp + " de vida</size>", sBotao, GUILayout.Height(170)) && !pronto) Acao(new Acao { type = "cls", cls = c }); }
+            foreach (var c in Regras.CLASS_BY_TEAM[papel]) { var C = Regras.CLASSES[c]; if (Bt((c == meu ? Cor("● ", OURO) : "") + "<b>" + C.name + "</b>\n" + C.text + "\n<size=15>" + C.hp + " de vida</size>", sBotao, GUILayout.Height(170)) && !pronto) Acao(new Acao { type = "cls", cls = c }); }
             GUILayout.EndHorizontal(); GUILayout.Space(8); GUILayout.Label("<b>Feitiço</b> (clique direito)", sTexto); GUILayout.BeginHorizontal();
-            foreach (var f in Regras.FEIT_BY_TEAM[papel]) { var F = Regras.FEITICOS[f]; if (GUILayout.Button((f == fe ? Cor("● ", OURO) : "") + "<b>" + F.nome + "</b>\n" + F.text + "\n<size=15>recarga de " + F.cd + " s</size>", sBotao, GUILayout.Height(150)) && !pronto) Acao(new Acao { type = "feit", f = f }); }
+            foreach (var f in Regras.FEIT_BY_TEAM[papel]) { var F = Regras.FEITICOS[f]; if (Bt((f == fe ? Cor("● ", OURO) : "") + "<b>" + F.nome + "</b>\n" + F.text + "\n<size=15>recarga de " + F.cd + " s</size>", sBotao, GUILayout.Height(150)) && !pronto) Acao(new Acao { type = "feit", f = f }); }
             GUILayout.EndHorizontal(); GUILayout.Space(14);
-            GUI.enabled = !pronto; if (GUILayout.Button(pronto ? "Aguardando os outros" : "Estou pronto", sBotao, GUILayout.Height(56))) Acao(new Acao { type = "ready" }); GUI.enabled = true;
+            GUI.enabled = !pronto; if (Bt(pronto ? "Aguardando os outros" : "Estou pronto", sBotao, GUILayout.Height(56))) Acao(new Acao { type = "ready" }); GUI.enabled = true;
             GUILayout.Label((online ? ListaProntos() : "") + TextoTempo(), sCentro);
             GUILayout.EndArea();
         }
@@ -113,21 +113,21 @@ namespace RitualReversal
             GUILayout.BeginHorizontal(); GUILayout.Label("Impacto na câmera", sPequeno, GUILayout.Width(230));
             float cf = fp != null ? fp.camFx : PlayerPrefs.GetFloat("rr-camfx", 1);
             foreach (var o in new[] { new KeyValuePair<float, string>(1, "Normal"), new KeyValuePair<float, string>(.5f, "Reduzido"), new KeyValuePair<float, string>(0, "Desligado") })
-                if (GUILayout.Button((Mathf.Approximately(cf, o.Key) ? "● " : "") + o.Value, sBotao, GUILayout.Width(125))) { if (fp != null) fp.camFx = o.Key; PlayerPrefs.SetFloat("rr-camfx", o.Key); }
+                if (Bt((Mathf.Approximately(cf, o.Key) ? "● " : "") + o.Value, sBotao, GUILayout.Width(125))) { if (fp != null) fp.camFx = o.Key; PlayerPrefs.SetFloat("rr-camfx", o.Key); }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal(); GUILayout.Label("Qualidade (vale no próximo Play)", sPequeno, GUILayout.Width(230));
             int q = PlayerPrefs.GetInt("rr-qualidade", Qualidade.nivel);
-            for (int i = 3; i >= 0; i--) if (GUILayout.Button((q == i ? "● " : "") + NIVEIS[i], sBotao, GUILayout.Width(110))) PlayerPrefs.SetInt("rr-qualidade", i);
+            for (int i = 3; i >= 0; i--) if (Bt((q == i ? "● " : "") + NIVEIS[i], sBotao, GUILayout.Width(110))) PlayerPrefs.SetInt("rr-qualidade", i);
             GUILayout.EndHorizontal();
             // dicas, legendas e acessibilidade (como no navegador)
             System.Action<string, string, string[][]> linha = (rotulo, chave, ops) =>
             {
                 GUILayout.BeginHorizontal(); GUILayout.Label(rotulo, sPequeno, GUILayout.Width(230)); int v = PlayerPrefs.GetInt(chave, int.Parse(ops[0][0]));
-                foreach (var o in ops) if (GUILayout.Button((v == int.Parse(o[0]) ? "● " : "") + o[1], sBotao, GUILayout.Width(o[1].Length > 12 ? 170 : 125))) PlayerPrefs.SetInt(chave, int.Parse(o[0]));
+                foreach (var o in ops) if (Bt((v == int.Parse(o[0]) ? "● " : "") + o[1], sBotao, GUILayout.Width(o[1].Length > 12 ? 170 : 125))) PlayerPrefs.SetInt(chave, int.Parse(o[0]));
                 GUILayout.EndHorizontal();
             };
             linha("Dicas da primeira noite", "rr-dicas-on", new[] { new[] { "1", "Ligadas" }, new[] { "0", "Desligadas" } });
-            GUILayout.BeginHorizontal(); GUILayout.Space(234); if (GUILayout.Button("Rever todas as dicas", sBotao, GUILayout.Width(254))) RevisarDicas(); GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal(); GUILayout.Space(234); if (Bt("Rever todas as dicas", sBotao, GUILayout.Width(254))) RevisarDicas(); GUILayout.EndHorizontal();
             linha("Legendas dos sons", "rr-legendas", new[] { new[] { "1", "Ligadas" }, new[] { "0", "Desligadas" } });
             linha("Clarões e tremor", "rr-suave", new[] { new[] { "0", "Normais" }, new[] { "1", "Reduzidos" } });
             linha("Cores das equipes", "rr-dalt", new[] { new[] { "0", "Ouro e carmim" }, new[] { "1", "Ouro e azul" } });
@@ -135,10 +135,10 @@ namespace RitualReversal
             linha("Música da tela inicial", "rr-musica", new[] { new[] { "1", "Ligada" }, new[] { "0", "Desligada" } });
             // mira e brilho
             GUILayout.BeginHorizontal(); GUILayout.Label("Mira", sPequeno, GUILayout.Width(230)); string mira = PlayerPrefs.GetString("rr-mira", "cruz");
-            foreach (var o in new[] { new[] { "cruz", "Cruz" }, new[] { "ponto", "Ponto" }, new[] { "circulo", "Círculo" } }) if (GUILayout.Button((mira == o[0] ? "● " : "") + o[1], sBotao, GUILayout.Width(125))) PlayerPrefs.SetString("rr-mira", o[0]);
+            foreach (var o in new[] { new[] { "cruz", "Cruz" }, new[] { "ponto", "Ponto" }, new[] { "circulo", "Círculo" } }) if (Bt((mira == o[0] ? "● " : "") + o[1], sBotao, GUILayout.Width(125))) PlayerPrefs.SetString("rr-mira", o[0]);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal(); GUILayout.Label("Cor da mira", sPequeno, GUILayout.Width(230)); string mc = PlayerPrefs.GetString("rr-mira-cor", "#e8e0d0");
-            foreach (var o in new[] { new[] { "#e8e0d0", "Osso" }, new[] { "#7dff9a", "Verde" }, new[] { "#ffe066", "Amarelo" }, new[] { "#8ee8ff", "Ciano" } }) { Color cc; ColorUtility.TryParseHtmlString(o[0], out cc); if (GUILayout.Button((mc == o[0] ? "● " : "") + Cor(o[1], cc), sBotao, GUILayout.Width(110))) PlayerPrefs.SetString("rr-mira-cor", o[0]); }
+            foreach (var o in new[] { new[] { "#e8e0d0", "Osso" }, new[] { "#7dff9a", "Verde" }, new[] { "#ffe066", "Amarelo" }, new[] { "#8ee8ff", "Ciano" } }) { Color cc; ColorUtility.TryParseHtmlString(o[0], out cc); if (Bt((mc == o[0] ? "● " : "") + Cor(o[1], cc), sBotao, GUILayout.Width(110))) PlayerPrefs.SetString("rr-mira-cor", o[0]); }
             GUILayout.EndHorizontal();
             float mt = PlayerPrefs.GetFloat("rr-mira-tam", 1);
             GUILayout.BeginHorizontal(); GUILayout.Label("Tamanho da mira " + Mathf.RoundToInt(mt * 100) + "%", sPequeno, GUILayout.Width(230)); float mt2 = Mathf.Round(GUILayout.HorizontalSlider(mt, .6f, 1.8f, GUILayout.Width(380)) * 10) / 10; GUILayout.EndHorizontal(); if (mt2 != mt) PlayerPrefs.SetFloat("rr-mira-tam", mt2);
@@ -150,11 +150,11 @@ namespace RitualReversal
             foreach (var a in EntradaUnity.ACOES)
             {
                 GUILayout.BeginHorizontal(); GUILayout.Label("<size=15>" + a[1] + "</size>", sPequeno, GUILayout.Width(420));
-                if (GUILayout.Button(capturando == a[0] ? Cor("aperte…", OURO_VIVO) : EntradaUnity.Nome(a[0]), sBotao, GUILayout.Width(190))) { capturando = a[0]; capturaQuadro = Time.frameCount; }
+                if (Bt(capturando == a[0] ? Cor("aperte…", OURO_VIVO) : EntradaUnity.Nome(a[0]), sBotao, GUILayout.Width(190))) { capturando = a[0]; capturaQuadro = Time.frameCount; }
                 GUILayout.EndHorizontal();
             }
             GUILayout.Label("<size=14>" + Cor("Clique numa linha e aperte a tecla ou o botão do mouse. Esc cancela. Se a tecla já estiver em uso, as duas ações trocam de lugar.", MUDO) + "</size>", sPequeno);
-            if (GUILayout.Button("Restaurar padrão", sBotao, GUILayout.Width(260))) { EntradaUnity.Padrao(); capturando = null; }
+            if (Bt("Restaurar padrão", sBotao, GUILayout.Width(260))) { EntradaUnity.Padrao(); capturando = null; }
             if (mundo != null) mundo.claroesSuaves = PlayerPrefs.GetInt("rr-suave", 0) == 1;
             GUILayout.Label("<size=14>" + Cor("Reduzidos: relâmpagos ficam mais fracos. Ouro e azul troca o carmim do culto por azul na planta e no replay (ajuda com daltonismo vermelho-verde).", MUDO) + "</size>", sPequeno);
             if (GUI.changed) SalvarAjustes();
@@ -180,9 +180,9 @@ namespace RitualReversal
                 for (int i = 0; i < L.Count; i += 4) { GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); for (int k = i; k < Mathf.Min(L.Count, i + 4); k++) GUILayout.Label("<b>" + Cor(L[k][0], OURO_VIVO) + "</b> " + L[k][1], sPequeno, GUILayout.Width(190)); GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
             }
             GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Continuar", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; Travar(true); }
-            if (GUILayout.Button(pausaAjustes ? "Voltar" : "Ajustes", sBotao, GUILayout.Width(200), GUILayout.Height(52))) pausaAjustes = !pausaAjustes;
-            if (GUILayout.Button(online ? "Sair da sala" : "Sair da noite", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; if (online) SairOnline(""); else { g = null; LimparVisual(); } }
+            if (Bt("Continuar", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; Travar(true); }
+            if (Bt(pausaAjustes ? "Voltar" : "Ajustes", sBotao, GUILayout.Width(200), GUILayout.Height(52))) pausaAjustes = !pausaAjustes;
+            if (Bt(online ? "Sair da sala" : "Sair da noite", sBotao, GUILayout.Width(220), GUILayout.Height(52))) { pausaAjustes = false; if (online) SairOnline(""); else { g = null; LimparVisual(); } }
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             if (comRolagem) GUILayout.EndScrollView(); GUILayout.EndArea();
         }
@@ -196,7 +196,7 @@ namespace RitualReversal
             {
                 var it = Regras.ITENS[id]; bool serve = (it.time == null || it.time == m.team) && (n.time == null || n.time == m.team);
                 GUI.enabled = serve && m.obolos >= it.preco;
-                if (GUILayout.Button("<b>" + it.nome + "</b>  " + Cor(it.preco + " óbolos", OURO) + "\n<size=16>" + it.desc + "</size>", sBotao, GUILayout.Height(80))) Acao(new Acao { type = "comprar", npc = n.id, item = id });
+                if (Bt("<b>" + it.nome + "</b>  " + Cor(it.preco + " óbolos", OURO) + "\n<size=16>" + it.desc + "</size>", sBotao, GUILayout.Height(80))) Acao(new Acao { type = "comprar", npc = n.id, item = id });
                 GUI.enabled = true;
             }
             GUILayout.Label("E ou Esc fecha a loja.", sPequeno); GUILayout.EndArea();

@@ -61,6 +61,8 @@ namespace RitualReversal
             TQuadros(20);
             foreach (var m in new[] { "aprender", "como", "perfil", "novidades", "ajustes" }) { telaMenu = m; TQuadros(6); }
             telaMenu = null; TQuadros(3); labAberto = true; TQuadros(3); labAberto = false;
+            // menus pelo controle: foco no primeiro botão do título (Jogar sozinho) e A
+            padNav = true; padFoco = 0; padConfirmar = true; padConfirmarQuadro = Time.frameCount + 1; TQuadro(); if (g == null) falhas.Add("controle: o A no foco não apertou o botão"); g = null; LimparVisual(); padNav = false; TQuadros(2);
             // trocar a tecla do Sensor nos Ajustes: clique na linha, aperte X; depois F, que é da Lanterna: as duas trocam
             telaMenu = "ajustes"; TQuadros(2); capturando = "sensor"; capturaQuadro = Time.frameCount; TQuadros(2); Input.apertadas.Add(KeyCode.X); TQuadro();
             if (EntradaUnity.Nome("sensor") != "X") falhas.Add("teclas: o Sensor não ficou no X (" + EntradaUnity.Nome("sensor") + ")");

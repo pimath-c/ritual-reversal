@@ -49,7 +49,7 @@ namespace RitualReversal
         {
             var L = Lab.De(lab); var mud = LabMudancas(L);
             string tit = (labAberto ? "▾ " : "▸ ") + "Laboratório de playtest" + (mud.Count > 0 ? "  " + Cor("· " + mud.Count + (mud.Count > 1 ? " regras alteradas" : " regra alterada"), OURO_VIVO) : "");
-            if (GUILayout.Button(tit, new GUIStyle(sPequeno) { richText = true }, GUILayout.ExpandWidth(false))) { labAberto = !labAberto; PlayerPrefs.SetInt("rr-lab-aberto", labAberto ? 1 : 0); }
+            if (Bt(tit, new GUIStyle(sPequeno) { richText = true }, GUILayout.ExpandWidth(false))) { labAberto = !labAberto; PlayerPrefs.SetInt("rr-lab-aberto", labAberto ? 1 : 0); }
             if (!labAberto) return;
             GUILayout.Label("<size=14>" + Cor("Para testar com pessoas: mude uma regra por vez e compare as noites no relatório do fim da partida. A primeira opção de cada linha é a regra normal." + (muda == null ? " Só o anfitrião muda." : ""), MUDO) + "</size>", sPequeno);
             var sb = new GUIStyle(sBotao) { fontSize = 15, padding = new RectOffset(8, 8, 5, 5) };
@@ -60,11 +60,11 @@ namespace RitualReversal
                 {
                     bool sel = Igual(op.v, v);
                     if (muda == null) { if (sel) GUILayout.Label("<size=15><b>" + op.txt + "</b></size>", sPequeno); continue; }
-                    if (GUILayout.Button(sel ? Cor(op.txt, OURO_VIVO) : op.txt, sb, GUILayout.Width(170)) && !sel) { muda(ComValor(L, R.k, op.v)); if (som != null) som.Tocar("click"); }
+                    if (Bt(sel ? Cor(op.txt, OURO_VIVO) : op.txt, sb, GUILayout.Width(170)) && !sel) { muda(ComValor(L, R.k, op.v)); if (som != null) som.Tocar("click"); }
                 }
                 GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             }
-            if (muda != null && mud.Count > 0 && GUILayout.Button("Voltar tudo ao normal", new GUIStyle(sPequeno) { richText = true }, GUILayout.ExpandWidth(false))) { muda(Lab.De(null)); if (som != null) som.Tocar("click"); }
+            if (muda != null && mud.Count > 0 && Bt("Voltar tudo ao normal", new GUIStyle(sPequeno) { richText = true }, GUILayout.ExpandWidth(false))) { muda(Lab.De(null)); if (som != null) som.Tocar("click"); }
         }
         void MudarLabSolo(Lab L) { labSolo = Lab.De(L); PlayerPrefs.SetString("rr-lab", LabJson(labSolo)); PlayerPrefs.Save(); }
     }

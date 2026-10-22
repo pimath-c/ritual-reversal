@@ -121,9 +121,9 @@ namespace RitualReversal
                 GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             }
             GUILayout.Space(14); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (!confirmarApagar) { if (GUILayout.Button("Apagar perfil", sBotao, GUILayout.Width(220))) confirmarApagar = true; }
-            else { GUILayout.Label("Apagar todo o histórico e as conquistas?", sCentro, GUILayout.Width(420)); if (GUILayout.Button(Cor("Apagar", CARMIM_HI), sBotao, GUILayout.Width(140))) { PlayerPrefs.DeleteKey("rr-perfil"); confirmarApagar = false; } if (GUILayout.Button("Não", sBotao, GUILayout.Width(100))) confirmarApagar = false; }
-            if (GUILayout.Button("Voltar", sBotao, GUILayout.Width(200))) { telaMenu = null; confirmarApagar = false; }
+            if (!confirmarApagar) { if (Bt("Apagar perfil", sBotao, GUILayout.Width(220))) confirmarApagar = true; }
+            else { GUILayout.Label("Apagar todo o histórico e as conquistas?", sCentro, GUILayout.Width(420)); if (Bt(Cor("Apagar", CARMIM_HI), sBotao, GUILayout.Width(140))) { PlayerPrefs.DeleteKey("rr-perfil"); confirmarApagar = false; } if (Bt("Não", sBotao, GUILayout.Width(100))) confirmarApagar = false; }
+            if (Bt("Voltar", sBotao, GUILayout.Width(200))) { telaMenu = null; confirmarApagar = false; }
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndScrollView(); GUILayout.EndArea();
         }
 

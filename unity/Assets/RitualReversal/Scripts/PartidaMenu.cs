@@ -55,43 +55,43 @@ namespace RitualReversal
             GUILayout.Label(Cor(UmaNoite ? "Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence." : "Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.", new Color(.79f, .75f, .68f)), sCentro);
             GUILayout.Space(10);
             GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (GUILayout.Button("<size=24>Jogar sozinho, com bots</size>", sBotao, GUILayout.Width(440), GUILayout.Height(62))) IniciarSolo(PapelSolo, null, false, false);
+            if (Bt("<size=24>Jogar sozinho, com bots</size>", sBotao, GUILayout.Width(440), GUILayout.Height(62))) IniciarSolo(PapelSolo, null, false, false);
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             var sb = new GUIStyle(sBotao) { fontSize = 16, padding = new RectOffset(10, 10, 6, 6) };
             GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUILayout.Label("Você", sPequeno, GUILayout.Width(130));
             foreach (var k in new[] { new[] { "H", "Caça" }, new[] { "C", "Celebra" }, new[] { "?", "Sorteia" } })
-                if (GUILayout.Button(PapelSolo == k[0] ? Cor(k[1], OURO_VIVO) : k[1], sb, GUILayout.Width(120))) { papelSolo = k[0]; PlayerPrefs.SetString("rr-papel", k[0]); som.Tocar("click"); }
+                if (Bt(PapelSolo == k[0] ? Cor(k[1], OURO_VIVO) : k[1], sb, GUILayout.Width(120))) { papelSolo = k[0]; PlayerPrefs.SetString("rr-papel", k[0]); som.Tocar("click"); }
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUILayout.Label("Bots inimigos", sPequeno, GUILayout.Width(130));
             foreach (var d in new[] { new[] { "facil", "Fácil" }, new[] { "normal", "Normal" }, new[] { "dificil", "Difícil" } })
-                if (GUILayout.Button(dificuldade == d[0] ? Cor(d[1], OURO_VIVO) : d[1], sb, GUILayout.Width(120))) { dificuldade = d[0]; PlayerPrefs.SetString("rr-dif", dificuldade); som.Tocar("click"); }
+                if (Bt(dificuldade == d[0] ? Cor(d[1], OURO_VIVO) : d[1], sb, GUILayout.Width(120))) { dificuldade = d[0]; PlayerPrefs.SetString("rr-dif", dificuldade); som.Tocar("click"); }
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUILayout.BeginVertical(GUILayout.Width(760)); PainelLab(LabSolo, MudarLabSolo); GUILayout.EndVertical(); GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             {
                 var D = DesafioDe(HojeDesafio()); object rec; var des = O(Perfil(), "desafios"); bool tem = des.TryGetValue(HojeDesafio(), out rec) && rec != null;
                 string sub = "Hoje você " + (D[1] == "H" ? "caça" : "celebra") + ", " + Mundo.CLIMAS[D[2]].nome.ToLowerInvariant() + ", contra bots difíceis" + (tem ? " · recorde " + System.Convert.ToInt32(rec) : "");
                 GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Desafio da noite\n<size=14>" + Cor(sub, MUDO) + "</size>", sBotao, GUILayout.Width(560))) IniciarDesafio();
+                if (Bt("Desafio da noite\n<size=14>" + Cor(sub, MUDO) + "</size>", sBotao, GUILayout.Width(560))) IniciarDesafio();
                 GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             }
             var lk = new GUIStyle(sPequeno) { richText = true, alignment = TextAnchor.MiddleCenter };
             GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
             foreach (var l in new[] { new[] { "aprender", "Aprender a jogar" }, new[] { "como", "Como jogar" }, new[] { "perfil", "Perfil" }, new[] { "novidades", "Novidades" }, new[] { "arsenal", "Arsenal" }, new[] { "ajustes", "Ajustes" } })
-                if (GUILayout.Button("<u>" + Cor(l[1], OURO) + "</u>", lk, GUILayout.ExpandWidth(false))) { som.Tocar("click"); if (l[0] == "arsenal") IniciarArsenal(); else { telaMenu = l[0]; rolPerfil = Vector2.zero; } }
+                if (Bt("<u>" + Cor(l[1], OURO) + "</u>", lk, GUILayout.ExpandWidth(false))) { som.Tocar("click"); if (l[0] == "arsenal") IniciarArsenal(); else { telaMenu = l[0]; rolPerfil = Vector2.zero; } }
             GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
             GUILayout.Space(16); TelaOnline(r);
             GUILayout.Label("<size=14>" + Cor("Para jogar online com amigos, rode o servidor do projeto (npm start na pasta server) e digite o endereço dele. Use fones: o som diz onde e em que fase está cada ritual.", MUDO) + "</size>", sCentro);
             GUILayout.EndScrollView(); GUILayout.EndArea();
         }
-        void Voltar(string txt = "Voltar") { GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); if (GUILayout.Button(txt, sBotao, GUILayout.Width(240), GUILayout.Height(50))) { telaMenu = null; som.Tocar("click"); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
+        void Voltar(string txt = "Voltar") { GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); if (Bt(txt, sBotao, GUILayout.Width(240), GUILayout.Height(50))) { telaMenu = null; som.Tocar("click"); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
 
         void TelaAprender()
         {
             var r = Janela(Mathf.Min(900, W - 40), 470); GUILayout.BeginArea(r);
             GUILayout.Label("Aprender a jogar", sTitulo); GUILayout.Label("Uma noite guiada, passo a passo, contra bots mansos. Escolha o lado.", sCentro); GUILayout.Space(12);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("<b>" + Cor("Como Caçador", OURO) + "</b>\n<size=16>Ler santuários, acender sentinelas, usar o sensor e a lanterna, purgar altares e selar um ritual.</size>", sBotao, GUILayout.Height(150))) IniciarSolo("H", "treino", true, false);
-            if (GUILayout.Button("<b>" + Cor("Como Cultista", CARMIM_HI) + "</b>\n<size=16>Pegar reagentes, consagrar altares, cumprir tarefas, iniciar um ritual e canalizar no círculo.</size>", sBotao, GUILayout.Height(150))) IniciarSolo("C", "treino", true, false);
+            if (Bt("<b>" + Cor("Como Caçador", OURO) + "</b>\n<size=16>Ler santuários, acender sentinelas, usar o sensor e a lanterna, purgar altares e selar um ritual.</size>", sBotao, GUILayout.Height(150))) IniciarSolo("H", "treino", true, false);
+            if (Bt("<b>" + Cor("Como Cultista", CARMIM_HI) + "</b>\n<size=16>Pegar reagentes, consagrar altares, cumprir tarefas, iniciar um ritual e canalizar no círculo.</size>", sBotao, GUILayout.Height(150))) IniciarSolo("C", "treino", true, false);
             GUILayout.EndHorizontal(); Voltar(); GUILayout.EndArea();
         }
 

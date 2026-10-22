@@ -53,14 +53,15 @@ namespace RitualReversal
             if (capturando != null && Time.frameCount > capturaQuadro + 1) { var c = EntradaUnity.Capturar(); if (c == "Escape") capturando = null; else if (c != null) { EntradaUnity.Definir(capturando, c); capturando = null; } }
             double raw = Mathf.Max(.001f, Time.unscaledDeltaTime), dt = System.Math.Min(.05, raw);
             if (online) ProcessarRede();
-            if (g == null) { BuscarSalas(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }
-            if (arsenal) { PassoArsenal(dt); ultimaEntrada = null; g.events.Clear(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }   // Arsenal: a noite fica parada
+            if (g == null) { NavPad(false); BuscarSalas(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }
+            if (arsenal) { NavPad(false); PassoArsenal(dt); ultimaEntrada = null; g.events.Clear(); AtualizarVisual((float)System.Math.Min(.25, raw)); return; }   // Arsenal: a noite fica parada
             var m = Eu();
             bool jogando = g.phase == "play";
             bool ativo = jogando && Travado() && lojaAberta == null && !chatAberto;
             if (jogando) LerAtalhos(m, ativo);
             var inp = LerEntrada(ativo);
             bool pausado = jogando && !Travado() && lojaAberta == null;
+            NavPad(ativo);
             if (pausado && EntradaUnity.PadStart()) { Travar(true); pausado = false; }   // Start do controle volta ao jogo
             ultimaEntrada = inp;
             if (online) { inp.viewT = ServerNow() - .1; PassoOnline(inp, dt); m = Eu(); if (m != null && jogando) PreverTiro(m, (float)dt, inp.fire); }
