@@ -235,7 +235,13 @@ namespace UnityEngine
         public Vector3 min { get { return center - extents; } } public Vector3 max { get { return center + extents; } }
         public void Encapsulate(Vector3 p) { var a = Vector3.Min(min, p); var b = Vector3.Max(max, p); center = (a + b) / 2; size = b - a; }
     }
-    public struct Matrix4x4 { }
+    public struct Matrix4x4
+    {
+        public static Matrix4x4 identity { get { return new Matrix4x4(); } }
+        public static Matrix4x4 TRS(Vector3 p, Quaternion q, Vector3 s) { return new Matrix4x4(); } public static Matrix4x4 Translate(Vector3 p) { return new Matrix4x4(); } public static Matrix4x4 Rotate(Quaternion q) { return new Matrix4x4(); }
+        public static Matrix4x4 Frustum(float l, float r, float b, float t, float n, float f) { return new Matrix4x4(); }
+        public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) { return a; }
+    }
 
     public enum ColorSpace { Gamma, Linear }
     public enum FogMode { Linear = 1, Exponential, ExponentialSquared }
@@ -257,7 +263,7 @@ namespace UnityEngine
         public static bool fog; public static FogMode fogMode; public static float fogDensity; public static Color fogColor, ambientSkyColor, ambientEquatorColor, ambientGroundColor, ambientLight;
         public static Rendering.AmbientMode ambientMode;
     }
-    public static class Time { public static float time, deltaTime = 1 / 60f, unscaledDeltaTime = 1 / 60f, realtimeSinceStartup; public static int frameCount; }
+    public static class Time { public static float time, deltaTime = 1 / 60f, unscaledDeltaTime = 1 / 60f, realtimeSinceStartup, unscaledTime; public static int frameCount; }
     public static class Random
     {
         static System.Random r = new System.Random(1);
@@ -268,7 +274,7 @@ namespace UnityEngine
         public static Vector3 insideUnitSphere { get { return new Vector3(value * 2 - 1, value * 2 - 1, value * 2 - 1) * .5f; } }
     }
     public static class Debug { public static void Log(object o) { Console.Error.WriteLine(o); } public static void LogWarning(object o) { Console.Error.WriteLine("aviso: " + o); } public static void LogError(object o) { Console.Error.WriteLine("erro: " + o); } }
-    public static class Application { public static string persistentDataPath = "."; public static bool isPlaying = true; public static int targetFrameRate; }
+    public static class Application { public static string persistentDataPath = "."; public static bool isPlaying = true; public static int targetFrameRate; public static string abriu; public static void OpenURL(string u) { abriu = u; } }
     public static class PlayerPrefs
     {
         static readonly Dictionary<string, object> d = new Dictionary<string, object>();
@@ -276,7 +282,7 @@ namespace UnityEngine
         public static int GetInt(string k, int v = 0) { object o; return d.TryGetValue(k, out o) ? (int)o : v; }
         public static string GetString(string k, string v = "") { object o; return d.TryGetValue(k, out o) ? (string)o : v; }
         public static void SetFloat(string k, float v) { d[k] = v; } public static void SetInt(string k, int v) { d[k] = v; } public static void SetString(string k, string v) { d[k] = v; }
-        public static bool HasKey(string k) { return d.ContainsKey(k); } public static void Save() { }
+        public static bool HasKey(string k) { return d.ContainsKey(k); } public static void Save() { } public static void DeleteKey(string k) { d.Remove(k); } public static void DeleteAll() { d.Clear(); }
     }
 
     public class Object
@@ -305,6 +311,7 @@ namespace UnityEngine
         public T GetComponent<T>() where T : Component { return gameObject.GetComponent<T>(); }
         public T[] GetComponentsInChildren<T>(bool inativos = false) where T : Component { return gameObject.GetComponentsInChildren<T>(inativos); }
         public T AddComponent<T>() where T : Component, new() { return gameObject.AddComponent<T>(); }
+        public T GetComponentInParent<T>() where T : Component { for (var t = transform; t != null; t = t.parent) { var c = t.gameObject.GetComponent<T>(); if (c != null) return c; } return null; }
         public string tag = "";
     }
     public class Behaviour : Component { public bool enabled = true; }
@@ -319,7 +326,13 @@ namespace UnityEngine
         readonly List<Component> comps = new List<Component>();
         public GameObject(string nome = "GameObject") { name = nome; transform = new Transform(); transform.gameObject = this; comps.Add(transform); }
         public GameObject(string nome, params Type[] tipos) : this(nome) { }
-        public T AddComponent<T>() where T : Component, new() { var c = new T(); c.gameObject = this; comps.Add(c); return c; }
+        public static bool chamarAwake;   // como o Unity: o Awake do componente roda dentro do AddComponent (o teste das telas liga)
+        public T AddComponent<T>() where T : Component, new()
+        {
+            var c = new T(); c.gameObject = this; comps.Add(c);
+            if (chamarAwake) { var m = typeof(T).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public); if (m != null && c.GetType().Name != "PartidaLocal") m.Invoke(c, null); }
+            return c;
+        }
         public T GetComponent<T>() where T : Component { foreach (var c in comps) if (c is T) return (T)c; return null; }
         public T[] GetComponentsInChildren<T>(bool inativos = false) where T : Component
         {
@@ -333,8 +346,10 @@ namespace UnityEngine
         public static GameObject Find(string n) { return null; }
         public string tag = "";
     }
-    public class Transform : Component
+    public class Transform : Component, System.Collections.IEnumerable
     {
+        public System.Collections.IEnumerator GetEnumerator() { return new List<Transform>(filhos).GetEnumerator(); }
+        public void Rotate(float x, float y, float z, Space s) { Rotate(new Vector3(x, y, z)); }
         public Vector3 localPosition = Vector3.zero, localScale = Vector3.one; public Quaternion localRotation = Quaternion.identity;
         internal Transform pai; internal readonly List<Transform> filhos = new List<Transform>();
         public Transform parent { get { return pai; } set { SetParent(value, true); } }
@@ -477,10 +492,12 @@ namespace UnityEngine
                 p = System.IO.Path.Combine(pasta, n + ".bytes"); if (System.IO.File.Exists(p)) return new TextAsset(System.IO.File.ReadAllBytes(p)) as T;
             }
             return null;
-        }
+        }        public static T[] LoadAll<T>(string n) where T : Object { return new T[0]; }
     }
-    public class Camera : Behaviour { public float fieldOfView = 60, nearClipPlane = .1f, farClipPlane = 1000; public static Camera main; }
-    public class AudioListener : Behaviour { }
+    public class Camera : Behaviour { public float fieldOfView = 60, nearClipPlane = .1f, farClipPlane = 1000, aspect = 16 / 9f; public static Camera main; public Matrix4x4 projectionMatrix; public void ResetProjectionMatrix() { } public Vector3 WorldToScreenPoint(Vector3 p) { return new Vector3(960, 540, 1); } }
+    public class AudioListener : Behaviour { public static float volume = 1; }
+    public class TooltipAttribute : Attribute { public TooltipAttribute(string t) { } }
+    public class RequireComponent : Attribute { public RequireComponent(Type t) { } }
 }
 namespace UnityEngine.Rendering
 {

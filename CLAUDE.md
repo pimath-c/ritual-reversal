@@ -41,6 +41,7 @@ commits em português.
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/exportar-primeira-pessoa.js   # mudou arma.js/skins.js? regrava Resources/primeira-pessoa.*
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
     [THREE_DIR=<three@0.128.0>] NODE_PATH=$(npm root -g) node tools/unity-noite.js   # fim da noite do Unity (planta, gráfico, placar) numa noite de bots (Mono)
+    node tools/unity-telas.js               # telas do Unity (IMGUI) por todo o jogo, sem exceção e com Begin/End pareados (Mono)
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
 ## Estado atual (v6)
@@ -204,7 +205,10 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   (sintetizadas no OnAudioFilterRead; a partida passa o nível em `som.Tensao`, `AtualizarTensao` no PartidaVisual).
   Kit e mira: `PartidaKit.cs` (fileira de ferramentas com recarga, mira cruz/ponto/círculo com cor e tamanho que abre com o
   tiro, linha de quadros/ping); brilho em `Pos.brilho`; pausa com a cola das teclas.
-  Faltam (Unity): conferir tudo num Unity de verdade (IMGUI e shaders nunca rodaram aqui); controles de toque e gamepad.
+  Sem abrir o Unity, `tools/unity-telas.js` roda o `PartidaLocal` inteiro (Update e as duas passadas do OnGUI) contra
+  `tools/cs/UnityFalso.cs` + `IMGUIFalso.cs` pelo roteiro de `tools/cs/TesteTelas.cs` (título, menus, noite de cada lado,
+  resumo, resultado, relatório, replay, perfil, tutorial, desafio, Arsenal); botões "apertados" pelo texto.
+  Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); toque e gamepad.
 
 ## Pendências
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
