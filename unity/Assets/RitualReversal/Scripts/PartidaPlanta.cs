@@ -17,10 +17,11 @@ namespace RitualReversal
         static float PZ(double z) { return PlantaFixa.Z(z); }
 
         // texto do SVG: âncora no meio, y na linha de base; s = pixels por unidade do viewBox
-        void TextoSvg(Rect r, float x, float y, string txt, float tam, Color c, bool italico = false, bool negrito = false)
+        void TextoSvg(Rect r, float x, float y, string txt, float tam, Color c, bool italico = false, bool negrito = false, bool serif = false)
         {
             float s = r.width / VB_L; int fs = Mathf.Max(8, Mathf.RoundToInt(tam * s));
             var st = new GUIStyle(sPequeno) { fontSize = fs, alignment = TextAnchor.LowerCenter, wordWrap = false, fontStyle = italico ? FontStyle.Italic : negrito ? FontStyle.Bold : FontStyle.Normal, richText = false };
+            if (italico && fonteSerifIt != null) { st.font = fonteSerifIt; st.fontStyle = FontStyle.Normal; } else if (serif && fonteSerif != null) st.font = fonteSerif;   // os nomes dos lugares e dos altares, como no SVG
             st.normal.textColor = c; GUI.Label(new Rect(r.x + x * s - 160, r.y + y * s - fs * 1.15f, 320, fs * 1.4f), txt, st);
         }
         Vector2 PontoSvg(Rect r, double x, double z) { float s = r.width / VB_L; return new Vector2(r.x + PX(x) * s, r.y + PZ(z) * s); }
@@ -57,7 +58,7 @@ namespace RitualReversal
         {
             float s = r.width / VB_L, R = RaioAltarSvg * s; var p = PontoSvg(r, A.x, A.z);
             Tracos.Disco(p.x, p.y, R, fill); Tracos.Anel(p.x, p.y, R, 2.5f * s, stroke);
-            TextoSvg(r, PX(A.x), PZ(A.z) + (A.z < 0 ? 22 : -14), A.name, 13, Desenho.Hex("#e8e0d0"));
+            TextoSvg(r, PX(A.x), PZ(A.z) + (A.z < 0 ? 22 : -14), A.name, 13, Desenho.Hex("#e8e0d0"), false, false, true);
         }
 
         // planta do Tab (mapSvg com o jogador): aberta enquanto segura Tab

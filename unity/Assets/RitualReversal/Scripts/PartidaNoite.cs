@@ -57,7 +57,7 @@ namespace RitualReversal
         void EstilosNoite()
         {
             if (sH3 != null) return;
-            sH3 = new GUIStyle(sTexto) { fontSize = 17, fontStyle = FontStyle.Bold, wordWrap = false }; sH3.normal.textColor = OURO;
+            sH3 = new GUIStyle(sTexto) { fontSize = 19, fontStyle = fonteSerif != null ? FontStyle.Normal : FontStyle.Bold, wordWrap = false }; sH3.normal.textColor = OURO; if (fonteSerif != null) sH3.font = fonteSerif;   // os h3 do navegador são serifados
             sCel = new GUIStyle(sPequeno) { fontSize = 15, wordWrap = false, clipping = TextClipping.Clip }; sCelN = new GUIStyle(sCel) { alignment = TextAnchor.MiddleRight };
         }
         GUIStyle Fundo(Color c)

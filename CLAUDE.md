@@ -212,6 +212,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).
   Menus pelo controle: todo botão das telas passa por `Bt` (`PartidaNavPad.cs`): cima/baixo move o foco, A aperta, B volta.
+  Fontes do navegador em `Resources/Fontes` (OFL, `LEIA.txt`): Barlow Condensed no corpo e nos botões, IM Fell English nos
+  títulos, seções, anúncio, lances e nomes da planta (`Estilos`, `TextoSvg`).
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); controles de toque.
 
 ## Pendências

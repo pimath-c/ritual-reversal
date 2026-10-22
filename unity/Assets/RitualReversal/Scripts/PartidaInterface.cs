@@ -162,7 +162,7 @@ namespace RitualReversal
             var sc = new GUIStyle(sPequeno) { alignment = TextAnchor.MiddleCenter, wordWrap = false };
             Color cs = lanceAtual.c ? CARMIM_HI : OURO_VIVO, ct = lanceAtual.meu ? OURO_VIVO : OSSO, cb = new Color(.79f, .75f, .68f); cs.a = ct.a = cb.a = op;
             GUI.Label(new Rect(0, y + 2, W, 16), "<size=11>" + Cor("L A N C E   D A   N O I T E", cs) + "</size>", sc);
-            GUI.Label(new Rect(0, y + 16, W, 28), "<size=22>" + Cor(lanceAtual.tit, ct) + "</size>", sc);
+            var sct = new GUIStyle(sc); if (fonteSerif != null) sct.font = fonteSerif; GUI.Label(new Rect(0, y + 16, W, 28), "<size=22>" + Cor(lanceAtual.tit, ct) + "</size>", sct);
             GUI.Label(new Rect(0, y + 42, W, 18), "<size=14>" + Cor(lanceAtual.sub, cb) + "</size>", sc);
         }
 

@@ -15,17 +15,20 @@ namespace RitualReversal
         Texture2D branco;
         float W, H; // tela virtual: 1080 de altura
 
+        // as fontes do navegador (Resources/Fontes, OFL): Barlow Condensed no corpo, IM Fell English nos títulos; sem elas, a do Unity
+        static Font fonteCond, fonteSerif, fonteSerifIt;
         void Estilos()
         {
             if (sTexto != null) return;
             branco = Texture2D.whiteTexture;
-            sTexto = new GUIStyle(GUI.skin.label) { fontSize = 20, wordWrap = true, richText = true }; sTexto.normal.textColor = OSSO;
+            fonteCond = Resources.Load<Font>("Fontes/BarlowCondensed-Medium"); fonteSerif = Resources.Load<Font>("Fontes/IMFellEnglish-Regular"); fonteSerifIt = Resources.Load<Font>("Fontes/IMFellEnglish-Italic");
+            sTexto = new GUIStyle(GUI.skin.label) { fontSize = 20, wordWrap = true, richText = true }; sTexto.normal.textColor = OSSO; if (fonteCond != null) sTexto.font = fonteCond;
             sPequeno = new GUIStyle(sTexto) { fontSize = 16 };
-            sTitulo = new GUIStyle(sTexto) { fontSize = 40, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-            sGrande = new GUIStyle(sTexto) { fontSize = 30, alignment = TextAnchor.MiddleCenter };
+            sTitulo = new GUIStyle(sTexto) { fontSize = 40, alignment = TextAnchor.MiddleCenter, fontStyle = fonteSerif != null ? FontStyle.Normal : FontStyle.Bold }; if (fonteSerif != null) sTitulo.font = fonteSerif;
+            sGrande = new GUIStyle(sTexto) { fontSize = 30, alignment = TextAnchor.MiddleCenter }; if (fonteSerif != null) sGrande.font = fonteSerif;
             sCentro = new GUIStyle(sTexto) { alignment = TextAnchor.MiddleCenter };
             sRelogio = new GUIStyle(sTexto) { fontSize = 34, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-            sBotao = new GUIStyle(GUI.skin.button) { fontSize = 20, wordWrap = true, richText = true, padding = new RectOffset(12, 12, 10, 10) };
+            sBotao = new GUIStyle(GUI.skin.button) { fontSize = 20, wordWrap = true, richText = true, padding = new RectOffset(12, 12, 10, 10) }; if (fonteCond != null) sBotao.font = fonteCond;
         }
         void Caixa(Rect r, Color c) { var o = GUI.color; GUI.color = c; GUI.DrawTexture(r, branco); GUI.color = o; }
         void Barra(Rect r, float v, Color c) { Caixa(r, new Color(0, 0, 0, .55f)); Caixa(new Rect(r.x, r.y, r.width * Mathf.Clamp01(v), r.height), c); }

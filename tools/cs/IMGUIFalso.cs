@@ -16,13 +16,14 @@ namespace UnityEngine
     public enum CursorLockMode { None, Locked, Confined }
     public enum ScaleMode { StretchToFill, ScaleAndCrop, ScaleToFit }
     public class RectOffset { public int left, right, top, bottom; public RectOffset() { } public RectOffset(int l, int r, int t, int b) { left = l; right = r; top = t; bottom = b; } }
+    public class Font : Object { }
     public class GUIStyleState { public Color textColor = Color.white; public Texture2D background; }
     public class GUIStyle
     {
-        public int fontSize; public bool wordWrap, richText; public TextAnchor alignment; public FontStyle fontStyle; public TextClipping clipping;
+        public int fontSize; public bool wordWrap, richText; public TextAnchor alignment; public FontStyle fontStyle; public TextClipping clipping; public Font font;
         public RectOffset padding = new RectOffset(), margin = new RectOffset(); public GUIStyleState normal = new GUIStyleState(), focused = new GUIStyleState(), hover = new GUIStyleState();
         public GUIStyle() { }
-        public GUIStyle(GUIStyle o) { if (o == null) return; fontSize = o.fontSize; wordWrap = o.wordWrap; richText = o.richText; alignment = o.alignment; fontStyle = o.fontStyle; clipping = o.clipping; padding = o.padding; margin = o.margin; normal = new GUIStyleState { textColor = o.normal.textColor, background = o.normal.background }; }
+        public GUIStyle(GUIStyle o) { if (o == null) return; fontSize = o.fontSize; font = o.font; wordWrap = o.wordWrap; richText = o.richText; alignment = o.alignment; fontStyle = o.fontStyle; clipping = o.clipping; padding = o.padding; margin = o.margin; normal = new GUIStyleState { textColor = o.normal.textColor, background = o.normal.background }; }
         public float CalcHeight(GUIContent c, float w) { int n = c != null && c.text != null ? c.text.Length : 0; return (fontSize > 0 ? fontSize : 14) * 1.3f * (1 + n * 7 / Math.Max(40f, w)); }
         public Vector2 CalcSize(GUIContent c) { int n = c != null && c.text != null ? c.text.Length : 0; float f = fontSize > 0 ? fontSize : 14; return new Vector2(n * f * .55f, f * 1.3f); }
     }
