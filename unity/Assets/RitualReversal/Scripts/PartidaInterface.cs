@@ -306,7 +306,8 @@ namespace RitualReversal
             if (!cadernoAberto || g == null || g.phase != "play") return;
             if (cadId != g.matchId) { cadId = g.matchId; notasCad.Clear(); }
             float x = W - 26 - 360, y = 120, w = 360, wc = w - 28; var stN = Css("serif", 17, BONE); var stD = Css("400", 14, Hx("#cfc6b6")); var stE = Css("400", 12, MUDO);
-            float hN = AlturaNormal(stN), lhD = LN(13.5f), lhE = LN(12.5f); var blocos = new List<float>(); float h = 1 + 10 + LN(12) + 4;
+            // a linha do nome: o b (IM Fell 17) divide a linha com o strut do corpo (Barlow 16): a subida da Barlow e a descida da IM Fell
+            float subN = Mathf.Max(Ar(16), SubidaPx(stN)), hN = subN + Mathf.Max(Ar(16 * .2f), AlturaNormal(stN) - SubidaPx(stN)), lhD = LN(13.5f), lhE = LN(12.5f); var blocos = new List<float>(); float h = 1 + 10 + LN(12) + 4;
             var dados = new List<string[]>();
             for (int i = 0; i < g.altars.Count; i++)
             {
@@ -320,7 +321,7 @@ namespace RitualReversal
             float yy = 10; Espacada(14 - 1, yy, LN(12), "CADERNO DOS ALTARES · " + EntradaUnity.Nome("caderno").ToUpper() + " FECHA", Css("400", 12, GOLD), .96f); yy += LN(12) + 4;
             for (int i = 0; i < dados.Count; i++)
             {
-                var d = dados[i]; Caixa(new Rect(13, yy, wc, 1), Hx("#262b31")); float yl = yy + 1 + 5, bas = yl + (hN - AlturaNormal(stN)) / 2 + SubidaPx(stN);
+                var d = dados[i]; Caixa(new Rect(13, yy, wc, 1), Hx("#262b31")); float yl = yy + 1 + 5, bas = yl + subN;
                 NaBase(13, bas, wc, d[0], stN); var cc = CorCaderno(d[3]); var stI = Css("600", 13, cc); float xi = 13 + Larg(d[0], stN) + 8, wi = Larg(d[1], stI) + 12;
                 float topoI = bas - 13 - (AlturaNormal(stI) - LN(13f)) / 2; Moldura(new Rect(xi, topoI, wi, LN(13f)), cc); NaBase(xi + 6, bas, wi, d[1], stI);
                 float yd = yl + hN; yd += Paragrafo(13, yd, wc, lhD, d[2], stD); if (d[4] != null) Paragrafo(13, yd + 1, wc, lhE, d[4], stE);
