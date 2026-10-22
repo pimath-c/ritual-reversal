@@ -84,48 +84,8 @@ namespace RitualReversal
 
         // ---------- tela do perfil ----------
         Vector2 rolPerfil; bool confirmarApagar;
-        void TelaPerfil()
-        {
-            EstilosNoite(); var p = Perfil(); System.Func<double, double, string> pct = (a, b) => b > 0 ? Mathf.RoundToInt((float)(a / b * 100)) + "%" : "—";
-            int partidas = (int)Nn(p, "partidas"), vit = (int)Nn(p, "vitorias"), der = (int)Nn(p, "derrotas"), emp = (int)Nn(p, "empates"), nc = O(p, "conq").Count;
-            var r = Janela(Mathf.Min(1000, W - 40), H - 60); GUILayout.BeginArea(r); rolPerfil = GUILayout.BeginScrollView(rolPerfil);
-            GUILayout.Label("Seu perfil", sTitulo);
-            GUILayout.Label(partidas + (partidas == 1 ? " partida" : " partidas") + " · " + vit + (vit == 1 ? " vitória, " : " vitórias, ") + der + (der == 1 ? " derrota" : " derrotas") + (emp > 0 ? ", " + emp + (emp == 1 ? " empate" : " empates") : "") + " · " + nc + " de " + CONQ.Length + " conquistas", sCentro);
-            GUILayout.BeginHorizontal(); GUILayout.BeginVertical(GUILayout.Width(r.width / 2 - 24));
-            H3("Por papel"); var pa = O(p, "papel");
-            foreach (var kv in new[] { new[] { "H", "Caçador" }, new[] { "C", "Cultista" } }) { var x = O(pa, kv[0]); GUILayout.BeginHorizontal(); GUILayout.Label(Cor(kv[1], kv[0] == "H" ? OURO : CARMIM_HI), sCel, GUILayout.Width(170)); GUILayout.Label(Nn(x, "rodadas") + " rodadas", sCelN, GUILayout.Width(110)); GUILayout.Label(pct(Nn(x, "vitorias"), Nn(x, "rodadas")), sCelN, GUILayout.Width(80)); GUILayout.EndHorizontal(); }
-            H3("Classes"); var cl = O(p, "classes");
-            foreach (var kv in Regras.CLASSES) { object o; var x = cl.TryGetValue(kv.Key, out o) ? o as Dictionary<string, object> : null; GUILayout.BeginHorizontal(); GUILayout.Label(kv.Value.name + " <size=12>" + Cor(kv.Value.team == "H" ? "Caçador" : "Cultista", MUDO) + "</size>", sCel, GUILayout.Width(170)); GUILayout.Label((x != null ? Nn(x, "rodadas") : 0) + " rodadas", sCelN, GUILayout.Width(110)); GUILayout.Label(x != null ? pct(Nn(x, "vitorias"), Nn(x, "rodadas")) : "—", sCelN, GUILayout.Width(80)); GUILayout.EndHorizontal(); }
-            GUILayout.EndVertical(); GUILayout.BeginVertical();
-            H3("Recordes numa partida"); var rec = O(p, "recordes");
-            foreach (var kv in new[] { new[] { "quedas", "Inimigos derrubados" }, new[] { "reanimacoes", "Aliados reanimados" }, new[] { "purgas", "Altares purgados" }, new[] { "rituais", "Rituais iniciados" }, new[] { "tarefas", "Tarefas cumpridas" } }) { GUILayout.BeginHorizontal(); GUILayout.Label(kv[1], sCel, GUILayout.Width(260)); GUILayout.Label(Nn(rec, kv[0]).ToString(), sCelN, GUILayout.Width(80)); GUILayout.EndHorizontal(); }
-            var hist = Lst(p, "hist");
-            if (hist.Count > 0)
-            {
-                H3("Últimas partidas");
-                foreach (var o in hist.Take(8))
-                {
-                    var h = o as Dictionary<string, object>; if (h == null) continue; var data = new System.DateTime(1970, 1, 1).AddMilliseconds(Nn(h, "data")).ToLocalTime(); object rv; var rods = h.TryGetValue("rodadas", out rv) ? rv as List<object> : null;
-                    string cls = rods == null ? "" : string.Join(" / ", rods.Select(x => { var d = x as Dictionary<string, object>; object c; string k = d != null && d.TryGetValue("cls", out c) ? c as string : ""; ClasseDef C; return k != null && Regras.CLASSES.TryGetValue(k, out C) ? C.name : k; }).ToArray());
-                    string res = h.TryGetValue("resultado", out rv) ? rv as string : ""; object md;
-                    GUILayout.BeginHorizontal(); GUILayout.Label(data.ToString("dd/MM/yyyy") + (h.TryGetValue("modo", out md) && (md as string) == "online" ? " · online" : ""), sCel, GUILayout.Width(170)); GUILayout.Label(cls, sCel, GUILayout.Width(170));
-                    GUILayout.Label(Cor(res, res == "vitória" ? OURO_VIVO : res == "derrota" ? CARMIM_HI : OSSO), sCelN, GUILayout.Width(80)); GUILayout.EndHorizontal();
-                }
-            }
-            GUILayout.EndVertical(); GUILayout.EndHorizontal();
-            H3("Conquistas"); var cq = O(p, "conq");
-            for (int i = 0; i < CONQ.Length; i += 3)
-            {
-                GUILayout.BeginHorizontal();
-                for (int j = i; j < Mathf.Min(CONQ.Length, i + 3); j++) { bool ok = cq.ContainsKey(CONQ[j][0]); GUILayout.BeginVertical(Fundo(ok ? new Color(.16f, .13f, .06f, .9f) : new Color(.06f, .06f, .07f, .7f)), GUILayout.Width(290)); GUILayout.Label("<b>" + Cor(CONQ[j][1], ok ? OURO_VIVO : MUDO) + "</b>", sPequeno); GUILayout.Label("<size=13>" + Cor(CONQ[j][2], ok ? OSSO : MUDO) + "</size>", sPequeno); GUILayout.EndVertical(); }
-                GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            }
-            GUILayout.Space(14); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            if (!confirmarApagar) { if (Bt("Apagar perfil", sBotao, GUILayout.Width(220))) confirmarApagar = true; }
-            else { GUILayout.Label("Apagar todo o histórico e as conquistas?", sCentro, GUILayout.Width(420)); if (Bt(Cor("Apagar", CARMIM_HI), sBotao, GUILayout.Width(140))) { PlayerPrefs.DeleteKey("rr-perfil"); confirmarApagar = false; } if (Bt("Não", sBotao, GUILayout.Width(100))) confirmarApagar = false; }
-            if (Bt("Voltar", sBotao, GUILayout.Width(200))) { telaMenu = null; confirmarApagar = false; }
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
+        void TelaPerfil() { TelaPerfilCss(); }
+
 
         // ---------- desafio da noite ----------
         // todo dia um desafio: o papel e o clima saem da data, os bots são difíceis e o clima é o mesmo em todas as tentativas

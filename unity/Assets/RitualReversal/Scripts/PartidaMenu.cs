@@ -53,15 +53,8 @@ namespace RitualReversal
         }
         void Voltar(string txt = "Voltar") { GUILayout.Space(12); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); if (Bt(txt, sBotao, GUILayout.Width(240), GUILayout.Height(50))) { telaMenu = null; som.Tocar("click"); } GUILayout.FlexibleSpace(); GUILayout.EndHorizontal(); }
 
-        void TelaAprender()
-        {
-            var r = Janela(Mathf.Min(900, W - 40), 470); GUILayout.BeginArea(r);
-            GUILayout.Label("Aprender a jogar", sTitulo); GUILayout.Label("Uma noite guiada, passo a passo, contra bots mansos. Escolha o lado.", sCentro); GUILayout.Space(12);
-            GUILayout.BeginHorizontal();
-            if (Bt("<b>" + Cor("Como Caçador", OURO) + "</b>\n<size=16>Ler santuários, acender sentinelas, usar o sensor e a lanterna, purgar altares e selar um ritual.</size>", sBotao, GUILayout.Height(150))) IniciarSolo("H", "treino", true, false);
-            if (Bt("<b>" + Cor("Como Cultista", CARMIM_HI) + "</b>\n<size=16>Pegar reagentes, consagrar altares, cumprir tarefas, iniciar um ritual e canalizar no círculo.</size>", sBotao, GUILayout.Height(150))) IniciarSolo("C", "treino", true, false);
-            GUILayout.EndHorizontal(); Voltar(); GUILayout.EndArea();
-        }
+        void TelaAprender() { TelaAprenderCss(); }
+
 
         static readonly string[][] NOVIDADES = {
             new[]{"Catedral e desfiladeiro (v6)","O mapa foi refeito em duas regiões: a catedral em cruz no alto do promontório e a mata ao sul, separadas por um desfiladeiro com três travessias (a Ponte Grande, a árvore caída e o aqueduto). Cada parte da mata tem o seu reagente."},
@@ -79,42 +72,16 @@ namespace RitualReversal
             new[]{"Investigação","EVP, resíduo na Lanterna e Chamariz desmascarado têm som e efeito próprios no altar."},
             new[]{"Ajuste","Impacto na câmera: Normal, Reduzido ou Desligado."},
             new[]{"Na v5.7","Interrupções, Fenda e Farol com nomes, lances da noite e o registro da disputa no círculo."} };
-        void TelaNovidades()
-        {
-            var r = Janela(Mathf.Min(980, W - 40), H - 60); GUILayout.BeginArea(r); rolPerfil = GUILayout.BeginScrollView(rolPerfil);
-            GUILayout.Label("Novidades da v5.8", sTitulo); GUILayout.Label("O que mudou desde a última versão.", sCentro); GUILayout.Space(8);
-            foreach (var n in NOVIDADES) { GUILayout.BeginVertical(Fundo(new Color(.06f, .06f, .07f, .7f))); GUILayout.Label("<b>" + Cor(n[0], OURO) + "</b>", sPequeno); GUILayout.Label("<size=15>" + n[1] + "</size>", sPequeno); GUILayout.EndVertical(); }
-            Voltar(); GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
+        void TelaNovidades() { TelaNovidadesCss(); }
+
 
         void Passo(int n, string t, string d)
         {
             GUILayout.BeginHorizontal(); GUILayout.Label("<size=26>" + Cor(n.ToString(), OURO) + "</size>", sTexto, GUILayout.Width(34));
             GUILayout.BeginVertical(); GUILayout.Label("<b>" + t + "</b>", sPequeno); GUILayout.Label("<size=14>" + Cor(d, new Color(.79f, .75f, .68f)) + "</size>", sPequeno); GUILayout.EndVertical(); GUILayout.EndHorizontal(); GUILayout.Space(4);
         }
-        void TelaComoJogar()
-        {
-            var r = Janela(Mathf.Min(1100, W - 40), H - 50); GUILayout.BeginArea(r); rolPerfil = GUILayout.BeginScrollView(rolPerfil);
-            GUILayout.Label("Como jogar", sTitulo);
-            GUILayout.Label(Cor(UmaNoite ? "Uma equipe celebra, a outra caça. Os Cultistas vencem completando dois dos três rituais; os Caçadores, selando dois ou resistindo até o amanhecer." : "Duas rodadas. Na primeira sua equipe caça; na segunda, celebra. Vence quem completar mais rituais como Cultista.", new Color(.79f, .75f, .68f)), sCentro);
-            GUILayout.Label(Cor("Cada partida é uma noite de até 18 minutos, em três momentos: o Crepúsculo, a Vigília e a Hora Morta. Quando uma equipe leva dois rituais, a noite acaba ali.", new Color(.79f, .75f, .68f)), sCentro);
-            GUILayout.Label(Cor("A catedral fica no meio de uma floresta. As trilhas e clareiras pegam luar; a mata fechada é breu. Dois altares ficam lá fora: os Menires e o Carvalho Oco.", new Color(.79f, .75f, .68f)), sCentro);
-            GUILayout.BeginHorizontal(); GUILayout.BeginVertical(GUILayout.Width(r.width / 2 - 26));
-            GUILayout.Label("<b>" + Cor("Como Cultista", CARMIM_HI) + "</b>", sTexto);
-            Passo(1, "Crepúsculo: prepare-se", "Colha ervas na floresta e profane túmulos no cemitério, ao leste da catedral. Tarefas rendem óbolos; negocie reagentes com a Carpideira, no oratório perto do seu acampamento. Os reagentes ficam na mata, ao sul do desfiladeiro: cada lugar tem o seu (sal negro na Pedreira, raiz de mandrágora no Charco, velas de cera na Encruzilhada…).");
-            Passo(2, "Consagre em silêncio", "Você escolheu 3 de 6 altares. Consagrar gasta 1 reagente. Cuidado com as sentinelas acesas: elas denunciam você.");
-            Passo(3, "Vigília: os rituais começam", "Inicie com mais um reagente e fique no círculo. Quem ataca não canaliza: cada sigilo pausa a sua canalização por um instante, então em dupla um celebra e o outro defende. A Transferência deixa marcas de arrasto no altar de origem. Chamarizes (E num altar não escolhido) confundem a investigação.");
-            Passo(4, "Hora Morta: o Grande Ritual", "Se estiver 1 a 1, o ritual decisivo só começa agora, e a catedral inteira ouve. Vença dois dos três antes do amanhecer.");
-            GUILayout.EndVertical(); GUILayout.BeginVertical();
-            GUILayout.Label("<b>" + Cor("Como Caçador", OURO) + "</b>", sTexto);
-            Passo(1, "Crepúsculo: prepare-se", "Cada sinal lido num santuário descarta um altar que o culto não escolheu. Acenda sentinelas e negocie munição, óleo e sinalizadores com o Ermitão, na cabana perto do acampamento.");
-            Passo(2, "Investigue", "Q lê sinais por perto, o EVP sussurra junto de altares consagrados, e a Lanterna (F) mostra resíduo só nos verdadeiros.");
-            Passo(3, "Vigília: purgue e sele", "Segure E num altar consagrado para purgar. Depois do Presságio, o coro ecoa o setor do ritual: dois altares possíveis, e o que você já descartou decide para onde correr. Sele em dupla. Marcas de arrasto num altar denunciam uma Transferência.");
-            Passo(4, "Resista até o amanhecer", "Cada ritual selado força os Cultistas a recomeçar em outro altar. Selem dois dos três rituais, ou resistam até o amanhecer.");
-            GUILayout.EndVertical(); GUILayout.EndHorizontal();
-            GUILayout.Label("<size=14>" + Cor("Caído, um aliado pode te reanimar. O inimigo pode te executar, mas levar dano recomeça a execução: atire em quem executa o seu aliado. O som diz muito: use fones (as legendas mostram de que lado vem cada som). Z marca um ponto, um altar ou um inimigo para o aliado; o bot aliado também obedece.", MUDO) + "</size>", sCentro);
-            Voltar("Entendi"); GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
+        void TelaComoJogar() { TelaComoJogarCss(); }
+
         void TelaAjustes() { PainelTela("ajustes", 800, (x, y, w) => AjustesCss(x, y, w, () => { telaMenu = null; som.Tocar("click"); })); }
 
 

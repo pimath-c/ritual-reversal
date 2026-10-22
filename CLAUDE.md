@@ -226,7 +226,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   margens que se fundem), `PartidaTitulo.cs` (coluna de 470 px, laboratório como details, online), `PartidaTelasCss.cs`
   (`PainelTela` centra e rola a placa de 800 px; `Cartoes` (.choice), `FileiraBotoes` (.btnrow), entrada da noite, Ajustes
   com a grade .set e as teclas em .binds, pausa com a .cola). Ajustes sem as linhas que o Unity não tem (toque, resolução
-  adaptativa, mouse bruto).
+  adaptativa, mouse bruto). `PartidaMenusCss.cs`: Aprender a jogar, Como jogar (.passo), Novidades, Perfil (`Tabela` =
+  table.res, .conqs); `PartidaNoiteCss.cs`: resumo e resultado (.lances, .premios, table.placar, .ltBox, statsTable,
+  .desafio; a .btnrow quebra linha).
   Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
   Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
   (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).

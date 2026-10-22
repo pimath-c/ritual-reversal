@@ -178,59 +178,8 @@ namespace RitualReversal
         string TextoTempo() { return g.timers ? " (" + Mathf.CeilToInt((float)System.Math.Max(0, g.phaseT)) + " s)" : ""; }
         string ListaProntos() { return string.Join("   ", g.slots.Where(s => s.cid != null).Select(s => { bool p; g.ready.TryGetValue(s.cid, out p); return s.name + " " + (p ? "✓" : "…"); }).ToArray()); }
 
-        void TelaResumo()
-        {
-            EstilosNoite(); bool pronto; g.ready.TryGetValue(EU, out pronto); var slot = MeuSlot();
-            var sc = g.round == 1 ? g.scores["B"] : g.scores["A"]; bool cultoMeu = slot != null && (g.round == 1 ? "B" : "A") == slot.team;
-            float w = Mathf.Min(1000, W - 40); var r = Janela(w, H - 60); GUILayout.BeginArea(r); rolFim = GUILayout.BeginScrollView(rolFim);
-            GUILayout.Label(UmaNoite ? "O amanhecer" : "Fim da rodada " + g.round, sTitulo);
-            if (sc != null) GUILayout.Label((cultoMeu ? "Sua equipe completou" : "Os Cultistas adversários completaram") + " <b>" + sc.done + "</b> de 3 rituais" + (sc.lastT.HasValue ? ", o último aos " + Relogio(sc.lastT.Value) : "") + ". " + sc.@sealed + (sc.@sealed == 1 ? " ritual foi selado." : " rituais foram selados."), sCentro);
-            if (g.round == 1 && !UmaNoite) GUILayout.Label("Agora os lados se invertem: quem caçou passa a celebrar.", sCentro);
-            if (!online) { var log = LogDaNoite().Where(e => e.r == g.round).ToList(); LancesDaNoite(log); Destaques(log); }
-            GraficoNoite(g.round, r.width - 30); TabelaRegistro();
-            GUILayout.Space(16); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace(); GUI.enabled = !pronto;
-            if (Bt(pronto ? "Aguardando os outros" : g.round == 1 && !UmaNoite ? "Continuar para a rodada 2" : "Ver resultado", sBotao, GUILayout.Height(52), GUILayout.Width(340))) Acao(new Acao { type = "ready" });
-            GUI.enabled = true; GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            GUILayout.Label((online ? ListaProntos() : "") + TextoTempo(), sCentro);
-            GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
-
-        void TelaFinal()
-        {
-            EstilosNoite(); if (repAberto) { TelaReplay(); return; } if (relAberto) { TelaRelatorio(); return; }
-            var slot = MeuSlot(); var w = Sim.Winner(g) ?? new Vencedor { why = "" }; bool minha = slot != null && w.win == slot.team;
-            Placar A = slot != null ? g.scores[slot.team] : null, B = slot != null ? g.scores[slot.team == "A" ? "B" : "A"] : null;
-            string titulo = w.win == null ? "Empate" : minha ? "Vitória da sua equipe" : "Vitória dos adversários";
-            float lw = Mathf.Min(1000, W - 40); var r = Janela(lw, H - 60); GUILayout.BeginArea(r); rolFim = GUILayout.BeginScrollView(rolFim);
-            GUILayout.Label(Cor(titulo, w.win == null ? OSSO : minha ? OURO : CARMIM_VIVO), sTitulo);
-            if (w.why.Length > 0) GUILayout.Label(char.ToUpper(w.why[0]) + w.why.Substring(1) + ".", sCentro);
-            GUILayout.Space(8);
-            GUILayout.BeginHorizontal(); GUILayout.Label(Cor("Como Cultistas", MUDO), sCel, GUILayout.Width(330)); GUILayout.Label(Cor("Rituais", MUDO), sCelN, GUILayout.Width(110)); GUILayout.Label(Cor("Último ritual", MUDO), sCelN, GUILayout.Width(150)); GUILayout.Label(Cor("Maior progresso", MUDO), sCelN, GUILayout.Width(170)); GUILayout.EndHorizontal();
-            System.Action<string, Placar> linha = (n, s) =>
-            {
-                if (s == null) return; GUILayout.BeginHorizontal(Fundo(new Color(0, 0, 0, .25f))); GUILayout.Label(n, sCel, GUILayout.Width(318)); GUILayout.Label(s.done.ToString(), sCelN, GUILayout.Width(110));
-                GUILayout.Label(s.lastT.HasValue ? Relogio(s.lastT.Value) : "—", sCelN, GUILayout.Width(150)); GUILayout.Label(Mathf.RoundToInt((float)s.maxP * 100) + "%", sCelN, GUILayout.Width(170)); GUILayout.EndHorizontal();
-            };
-            linha(A != null && B == null ? "Sua equipe (culto)" : "Sua equipe", A); linha(B != null && A == null ? "Adversários (culto)" : "Adversários", B);
-            BlocoDesafio();
-            var log = LogDaNoite();
-            if (online && log == null) GUILayout.Label(Cor("Baixando o registro da noite do servidor…", MUDO), sCentro);
-            LancesDaNoite(log); Destaques(log); PlacarJogadores(log); GraficoNoite(1, r.width - 30); GraficoNoite(2, r.width - 30); TabelaRegistro();
-            GUILayout.Space(16); GUILayout.BeginHorizontal(); GUILayout.FlexibleSpace();
-            var sb = new GUIStyle(sBotao) { fontSize = 17 };
-            if (LT.TemReplay(1) && Bt("Rever a noite", sb, GUILayout.Height(48))) AbrirReplay(1);
-            if (!UmaNoite && LT.TemReplay(2) && Bt("Rever a rodada 2", sb, GUILayout.Height(48))) AbrirReplay(2);
-            if (Bt("Relatório do playtest", sb, GUILayout.Height(48))) { relAberto = true; relMsg = ""; rolRel = Vector2.zero; som.Tocar("click"); }
-            if (Bt("Baixar registro (.json)", sb, GUILayout.Height(48))) BaixarRegistro();
-            bool anfitriao = !online || hostCid == EU;
-            if (anfitriao && Bt("Jogar de novo", sb, GUILayout.Height(48))) { repAberto = false; if (!online) { g.matchId = System.DateTime.Now.ToString("yyyyMMdd-HHmmss"); logIni = g.log.Count; } LimparVisual(); Acao(new Acao { type = "restart" }); }
-            if (online) { if (anfitriao && Bt("Voltar ao lobby", sb, GUILayout.Height(48))) Enviar(new JsonEscrita().Txt("t", "lobby")); if (Bt("Sair da sala", sb, GUILayout.Height(48))) SairOnline(""); }
-            else if (Bt("Voltar ao menu", sb, GUILayout.Height(48))) { g = null; LimparVisual(); }
-            GUILayout.FlexibleSpace(); GUILayout.EndHorizontal();
-            if (online && !anfitriao) GUILayout.Label("O anfitrião decide o próximo passo.", sCentro);
-            if (logMsg != "") GUILayout.Label(Cor(logMsg, MUDO), sCentro);
-            GUILayout.EndScrollView(); GUILayout.EndArea();
-        }
+        void TelaResumo() { EstilosNoite(); TelaResumoCss(); }
+        void TelaFinal() { EstilosNoite(); if (repAberto) { TelaReplay(); return; } if (relAberto) { TelaRelatorio(); return; } TelaFinalCss(); }
         // local: grava o registro (com dificuldade, laboratório e papel, como o navegador) na pasta de dados do jogo;
         // online: o servidor guarda o arquivo, o navegador do sistema baixa
         void BaixarRegistro()

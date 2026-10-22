@@ -30,7 +30,7 @@ namespace RitualReversal
             for (int i0 = 0; i0 < itens.Count; i0 += colunas)
             {
                 float hl = 0; var alts = new List<float>();
-                for (int i = i0; i < Mathf.Min(itens.Count, i0 + colunas); i++) { float a = AlturaNormal(stB) + 4 + AlturaParagrafo(itens[i][1], stS, cw - 30, 16 * 1.35f) + 6 + 14 * 1.2f; alts.Add(a); hl = Mathf.Max(hl, a); }
+                for (int i = i0; i < Mathf.Min(itens.Count, i0 + colunas); i++) { float a = AlturaNormal(stB) + 4 + AlturaParagrafo(itens[i][1], stS, cw - 30, 16 * 1.35f) + (itens[i][2] != "" ? 6 + 14 * 1.2f : 0); alts.Add(a); hl = Mathf.Max(hl, a); }
                 float hc = hl + 24 + 2;
                 for (int i = i0; i < Mathf.Min(itens.Count, i0 + colunas); i++)
                 {
@@ -42,7 +42,7 @@ namespace RitualReversal
                         if (s) Moldura(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), GOLD_HI);   // o inset 0 0 0 1px
                         float cy = r.y + 1 + 12 + (hl - alts[i - i0]) / 2, cx = r.x + 15;
                         Linha(cx, cy, cw - 30, AlturaNormal(stB), itens[i][0], stB); cy += AlturaNormal(stB) + 4;
-                        cy += Paragrafo(cx, cy, cw - 30, 16 * 1.35f, itens[i][1], stS) + 6; Linha(cx, cy, cw - 30, 14 * 1.2f, itens[i][2], stM);
+                        cy += Paragrafo(cx, cy, cw - 30, 16 * 1.35f, itens[i][1], stS) + 6; if (itens[i][2] != "") Linha(cx, cy, cw - 30, 14 * 1.2f, itens[i][2], stM);
                     }
                     GUI.enabled = e0;
                 }
@@ -51,18 +51,25 @@ namespace RitualReversal
             return yy - 14 - y;
         }
 
-        // .btnrow: botões no meio, 12 px entre eles, 18 px acima
+        // .btnrow: botões no meio, 12 px entre eles (e entre as linhas, quando quebra), 18 px acima
         float FileiraBotoes(float x, float y, float w, params object[] bs)   // (texto, tipo, ativo, ação) em sequência
         {
             var L = new List<object[]>(); for (int i = 0; i + 3 < bs.Length; i += 4) L.Add(new[] { bs[i], bs[i + 1], bs[i + 2], bs[i + 3] });
-            float total = L.Sum(b => LarguraBotao((string)b[0], (string)b[1])) + 12 * (L.Count - 1), xx = x + (w - total) / 2, h = 0;
-            foreach (var b in L)
+            var linhas = new List<List<object[]>> { new List<object[]>() }; float acc = 0;
+            foreach (var b in L) { float bw = LarguraBotao((string)b[0], (string)b[1]), add = (linhas[linhas.Count - 1].Count > 0 ? 12 : 0) + bw; if (acc + add > w && linhas[linhas.Count - 1].Count > 0) { linhas.Add(new List<object[]>()); acc = 0; add = bw; } linhas[linhas.Count - 1].Add(b); acc += add; }
+            float yy = y + 18;
+            foreach (var ln in linhas)
             {
-                float bw = LarguraBotao((string)b[0], (string)b[1]), bh = AlturaBotao((string)b[1]); h = Mathf.Max(h, bh);
-                if (BotaoCss(new Rect(xx, y + 18, bw, bh), (string)b[0], (string)b[1], (bool)b[2])) ((System.Action)b[3])();
-                xx += bw + 12;
+                float total = ln.Sum(b => LarguraBotao((string)b[0], (string)b[1])) + 12 * (ln.Count - 1), xx = x + (w - total) / 2, h = 0;
+                foreach (var b in ln)
+                {
+                    float bw = LarguraBotao((string)b[0], (string)b[1]), bh = AlturaBotao((string)b[1]); h = Mathf.Max(h, bh);
+                    if (BotaoCss(new Rect(xx, yy, bw, bh), (string)b[0], (string)b[1], (bool)b[2])) ((System.Action)b[3])();
+                    xx += bw + 12;
+                }
+                yy += h + 12;
             }
-            return 18 + h;
+            return yy - 12 - y;
         }
 
         // ---------- introScreen ----------
