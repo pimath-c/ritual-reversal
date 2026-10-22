@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 
 namespace RitualReversal
 {
-    public enum Tecla { W, A, S, D, Shift, E, T, Q, F, G, R, Tab, Esc, Enter, Z, C, I, J, N }
+    public enum Tecla { W, A, S, D, Shift, E, T, Q, F, G, R, Tab, Esc, Enter, Z, C, I, J, N, V, D1, D2, D3, D4, D5, D6 }
 
     public static class EntradaUnity
     {
@@ -18,7 +18,7 @@ namespace RitualReversal
                 case Tecla.W: return Key.W; case Tecla.A: return Key.A; case Tecla.S: return Key.S; case Tecla.D: return Key.D;
                 case Tecla.Shift: return Key.LeftShift; case Tecla.E: return Key.E; case Tecla.T: return Key.T; case Tecla.Q: return Key.Q;
                 case Tecla.F: return Key.F; case Tecla.G: return Key.G; case Tecla.R: return Key.R; case Tecla.Tab: return Key.Tab;
-                case Tecla.Esc: return Key.Escape; case Tecla.Z: return Key.Z; case Tecla.C: return Key.C; case Tecla.I: return Key.I; case Tecla.J: return Key.J; case Tecla.N: return Key.N; default: return Key.Enter;
+                case Tecla.Esc: return Key.Escape; case Tecla.Z: return Key.Z; case Tecla.C: return Key.C; case Tecla.I: return Key.I; case Tecla.J: return Key.J; case Tecla.N: return Key.N; case Tecla.V: return Key.V; case Tecla.D1: return Key.Digit1; case Tecla.D2: return Key.Digit2; case Tecla.D3: return Key.Digit3; case Tecla.D4: return Key.Digit4; case Tecla.D5: return Key.Digit5; case Tecla.D6: return Key.Digit6; default: return Key.Enter;
             }
         }
         public static bool Segurando(Tecla t) { var k = Keyboard.current; return k != null && k[Mapear(t)].isPressed; }
@@ -36,7 +36,7 @@ namespace RitualReversal
                 case Tecla.W: return KeyCode.W; case Tecla.A: return KeyCode.A; case Tecla.S: return KeyCode.S; case Tecla.D: return KeyCode.D;
                 case Tecla.Shift: return KeyCode.LeftShift; case Tecla.E: return KeyCode.E; case Tecla.T: return KeyCode.T; case Tecla.Q: return KeyCode.Q;
                 case Tecla.F: return KeyCode.F; case Tecla.G: return KeyCode.G; case Tecla.R: return KeyCode.R; case Tecla.Tab: return KeyCode.Tab;
-                case Tecla.Esc: return KeyCode.Escape; case Tecla.Z: return KeyCode.Z; case Tecla.C: return KeyCode.C; case Tecla.I: return KeyCode.I; case Tecla.J: return KeyCode.J; case Tecla.N: return KeyCode.N; default: return KeyCode.Return;
+                case Tecla.Esc: return KeyCode.Escape; case Tecla.Z: return KeyCode.Z; case Tecla.C: return KeyCode.C; case Tecla.I: return KeyCode.I; case Tecla.J: return KeyCode.J; case Tecla.N: return KeyCode.N; case Tecla.V: return KeyCode.V; case Tecla.D1: return KeyCode.Alpha1; case Tecla.D2: return KeyCode.Alpha2; case Tecla.D3: return KeyCode.Alpha3; case Tecla.D4: return KeyCode.Alpha4; case Tecla.D5: return KeyCode.Alpha5; case Tecla.D6: return KeyCode.Alpha6; default: return KeyCode.Return;
             }
         }
         public static bool Segurando(Tecla t) { return Input.GetKey(Mapear(t)); }

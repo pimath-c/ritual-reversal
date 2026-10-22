@@ -15,7 +15,7 @@ using Random = UnityEngine.Random;
 namespace RitualReversal.Visual
 {
     [RequireComponent(typeof(AudioSource))]
-    public class Som : MonoBehaviour
+    public partial class Som : MonoBehaviour
     {
         public static Som Atual;
         public float volume = .8f;
@@ -374,6 +374,7 @@ namespace RitualReversal.Visual
             coroBp.Ajustar(Tipo.PassaFaixa, 720, 2.2, sr);
             for (int i = 0; i < gAmb.Length; i++) gAmb[i] += (alvoAmb[i] - gAmb[i]) * (1 - Mathf.Exp(-kBloco / .8f));
             grande += (grandeAlvo - grande) * (1 - Mathf.Exp(-kBloco / (grandeAlvo > grande ? 1.5f : .8f)));
+            BlocoMusica(tb, kBloco); BlocoTensao(tb, kBloco);
             gChuva += (alvoChuva - gChuva) * (1 - Mathf.Exp(-kBloco / .4f)); corteChuva += (corteChuvaAlvo - corteChuva) * (1 - Mathf.Exp(-kBloco / .3f));
             if (gChuva > .0005f) { chuvaHp.Ajustar(Tipo.PassaAlta, 700, 1, sr); chuvaLp.Ajustar(Tipo.PassaBaixa, corteChuva, 1, sr); }
             for (int s = 0; s < n; s++)
@@ -423,6 +424,7 @@ namespace RitualReversal.Visual
                     double d = (Math.Sin(2 * Math.PI * fD0) + Math.Sin(2 * Math.PI * fD1)) * (.16 + .07 * Math.Sin(2 * Math.PI * fTr));
                     double gm = (c + d) * grande; L += gm; R += gm;
                 }
+                { double mt = AmostraMusica(t, dtS) + AmostraTensao(dtS); L += mt; R += mt; }
                 // vozes curtas
                 for (int vi = 0; vi < vozes.Count; vi++)
                 {

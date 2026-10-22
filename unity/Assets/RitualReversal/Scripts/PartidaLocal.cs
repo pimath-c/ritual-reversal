@@ -64,7 +64,7 @@ namespace RitualReversal
             else if (m != null && jogando && !pausado) { Sim.MoveHuman(g, m, inp, dt); PreverTiro(m, (float)dt, inp.fire); Sim.Step(g, dt); }
             else if (!jogando) Sim.Step(g, dt);
             var evs = new List<Evento>(g.events); g.events.Clear(); TratarEventos(evs, Eu());
-            PassoNoite((float)raw); var eu2 = Eu(); AtualizarTutorial(eu2); AtualizarDicas((float)raw, eu2); if (g != null && g.phase == "final") { PerfilFim(); DesafioFim(); }
+            PassoNoite((float)raw); var eu2 = Eu(); AtualizarTutorial(eu2); AtualizarDicas((float)raw, eu2); AtualizarFalasBots(); if (g != null && g.phase == "final") { PerfilFim(); DesafioFim(); }
 
             if (g.phase != faseAnterior)
             {
@@ -98,6 +98,7 @@ namespace RitualReversal
             if (EntradaUnity.Apertou(Tecla.I) && fp != null) fp.PedirInspecao(); // inspeção da arma (v5.9)
             if (EntradaUnity.Apertou(Tecla.J)) cadernoAberto = !cadernoAberto;   // caderno dos altares (v5.3)
             if (EntradaUnity.Apertou(Tecla.N)) PularPassoTutorial();
+            AtalhosFalas();   // V abre as frases rápidas, 1 a 6 escolhe
             if (EntradaUnity.CliqueDir()) { botoes.ab++; if (m.st == "alive" && m.abilCd > 0) { FeiticoDef F; Regras.FEITICOS.TryGetValue(m.feitico ?? "", out F); NotaHab((F != null ? F.nome : "Feitiço") + " recarregando: " + Mathf.CeilToInt((float)m.abilCd) + " s", MUDO); som.Tocar("vazio"); } }
             if (EntradaUnity.Apertou(Tecla.E) && m.st == "alive")
             {

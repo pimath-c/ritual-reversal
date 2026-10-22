@@ -72,6 +72,8 @@ namespace RitualReversal
             // som: ouvinte, rituais, passos, alucinações, coração, sino
             som.ouvinte = c; som.yawOuvinte = yawCam; som.Rituais(jogando ? g : null, papel, mundo.GRk, dt);
             som.Ambiente(jogando, c, dt); // v6: fundos por lugar
+            som.Musica(g == null && !online && PlayerPrefs.GetInt("rr-musica", 1) == 1);   // a música só na tela inicial
+            AtualizarTensao(dt, jogando ? m : null, c);
             if (jogando)
             {
                 float s = (float)m.sanity;
@@ -190,13 +192,7 @@ namespace RitualReversal
                         break;
                     }
                 case "ping": if (e.Str("team") == papel) ReceberPing(e); break;
-                case "fala":
-                    if (e.Str("team") == papel)
-                    {
-                        string[] falas = { "Preciso de ajuda!", "Estou indo", "Recuar!", "Inimigo aqui!", "Obrigado", papel == "H" ? "Vou purgar este altar" : "Vou iniciar o ritual" };
-                        int f = e.Int("f"); var quem = g.actors.Find(q => q.id == e.Int("a")); if (f >= 0 && f < falas.Length) Feed((quem != null ? quem.name : "Aliado") + ": " + falas[f], papel == "H" ? "h" : "c");
-                    }
-                    break;
+                case "fala": if (e.Str("team") == papel) ReceberFala(e); break;
                 case "doom":
                 case "sealed":
                     {
@@ -293,6 +289,26 @@ namespace RitualReversal
             string txt = k == "altar" && i >= 0 && i < g.altars.Count ? "Altar " + g.altars[i].name : k == "inimigo" ? "Inimigo visto" : "Aqui";
             pings.RemoveAll(p => p.a == quem); pings.Add(new PingV { a = quem, x = (float)e.Num("x"), z = (float)e.Num("z"), t = k == "inimigo" ? 6 : 10, txt = txt, nome = ator != null ? ator.name : "Aliado" });
             Feed((ator != null ? ator.name : "Aliado") + " marcou: " + txt, MeuPapel() == "H" ? "h" : "c"); som.Tom(float.NaN, float.NaN, 1, 880, 990, .1f, Som.Onda.Seno, .18f); som.Tom(float.NaN, float.NaN, 1, 1320, 1320, .12f, Som.Onda.Seno, .12f, .09f);
+        }
+
+        // trilha de tensão: cresce com o perigo (inimigo à vista e perto, ritual ao alcance do ouvido, sanidade baixa, ferimento
+        // recente, estar caído) e some no Grande Ritual, que tem a própria música
+        float tensaoK;
+        void AtualizarTensao(float dt, Ator m, Vector3 P)
+        {
+            float alvo = 0;
+            if (m != null && g != null && g.phase == "play")
+            {
+                foreach (var a in g.actors)
+                {
+                    if (a.team == m.team || a.hidden || a.st == "dead") continue; float d = Mathf.Sqrt((float)((a.x - P.x) * (a.x - P.x) + (a.z - P.z) * (a.z - P.z)));
+                    if (d < 28 && Mapa.SegClear(P.x, P.z, a.x, a.z, 0, Mapa.GT)) alvo = Mathf.Max(alvo, .55f + .4f * (1 - d / 28));
+                }
+                if (LEG.Keys.Any(k => k.StartsWith("rit"))) alvo = Mathf.Max(alvo, .45f);
+                if (m.sanity < 40) alvo = Mathf.Max(alvo, .35f + (40 - (float)m.sanity) / 40 * .4f); if (hurtT > 0) alvo = Mathf.Max(alvo, .8f); if (m.st == "down") alvo = 1; if (m.st == "dead") alvo = 0;
+                alvo *= 1 - mundo.GRk;
+            }
+            tensaoK += (alvo - tensaoK) * Mathf.Min(1, dt * (alvo > tensaoK ? 2.5f : .5f)); som.Tensao(tensaoK);
         }
 
         // ---------- avisos visuais do HUD ----------

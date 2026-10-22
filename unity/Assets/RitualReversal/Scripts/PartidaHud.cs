@@ -132,6 +132,7 @@ namespace RitualReversal
             linha("Clarões e tremor", "rr-suave", new[] { new[] { "0", "Normais" }, new[] { "1", "Reduzidos" } });
             linha("Cores das equipes", "rr-dalt", new[] { new[] { "0", "Ouro e carmim" }, new[] { "1", "Ouro e azul" } });
             linha("Chat dos adversários", "rr-mudo-adv", new[] { new[] { "0", "Mostrar" }, new[] { "1", "Silenciar" } });
+            linha("Música da tela inicial", "rr-musica", new[] { new[] { "1", "Ligada" }, new[] { "0", "Desligada" } });
             if (mundo != null) mundo.claroesSuaves = PlayerPrefs.GetInt("rr-suave", 0) == 1;
             GUILayout.Label("<size=14>" + Cor("Reduzidos: relâmpagos ficam mais fracos. Ouro e azul troca o carmim do culto por azul na planta e no replay (ajuda com daltonismo vermelho-verde).", MUDO) + "</size>", sPequeno);
             if (GUI.changed) SalvarAjustes();
@@ -329,7 +330,7 @@ namespace RitualReversal
             if (claraoGrande > 0) { claraoGrande -= dtG; Caixa(new Rect(0, 0, W, H), new Color(.8f, .05f, .1f, Mathf.Clamp01(claraoGrande / 1.2f) * .85f)); }
             TelaQueda(m);
 
-            Bussola(m, papel); Legendas(); FaixaLance(); Caderno(papel); PainelTutorial(); PainelDica(); ChatJogo();
+            Bussola(m, papel); Legendas(); FaixaLance(); Caderno(papel); PainelTutorial(); PainelDica(); ChatJogo(); PainelFalas();
             if (EntradaUnity.Segurando(Tecla.Tab)) Planta(m, papel);
         }
 
