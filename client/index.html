@@ -3672,7 +3672,8 @@ setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi pos
 // sem ninguém por perto e sem HUD. A arma é a mesma da primeira pessoa no jogo (mesmo modelo, mesma animação, mesma
 // luz de leitura); "Estúdio" só fortalece essa luz. A escolha fica salva e vai junto quando você entra numa sala.
 const ARS={ativo:false,arma:'carabina',vista:null,estudio:true,el:null};
-function startArsenal(){ audioInit(); ARS.ativo=true; document.body.classList.add('arsenal'); startLocal({papel:'H'}); }
+// lastPhase zerado: depois de uma partida ele ficou em 'play', e a do Arsenal chega lá sem quadro no meio (o painel não abria)
+function startArsenal(){ audioInit(); ARS.ativo=true; document.body.classList.add('arsenal'); lastPhase=''; startLocal({papel:'H'}); }
 function sairArsenal(){ ARS.ativo=false; document.body.classList.remove('arsenal'); camera.clearViewOffset(); if(ARS.el){ ARS.el.remove(); ARS.el=null; } if(ARMA) ARMA.forcar(null); sairParaMenu(); }
 function arsenalComeca(){ show('hud',false); unlock(); arsenalForca('sacar'); arsenalPainel(); }
 // o jogador fica parado no corredor da nave, olhando as velas; os outros longe
