@@ -451,6 +451,7 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 <script src="arma.js"></script>
 <script src="mundo.js"></script>
 <script src="skins.js"></script>
+<script src="modelos.js"></script>
 <script>
 (function(){
 'use strict';
@@ -663,6 +664,23 @@ function cetroOsso(cor){ // Cultistas: cetro de vértebras com uma brasa presa e
     const ossinho=new THREE.Mesh(new THREE.SphereGeometry(.009,10,8),osso); ossinho.scale.set(1,2.2,1); ossinho.position.set(Math.cos(a)*.05,-.06,Math.sin(a)*.05); cab.add(ossinho); }
   return {g,cab,brasa,halo,runa};
 }
+// Modelos 3D gerados (client/modelos.js, tools/montar-modelos.py): GLB enxuto em metros (uma malha e a textura de cor),
+// lido aqui sem o GLTFLoader; o Unity lê o mesmo arquivo (Visual/ModeloGLB.cs). Sem o arquivo, a peça volta a ser montada
+// por código.
+const MODELOS={}, MODELO_DESGASTE={altar:{mancha:.25,base:.3},estatua:{mancha:.5,base:.5,musgo:1}};
+function modelo(nome){ if(nome in MODELOS) return MODELOS[nome]; const b64=window.RR_MODELOS&&RR_MODELOS[nome]; if(!b64) return MODELOS[nome]=null;
+  try{ const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)), jl=new DataView(bin.buffer).getUint32(12,true);
+    const J=JSON.parse(new TextDecoder().decode(bin.subarray(20,20+jl))), bo=20+jl+8;
+    const vista=i=>{ const v=J.bufferViews[i], o=bo+(v.byteOffset||0); return bin.slice(o,o+v.byteLength); };
+    const acc=i=>{ const a=J.accessors[i], b=vista(a.bufferView).buffer; return a.componentType===5126?new Float32Array(b):a.componentType===5125?new Uint32Array(b):new Uint16Array(b); };
+    const pr=J.meshes[0].primitives[0], at=pr.attributes, geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(acc(at.POSITION),3)); geo.setAttribute('normal',new THREE.BufferAttribute(acc(at.NORMAL),3));
+    geo.setAttribute('uv',new THREE.BufferAttribute(acc(at.TEXCOORD_0),2)); geo.setIndex(new THREE.BufferAttribute(acc(pr.indices),1)); geo.computeBoundingSphere();
+    const im=J.images[0], url=URL.createObjectURL(new Blob([vista(im.bufferView)],{type:im.mimeType}));
+    const tex=new THREE.TextureLoader().load(url,()=>URL.revokeObjectURL(url)); tex.flipY=false; tex.encoding=THREE.sRGBEncoding; tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    const mat=desgastar(new THREE.MeshStandardMaterial({map:tex,roughness:.92,metalness:0}),MODELO_DESGASTE[nome]||{});
+    return MODELOS[nome]={geo,mat};
+  }catch(e){ console.warn('modelo '+nome,e); return MODELOS[nome]=null; } }
 function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t; }
 function runeTexture(){ return canvasTex(512,512,(g,W)=>{ const c=W/2; g.strokeStyle='#fff'; g.fillStyle='#fff'; g.lineCap='round';
   const ring=(r,w)=>{ g.lineWidth=w; g.beginPath(); g.arc(c,c,r,0,Math.PI*2); g.stroke(); }; ring(246,7); ring(226,2.5); ring(170,4); ring(152,1.5); ring(60,3);
@@ -714,10 +732,12 @@ const PECAS={
     meshBox(x-.8,x+.8,0,.6,z-.8,z+.8,MAT.pedraVelha,2); meshBox(x-.75,x+.75,w.h-.2,w.h+.3,z-.75,z+.75,MAT.pedraVelha,2); },
   estatua(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, g=new THREE.Group(), M=MAT.estatua; g.position.set(x,0,z); g.rotation.y=w.rot||0; world.add(g);
     const put=(geo,px,py,pz,rx,rz)=>{ const m=new THREE.Mesh(geo,M); m.position.set(px,py,pz); m.rotation.set(rx||0,0,rz||0); m.castShadow=true; g.add(m); return m; };
-    const pose=w.pose|0, ajoelha=pose===1||pose===3, alt=ajoelha?.62:1;
+    const MS=modelo('estatua'), pose=w.pose|0, ajoelha=!MS&&(pose===1||pose===3), alt=ajoelha?.62:1;
     /* v6: pedestal de pedra. A caixa da estátua é alta (bloqueia visão e tiro até 2,4 m); sem pedestal, a figura ajoelhada
        ficava abaixo do olho e dava para ver por cima do que bloqueia (tools/alturas.js) */
     const ped=ajoelha?1.05:.7; g.position.y=ped; meshBox(x-.42,x+.42,0,ped,z-.42,z+.42,MAT.pedraVelha||MAT.wall,1.5); meshBox(x-.5,x+.5,ped-.08,ped,z-.5,z+.5,MAT.pedraVelha||MAT.wall,1.5);
+    if(MS){ const m=new THREE.Mesh(MS.geo,MS.mat); m.castShadow=m.receiveShadow=true; g.add(m); }   // o monge gerado, em pé, para todas as poses
+    else {
     const manto=torno([[.42,0],[.38,.3],[.3,.8*alt+.2],[.25,1.25*alt+.1],[.14,1.42*alt+.1],[0,1.45*alt+.1]],M,9); manto.castShadow=true; g.add(manto);
     const cab=put(new THREE.SphereGeometry(.17,8,6),0,1.62*alt+.1,-.03); cab.scale.set(1,1.15,1);
     const capuz=put(new THREE.ConeGeometry(.22,.42,8),0,1.72*alt+.12,.03); capuz.rotation.x=-.25;
@@ -726,6 +746,7 @@ const PECAS={
     else if(pose===1){ braco(-1,-1.3,.1); braco(1,-1.3,-.1); cab.rotation.x=.7; }                               // ajoelhado
     else if(pose===2){ braco(-1,.2,.3); braco(1,-2.9,-.2); cab.rotation.x=-.35; }                               // braço erguido para o céu
     else { braco(-1,-2.4,.55); braco(1,-2.4,-.55); cab.rotation.x=.55; g.rotation.z=.1; }                       // mãos no rosto
+    }
     for(let k=0;k<3;k++){ const pd=new THREE.Mesh(new THREE.DodecahedronGeometry(.12+vr()*.12,0),M); pd.position.set(x+(vr()-.5)*1.4,.08,z+(vr()-.5)*1.4); world.add(pd); } },
   rocha(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, L=w.x2-w.x1, D=w.z2-w.z1;
     const m=new THREE.Mesh(new THREE.DodecahedronGeometry(.5,1),MAT.rocha); m.scale.set(L*1.05,w.h*1.5,D*1.05); m.position.set(x,w.h*.42,z); m.rotation.y=vr()*3; m.castShadow=m.receiveShadow=true; world.add(m);
@@ -1273,8 +1294,11 @@ let AV=[];
 function buildAltars(){
   AV=Sim.ALTARS.map((d,i)=>{ const g=new THREE.Group(); g.position.set(d.x,0,d.z); world.add(g); const sgn=Math.sign(d.z||1);
     const s1=new THREE.Mesh(boxGeo(4.4,.25,2.8,2),MAT.wall); s1.position.y=.125; s1.receiveShadow=s1.castShadow=true; g.add(s1);
-    const slab=new THREE.Mesh(boxGeo(2.6,.95,1.3,2),MAT.marble); slab.position.y=.725; slab.castShadow=slab.receiveShadow=true; g.add(slab);
-    const top=new THREE.Mesh(boxGeo(2.9,.12,1.55,2),MAT.marble); top.position.y=1.26; top.castShadow=true; g.add(top);
+    // a mesa do altar: o modelo gerado (2,9 × 1,32 × 1,55, a frente para o lado oposto ao da estela) ou o bloco e o tampo
+    const MA=modelo('altar');
+    if(MA){ const m=new THREE.Mesh(MA.geo,MA.mat); m.rotation.y=sgn>0?Math.PI:0; m.castShadow=m.receiveShadow=true; g.add(m); }
+    else { const slab=new THREE.Mesh(boxGeo(2.6,.95,1.3,2),MAT.marble); slab.position.y=.725; slab.castShadow=slab.receiveShadow=true; g.add(slab);
+      const top=new THREE.Mesh(boxGeo(2.9,.12,1.55,2),MAT.marble); top.position.y=1.26; top.castShadow=true; g.add(top); }
     const back=new THREE.Mesh(boxGeo(1,3.4,.35,2),MAT.wall); back.position.set(0,1.7,.95*sgn); back.castShadow=true; g.add(back);
     const bm=new THREE.MeshBasicMaterial({map:RT.rune,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,color:0x3a2a4a,toneMapped:false});
     const bp=new THREE.Mesh(new THREE.PlaneGeometry(.85,.85),bm); bp.position.set(0,2.5,.77*sgn); if(d.z>0) bp.rotation.y=Math.PI; g.add(bp);

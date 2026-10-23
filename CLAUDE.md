@@ -142,6 +142,13 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   reanimar, Arsenal no menu (`ARS`, `startArsenal`), skins (`client/skins.js`, 9, três por arma; `vis` no hello e no lobby),
   três inspeções novas (mecânica, exibição, inquietante), 12 sons novos CC0 via conquest e ambiente por lugar (`ambientePorLugar`).
   `VERSAO` 6.0. Bots, 400 noites: culto 38–40% (alvo do design 45–55%).
+- Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
+  (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
+  põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e
+  servido pelo servidor) e em `Resources/Modelos/<nome>.bytes`. Leitor mínimo igual nos dois: `modelo(nome)` no index.html
+  (material com `desgastar`, `MODELO_DESGASTE`) e `Visual/ModeloGLB.cs`. Sem o modelo, voltam as peças antigas. A estátua gerada
+  é em pé para todas as poses (o sorteio `vr()` das pedrinhas continua igual). `unity-ver.js` tem as vistas `altar-encapuzados`
+  e `estatua`; o `UnityFalso` decodifica imagens com o Pillow. Uso comercial: conferir os termos da Higgsfield.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):

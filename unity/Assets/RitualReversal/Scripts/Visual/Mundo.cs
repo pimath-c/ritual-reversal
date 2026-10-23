@@ -270,11 +270,18 @@ namespace RitualReversal.Visual
 
         void Estatua(PecaV w, float x, float z)
         {
-            var MT = M("estatua"); int pose = w.pose; bool ajoelha = pose == 1 || pose == 3; float alt = ajoelha ? .62f : 1;
+            var MT = M("estatua"); var MS = ModeloGLB.Carregar("estatua"); int pose = w.pose; bool ajoelha = MS == null && (pose == 1 || pose == 3); float alt = ajoelha ? .62f : 1;
             // v6: pedestal de pedra. A caixa da estátua é alta (bloqueia visão e tiro até 2,4 m); sem pedestal, a figura ajoelhada
             // ficava abaixo do olho e dava para ver por cima do que bloqueia (tools/alturas.js)
             float ped = ajoelha ? 1.05f : .7f; Caixa(x - .42f, x + .42f, 0, ped, z - .42f, z + .42f, M("pedraVelha"), 1.5f); Caixa(x - .5f, x + .5f, ped - .08f, ped, z - .5f, z + .5f, M("pedraVelha"), 1.5f);
-            float gx = pose == 0 ? .12f : 0, gz = pose == 3 ? .1f : 0; var G = TRS(x, ped, z, gx, w.rot, gz);
+            if (MS != null) Est(MS.geo, MS.mat, TRS(x, ped, z, 0, w.rot, 0));   // o monge gerado, em pé, para todas as poses
+            else EstatuaFigura(MT, pose, alt, x, ped, z, w.rot);
+            for (int k = 0; k < 3; k++) { var g = Geo.Dodecaedro(.12f + vr() * .12f); float px = (vr() - .5f) * 1.4f, pz = (vr() - .5f) * 1.4f; Est(g, MT, x + px, .08f, z + pz); }
+        }
+
+        void EstatuaFigura(Material MT, int pose, float alt, float x, float ped, float z, float rot)
+        {
+            float gx = pose == 0 ? .12f : 0, gz = pose == 3 ? .1f : 0; var G = TRS(x, ped, z, gx, rot, gz);
             Est(Geo.Torno(new float[,] { { .42f, 0 }, { .38f, .3f }, { .3f, .8f * alt + .2f }, { .25f, 1.25f * alt + .1f }, { .14f, 1.42f * alt + .1f }, { 0, 1.45f * alt + .1f } }, 9), MT, G);
             float cabRx = pose == 0 ? .5f : pose == 1 ? .7f : pose == 2 ? -.35f : .55f;
             Est(Geo.Esfera(.17f, 8, 6), MT, G * TRS(0, 1.62f * alt + .1f, -.03f, cabRx, 0, 0, 1, 1.15f, 1));
@@ -284,7 +291,6 @@ namespace RitualReversal.Visual
             else if (pose == 1) { braco(-1, -1.3f, .1f); braco(1, -1.3f, -.1f); }
             else if (pose == 2) { braco(-1, .2f, .3f); braco(1, -2.9f, -.2f); }
             else { braco(-1, -2.4f, .55f); braco(1, -2.4f, -.55f); }
-            for (int k = 0; k < 3; k++) { var g = Geo.Dodecaedro(.12f + vr() * .12f); float px = (vr() - .5f) * 1.4f, pz = (vr() - .5f) * 1.4f; Est(g, MT, x + px, .08f, z + pz); }
         }
 
         void Ossos(PecaV w, float x, float z)

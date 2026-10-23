@@ -32,12 +32,14 @@ const VISTAS=[
   {nome:'ruinas',x:-120,z:-76,yaw:0,pitch:.05},
   {nome:'fachada',x:0,z:-12,yaw:0,pitch:.32},
   {nome:'altar-abside',x:0,z:-80,yaw:0,pitch:-.25},
-  {nome:'mata-catedral',x:-60,z:20,yaw:-.6,pitch:.18}].filter(v=>FILTRO.test(v.nome));
+  {nome:'mata-catedral',x:-60,z:20,yaw:-.6,pitch:.18},
+  {nome:'altar-encapuzados',x:82,z:59.5,yaw:Math.PI,pitch:-.12},   // modelos gerados (ModeloGLB.cs): o altar e as estátuas de perto
+  {nome:'estatua',x:-35.5,z:-27.5,yaw:Math.atan2(2.5,2.5),pitch:.05}].filter(v=>FILTRO.test(v.nome));
 
 // 1) exporta o mundo do Unity
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'unity-ver-')), EXE=path.join(tmp,'exportar.exe'), EXP=path.join(OUT,'exportado');
 const VIS=path.join(UN,'Scripts','Visual'); // o mundo inteiro (Mundo*.cs) e o que ele usa; Som, primeira pessoa e pós ficam de fora
-const scripts=fs.readdirSync(VIS).filter(f=>/^(Mundo.*|Geo|Texturas|Materiais|MapaVisual|Arvores|Qualidade|Personagens)\.cs$/.test(f)).map(f=>path.join(VIS,f));
+const scripts=fs.readdirSync(VIS).filter(f=>/^(Mundo.*|Geo|Texturas|Materiais|MapaVisual|Arvores|Qualidade|Personagens|ModeloGLB)\.cs$/.test(f)).map(f=>path.join(VIS,f));
 const sim=fs.readdirSync(path.join(UN,'Scripts','Simulacao')).filter(f=>f.endsWith('.cs')).map(f=>path.join(UN,'Scripts','Simulacao',f));
 try{ execFileSync('mcs',['-nowarn:414,618,169,649,219,162,168,1717','-out:'+EXE,path.join(CS,'UnityFalso.cs'),path.join(CS,'SomFalso.cs'),path.join(CS,'ExportarMundo.cs'),...scripts,...sim],{stdio:['ignore','pipe','pipe']}); }
 catch(e){ console.error('o visual do Unity não compilou contra o UnityEngine de mentira:\n'+String(e.stdout||'')+String(e.stderr||'')); process.exit(2); }
@@ -112,6 +114,8 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
     await of.evaluate(v=>{ const m=__T.game.actors.find(a=>a.cid==='local'); m.x=v.x; m.z=v.z; m.invuln=999; m.hp=m.maxHp; __T.LOOK.yaw=v.yaw; __T.LOOK.pitch=v.pitch; m.inp.yaw=v.yaw; m.inp.pitch=v.pitch;
       for(const a of __T.game.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=a.team==='H'?-8:8; } },v);
     await of.waitForTimeout(1500);
+    await of.waitForFunction(v=>{ const sc=__T.cena(); let c=sc.children.find(o=>o.isPerspectiveCamera)||null; if(!c) sc.traverse(o=>{ if(!c&&o.isPerspectiveCamera) c=o; }); // no swiftshader lento a câmera pode ainda estar na vista anterior
+      c.updateMatrixWorld(); const p=new THREE.Vector3(); c.getWorldPosition(p); return Math.hypot(p.x-v.x,p.z-v.z)<1; },v,{timeout:60000}).catch(()=>console.log('a câmera não chegou em',v.nome));
     const st=await of.evaluate(()=>{ const sc=__T.cena(), velas=[]; let c=sc.children.find(o=>o.isPerspectiveCamera)||null;
       if(!c) sc.traverse(o=>{ if(!c&&o.isPerspectiveCamera) c=o; });
       sc.traverse(o=>{ if(o.isPointLight&&o.parent===sc&&o.intensity>0&&o.distance>0&&o.distance<30) velas.push({p:o.position.toArray(),c:[o.color.r,o.color.g,o.color.b],i:o.intensity,d:o.distance}); });

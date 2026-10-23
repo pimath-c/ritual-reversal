@@ -34,8 +34,9 @@ namespace RitualReversal.Visual
                 var G = M4.T(x, 0, z);
                 // partes paradas
                 Est(Geo.Caixa(4.4f, .25f, 2.8f, 2), M("wall"), G * M4.T(0, .125f, 0));
-                Est(Geo.Caixa(2.6f, .95f, 1.3f, 2), M("marble"), G * M4.T(0, .725f, 0));
-                Est(Geo.Caixa(2.9f, .12f, 1.55f, 2), M("marble"), G * M4.T(0, 1.26f, 0));
+                var MA = ModeloGLB.Carregar("altar");   // o altar gerado (ModeloGLB.cs), a frente virada para a nave
+                if (MA != null) Est(MA.geo, MA.mat, G * M4.RY(sgn > 0 ? PI : 0));
+                else { Est(Geo.Caixa(2.6f, .95f, 1.3f, 2), M("marble"), G * M4.T(0, .725f, 0)); Est(Geo.Caixa(2.9f, .12f, 1.55f, 2), M("marble"), G * M4.T(0, 1.26f, 0)); }
                 Est(Geo.Caixa(1, 3.4f, .35f, 2), M("wall"), G * M4.T(0, 1.7f, .95f * sgn));
                 for (int k = 0; k < 5; k++) { float h = rand(.15f, .35f); Est(Geo.Cilindro(.04f, .045f, h, 6), M("wax"), G * M4.T(-1 + k * .5f, 1.32f + h / 2, rand(-.4f, .4f)), false); }
                 // partes que mudam

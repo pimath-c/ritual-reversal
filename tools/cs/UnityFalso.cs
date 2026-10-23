@@ -504,7 +504,26 @@ namespace UnityEngine
         public LightType type; public Color color = Color.white; public float range = 10, intensity = 1, spotAngle = 30, innerSpotAngle, shadowBias, shadowNormalBias, shadowStrength = 1; public LightShadows shadows; public LightRenderMode renderMode; public int cullingMask = -1;
     }
     public class TextAsset : Object { public string text; public byte[] bytes; public TextAsset(string t) { text = t; } public TextAsset(byte[] b) { bytes = b; } }
-    public static class ImageConversion { public static bool LoadImage(Texture2D t, byte[] b) { return false; } }
+    // o LoadImage de verdade decodifica PNG e JPEG; aqui o Pillow faz isso (as linhas de baixo para cima, como no Unity)
+    public static class ImageConversion
+    {
+        public static bool LoadImage(Texture2D t, byte[] b)
+        {
+            try
+            {
+                var arq = System.IO.Path.GetTempFileName(); System.IO.File.WriteAllBytes(arq, b);
+                var pi = new System.Diagnostics.ProcessStartInfo("python3", "-I -c \"import sys;from PIL import Image;i=Image.open(sys.argv[1]).convert('RGBA').transpose(Image.FLIP_TOP_BOTTOM);sys.stdout.buffer.write(b'%d %d\\n'%i.size+i.tobytes())\" " + arq) { RedirectStandardOutput = true, UseShellExecute = false };
+                byte[] saida; using (var pr = System.Diagnostics.Process.Start(pi)) { var ms = new System.IO.MemoryStream(); pr.StandardOutput.BaseStream.CopyTo(ms); pr.WaitForExit(); saida = ms.ToArray(); }
+                System.IO.File.Delete(arq);
+                int nl = System.Array.IndexOf(saida, (byte)10); if (nl < 0) return false;
+                var wh = System.Text.Encoding.ASCII.GetString(saida, 0, nl).Split(' '); int w = int.Parse(wh[0]), h = int.Parse(wh[1]);
+                t.width = w; t.height = h; t.pixels = new Color32[w * h];
+                for (int k = 0; k < w * h; k++) { int o = nl + 1 + k * 4; t.pixels[k] = new Color32(saida[o], saida[o + 1], saida[o + 2], saida[o + 3]); }
+                return true;
+            }
+            catch { return false; }
+        }
+    }
     public static class ColorUtility
     {
         public static bool TryParseHtmlString(string h, out Color c)

@@ -1,0 +1,19 @@
+{
+  "_sobre": "Modelos 3D gerados no Higgsfield (Tripo, texto para 3D) para o teste de 23/10. tools/montar-modelos.py baixa o original em fontes/<nome>.glb, ajusta o tamanho, a orientação e a textura, e grava client/modelos.js e unity/Assets/RitualReversal/Resources/Modelos/<nome>.bytes. Uso comercial: conferir os termos da Higgsfield antes de publicar na loja.",
+  "altar": {
+    "job": "09dbca59-31e6-4432-ba50-144cb4f4c5e8",
+    "modelo": "tripo_3d",
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3L79INUfLFtqLgbIRxFLR11q4HF/hf_20261023_223349_09dbca59-31e6-4432-ba50-144cb4f4c5e8.glb",
+    "prompt": "A rectangular gothic stone altar table: a solid carved block of weathered pale grey marble with a thick overhanging top slab, carved pointed arches and a small cross relief on the front panel, chipped corners and cracks, medieval cathedral altar, game asset, nothing on top",
+    "negativo": "candles, cloth, tablecloth, people, steps, platform, base, text, modern",
+    "encaixe": "caixa", "tamanho": [2.9, 1.32, 1.55], "textura": 1024
+  },
+  "estatua": {
+    "job": "8d3e6db3-4a30-4ced-93ab-ea65486ac366",
+    "modelo": "tripo_3d",
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3L79INUfLFtqLgbIRxFLR11q4HF/hf_20261023_223350_8d3e6db3-4a30-4ced-93ab-ea65486ac366.glb",
+    "prompt": "Weathered stone statue of a hooded monk standing in prayer, head bowed under a deep hood, hands clasped at the chest, long heavy robe reaching the ground, gothic cemetery sculpture, grey stone with cracks and patches of moss, game asset",
+    "negativo": "pedestal, base, plinth, colorful, face details, people, modern",
+    "encaixe": "altura", "tamanho": [0, 1.95, 0], "textura": 512, "brilho": 1.6
+  }
+}
