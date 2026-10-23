@@ -176,6 +176,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   (UniversalFragmentPBR + luz de leitura + detalhe da skin + varredura; relevo por derivadas de tela; sem ele, URP/Lit).
   `PrimeiraPessoa.cs` ficou com a câmera (altura 1,67), a lanterna, o clarão e as cápsulas, e monta o corpo e o contexto
   que o `ArmaFP.Quadro` recebe. Tecla I inspeciona; `ArmaFP.Forcar`/`LuzEstudio`/`TrocarSkin` são a vitrine e o Arsenal.
+  Vitrine (F9 numa partida local): `PartidaVitrine.cs` é o painel() do arma.js nas medidas do #vitrineArma (arma, clipe,
+  velocidade, vista, luz, linha do tempo com o range dourado, tocar, repetir); abrir solta o cursor e esconde a pausa;
+  `ArmaFP.Vista(cam, "peca")` mede a portinhola ou o tambor no espaço da câmera (o camVista do navegador).
   `tools/unity-fp.js` roda os mesmos casos no navegador e no `ArmaFP` (Mono, `tools/cs/TesteFP.cs`) e compara cada nó:
   656 poses, diferença máxima 2e-7 m, e uma passada de fumaça por todas as skins e entradas.
   Estilo do navegador no Unity: `Resources/RitualReversalIlustrado.shader` substitui o URP/Lit no `Mat.Lit` (mesmas

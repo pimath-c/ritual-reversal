@@ -57,7 +57,7 @@ namespace RitualReversal
             {
                 case "pick": TelaEscolha(); break;
                 case "intro": TelaIntro(); break;
-                case "play": if (arsenal) { PainelArsenal(); break; } Hud(); DesenharToque(); if (lojaAberta != null) TelaLoja(); else if (!Travado()) TelaPausa(); break;
+                case "play": if (arsenal) { PainelArsenal(); break; } Hud(); DesenharToque(); if (lojaAberta != null) TelaLoja(); else if (vitrine) PainelVitrine(); else if (!Travado()) TelaPausa(); break;
                 case "summary": TelaResumo(); break;
                 case "final": TelaFinal(); break;
             }

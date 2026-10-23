@@ -89,7 +89,10 @@ namespace RitualReversal
             TQuadros(60, .05f); Foto("hud", .05f);
             // as legendas dos sons, iguais às do roteiro do navegador: rumo zerado e quatro sons em volta da câmera
             lookYaw = 0; TQuadros(1, .05f); { var P = CamP(); Legenda("shot", P.x + 14, P.z - 14); Legenda("corvo", P.x - 6, P.z + 8); Legenda("collect", P.x + 1, P.z + 1); Legenda("presage", float.NaN, float.NaN, "Presságio: um ritual vai começar", "rit"); }
-            TQuadros(2, .05f); Foto("legendas", .05f); LEG.Clear(); Travar(false); TQuadros(6, .05f); Foto("pausa", .05f); pausaAjustes = true; TQuadros(4, .05f); Foto("pausa-ajustes", .05f); pausaAjustes = false; Travar(true);   // a pausa
+            TQuadros(2, .05f); Foto("legendas", .05f); LEG.Clear();
+            // a vitrine das animações (F9), como no roteiro do navegador: a recarga vazia da carabina
+            AlternarVitrine(); if (!vitrine) falhas.Add("vitrine: o F9 não abriu o painel"); TQuadros(2, .05f); Foto("vitrine", .05f);
+            vitVista = "peca"; AplicarVitrine(false); TQuadros(3, .05f); vitVista = null; AplicarVitrine(false); AlternarVitrine(); Travar(false); TQuadros(6, .05f); Foto("pausa", .05f); pausaAjustes = true; TQuadros(4, .05f); Foto("pausa-ajustes", .05f); pausaAjustes = false; Travar(true);   // a pausa
             cadernoAberto = true; TQuadros(10, .05f); Foto("caderno", .05f); cadernoAberto = false; falasAbertas = true; falasT = 4; TQuadros(10, .05f); Foto("falas", .05f);
             falasAbertas = false; { var n = Mapa.NPCS.Find(x => x.id == "ermitao"); var m = Eu(); m.x = n.x + 1; m.z = n.z; m.obolos = 5; lojaAberta = "ermitao"; Travar(false); TQuadros(4, .05f); Foto("loja", .05f); lojaAberta = null; Travar(true); }   // a loja do Ermitão
             Input.apertadas.Add(KeyCode.V); TQuadro(.05f); Input.apertadas.Add(KeyCode.Alpha1); TQuadro(.05f);   // uma frase pelas teclas

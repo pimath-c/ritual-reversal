@@ -61,6 +61,8 @@ const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM 
   // as legendas dos sons, iguais às do roteiro do Unity: rumo zerado e quatro sons em volta da câmera
   await ev("LOOK.yaw=0; { const P=camera.position; legenda('shot',P.x+14,P.z-14); legenda('corvo',P.x-6,P.z+8); legenda('collect',P.x+1,P.z+1); legenda('presage',null,null,'Presságio: um ritual vai começar','rit'); }");
   await foto('legendas',700); await ev("limparLegendas()");
+  // a vitrine das animações (F9): o painel do arma.js na recarga vazia da carabina
+  await ev("ARMA.painel(true)"); await foto('vitrine',900); await medir('vitrine',['#vitrineArma','#vitrineArma > b','#vitrineArma > span','#vitrineArma > div','#vitrineArma button','#vitR','#vitLoop','#vitT']); await ev("ARMA.painel()");
   await ev("locked=false; paused=true; screenKey=''"); await foto('pausa',900); await medir('pausa',['#scrBody','#scrBody h2','#scrBody p','.cola','.cola span','.cola kbd','.btnrow']);
   await ev("openSettings()"); await foto('pausa-ajustes',900);
   await ev("settingsOpen=false; locked=true; paused=false; screenKey=''; scr.classList.remove('on'); CAD.aberto=true"); await foto('caderno',1200);

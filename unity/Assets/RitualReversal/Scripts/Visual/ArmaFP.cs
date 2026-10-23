@@ -953,14 +953,25 @@ namespace RitualReversal.Visual
         };
         public float Vista(Camera cam, string nome, float fovJogo)
         {
-            double[] v; if (nome == null || !VISTAS.TryGetValue(nome, out v)) { vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity; return fovJogo; }
-            var p = new V3d(v[0], v[1], v[2]); var t = new V3d(v[3], v[4], v[5]); var up = nome.StartsWith("cima") ? new V3d(0, 0, -1) : new V3d(0, 1, 0);
+            double[] v; V3d p, t; double fov;
+            if (nome == "peca")
+            {
+                // perto da peça que trabalha (a vitrine): a portinhola da carabina ou o tambor do revólver, medidos no espaço da
+                // câmera com a primeira pessoa no lugar de sempre
+                vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity;
+                bool rev = arma == "revolver"; var g = rev ? revolver.g : carabina.g; var ct0 = cam.transform;
+                Vector3 alvo = ct0.InverseTransformPoint(rev ? revolver.tambor.position : g.TransformPoint(carabina.entrada.F)), de = ct0.InverseTransformPoint(g.TransformPoint(rev ? new Vector3(-.16f, .07f, .12f) : new Vector3(.17f, .09f, .06f)));
+                p = new V3d(de.x, de.y, -de.z); t = new V3d(alvo.x, alvo.y, -alvo.z); fov = 38;
+            }
+            else if (nome == null || !VISTAS.TryGetValue(nome, out v)) { vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity; return fovJogo; }
+            else { p = new V3d(v[0], v[1], v[2]); t = new V3d(v[3], v[4], v[5]); fov = v[6]; }
+            var up = nome.StartsWith("cima") ? new V3d(0, 0, -1) : new V3d(0, 1, 0);
             // Matrix4.lookAt do three para câmera: z aponta do alvo para o olho
             var z = (p - t).Norm(); var x = up.Cross(z).Norm(); var y = z.Cross(x); var m = new double[16]; m[0] = x.x; m[1] = x.y; m[2] = x.z; m[4] = y.x; m[5] = y.y; m[6] = y.z; m[8] = z.x; m[9] = z.y; m[10] = z.z; m[15] = 1;
             var Rt = Qd.DeMatriz(m); var Ri = Rt.Inv(); var pi = -(p.Rot(Ri));
             var ct = cam.transform; var cr = ct.rotation; ct.position = ct.position + cr * new Vector3((float)p.x, (float)p.y, -(float)p.z); ct.rotation = cr * new Quaternion(-(float)Rt.x, -(float)Rt.y, (float)Rt.z, (float)Rt.w);
             vm.localRotation = new Quaternion(-(float)Ri.x, -(float)Ri.y, (float)Ri.z, (float)Ri.w); vm.localPosition = new Vector3((float)pi.x, (float)pi.y, -(float)pi.z);
-            return (float)v[6];
+            return (float)fov;
         }
         // nós na ordem da exportação (tools/unity-fp.js)
         public Transform[] Nos { get { return T; } }

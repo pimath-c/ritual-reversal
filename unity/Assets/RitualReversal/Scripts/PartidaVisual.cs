@@ -57,7 +57,7 @@ namespace RitualReversal
                 bool correndo = ultimaEntrada != null && ultimaEntrada.sp && ultimaEntrada.mz < 0 && m.moving && m.st == "alive";
                 fp.Atualizar(m, g, (float)m.x, (float)m.z, m.moving, ultimaEntrada != null ? (float)ultimaEntrada.mx : 0, ultimaEntrada != null ? (float)ultimaEntrada.mz : 0, correndo, (float)lookYaw, (float)lookPitch, dt, agora);
                 EstadoProprio(m); if (m.st == "dead") Espectar(m, dt); else { espAlvo = null; espPos = null; }
-                CameraArsenal();
+                CameraArsenal(); CameraVitrine();
             }
             else
             {

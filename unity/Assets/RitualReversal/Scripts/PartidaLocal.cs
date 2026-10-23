@@ -60,6 +60,9 @@ namespace RitualReversal
             AtualizarToque();
             var m = Eu();
             bool jogando = g.phase == "play";
+            // F9: a vitrine das animações (só na partida local, como no navegador); fecha sozinha quando a noite acaba
+            if (vitrine && !jogando) FecharVitrine(false);
+            if (jogando && !online && !chatAberto && EntradaUnity.Apertou(Tecla.F9)) AlternarVitrine();
             bool ativo = jogando && Travado() && lojaAberta == null && !chatAberto;
             if (jogando) LerAtalhos(m, ativo);
             var inp = LerEntrada(ativo);
