@@ -1,5 +1,5 @@
 {
-  "_sobre": "Modelos 3D gerados no Higgsfield (Tripo, texto para 3D) para o teste de 23/10. tools/montar-modelos.py baixa o original em fontes/<nome>.glb, ajusta o tamanho, a orientação e a textura, e grava client/modelos.js e unity/Assets/RitualReversal/Resources/Modelos/<nome>.bytes. Uso comercial: conferir os termos da Higgsfield antes de publicar na loja.",
+  "_sobre": "Modelos 3D gerados no Higgsfield (Tripo, texto para 3D) para o teste de 23/10. tools/montar-modelos.py baixa o original em fontes/<nome>.glb, ajusta o tamanho, a orientação e a textura, e grava client/modelos.js e unity/Assets/RitualReversal/Resources/Modelos/<nome>.bytes. Uso comercial liberado pelo dono do projeto (24/10).",
   "altar": {
     "job": "09dbca59-31e6-4432-ba50-144cb4f4c5e8",
     "modelo": "tripo_3d",

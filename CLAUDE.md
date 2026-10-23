@@ -148,7 +148,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   servido pelo servidor) e em `Resources/Modelos/<nome>.bytes`. Leitor mínimo igual nos dois: `modelo(nome)` no index.html
   (material com `desgastar`, `MODELO_DESGASTE`) e `Visual/ModeloGLB.cs`. Sem o modelo, voltam as peças antigas. A estátua gerada
   é em pé para todas as poses (o sorteio `vr()` das pedrinhas continua igual). `unity-ver.js` tem as vistas `altar-encapuzados`
-  e `estatua`; o `UnityFalso` decodifica imagens com o Pillow. Uso comercial: conferir os termos da Higgsfield.
+  e `estatua`; o `UnityFalso` decodifica imagens com o Pillow. Uso comercial liberado pelo dono.
 - Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
   `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
 - Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
