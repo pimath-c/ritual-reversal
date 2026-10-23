@@ -1,16 +1,27 @@
 # Ritual Reversal no Unity
 
-O jogo do protótipo roda no Unity, jogável contra bots, com o **visual e o som do protótipo**: a catedral com vitrais,
-raios de luz, lustres, velas, tapetes, estandartes e corvos; a floresta com carvalhos, samambaias, trilhas, clareiras
-e luar; céu, lua, névoa por momento e o Grande Ritual (céu de sangue, sino, coro, tambor); os altares com círculo de
-runas, feixe e brasas; Cultistas e Caçadores com animação procedural (andar, mirar, recarregar, canalizar, cair,
-morrer e se dissolver), armas na mão em primeira pessoa, lanterna, partículas, efeitos das habilidades, mercadores,
-pontos de tarefa, pegadas e sal; pós-processamento (bloom, ACES, vinheta, granulado, aberração com a sanidade) e
-todos os sons sintetizados na hora, como no navegador. Nada disso usa arquivos de arte: é tudo montado por código
-no Play, a partir de `Resources/mapa.json`.
+O jogo do protótipo roda no Unity, jogável contra bots e online, **igual à versão do navegador** (a v6): o mapa com a
+catedral em cruz no promontório, o desfiladeiro com a Ponte Grande, a Ponte Caída e o Aqueduto, e a mata com os
+reagentes; o estilo ilustrado (luz em faixas, contorno a nanquim, névoa rasteira, luz de recorte nas silhuetas); o
+clima de cada noite (chuva, tempestade com relâmpagos, névoa); a primeira pessoa com mãos articuladas, recargas,
+inspeções e as 9 skins; o Arsenal; o Grande Ritual; e toda a interface do navegador (HUD, bússola, legendas dos sons,
+caderno dos altares, frases rápidas, tutorial, dicas, desafio da noite, perfil e conquistas, resumo, resultado, Rever a
+noite e o relatório do playtest), com as mesmas fontes e as mesmas medidas. Nada disso usa arquivos de arte: é tudo
+montado por código no Play, a partir de `Resources/mapa.json` e dos dados exportados do jogo oficial.
 
 A simulação (`Scripts/Simulacao`) é um porte linha a linha de `shared/sim.js`, conferido contra o protótipo passo a
 passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a bit (`node tools/comparar-cs.js`).
+
+## Novidades desta versão (23/10)
+
+- Interface conferida pixel a pixel com o navegador: HUD, menus, sala, loja, pausa, perfil, escolha dos altares,
+  Rever a noite e relatório com as mesmas medidas, alturas de linha e fontes.
+- Texto nítido em qualquer resolução (1440p, 4K, celular), inclusive botões e campos de texto.
+- Símbolos (◆ ✓ ✕ ✚ ✶ ☉...) com a mesma fonte do navegador (DejaVu Sans, que vem junto): não viram quadradinhos.
+- Legendas dos sons com a seta do navegador; bússola em itálico; anúncios, interação e disputa do ritual no tamanho
+  certo no celular.
+- Controles de toque, HUD compacto do celular e resolução adaptativa (Ajustes).
+- Vitrine das animações: **F9** numa partida contra bots (arma, clipe, velocidade, vista, luz, linha do tempo).
 
 ## Instalar ou atualizar
 
@@ -26,12 +37,15 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
    (Se preferir a cena antiga com o blockout, ela também serve: no Play as caixas somem e o mundo do protótipo
    aparece no lugar.)
 2. Salve a cena (Ctrl+S) e aperte **Play**. Os primeiros segundos são o mundo sendo montado (texturas e malhas).
-3. Escolha **Caçar** ou **Celebrar**. Como Cultista, você escolhe os 3 altares. Depois escolha classe e feitiço e clique em **Estou pronto**.
+3. Na tela inicial, escolha o lado (**Caça**, **Celebra** ou **Sorteia**) e a força dos bots e clique em **Jogar sozinho,
+   com bots**. Como Cultista, você escolhe os 3 altares. Depois escolha classe e feitiço e clique em **Estou pronto**.
+   Na primeira vez, **Aprender a jogar** é o tutorial guiado; **Arsenal** mostra as armas e as skins.
 
 Para jogar **online** com amigos (o mesmo servidor do protótipo, dá até para misturar quem joga no navegador com
 quem joga no Unity):
 
-1. Quem hospeda roda o servidor: na pasta `server` do repositório, `npm install` e `npm start` (porta 8080).
+1. Quem hospeda roda o servidor (precisa do Node.js 18 ou mais novo): abra um terminal na pasta `server` deste pacote e
+   rode `npm start` (porta 8080; a pasta já vem com as dependências). Quem joga pelo navegador abre `http://localhost:8080`.
    Para amigos de fora, `cloudflared tunnel --url http://localhost:8080` dá um endereço `https://...`.
 2. Na tela inicial, em **Jogar online**, escreva o endereço do servidor (`localhost:8080`, um IP da rede de casa
    como `192.168.0.10:8080`, ou o `https://...` do túnel) e seu nome.
@@ -39,21 +53,34 @@ quem joga no Unity):
    ficam com bots. O anfitrião clica em **Começar a partida**.
 4. Se a conexão cair no meio da noite, o jogo tenta voltar sozinho por 2 minutos; enquanto isso um bot joga por você.
 
-Na pausa (Esc) e na tela inicial ficam os **ajustes**: sensibilidade do mouse, volume, campo de visão e qualidade
-(Alto, Médio, Baixo, Mínimo; a qualidade vale a partir do próximo Play). Ficam salvos.
+Na pausa (Esc) e na tela inicial ficam os **ajustes**: sensibilidade do mouse, volume, campo de visão, brilho,
+qualidade (Alto, Médio, Baixo, Mínimo; vale a partir do próximo Play), mira, legendas, as teclas, controles de toque e
+resolução adaptativa. Ficam salvos.
 
-Controles (os mesmos do protótipo):
+Controles (os mesmos do protótipo; dá para trocar as teclas nos Ajustes):
 
 | Tecla | Ação |
 |---|---|
 | WASD, Shift | andar, correr |
+| C (segurar) | agachar: devagar e quase sem som |
 | Mouse, clique esquerdo | mirar, atacar |
 | Clique direito | feitiço da classe |
 | E (segurar) | interagir: coletar, consagrar, iniciar, selar, purgar, reanimar, executar, tarefas; perto de um mercador, abre a loja |
 | T (segurar) | Transferência (Cultista) |
 | Q, F, G, R | Sensor Áurico, lanterna, sinalizador, recarregar (Caçador) |
+| I | inspecionar a arma |
 | Tab (segurar) | planta com os altares como a sua equipe os conhece |
+| Z | marcar um ponto para a equipe |
+| V, depois 1 a 6 | frases rápidas |
+| J | caderno dos altares |
+| Enter | chat da partida (Tab troca entre equipe e todos) |
+| N | pular o passo do tutorial |
+| F9 | vitrine das animações (só contra bots) |
 | Esc | pausa |
+
+Controle (com o Input System): analógico esquerdo anda, direito olha; RT ataca, RB feitiço, LT corre; A interage,
+B agacha, X recarrega, Y lanterna, LB sensor; direcional para a esquerda transfere, para baixo sinalizador, para cima
+as frases; clique no analógico direito marca; Select a planta; Start pausa. Nos menus, cima/baixo e A/B.
 
 Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar mapa (blockout)**) e desative o objeto **Partida** antes do Play.
 
@@ -85,11 +112,16 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
 
 - **Erro vermelho no Console**: copie a mensagem e mande para o Claude.
 - **"falta Resources/simulacao.json"**: a pasta `Resources` não foi copiada; copie a pasta `RitualReversal` inteira de novo.
-- **Tudo rosa**: o projeto não é URP. Crie o projeto com o modelo Universal 3D.
+- **Tudo rosa**: o projeto não é URP. Crie o projeto com o modelo Universal 3D. Se o projeto é URP e só o mundo ficou
+  rosa, o shader `Resources/RitualReversalIlustrado.shader` não compilou: mande o erro dele (clique no arquivo, aparece
+  no Inspector) e, para jogar enquanto isso, apague esse arquivo (o jogo volta ao URP/Lit, sem o estilo ilustrado).
 - **Brilhos (velas, runas, céu) quadrados ou rosa**: o shader `Resources/RitualReversalBrilho.shader` não compilou;
   mande o erro dele (clique no arquivo, aparece no Inspector).
 - **Sem bloom nem vinheta**: na câmera, marque **Post Processing** (o jogo tenta ligar sozinho).
-- **O mouse não gira**: clique em Continuar na tela de pausa (ou clique dentro da janela Game).
+- **O mouse não gira**: clique em Continuar na tela de pausa (ou clique dentro da janela Game). Com a vitrine (F9)
+  aberta o mouse fica solto de propósito: F9 de novo fecha.
+- **Duas cópias de um script ("already contains a definition")**: sobrou uma pasta antiga fora de
+  `Assets/RitualReversal`; apague a cópia velha.
 - **Sem som gravado** (só bipes sintetizados): confira se `Resources/Sons` tem os MP3; no Inspector de cada um,
   Load Type tem de ser Decompress On Load (o padrão).
 - **Lento**: baixe a qualidade nos ajustes (Esc) e aperte Play de novo.
@@ -98,5 +130,8 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
 
 ## Ainda falta
 
-- Contorno a nanquim e névoa rasteira da etapa final de imagem do protótipo, e a luz de recorte nas silhuetas.
-- O HUD do Unity mostra os lances e a investigação em texto: falta a faixa dos lances e a onda do mostrador do círculo.
+- Nada disto rodou num Unity de verdade ainda: o C# compila contra os módulos do Unity e cada tela, a primeira pessoa,
+  o fim da noite e o online foram conferidos fora dele, mas o desenho na tela e os shaders (Ilustrado, PrimeiraPessoa,
+  Grade, Mostrador) só aparecem no seu Unity. Qualquer erro vermelho no Console, mande para o Claude.
+- O texto do Unity sai alguns pixels mais largo que o do navegador em linhas longas (o Unity avança cada letra em
+  pixels inteiros), e letras de tamanho fracionário do CSS (14,5 e 11,5 px) saem no inteiro mais perto.
