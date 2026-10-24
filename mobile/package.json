@@ -1,0 +1,20 @@
+{
+  "name": "ritual-reversal-mobile",
+  "version": "0.5.0",
+  "private": true,
+  "description": "App Android do Ritual Reversal (Capacitor): o mesmo cliente do navegador, empacotado com three.js local",
+  "scripts": {
+    "build": "node ../tools/build-mobile.js",
+    "sync": "npm run build && npx cap sync android",
+    "apk": "npm run sync && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "three": "0.128.0"
+  }
+}
