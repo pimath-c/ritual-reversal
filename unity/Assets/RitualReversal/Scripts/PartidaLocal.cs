@@ -87,6 +87,7 @@ namespace RitualReversal
                 else { Travar(false); lojaAberta = null; }
                 faseAnterior = g.phase;
             }
+            PassoReferencia(Eu(), g != null && g.phase == "play");   // F10: fotos de referência (PartidaReferencia.cs)
             if (lojaAberta != null && (m == null || m.st != "alive" || Distancia(m, Mapa.NPCS.Find(n => n.id == lojaAberta)) > 3.4)) lojaAberta = null;
             AtualizarVisual((float)System.Math.Min(.25, raw));
         }

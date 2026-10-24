@@ -41,6 +41,7 @@ namespace RitualReversal
         }
         void OnGUI()
         {
+            if (Referenciando) return;   // fotos de referência (F10): a cena sem HUD, como o navegador.js
             Estilos(); ComecoNavPad(); recortes.Clear();   // uma passada interrompida (ExitGUI) não deixa recorte para trás
             float esc = EscalaUI(); GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(esc, esc, 1)); W = Screen.width / esc; H = Screen.height / esc;
             // um clique que muda a tela no meio da passada deixa o resto dela sem o layout que o Layout calculou: o Unity

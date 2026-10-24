@@ -505,6 +505,7 @@ namespace UnityEngine
     }
     public class TextAsset : Object { public string text; public byte[] bytes; public TextAsset(string t) { text = t; } public TextAsset(byte[] b) { bytes = b; } }
     // o LoadImage de verdade decodifica PNG e JPEG; aqui o Pillow faz isso (as linhas de baixo para cima, como no Unity)
+    public static class ScreenCapture { public static string ultima; public static void CaptureScreenshot(string arq) { ultima = arq; } }
     public static class ImageConversion
     {
         public static bool LoadImage(Texture2D t, byte[] b)

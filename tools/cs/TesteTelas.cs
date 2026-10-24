@@ -96,6 +96,11 @@ namespace RitualReversal
             cadernoAberto = true; TQuadros(10, .05f); Foto("caderno", .05f); cadernoAberto = false; falasAbertas = true; falasT = 4; TQuadros(10, .05f); Foto("falas", .05f);
             falasAbertas = false; { var n = Mapa.NPCS.Find(x => x.id == "ermitao"); var m = Eu(); m.x = n.x + 1; m.z = n.z; m.obolos = 5; lojaAberta = "ermitao"; Travar(false); TQuadros(4, .05f); Foto("loja", .05f); lojaAberta = null; Travar(true); }   // a loja do Ermitão
             Input.apertadas.Add(KeyCode.V); TQuadro(.05f); Input.apertadas.Add(KeyCode.Alpha1); TQuadro(.05f);   // uma frase pelas teclas
+            // F10: as fotos de referência passam pelas 17 vistas e voltam ao jogo (PartidaReferencia.cs)
+            { Application.persistentDataPath = System.IO.Path.GetTempPath(); var m0 = Eu(); double x0 = m0.x, z0 = m0.z; string mid = g.matchId;
+              Input.apertadas.Add(KeyCode.F10); TQuadro(.05f); if (!Referenciando) falhas.Add("referência: o F10 não começou");
+              TQuadros(1000, .05f); if (Referenciando) falhas.Add("referência: não terminou"); if (ScreenCapture.ultima == null || !ScreenCapture.ultima.EndsWith("17-ruinas.png")) falhas.Add("referência: última foto " + ScreenCapture.ultima);
+              if (g.matchId != mid) falhas.Add("referência: o matchId não voltou"); var m1 = Eu(); m1.x = x0; m1.z = z0; }
             Input.seguradas.Add(KeyCode.Tab); TQuadros(10, .05f); Foto("planta", .05f); Foto("planta-720p", .05f, 1280, 720); Input.seguradas.Clear();     // a planta
             TQuadros(150, .05f, 9); Foto("hud-depois", .05f);
             AteFase("summary", 3000); TQuadros(10); Foto("resumo"); if (g != null && g.phase == "summary") Apertar("Ver resultado", 3);

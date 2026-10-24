@@ -12,7 +12,16 @@ montado por código no Play, a partir de `Resources/mapa.json` e dos dados expor
 A simulação (`Scripts/Simulacao`) é um porte linha a linha de `shared/sim.js`, conferido contra o protótipo passo a
 passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a bit (`node tools/comparar-cs.js`).
 
-## Novidades desta versão (23/10)
+## Novidades desta versão (24/10)
+
+- **Fotos de referência: F10** numa partida contra bots. O jogo passa sozinho pelos mesmos 17 pontos do mapa que o
+  Claude fotografa no navegador (noite limpa, sem HUD, uns 45 s) e grava um PNG de cada um. No fim aparece a pasta
+  (no Windows, algo como `C:\Users\<você>\AppData\LocalLow\<empresa>\<projeto>\referencia-<data>`). Mande a pasta
+  zipada: ela vira uma comparação lado a lado, navegador × Unity, de cada ponto. F10 de novo interrompe.
+- Culto controlado pelo jogo revida quem atira nele enquanto canaliza (v6.1).
+- O build leva todas as variantes dos shaders (chão e texturas certos no jogo compilado).
+
+## Novidades da versão de 23/10
 
 - Interface conferida pixel a pixel com o navegador: HUD, menus, sala, loja, pausa, perfil, escolha dos altares,
   Rever a noite e relatório com as mesmas medidas, alturas de linha e fontes.
@@ -135,8 +144,7 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
 
 ## Ainda falta
 
-- Nada disto rodou num Unity de verdade ainda: o C# compila contra os módulos do Unity e cada tela, a primeira pessoa,
-  o fim da noite e o online foram conferidos fora dele, mas o desenho na tela e os shaders (Ilustrado, PrimeiraPessoa,
-  Grade, Mostrador) só aparecem no seu Unity. Qualquer erro vermelho no Console, mande para o Claude.
+- O jogo já compilou no seu Unity, mas a comparação visual com o navegador ainda não foi feita: é para isso o F10.
+  Personagens, efeitos e o online também nunca foram vistos lado a lado. Qualquer erro vermelho no Console, mande para o Claude.
 - O texto do Unity sai alguns pixels mais largo que o do navegador em linhas longas (o Unity avança cada letra em
   pixels inteiros), e letras de tamanho fracionário do CSS (14,5 e 11,5 px) saem no inteiro mais perto.

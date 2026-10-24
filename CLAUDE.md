@@ -283,6 +283,10 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   (_NORMALMAP, _EMISSION, _ALPHATEST_ON, _SURFACE_TYPE_TRANSPARENT, _DETAIL_MULX2; o chão da mata usa o detalhe). O
   `Editor/VariantesShaders.cs` (IPreprocessBuildWithReport e menu "Gerar variantes dos shaders") grava 32 materiais por shader
   (Ilustrado e URP/Lit) em `Resources/Variantes`, que vão no build e seguram as variantes (o dono confirmou no build de 24/10: chão e texturas certos). Palavra-chave nova num shader? Ponha em `CHAVES`.
+  Fotos de referência: F10 numa partida local (`PartidaReferencia.cs`, `VISTAS_REF` = as VISTAS do navegador.js) leva o
+  jogador pelas 17 vistas na noite limpa ("foto<i>"), sem HUD, e grava PNG em `<persistentDataPath>/referencia-<data>`;
+  `tools/referencia-navegador.js` tira as mesmas no navegador e `python3 -I tools/comparar-referencia.py <pasta do Unity>`
+  junta lado a lado (dist/referencia/lado-a-lado, com `folha.jpg`). O `TesteTelas` passa pelo F10 inteiro.
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); a linha "Movimento
   bruto do mouse" (o Input System já lê o mouse sem aceleração); letras de tamanho fracionário do CSS (14,5, 11,5) saem no
   inteiro mais perto.
