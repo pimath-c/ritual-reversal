@@ -275,6 +275,10 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   altura, painéis e título encolhem para 0,86. Resolução adaptativa: `Visual/Resolucao.cs` (o medirRes do navegador na escala de
   renderização do URP; PlayerPrefs "rr-autores"). `tools/telas-navegador.js` com `CELULAR=1` fotografa o navegador como celular
   (914 × 411 a 2,625×, toque ligado) e mede o HUD; o `RoteiroCelular` do `TesteTelas.cs` faz o mesmo no Unity falso com dedos.
+  Build (jogo compilado): os materiais são criados no Play, então o build jogava fora as variantes de shader_feature
+  (_NORMALMAP, _EMISSION, _ALPHATEST_ON, _SURFACE_TYPE_TRANSPARENT, _DETAIL_MULX2; o chão da mata usa o detalhe). O
+  `Editor/VariantesShaders.cs` (IPreprocessBuildWithReport e menu "Gerar variantes dos shaders") grava 32 materiais por shader
+  (Ilustrado e URP/Lit) em `Resources/Variantes`, que vão no build e seguram as variantes. Palavra-chave nova num shader? Ponha em `CHAVES`.
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); a linha "Movimento
   bruto do mouse" (o Input System já lê o mouse sem aceleração); letras de tamanho fracionário do CSS (14,5, 11,5) saem no
   inteiro mais perto.

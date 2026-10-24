@@ -117,6 +117,11 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
   no Inspector) e, para jogar enquanto isso, apague esse arquivo (o jogo volta ao URP/Lit, sem o estilo ilustrado).
 - **Brilhos (velas, runas, céu) quadrados ou rosa**: o shader `Resources/RitualReversalBrilho.shader` não compilou;
   mande o erro dele (clique no arquivo, aparece no Inspector).
+- **No editor fica certo, mas o jogo compilado (Build) fica sem chão ou com texturas erradas** (folhas quadradas, vidro
+  opaco, sem brilho): o build jogou fora variantes dos shaders que só o código usa. O script `Editor/VariantesShaders.cs`
+  grava, antes de cada build, os materiais de `Resources/Variantes` que seguram essas variantes. Se ainda acontecer, rode
+  **Ritual Reversal > Gerar variantes dos shaders**, confira se a pasta `Resources/Variantes` tem 64 materiais e compile de
+  novo. O primeiro build depois disso demora mais (compila as variantes); os seguintes usam o cache.
 - **Sem bloom nem vinheta**: na câmera, marque **Post Processing** (o jogo tenta ligar sozinho).
 - **O mouse não gira**: clique em Continuar na tela de pausa (ou clique dentro da janela Game). Com a vitrine (F9)
   aberta o mouse fica solto de propósito: F9 de novo fecha.
