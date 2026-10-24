@@ -29,6 +29,8 @@ namespace RitualReversal.Simulacao
         // v5.5: o coro ecoa o setor do ritual quando ele passa deste progresso; quem lançou um sigilo há menos de
         // ataqueCanal segundos não canaliza; levar dano reinicia a execução de um caído
         public static double ecoProg = 0.25, ataqueCanal = .6; public static bool danoInterrompeExecucao = true;
+        // v6.1: o bot do culto canalizando revida quem o acertou há menos de botRevida s ou quem está a menos de botRevidaPerto m
+        public static double botRevida = 2.5, botRevidaPerto = 20;
         // lances da noite (só reconhecimento): Chamariz que prendeu a caça por 20 s, defesa com o selo passando de 50%, selo com o ritual em 85%,
         // ritual achado antes do eco já em andamento (8%)
         public static double iscaLance = 20, defesaLance = .5, limiteLance = .85, achouLance = .08;

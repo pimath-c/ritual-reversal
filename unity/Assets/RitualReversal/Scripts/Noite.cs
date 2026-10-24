@@ -72,7 +72,7 @@ namespace RitualReversal
 
     public static class Noite
     {
-        public const string VERSAO = "6.0"; public const int REGISTRO = 3;   // os do sim.js (Sim.VERSAO, Sim.REGISTRO), para o arquivo do registro
+        public const string VERSAO = "6.1"; public const int REGISTRO = 3;   // os do sim.js (Sim.VERSAO, Sim.REGISTRO), para o arquivo do registro
         public static string Relogio(double s) { s = System.Math.Max(0, s); int m = (int)(s / 60), ss = (int)(s % 60); return m + ":" + ss.ToString("00"); }
         public static string ListaNomes(List<string> L) { return L.Count < 2 ? (L.Count == 1 ? L[0] : "") : string.Join(", ", L.GetRange(0, L.Count - 1).ToArray()) + " e " + L[L.Count - 1]; }
         public static List<string> Nomes(object v) { var L = new List<string>(); var en = v as System.Collections.IEnumerable; if (en != null && !(v is string)) foreach (var x in en) if (x != null) L.Add(x.ToString()); return L; }

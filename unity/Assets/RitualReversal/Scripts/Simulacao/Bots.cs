@@ -92,7 +92,7 @@ namespace RitualReversal.Simulacao
                 {
                     if (b.fervor < CFG.sigilCusto) return true;
                     // canalizando, só ataca quem sela, quem chega perto demais ou quando a vida aperta (atacar para a canalização)
-                    if (CFG.ataqueCanal > 0) { var Ac = g.altars.FirstOrDefault(A => A.state == "active" && A.chosen && InCircle(b, A)); if (Ac != null && !(t.sealing == Ac.i || d < 8 || b.hp < b.maxHp * .5)) return true; }
+                    if (CFG.ataqueCanal > 0) { var Ac = g.altars.FirstOrDefault(A => A.state == "active" && A.chosen && InCircle(b, A)); if (Ac != null && !(t.sealing == Ac.i || d < CFG.botRevidaPerto || g.t - b.hitT < CFG.botRevida || b.hp < b.maxHp * .5)) return true; }
                     double lead = d / CFG.sigilVel;
                     double sd = .7 * DifDe(g, b).disp; CastSigilAt(g, b, t.x + Rand(-sd, sd) + t._vx * lead * .6, t.ag ? .8 : 1.2, t.z + Rand(-sd, sd) + t._vz * lead * .6);
                 }

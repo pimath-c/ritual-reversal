@@ -34,6 +34,10 @@ const CFG={
   ataqueCanal:.6,
   // v5.5: levar dano reinicia a execução de um caído
   danoInterrompeExecucao:true,
+  // v6.1 (bots do culto, do playtest de 24/10): canalizando, o bot revida quem o acertou há menos disto (s) ou quem está a
+  // menos de botRevidaPerto m (antes só a 8 m: Caçadores humanos derrubavam o culto de longe sem levar um tiro).
+  // 200 noites de bots: culto 30% → 37%. Testado e descartado: o Guardião sair do círculo para vigiar depois do eco (26%)
+  botRevida:2.5, botRevidaPerto:20,
 };
 // setores do eco: cada setor tem dois altares (um no promontório e um na mata)
 const SETORES=[{id:'oeste',nome:'a oeste',altares:[0,3]},{id:'centro',nome:'no centro',altares:[1,4]},{id:'leste',nome:'a leste',altares:[2,5]}];
@@ -637,7 +641,7 @@ function reclaimHuman(g,slotIdx,cid,name){
 
 
 // versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
-const VERSAO='6.0', REGISTRO=3;
+const VERSAO='6.1', REGISTRO=3;
 
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.
@@ -1240,8 +1244,8 @@ function botCombat(g,b,dt){
       const lit=lightAt(g,t.x,t.z)>.35, p=Math.min(.92,clamp(.78-d/55,.22,.78)*(t.moving?.8:1)*(lit?1:.72)*difDe(g,b).mira), hit=Math.random()<p, ex=hit?0:rand(-1.2,1.2);
       fireBotAt(g,b,t.x+ex,t.ag?rand(.5,1.1):rand(.9,1.6),t.z+ex,!hit);
     } else { if(b.fervor<CFG.sigilCusto) return true;
-      // canalizando, só ataca quem sela, quem chega perto demais ou quando a vida aperta (atacar para a canalização)
-      if(CFG.ataqueCanal>0){ const A=g.altars.find(A=>A.state==='active'&&A.chosen&&inCircle(b,A)); if(A&&!(t.sealing===A.i||d<8||b.hp<b.maxHp*.5)) return true; }
+      // canalizando, só ataca quem sela, quem chega perto, quem acabou de acertá-lo ou quando a vida aperta (atacar pausa a canalização)
+      if(CFG.ataqueCanal>0){ const A=g.altars.find(A=>A.state==='active'&&A.chosen&&inCircle(b,A)); if(A&&!(t.sealing===A.i||d<CFG.botRevidaPerto||g.t-b.hitT<CFG.botRevida||b.hp<b.maxHp*.5)) return true; }
       const lead=d/CFG.sigilVel; const sd=.7*difDe(g,b).disp; castSigilAt(g,b,t.x+rand(-sd,sd)+(t._vx||0)*lead*.6,t.ag?.8:1.2,t.z+rand(-sd,sd)+(t._vz||0)*lead*.6); }
   }
   return true;

@@ -142,6 +142,10 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   reanimar, Arsenal no menu (`ARS`, `startArsenal`), skins (`client/skins.js`, 9, três por arma; `vis` no hello e no lobby),
   três inspeções novas (mecânica, exibição, inquietante), 12 sons novos CC0 via conquest e ambiente por lugar (`ambientePorLugar`).
   `VERSAO` 6.0. Bots, 400 noites: culto 38–40% (alvo do design 45–55%).
+- v6.1 (notas em `notas/v6.1.md`, do primeiro playtest com duas pessoas contra os bots do culto no difícil, 2 a 0 para a caça
+  sem nenhuma queda de Caçador): o bot do culto canalizando revida quem o acertou há menos de `CFG.botRevida` (2,5 s) ou quem
+  está a menos de `CFG.botRevidaPerto` (20 m; antes 8). Só bots, nenhuma regra; portado ao C# (bit a bit). `VERSAO` 6.1.
+  Bots, sementes 1000–1199: culto 30% → 37%. Descartado: o Guardião vigiar fora do círculo depois do eco (26%).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e
@@ -291,7 +295,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - Playtests com 4 pessoas antes de mais conteúdo.
 - Unity igual ao oficial (pedido do dono): feitos o mundo da v6, reagentes, velas, execução, ambiente, a primeira pessoa
   da v5.9, as skins, o Arsenal, GRADE/RIMLUZ e parte da interface; falta a lista em "Visual do protótipo no Unity".
-- v6 sem gente: equilíbrio entre bots ficou em 38–40% para o culto; os sons novos não foram ouvidos (ambiente sem áudio).
+- v6 sem gente: equilíbrio entre bots ficou em 37% para o culto (v6.1, sementes 1000–1199); os sons novos não foram ouvidos (ambiente sem áudio).
 - Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
   Os shaders Ilustrado, PrimeiraPessoa, Grade e Mostrador nunca compilaram num Unity de verdade (só o C# é conferido aqui); se o
   mundo ficar rosa, PlayerPrefs "rr-ilustrado" = 0 volta ao URP/Lit.
