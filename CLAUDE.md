@@ -161,7 +161,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   salas, portas de correr, lâmpadas por ala, quadros, móveis, lago) com `atualizar(dt, estadoMapa(V), agora)`; planta do Tab
   `plantaAsilo`/`plantaAsiloDin`. Servidor: o mapa é escolhido ao criar a sala (`r.mapa`), vai no welcome/lobby/salas/registro.
   Teste: `node tools/navegador-asilo.js` (porta, folha, luz, planta, fotos em dist/asilo). Bots, 200 noites: culto 45% no asilo.
-  Segurar E mexe na porta uma vez (`a.portaPresa` até soltar). Unity: `Mapa.cs` guarda os campos de cada mapa (`DadosMapa`,
+  Segurar E mexe na porta uma vez (`a.portaPresa` até soltar). Portas abertas ficam visíveis, encostadas na face livre da parede
+  (batente e trilho; `asilo.js` e `MundoAsilo.cs` escolhem a face com `Sim.livre`/`Mapa.Livre`). Bot do culto fecha as portas a até
+  `CFG.botPortaRitual` (10 m) do altar antes do ritual. Dicas `porta`, `c_quadro`, `h_apagao` e aviso "A luz caiu" (evento 'energia'). Unity: `Mapa.cs` guarda os campos de cada mapa (`DadosMapa`,
   `Usar(id)`, `Ativar(jogo)` como o ativar(g)); `exportar-mapa.js` grava `simulacao-asilo.json`/`mapa-asilo.json`; `comparar-cs.js`
   e `unity-ver.js` aceitam `MAPA=asilo`. `Visual/MundoAsilo.cs` é o `client/asilo.js` (`ConstruirAsilo`, `AtualizarAsilo`); o
   `Mundo.Construir(mapa)` pula mata e catedral viva no asilo; `PartidaVisual.TrocarMundo(id)` desmonta e monta (título: linha

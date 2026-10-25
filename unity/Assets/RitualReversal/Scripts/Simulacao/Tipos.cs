@@ -33,6 +33,7 @@ namespace RitualReversal.Simulacao
         public static double botRevida = 2.5, botRevidaPerto = 20;
         // asilo: segurar E para abrir/fechar uma porta; cortar a luz de uma ala (culto) e religar (caça); duração do apagão; água rasa
         public static double porta = .35, cortarLuz = 4, religarLuz = 6, apagao = 90, aguaVel = .7;
+        public static double botPortaRitual = 10;   // asilo: o bot do culto fecha as portas a até tantos m do altar antes do ritual
         // lances da noite (só reconhecimento): Chamariz que prendeu a caça por 20 s, defesa com o selo passando de 50%, selo com o ritual em 85%,
         // ritual achado antes do eco já em andamento (8%)
         public static double iscaLance = 20, defesaLance = .5, limiteLance = .85, achouLance = .08;

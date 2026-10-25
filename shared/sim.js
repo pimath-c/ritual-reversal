@@ -41,6 +41,8 @@ const CFG={
   // asilo: segurar E para abrir/fechar uma porta; cortar a luz de uma ala (culto) e religar (caça); quanto dura o apagão;
   // velocidade na água rasa da hidroterapia
   porta:.35, cortarLuz:4, religarLuz:6, apagao:90, aguaVel:.7,
+  // asilo: antes de começar um ritual, o bot do culto fecha as portas abertas a até botPortaRitual m do altar (sem inimigo à vista)
+  botPortaRitual:10,
 };
 const NOME_SETOR={oeste:'oeste',centro:'central',leste:'leste'};
 // setores do eco: cada setor tem dois altares (um no promontório e um na mata)
@@ -1609,6 +1611,16 @@ function aiCult(g,b,dt){
     if(q&&!(g.energia[q.setor]>g.t)&&Math.hypot(b.x-q.x,b.z-q.z)+Math.hypot(q.x-T.x,q.z-T.z)<dist(b,T)+40&&!(ai.ignora&&ai.ignora['qd'+q.setor]>g.t)){
       if(Math.hypot(b.x-q.x,b.z-q.z)<1.8){ b.moving=false; botHold(g,b,'qd'+q.setor,CFG.cortarLuz,dt,{type:'quadro',setor:q.setor}); return; }
       setGoal(g,b,q.x,q.z,'qd'+q.setor); botMove(g,b,dt,1); return; } }
+  // asilo: fecha as portas abertas perto do altar antes de começar (cortam a visão e abafam o som de quem vem). O bot fica do
+  // lado do altar, fora do vão; com alguém no vão, desiste daquela porta por um tempo
+  if(g.portas&&!fighting&&T.state==='awake'&&!T.decoy&&b.reag>0&&!bloqueioRitual(g)&&dist(b,T)<CFG.botPortaRitual+6){
+    const lado=q=>{ const o=(q.eixo==='x'?(q.z2-q.z1):(q.x2-q.x1))/2+1.3, a=q.eixo==='x'?{x:q.x,z:q.z-o}:{x:q.x-o,z:q.z}, c=q.eixo==='x'?{x:q.x,z:q.z+o}:{x:q.x+o,z:q.z}; return dist(a,T)<dist(c,T)?a:c; };
+    const P=PORTAS_DIN.filter(q=>g.portas[q.i].aberta&&Math.hypot(q.x-T.x,q.z-T.z)<CFG.botPortaRitual&&!(ai.ignora&&ai.ignora['pf'+q.i]>g.t)).sort((x,y)=>Math.hypot(b.x-x.x,b.z-x.z)-Math.hypot(b.x-y.x,b.z-y.z))[0];
+    if(P){ const L=lado(P), ctx={type:'porta',P:P.i};
+      if(Math.hypot(b.x-L.x,b.z-L.z)<.8){ b.moving=false;
+        if(acaoNegada(g,b,ctx)){ (ai.ignora||(ai.ignora={}))['pf'+P.i]=g.t+8; return; }
+        botHold(g,b,'porta'+P.i,CFG.porta,dt,ctx); return; }
+      setGoal(g,b,L.x,L.z,'pf'+P.i); botMove(g,b,dt,1); return; } }
   if(b.reag>0){ const s=circleSpot(T,b);
     if(dist(b,T)<3.3){ b.moving=false; ai.emperrado=0;
       if(T.state==='dormant') botHold(g,b,'cons'+T.i,CFG.consecrate,dt,{type:'consecrate',A:T.i});

@@ -401,6 +401,29 @@ namespace RitualReversal.Simulacao
                     SetGoal(g, b, q.x, q.z, "qd" + q.setor); BotMove(g, b, dt, 1); return;
                 }
             }
+            // asilo: fecha as portas abertas perto do altar antes de começar, do lado do altar e fora do vão; com alguém no vão,
+            // desiste daquela porta por um tempo
+            if (g.portas != null && !fighting && T.state == "awake" && !T.decoy && b.reag > 0 && BloqueioRitual(g) == null && Dist(b, T) < CFG.botPortaRitual + 6)
+            {
+                Func<PortaDin, Ponto> lado = q =>
+                {
+                    double o = (q.eixo == "x" ? (q.z2 - q.z1) : (q.x2 - q.x1)) / 2 + 1.3;
+                    var a1 = q.eixo == "x" ? new Ponto(q.x, q.z - o) : new Ponto(q.x - o, q.z); var c1 = q.eixo == "x" ? new Ponto(q.x, q.z + o) : new Ponto(q.x + o, q.z);
+                    return Dist(a1, T) < Dist(c1, T) ? a1 : c1;
+                };
+                var P = JS.Primeiro(Mapa.PORTAS_DIN.Where(q => g.portas[q.i] && JS.Hypot(q.x - T.x, q.z - T.z) < CFG.botPortaRitual && !ai.Ignorado("pf" + q.i, g.t)).ToList(), (x, y) => JS.Hypot(b.x - x.x, b.z - x.z) - JS.Hypot(b.x - y.x, b.z - y.z));
+                if (P != null)
+                {
+                    var L = lado(P); var ctx = new Ctx { type = "porta", P = P.i };
+                    if (JS.Hypot(b.x - L.x, b.z - L.z) < .8)
+                    {
+                        b.moving = false;
+                        if (AcaoNegada(g, b, ctx, null, null) != null) { ai.Ignorar("pf" + P.i, g.t + 8); return; }
+                        BotHold(g, b, "porta" + P.i, CFG.porta, dt, ctx); return;
+                    }
+                    SetGoal(g, b, L.x, L.z, "pf" + P.i); BotMove(g, b, dt, 1); return;
+                }
+            }
             if (b.reag > 0)
             {
                 var s = CircleSpot(T, b);
