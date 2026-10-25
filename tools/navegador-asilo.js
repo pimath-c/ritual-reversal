@@ -11,6 +11,7 @@ const VISTAS=[['saguao',0,18,0,0],['corredor-oeste',-30,10,-Math.PI/2,0],['capel
   fs.mkdirSync(OUT,{recursive:true}); const erros=[]; const falha=m=>{ erros.push(m); console.log('FALHA:',m); };
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const page=await browser.newPage({viewport:{width:1280,height:720}});
+  page.setDefaultTimeout(240000);   // no swiftshader lento um screenshot pode passar de 30 s
   page.on('pageerror',e=>falha('erro na página: '+e.message));
   await page.addInitScript(()=>{ try{ sessionStorage.setItem('rr-mapa-boot','asilo'); }catch(e){} });   // o mesmo caminho da troca de mapa no título
   await page.route('**/*',r=>{ const u=r.request().url();
@@ -48,6 +49,15 @@ const VISTAS=[['saguao',0,18,0,0],['corredor-oeste',-30,10,-Math.PI/2,0],['capel
     await page.evaluate(()=>{ const m=__T.game.actors.find(a=>a.cid==='local'); m.x=2; __T.LOOK.yaw=-Math.PI/2; m.inp.yaw=__T.LOOK.yaw; __T.LOOK.pitch=0; m.inp.pitch=0; });
     await page.waitForTimeout(1500); await page.screenshot({path:path.join(OUT,'porta-fechada.png')});
     await page.evaluate(c=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'); m.x=-1.6; __T.Sim._doAction(g,m,c); },ctx); }
+  // dica da porta (primeira vez perto de uma porta)
+  await page.evaluate(()=>{ const m=__T.game.actors.find(a=>a.cid==='local'); m.x=-1.6; m.z=-6.5; });   // (pode já ter aparecido na parte da porta)
+  const dicaPorta=await page.waitForFunction(()=>{ let vistas={}; try{ vistas=JSON.parse(localStorage.getItem('rr-dicas')||'{}'); }catch(e){} return vistas.porta||__T.DC.fila.includes('porta')||/Porta: segure E/.test((document.querySelector('#dica')||{}).textContent||''); },null,{timeout:90000}).then(()=>true).catch(()=>false);
+  if(!dicaPorta) falha('a dica da porta não apareceu perto da porta'); else console.log('dica da porta: ok');
+  // a luz da ala onde o jogador está cai pelo quadro (um Cultista corta): aviso no meio da tela
+  await page.evaluate(()=>{ const g=__T.game, m=g.actors.find(a=>a.cid==='local'), c=g.actors.find(a=>a.team==='C'); m.x=-30; m.z=10; __T.Sim._doAction(g,c,{type:'quadro',setor:'oeste'}); });
+  const aviso=await page.waitForFunction(()=>/A luz caiu/.test((document.querySelector('#anuncio')||{}).textContent||''),null,{timeout:60000}).then(()=>true).catch(()=>false);
+  if(!aviso) falha('o aviso "A luz caiu" não apareceu'); else console.log('aviso do apagão: ok');
+  await page.evaluate(()=>{ __T.game.energia.oeste=0; });
   // quadro de força: corta a luz do oeste; as lâmpadas da ala apagam e as do centro continuam
   await page.evaluate(()=>{ const g=__T.game; g.energia.oeste=g.t+60; });
   await page.waitForFunction(()=>__T.VIS_ASILO.LAMP.oeste.every(l=>l.fonte.int===0),null,{timeout:60000}).catch(()=>{});

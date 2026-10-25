@@ -2260,6 +2260,9 @@ function handleEvents(list,online){
     switch(e.type){
       case 'feed': { let msg=e.msg; if(/^Reagente coletado/.test(msg)&&m){ const i=Sim.REAG.reduce((b,r,j)=>Math.hypot(r[0]-m.x,r[1]-m.z)<Math.hypot(Sim.REAG[b][0]-m.x,Sim.REAG[b][1]-m.z)?j:b,0); msg=msg.replace('Reagente coletado',`Coletado: ${REAG_NOMES[REAG_TIPOS[i]]||'reagente'}`); }
         feed(msg,e.cls); anotarCaderno(msg); break; }
+      // asilo: a luz da ala onde você está caiu (ou voltou): aviso no meio da tela
+      case 'energia': if(ASILO&&m&&Sim.coberto(m.x,m.z)&&e.setor===(m.x<-12.5?'oeste':m.x>12.5?'leste':'centro')){
+          if(!e.ligada) anunciar('A luz caiu',`Ala ${Sim.NOME_SETOR[e.setor]} no escuro`+(myRole()==='H'?': religue no quadro de força':'')); else anunciar('A luz voltou',`Ala ${Sim.NOME_SETOR[e.setor]}`); } break;
       case 'sfx': if(e.k==='sigil'&&e.a!==id){ const ms=actorMeshes.get(e.a); if(ms) ms.userData.anim.cast=1; }
         if(e.a===id&&(e.k==='shot'||e.k==='sigil'||e.k==='step'||e.k==='passoForte'||e.k==='passoLeve')) break; if(e.k==='step') SFX.step(e.x,e.z); else if(SFX[e.k]) SFX[e.k](e.x,e.z,e.a); if(e.a!==id){ const em=V.actors.find(b=>b.id===e.a), aliado=em&&m&&em.team===m.team; if(!(aliado&&['step','passoForte','reload','collect'].includes(e.k))) legenda(e.k,e.x,e.z); } break;
       case 'tracer': { const own=e.a===id; const p0=own?camera.localToWorld(new THREE.Vector3(.27,-.2,-.9)):new THREE.Vector3(e.x0,e.y0+.1,e.z0);
@@ -2671,7 +2674,14 @@ const DICAS={
   aliado:'Seu aliado caiu. Vá até ele e segure E para reanimar antes que ele sangre até o fim.',
   sanidade:'Sanidade baixa: saia do escuro, fique perto de velas ou do aliado. Em pânico, você se denuncia.',
   loja:'Mercador aqui: aperte E para negociar com seus óbolos.',
-  ping:'Viu algo? Z marca um ponto, um altar ou um inimigo para o seu aliado.'};
+  ping:'Viu algo? Z marca um ponto, um altar ou um inimigo para o seu aliado.',
+  // Asilo Blackwater: portas e quadros de força
+  porta:'Porta: segure E para abrir ou fechar. Fechada, ela bloqueia a passagem, os tiros e a visão e abafa o som. Abrir e fechar faz barulho.',
+  c_quadro:'Quadro de força: segure E por 4 s para apagar esta ala por 90 s. No escuro a sanidade da caça cai, e quem acende a lanterna se denuncia.',
+  h_apagao:'O culto cortou a luz desta ala. Religue no quadro de força (o ⚡ na planta, segure E por 6 s) ou siga com a Lanterna (F).'};
+// no asilo, as dicas do começo falam do asilo (as da catedral citam a floresta e a mata)
+if(ASILO) Object.assign(DICAS,{h_inicio:'Leia os oratórios do asilo (segure E): cada sinal descarta um altar que o culto não escolheu.',
+  c_inicio:'Colha ervas e profane covas para ganhar óbolos. Os reagentes ficam pelo asilo: horta, cemitério, margem do lago, hidroterapia, caldeiras, refeitório, lavanderia, enfermaria e isolamento.'});
 const DC={vistas:null,t:0,fila:[],aberta:0};
 function dicasVistas(){ if(!DC.vistas){ try{ DC.vistas=JSON.parse(localStorage.getItem('rr-dicas')||'{}'); }catch(e){ DC.vistas={}; } } return DC.vistas; }
 function dica(id){ if(SET.dicas===false||dicasVistas()[id]||DC.fila.includes(id)) return; DC.fila.push(id); }
@@ -2693,7 +2703,11 @@ function atualizarDicas(dt,m){ const el=$('#dica'); if(!el) return; DC.t-=dt; DC
     else { if(m.reag>0&&V.altars.some(A=>A.chosen&&A.state==='dormant'&&perto(A,6))) dica('c_consagrar');
       if((V.momento||0)>=1&&V.altars.some(A=>A.chosen&&A.state==='awake')) dica('c_vigilia');
       if(V.altars.some(A=>A.state==='active'&&Sim.inCircle(m,A))) dica('c_circulo');
-      if((V.pontos||[]).some(p=>p.tipo==='sentinela'&&p.acesa&&perto(p,14))) dica('c_sentinela'); } }
+      if((V.pontos||[]).some(p=>p.tipo==='sentinela'&&p.acesa&&perto(p,14))) dica('c_sentinela'); }
+    if(ASILO){ const st=estadoMapa(V)||{}, en=st.energia||{}, setor=P.x<-12.5?'oeste':P.x>12.5?'leste':'centro';
+      if(Sim.PORTAS_DIN.some(q=>Math.hypot(P.x-Math.max(q.x1,Math.min(P.x,q.x2)),P.z-Math.max(q.z1,Math.min(P.z,q.z2)))<2.1)) dica('porta');
+      if(role==='C'&&Sim.QUADROS.some(q=>!(en[q.setor]>0)&&perto(q,6))) dica('c_quadro');
+      if(role==='H'&&en[setor]>0&&Sim.coberto(P.x,P.z)) dica('h_apagao'); } }
   if(DC.t<=0&&DC.fila.length){ const id=DC.fila.shift(); dicasVistas()[id]=1; try{ localStorage.setItem('rr-dicas',JSON.stringify(DC.vistas)); }catch(e){}
     el.innerHTML=`<small>Dica</small>${esc(DICAS[id])}`; el.classList.add('on'); DC.aberta=8; DC.t=12; } }
 
@@ -3744,7 +3758,7 @@ function boot(){
   { let S=null; try{ S=JSON.parse(sessionStorage.getItem('rr-entrar-sala')||'null'); sessionStorage.removeItem('rr-entrar-sala'); }catch(e){} if(S&&S.code) setTimeout(()=>connect(false,S.code,S.name),300); }
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,get SKINS(){ return SKINS; },get REAGM(){ return reagentMeshes; },TEX,RT,PERFIL_ARMA,fxExecucoes:()=>FX_EXE_N,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;},get VIS_ASILO(){ return VIS_ASILO; },MAPA:MAPA_BOOT,mapSvg,FONTES}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,get SKINS(){ return SKINS; },get REAGM(){ return reagentMeshes; },TEX,RT,PERFIL_ARMA,fxExecucoes:()=>FX_EXE_N,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;},get VIS_ASILO(){ return VIS_ASILO; },MAPA:MAPA_BOOT,mapSvg,FONTES,DC}; }
 }
 { const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">${ASILO?'Abrindo o asilo…':'Esculpindo a catedral…'}<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);

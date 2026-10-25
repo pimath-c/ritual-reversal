@@ -155,7 +155,17 @@ namespace RitualReversal
             {"aliado","Seu aliado caiu. Vá até ele e segure E para reanimar antes que ele sangre até o fim."},
             {"sanidade","Sanidade baixa: saia do escuro, fique perto de velas ou do aliado. Em pânico, você se denuncia."},
             {"loja","Mercador aqui: aperte E para negociar com seus óbolos."},
-            {"ping","Viu algo? Z marca um ponto, um altar ou um inimigo para o seu aliado."} };
+            {"ping","Viu algo? Z marca um ponto, um altar ou um inimigo para o seu aliado."},
+            // Asilo Blackwater: portas e quadros de força
+            {"porta","Porta: segure E para abrir ou fechar. Fechada, ela bloqueia a passagem, os tiros e a visão e abafa o som. Abrir e fechar faz barulho."},
+            {"c_quadro","Quadro de força: segure E por 4 s para apagar esta ala por 90 s. No escuro a sanidade da caça cai, e quem acende a lanterna se denuncia."},
+            {"h_apagao","O culto cortou a luz desta ala. Religue no quadro de força (o ⚡ na planta, segure E por 6 s) ou siga com a Lanterna (F)."} };
+        // no asilo, as dicas do começo falam do asilo (as da catedral citam a floresta e a mata)
+        static readonly Dictionary<string, string> DICAS_ASILO = new Dictionary<string, string> {
+            {"h_inicio","Leia os oratórios do asilo (segure E): cada sinal descarta um altar que o culto não escolheu."},
+            {"c_inicio","Colha ervas e profane covas para ganhar óbolos. Os reagentes ficam pelo asilo: horta, cemitério, margem do lago, hidroterapia, caldeiras, refeitório, lavanderia, enfermaria e isolamento."} };
+        static string TextoDica(string id) { string t; if (Visual.MapaVisual.Asilo && DICAS_ASILO.TryGetValue(id, out t)) return t; return DICAS[id]; }
+        static string SetorDe(double x) { return x < -12.5 ? "oeste" : x > 12.5 ? "leste" : "centro"; }   // a divisão das lâmpadas do mapaAsilo
         HashSet<string> dicasVistas; readonly List<string> filaDicas = new List<string>(); float dicaT, dicaAberta; string dicaAtual;
         static bool DicasLigadas { get { return PlayerPrefs.GetInt("rr-dicas-on", 1) == 1; } }
         HashSet<string> DicasVistas()
@@ -192,11 +202,18 @@ namespace RitualReversal
                     if (g.altars.Any(A => A.state == "active" && Sim.InCircle(m, A))) Dica("c_circulo");
                     if (g.pontos.Any(p => p.tipo == "sentinela" && p.acesa && perto(p, 14))) Dica("c_sentinela");
                 }
+                if (g.portas != null || g.energia != null)
+                {
+                    if (Mapa.PORTAS_DIN.Any(q => JS.Hypot(m.x - JS.Clamp(m.x, q.x1, q.x2), m.z - JS.Clamp(m.z, q.z1, q.z2)) < 2.1)) Dica("porta");
+                    double fim;
+                    if (role == "C" && g.energia != null && Mapa.QUADROS.Any(q => !(g.energia.TryGetValue(q.setor, out fim) && fim > g.t) && perto(q, 6))) Dica("c_quadro");
+                    if (role == "H" && g.energia != null && g.energia.TryGetValue(SetorDe(m.x), out fim) && fim > g.t && Mapa.Coberto(m.x, m.z)) Dica("h_apagao");
+                }
             }
             if (dicaT <= 0 && filaDicas.Count > 0)
             {
                 var id = filaDicas[0]; filaDicas.RemoveAt(0); DicasVistas().Add(id);
-                PlayerPrefs.SetString("rr-dicas", Noite.ParaJson(DicasVistas().ToDictionary(k => k, k => (object)1))); dicaAtual = DICAS[id]; dicaAberta = 8; dicaT = 12;
+                PlayerPrefs.SetString("rr-dicas", Noite.ParaJson(DicasVistas().ToDictionary(k => k, k => (object)1))); dicaAtual = TextoDica(id); dicaAberta = 8; dicaT = 12;
             }
         }
         // o quadro da dica, à direita (#dica): entra deslizando e some depois de 8 s

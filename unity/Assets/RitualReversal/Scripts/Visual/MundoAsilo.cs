@@ -13,7 +13,7 @@ namespace RitualReversal.Visual
     {
         // o que se mexe no asilo: folhas das portas, lâmpadas (por ala) e quadros de força
         class FolhaAsilo { public Transform piv; public float s, x0, z0, lf; }
-        class PortaAsilo { public PortaV P; public List<FolhaAsilo> folhas = new List<FolhaAsilo>(); public float ang = 1; }
+        class PortaAsilo { public PortaV P; public bool temFace; public List<FolhaAsilo> folhas = new List<FolhaAsilo>(); public float ang = 1; }
         class LampAsilo { public Material lamp, brilho; public Fonte fonte; public float fase; }
         class QuadroAsilo { public QuadroV q; public Transform alav; public Material luz; }
         List<PortaAsilo> portasAsilo; Dictionary<string, List<LampAsilo>> lampAsilo; List<QuadroAsilo> quadrosAsilo;
@@ -92,7 +92,7 @@ namespace RitualReversal.Visual
         // ---------------- montagem (no lugar das peças, bancos e da v6 da catedral) ----------------
         void ConstruirAsilo()
         {
-            sAsilo = 4711; MateriaisAsilo();
+            sAsilo = 4711; MateriaisAsilo(); Mapa.Usar(MapaVisual.ID);   // a face livre das portas consulta a colisão do asilo
             var E = MapaVisual.ESPACOS; var W = MapaVisual.WALLS;
             // pisos, tetos e telhados
             foreach (var e in E)
@@ -135,19 +135,40 @@ namespace RitualReversal.Visual
             Est(Geo.Caixa(220, .4f, .6f), M("wallDark"), 0, -.1f, -66.2f);
             for (float z = -71.5f; z <= -66.5f; z += 1) foreach (float x in new[] { -2.2f, 2.2f }) Est(Geo.Cilindro(.12f, .14f, 1.4f, 6), M("wood"), x, -.5f, z);
 
-            // portas de correr: o canto da folha fica na ponta do vão e, aberta, a folha entra na parede
+            // portas de correr encostadas na parede (asilo.js): aberta, a folha fica ao lado do vão na face da parede; fechada, cobre
+            // o vão. A face é a primeira (z1/x1, depois z2/x2) com espaço livre ao longo da folha aberta; sem nenhuma, entra na
+            // parede. Batente nas duas faces e trilho de ferro na face da folha.
             portasAsilo = new List<PortaAsilo>(); var gPortas = Grupo(raiz, "Portas do asilo");
             foreach (var P in MapaVisual.PORTAS_DIN)
             {
-                bool ax = P.eixo == "x"; float larg = ax ? P.x2 - P.x1 : P.z2 - P.z1; int nf = larg > 3.2f ? 2 : 1; float lf = larg / nf, esp = .12f, alt = Mathf.Min(2.7f, ALT_ASILO - .3f);
-                var D = new PortaAsilo { P = P };
+                bool ax = P.eixo == "x"; float larg = ax ? P.x2 - P.x1 : P.z2 - P.z1; int nf = larg > 3.2f ? 2 : 1; float lf = larg / nf, esp = .1f, alt = Mathf.Min(2.7f, ALT_ASILO - .3f);
+                float a1 = ax ? P.x1 : P.z1, a2 = ax ? P.x2 : P.z2, f1 = ax ? P.z1 : P.x1, f2 = ax ? P.z2 : P.x2;
+                Func<float, float, Vector2> pt = (a, f) => ax ? new Vector2(a, f) : new Vector2(f, a);
+                Func<float, float, bool> faceLivre = (face, n) =>
+                {
+                    for (int k = 0; k < nf; k++) for (float t = .3f; t < lf - .2f; t += .5f) { float a = k == 0 ? a1 - t : a2 + t; var q = pt(a, face + n * .3f); if (!Mapa.Livre(q.x, q.y, .1)) return false; }
+                    return true;
+                };
+                bool temFace = true; float fc = f1, fn = -1;
+                if (!faceLivre(f1, -1)) { if (faceLivre(f2, 1)) { fc = f2; fn = 1; } else temFace = false; }
+                float plano = temFace ? fc + fn * (esp / 2 + .03f) : (f1 + f2) / 2;
+                Action<float, float, float, float, float, float, Material> cx = (xa, xb, ya, yb, za, zb, m) => CxA(Mathf.Min(xa, xb), Mathf.Max(xa, xb), ya, yb, Mathf.Min(za, zb), Mathf.Max(za, zb), m, 1);
+                foreach (var fcN in new[] { new Vector2(f1, -1), new Vector2(f2, 1) })
+                {
+                    float c = fcN.x + fcN.y * .04f;
+                    foreach (float a in new[] { a1, a2 }) { var q = pt(a, c); cx(q.x - (ax ? .08f : .05f), q.x + (ax ? .08f : .05f), 0, alt + .12f, q.y - (ax ? .05f : .08f), q.y + (ax ? .05f : .08f), M("wood")); }
+                    { var q1 = pt(a1 - .08f, c - .05f); var q2 = pt(a2 + .08f, c + .05f); cx(q1.x, q2.x, alt, alt + .14f, q1.y, q2.y, M("wood")); }
+                }
+                if (temFace) { var q1 = pt(a1 - lf - .1f, plano - .02f); var q2 = pt(a2 + (nf == 2 ? lf : 0) + .1f, plano + .02f); cx(q1.x, q2.x, alt + .14f, alt + .2f, q1.y, q2.y, A("ferro")); }
+                var D = new PortaAsilo { P = P, temFace = temFace };
                 for (int k = 0; k < nf; k++)
                 {
-                    var piv = Grupo(gPortas, "porta " + P.i); piv.localPosition = new Vector3(ax ? (k == 0 ? P.x1 : P.x2) : P.x, 0, ax ? P.z : (k == 0 ? P.z1 : P.z2));
+                    var piv = Grupo(gPortas, "porta " + P.i); var p0 = pt(k == 0 ? a1 : a2, plano); piv.localPosition = new Vector3(p0.x, 0, p0.y);
                     float s = k == 0 ? 1 : -1;
                     var f = Malha(Geo.Caixa(ax ? lf : esp, alt, ax ? esp : lf, 1.5f), A("porta"), piv, "folha"); f.transform.localPosition = ax ? new Vector3(s * lf / 2, alt / 2, 0) : new Vector3(0, alt / 2, s * lf / 2);
-                    var mac = Malha(Geo.Esfera(.05f, 8, 6), A("ferro"), piv, "maçaneta", false); mac.transform.localPosition = ax ? new Vector3(s * (lf - .12f), 1.05f, .08f) : new Vector3(.08f, 1.05f, s * (lf - .12f));
-                    var vis = Malha(Geo.Caixa(ax ? lf * .5f : esp + .02f, .35f, ax ? esp + .02f : lf * .5f, 1), A("visor"), piv, "visor", false); vis.transform.localPosition = new Vector3(ax ? s * lf / 2 : 0, 1.75f, ax ? 0 : s * lf / 2);
+                    foreach (float lado in new[] { -1f, 1f }) { float o = lado * (esp / 2 + .03f); var mac = Malha(Geo.Esfera(.05f, 8, 6), A("ferro"), piv, "maçaneta", false); mac.transform.localPosition = ax ? new Vector3(s * (lf - .15f), 1.05f, o) : new Vector3(o, 1.05f, s * (lf - .15f)); }
+                    var vis = Malha(Geo.Caixa(ax ? lf * .45f : esp + .02f, .32f, ax ? esp + .02f : lf * .45f, 1), A("visor"), piv, "visor", false); vis.transform.localPosition = new Vector3(ax ? s * lf / 2 : 0, 1.75f, ax ? 0 : s * lf / 2);
+                    var faixa = Malha(Geo.Caixa(ax ? lf : esp + .01f, .1f, ax ? esp + .01f : lf, 1), A("ferrugem"), piv, "chapa", false); faixa.transform.localPosition = new Vector3(ax ? s * lf / 2 : 0, .35f, ax ? 0 : s * lf / 2);
                     D.folhas.Add(new FolhaAsilo { piv = piv, s = s, x0 = piv.localPosition.x, z0 = piv.localPosition.z, lf = lf });
                 }
                 portasAsilo.Add(D);
@@ -277,7 +298,7 @@ namespace RitualReversal.Visual
             foreach (var D in portasAsilo)
             {
                 float alvo = g != null && g.portas != null && D.P.i < g.portas.Count && !g.portas[D.P.i] ? 0 : 1; D.ang += (alvo - D.ang) * Mathf.Min(1, dt * 7);
-                foreach (var f in D.folhas) { float d = -f.s * f.lf * .97f * D.ang; var p = f.piv.localPosition; if (D.P.eixo == "x") p.x = f.x0 + d; else p.z = f.z0 + d; f.piv.localPosition = p; }
+                foreach (var f in D.folhas) { float d = -f.s * (f.lf + (D.temFace ? .06f : -.03f * f.lf)) * D.ang; var p = f.piv.localPosition; if (D.P.eixo == "x") p.x = f.x0 + d; else p.z = f.z0 + d; f.piv.localPosition = p; }
             }
             float ms = agora * 1000;   // o "agora" do navegador é em milissegundos
             foreach (var kv in lampAsilo)

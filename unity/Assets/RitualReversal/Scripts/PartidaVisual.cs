@@ -183,6 +183,14 @@ namespace RitualReversal
                 case "selando":
                     if (papel == "C") { int ai = e.Int("altar"); var A = ai >= 0 && ai < g.altars.Count ? g.altars[ai] : null; som.Tocar("selando", x, z); Legenda("selando", x, z, "Selando o ritual em " + (A != null ? A.name : "um altar"), "cult", 400); LT.Marco(g, "eco", "A caça começou a selar " + (A != null ? A.name : "")); }
                     break;
+                // asilo: a luz da ala onde você está caiu (ou voltou): aviso no meio da tela
+                case "energia":
+                    { var m = Eu(); if (m != null && Mapa.Coberto(m.x, m.z) && e.Str("setor") == SetorDe(m.x))
+                    {
+                        string nome = Regras.NOME_SETOR.ContainsKey(e.Str("setor")) ? Regras.NOME_SETOR[e.Str("setor")] : e.Str("setor");
+                        if (!(e["ligada"] is bool && (bool)e["ligada"])) Anunciar("A luz caiu", "Ala " + nome + " no escuro" + (papel == "H" ? ": religue no quadro de força" : "")); else Anunciar("A luz voltou", "Ala " + nome);
+                    } }
+                    break;
                 case "eco":
                     {
                         // v5.5: o coro ecoa em dois altares do setor; se a equipe já descartou um, a dedução aponta o outro

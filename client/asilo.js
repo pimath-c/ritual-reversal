@@ -47,6 +47,7 @@ const M={
   porta:new THREE.MeshStandardMaterial({color:0x7a5c40,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:.9}),
   lampada:new THREE.MeshStandardMaterial({color:0xfff2d0,emissive:0xffd890,emissiveIntensity:2.2,roughness:.3}),
   cupula:new THREE.MeshStandardMaterial({color:0x2e3532,metalness:.6,roughness:.5}),
+  visor:new THREE.MeshStandardMaterial({color:0x1a2224,metalness:.4,roughness:.2}),
   cupulaDentro:new THREE.MeshBasicMaterial({color:0x7a6648,side:THREE.BackSide}),   // o esmalte de dentro, sem luz: a lâmpada colada nele estourava
 };
 for(const k of ['reboco','ladrilho','grama','terra']) M[k].normalScale&&M[k].normalScale.set(.6,.6);
@@ -83,17 +84,31 @@ for(const w of W){
 for(let z=-71.5;z<=-66.5;z+=1){ for(const x of [-2.2,2.2]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.12,.14,1.4,6),M.madeira); p.position.set(x,-.5,z); add(p); } }
 
 // ---------- portas ----------
-const PORTAS=[];   // {piv:[grupos], aberta, alvo}
-for(const P of Sim.PORTAS_DIN){ const ax=P.eixo==='x', larg=ax?P.x2-P.x1:P.z2-P.z1, folhas=larg>3.2?2:1, lf=larg/folhas, esp=.12, alt=Math.min(2.7,ALT-.3);
-  const portal=[]; for(let k=0;k<folhas;k++){ const piv=new THREE.Group(); piv.userData.dinamico=true;   // giram: ficam fora da fusão de estáticos
-    // portas de correr: o canto da folha fica na ponta do vão e, aberta, a folha entra na parede (nada sobra no caminho)
-    piv.position.set(ax?(k===0?P.x1:P.x2):P.x,0,ax?P.z:(k===0?P.z1:P.z2));
+// Portas de correr encostadas na parede: aberta, a folha fica ao lado do vão, na face da parede (visível, sem tapar a
+// passagem); fechada, cobre o vão. A face é a primeira (z1/x1, depois z2/x2) que tem espaço livre ao longo de toda a folha
+// aberta; sem nenhuma, a folha entra na parede. Todo vão com porta tem batente nas duas faces e o trilho por cima.
+const PORTAS=[];
+const livreA=(x,z)=>Sim.livre({x,z},.1);
+for(const P of Sim.PORTAS_DIN){ const ax=P.eixo==='x', larg=ax?P.x2-P.x1:P.z2-P.z1, folhas=larg>3.2?2:1, lf=larg/folhas, esp=.1, alt=Math.min(2.7,ALT-.3);
+  const a1=ax?P.x1:P.z1, a2=ax?P.x2:P.z2, f1=ax?P.z1:P.x1, f2=ax?P.z2:P.x2;   // ao longo do vão (a) e através da parede (f)
+  const pt=(a,f)=>ax?[a,f]:[f,a];
+  const faceLivre=(face,n)=>{ for(let k=0;k<folhas;k++){ const s=k===0?1:-1; for(let t=.3;t<lf-.2;t+=.5){ const a=k===0?a1-t:a2+t; if(!livreA(...pt(a,face+n*.3))) return false; } } return true; };
+  const face=faceLivre(f1,-1)?{c:f1,n:-1}:faceLivre(f2,1)?{c:f2,n:1}:null;
+  const plano=face?face.c+face.n*(esp/2+.03):(f1+f2)/2;
+  // batente nas duas faces (dois montantes e a verga) e o trilho de ferro na face da folha
+  for(const [fc,n] of [[f1,-1],[f2,1]]){ const c=fc+n*.04;
+    for(const a of [a1,a2]){ const [x,z]=pt(a,c); caixa(x-(ax?.08:.05),x+(ax?.08:.05),0,alt+.12,z-(ax?.05:.08),z+(ax?.05:.08),M.madeira,1); }
+    { const [x1,z1]=pt(a1-.08,c-.05), [x2,z2]=pt(a2+.08,c+.05); caixa(Math.min(x1,x2),Math.max(x1,x2),alt,alt+.14,Math.min(z1,z2),Math.max(z1,z2),M.madeira,1); } }
+  if(face){ const [x1,z1]=pt(a1-lf-.1,plano-.02), [x2,z2]=pt(a2+(folhas===2?lf:0)+.1,plano+.02); caixa(Math.min(x1,x2),Math.max(x1,x2),alt+.14,alt+.2,Math.min(z1,z2),Math.max(z1,z2),M.ferro,1); }
+  const portal=[]; for(let k=0;k<folhas;k++){ const piv=new THREE.Group(); piv.userData.dinamico=true;   // correm: ficam fora da fusão de estáticos
+    const [px,pz]=pt(k===0?a1:a2,plano); piv.position.set(px,0,pz);
     const f=new THREE.Mesh(boxGeo(ax?lf:esp,alt,ax?esp:lf,1.5),M.porta); f.castShadow=f.receiveShadow=true;
     const s=k===0?1:-1; if(ax) f.position.set(s*lf/2,alt/2,0); else f.position.set(0,alt/2,s*lf/2);
-    const mac=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),M.ferro); if(ax) mac.position.set(s*(lf-.12),1.05,.08); else mac.position.set(.08,1.05,s*(lf-.12)); piv.add(f,mac);
-    const vis=new THREE.Mesh(boxGeo(ax?lf*.5:esp+.02,.35,ax?esp+.02:lf*.5,1),new THREE.MeshStandardMaterial({color:0x1a2224,metalness:.4,roughness:.2})); vis.position.set(ax?s*lf/2:0,1.75,ax?0:s*lf/2); piv.add(vis);   // visor
-    add(piv); portal.push({piv,s,x0:piv.position.x,z0:piv.position.z,lf}); }
-  PORTAS.push({P,folhas:portal,ang:1}); }   // começam abertas
+    for(const lado of [-1,1]){ const mac=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),M.ferro); const o=lado*(esp/2+.03); if(ax) mac.position.set(s*(lf-.15),1.05,o); else mac.position.set(o,1.05,s*(lf-.15)); piv.add(mac); }
+    const vis=new THREE.Mesh(boxGeo(ax?lf*.45:esp+.02,.32,ax?esp+.02:lf*.45,1),M.visor); vis.position.set(ax?s*lf/2:0,1.75,ax?0:s*lf/2);   // visor
+    const faixa=new THREE.Mesh(boxGeo(ax?lf:esp+.01,.1,ax?esp+.01:lf,1),M.ferrugem); faixa.position.set(ax?s*lf/2:0,.35,ax?0:s*lf/2);    // chapa de ferro embaixo
+    piv.add(f,vis,faixa); add(piv); portal.push({piv,s,x0:piv.position.x,z0:piv.position.z,lf}); }
+  PORTAS.push({P,folhas:portal,ang:1,face}); }   // começam abertas
 
 // ---------- lâmpadas e quadros de força ----------
 const LAMP={oeste:[],centro:[],leste:[]};
@@ -168,7 +183,7 @@ function atualizar(dt,V,agora){
   // portas: a folha corre para dentro da parede quando a porta está aberta
   const st=V&&V.portas;
   for(const D2 of PORTAS){ const alvo=st&&st[D2.P.i]===0?0:1; D2.ang+=(alvo-D2.ang)*Math.min(1,dt*7);
-    for(const f of D2.folhas){ const d=-f.s*f.lf*.97*D2.ang; if(D2.P.eixo==='x') f.piv.position.x=f.x0+d; else f.piv.position.z=f.z0+d; } }
+    for(const f of D2.folhas){ const d=-f.s*(f.lf+(D2.face?.06:-.03*f.lf))*D2.ang; if(D2.P.eixo==='x') f.piv.position.x=f.x0+d; else f.piv.position.z=f.z0+d; } }
   // energia por ala: lâmpadas apagadas na ala sem luz (com um tremeluzir no fim do apagão)
   const en=(V&&V.energia)||{};
   for(const s in LAMP){ const rest=en[s]||0, apagada=rest>0, tremendo=apagada&&rest<3;
