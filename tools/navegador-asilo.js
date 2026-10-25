@@ -54,6 +54,8 @@ const VISTAS=[['saguao',0,18,0,0],['corredor-oeste',-30,10,-Math.PI/2,0],['capel
   const luz=await page.evaluate(()=>{ const L=__T.VIS_ASILO.LAMP;
     return {oeste:L.oeste.map(l=>l.fonte.int).reduce((a,b)=>a+b,0),centro:L.centro.map(l=>l.fonte.int).reduce((a,b)=>a+b,0),n:[L.oeste.length,L.centro.length,L.leste.length]}; });
   console.log('lâmpadas por ala',luz.n.join('/'),'intensidade oeste',luz.oeste.toFixed(2),'centro',luz.centro.toFixed(2));
+  const semLuz=await page.evaluate(()=>{ const L=__T.VIS_ASILO.LAMP; return [...L.oeste,...L.centro,...L.leste].filter(l=>!__T.FONTES.includes(l.fonte)).length; });
+  if(semLuz) falha(semLuz+' lâmpadas sem fonte de luz (FONTES)');
   if(luz.oeste>.01) falha('lâmpadas do oeste acesas com a luz cortada'); if(luz.centro<1) falha('lâmpadas do centro apagaram junto');
   // planta: portas e alas sem luz desenhadas
   await page.keyboard.down('Tab'); await page.waitForTimeout(800);

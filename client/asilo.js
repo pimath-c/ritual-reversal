@@ -103,7 +103,7 @@ for(const c of Sim.CANDLES){ const [x,z,tipo,setor]=c; if(tipo!=='lampada') cont
   const cg=new THREE.ConeGeometry(.42,.28,12,1,true), cup=new THREE.Mesh(cg,M.cupula), cin=new THREE.Mesh(cg,M.cupulaDentro); cup.position.set(x,ALT-.78,z); cin.position.copy(cup.position); add(cup); add(cin);
   const lamp=new THREE.Mesh(new THREE.SphereGeometry(.1,10,8),M.lampada.clone()); lamp.position.set(x,ALT-.86,z); add(lamp);
   const brilho=new THREE.Sprite(flameMat.clone()); brilho.scale.set(.55,.55,1); brilho.position.set(x,ALT-.9,z); add(brilho);
-  const fonte={x,z,y:ALT-1.7,cor:0xffdca0,int:1.3,alc:13,setor};   // abaixo da cúpula, longe do teto FONTES.push(fonte);
+  const fonte={x,z,y:ALT-1.7,cor:0xffdca0,int:1.3,alc:13,setor}; FONTES.push(fonte);   // abaixo da cúpula, longe do teto
   LAMP[setor].push({lamp,brilho,fonte,fase:R()*10}); }
 const QUADRO=[];
 for(const q of Sim.QUADROS){ // caixa de metal na parede mais próxima, com alavanca e uma lâmpada vermelha/verde
