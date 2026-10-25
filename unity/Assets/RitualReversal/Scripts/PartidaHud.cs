@@ -15,13 +15,18 @@ namespace RitualReversal
         Texture2D branco;
         float W, H; // tela virtual: 1080 de altura
 
-        // as fontes do navegador (Resources/Fontes, OFL): Barlow Condensed no corpo, IM Fell English nos títulos; sem elas, a do Unity
-        static Font fonteCond, fonteSerif, fonteSerifIt;
+        // as fontes do navegador (Resources/Fontes, OFL); sem elas, a do Unity
+        static Font fonteCond, fonteSerif, fonteSerifIt, fonteDisplay, fonteDisplay400, fonteMono, fonteMono500;
         void Estilos()
         {
             if (sTexto != null) return;
             branco = Texture2D.whiteTexture;
-            CarregarFonteSistema(); fonteCond = Resources.Load<Font>("Fontes/BarlowCondensed-Medium"); fonteCond400 = Resources.Load<Font>("Fontes/BarlowCondensed-Regular") ?? fonteCond; fonteCond600 = Resources.Load<Font>("Fontes/BarlowCondensed-SemiBold") ?? fonteCond; fonteCond700 = Resources.Load<Font>("Fontes/BarlowCondensed-Bold") ?? fonteCond; fonteSerif = Resources.Load<Font>("Fontes/IMFellEnglish-Regular"); fonteSerifIt = Resources.Load<Font>("Fontes/IMFellEnglish-Italic"); fonteSimbolo = Resources.Load<Font>("Fontes/DejaVuSans"); fonteSimboloN = Resources.Load<Font>("Fontes/DejaVuSans-Bold");
+            CarregarFonteSistema();
+            // v6.3, direção Nanquim: IBM Plex Sans Condensed no corpo, Big Shoulders Display nos títulos e números, IBM Plex Mono nos rótulos
+            fonteCond = Resources.Load<Font>("Fontes/IBMPlexSansCondensed-Medium"); fonteCond400 = Resources.Load<Font>("Fontes/IBMPlexSansCondensed-Regular") ?? fonteCond; fonteCond600 = Resources.Load<Font>("Fontes/IBMPlexSansCondensed-SemiBold") ?? fonteCond; fonteCond700 = Resources.Load<Font>("Fontes/IBMPlexSansCondensed-Bold") ?? fonteCond;
+            fonteSerif = Resources.Load<Font>("Fontes/BigShouldersDisplay-ExtraBold"); fonteSerifIt = fonteSerif; fonteDisplay = Resources.Load<Font>("Fontes/BigShouldersDisplay-Black") ?? fonteSerif; fonteDisplay400 = Resources.Load<Font>("Fontes/BigShouldersDisplay-Regular") ?? fonteSerif;
+            fonteMono = Resources.Load<Font>("Fontes/IBMPlexMono-Regular") ?? fonteCond400; fonteMono500 = Resources.Load<Font>("Fontes/IBMPlexMono-Medium") ?? fonteMono;
+            fonteSimbolo = Resources.Load<Font>("Fontes/DejaVuSans"); fonteSimboloN = Resources.Load<Font>("Fontes/DejaVuSans-Bold");
             sTexto = new GUIStyle(GUI.skin.label) { fontSize = 20, wordWrap = true, richText = true }; sTexto.normal.textColor = OSSO; if (fonteCond != null) sTexto.font = fonteCond;
             sPequeno = new GUIStyle(sTexto) { fontSize = 16 };
         }
@@ -92,10 +97,10 @@ namespace RitualReversal
             {
                 float y0 = y; y += H2(x, y, w, char.ToUpper(n.nome[0]) + n.nome.Substring(1));
                 // o style="text-align:left" vence o .lede, mas a margem 0 auto 14 dele tem !important: a caixa de 64ch fica no meio
-                var stL = Css("serifIt", 20, MUDO); float wl = Mathf.Min(w, Larg("0", stL) * 64);
+                var stL = Css("mono", 14, MUDO); float wl = Mathf.Min(w, Larg("0", stL) * 64);
                 if (!medindo) Linha(x + (w - wl) / 2, y, wl, 20 * 1.45f, "Você tem <b>" + m.obolos + "</b> óbolos.", stL);
                 y += 20 * 1.45f + 14;
-                var stB = Css("serif", 20, BONE); var stS = Css("400", 15, Hx("#c9c1b2")); float hb = AlturaNormal(stB);
+                var stB = Css("serif", 20, BONE); var stS = Css("400", 15, Hx("#c9c3b8")); float hb = AlturaNormal(stB);
                 for (int i = 0; i < itens.Count; i++)
                 {
                     var k = itens[i]; var it = Regras.ITENS[k];
@@ -154,7 +159,7 @@ namespace RitualReversal
             int n = (ctx.e != null || !string.IsNullOrEmpty(ctx.info) ? 1 : 0) + (ctx.t != null ? 1 : 0); float hTudo = 46 + 4 + n * (3 + LN(18f) + 6), py = H / 2 + 46;
             System.Action desenho = () =>
             {
-                float topo = hudToque ? py - hTudo / 2 : py, cx = W / 2, cy = topo + 23; Tracos.Anel(cx, cy, 19, 4, new Color(1, 1, 1, .18f)); if (anel > 0) Tracos.Arco(cx, cy, 19, 4, Mathf.Clamp01(anel), Desenho.Hex("#f3d58e"));
+                float topo = hudToque ? py - hTudo / 2 : py, cx = W / 2, cy = topo + 23; Tracos.Anel(cx, cy, 19, 4, new Color(1, 1, 1, .18f)); if (anel > 0) Tracos.Arco(cx, cy, 19, 4, Mathf.Clamp01(anel), Desenho.Hex("#ffffff"));
                 float y = topo + 46 + 4 + 3;
                 if (ctx.e != null) { Rotulo(y, EntradaUnity.Nome("use"), ctx.e.label.Replace("Segure E para ", "Segure para ")); y += LN(18f) + 6 + 3; }
                 else if (!string.IsNullOrEmpty(ctx.info)) { Rotulo(y, null, ctx.info); y += LN(18f) + 6 + 3; }

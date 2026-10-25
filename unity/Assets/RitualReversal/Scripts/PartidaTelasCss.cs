@@ -36,7 +36,7 @@ namespace RitualReversal
         // .choices: cartões em 2 ou 3 colunas, 14 px entre eles; o conteúdo no meio da altura (é um <button>)
         float Cartoes(float x, float y, float w, int colunas, IList<string[]> itens, System.Func<int, bool> sel, System.Action<int> clica, bool ativo)
         {
-            float cw = (w - 14 * (colunas - 1)) / colunas, yy = y + 10; var stB = Css("serif", 22, BONE); var stS = Css("400", 16, Hx("#c9c1b2")); var stM = Css("400", 14, MUDO);
+            float cw = (w - 14 * (colunas - 1)) / colunas, yy = y + 10; var stB = Css("serif", 22, BONE); var stS = Css("400", 16, Hx("#c9c3b8")); var stM = Css("400", 14, MUDO);
             for (int i0 = 0; i0 < itens.Count; i0 += colunas)
             {
                 float hl = 0; var alts = new List<float>();
@@ -184,7 +184,7 @@ namespace RitualReversal
                 if (!medindo)
                 {
                     Linha(r.x + 11, r.y + 7, bw - 22, LN(16), a[1], stN); string kk = cap ? "aperte…" : EntradaUnity.Nome(a[0]); var stK = Css("700", 16, cap ? CrimsonHi : GOLD_HI, TextAnchor.UpperCenter);
-                    float kw = Mathf.Max(34, Larg(kk, stK) + 14 + 2); var rk = new Rect(r.xMax - 11 - kw, r.y + 7, kw, LN(16)); Moldura(rk, Hx("#4a525c")); Linha(rk.x, rk.y, kw, LN(16), kk, stK);
+                    float kw = Mathf.Max(34, Larg(kk, stK) + 14 + 2); var rk = new Rect(r.xMax - 11 - kw, r.y + 7, kw, LN(16)); Moldura(rk, Hx("#3a3a3a")); Linha(rk.x, rk.y, kw, LN(16), kk, stK);
                 }
             }
             y += ((EntradaUnity.ACOES.Length + 1) / 2) * (bh + 6) - 6;
@@ -202,7 +202,7 @@ namespace RitualReversal
             PainelTela("pausa" + online, 800, (x, y, w) =>
             {
                 float y0 = y; y += H2(x, y, w, online ? "Clique para jogar" : "Pausado", TextAnchor.UpperCenter);
-                var stP = Css("400", 18, Hx("#cfc7b8"), TextAnchor.UpperCenter); float wb = Mathf.Min(w, Larg("0", stP) * 64);
+                var stP = Css("400", 18, Hx("#c9c3b8"), TextAnchor.UpperCenter); float wb = Mathf.Min(w, Larg("0", stP) * 64);
                 // o p tem margem 6, que some no 8 de baixo do h2
                 y += Ps(x + (w - wb) / 2, y, wb, online ? "No modo online a partida não pausa: enquanto o mouse estiver solto, seu personagem fica parado." : (toqueAtivo ? "Toque" : "Clique") + " para voltar ao jogo.", stP, 18 * 1.45f);
                 if (!online && !toqueAtivo) y += ColaTeclas(x, y, w);   // com toque, sem a cola das teclas
@@ -231,7 +231,7 @@ namespace RitualReversal
                 foreach (var i in ln)
                 {
                     // o kbd é inline: a borda fica 1 px para fora da linha, em cima e embaixo
-                    if (!medindo) { float kw = Larg(L[i][0], stK) + 10 + 2; Moldura(new Rect(xx, yy - 1, kw, lh + 2), Hx("#4a525c")); Linha(xx + 6, yy, kw, lh, L[i][0], stK); Linha(xx + kw + 6, yy, 200, lh, L[i][1], stN); }
+                    if (!medindo) { float kw = Larg(L[i][0], stK) + 10 + 2; Moldura(new Rect(xx, yy - 1, kw, lh + 2), Hx("#3a3a3a")); Linha(xx + 6, yy, kw, lh, L[i][0], stK); Linha(xx + kw + 6, yy, 200, lh, L[i][1], stN); }
                     xx += larg[i] + 16;
                 }
                 yy += lh + 8;

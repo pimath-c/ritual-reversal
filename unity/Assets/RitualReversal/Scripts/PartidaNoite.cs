@@ -104,8 +104,8 @@ namespace RitualReversal
                 }
                 else if (at != null)
                 {
-                    Tracos.Disco(c.x, c.y, rr, new Color(224 / 255f, 67 / 255f, 94 / 255f, .35f)); Tracos.Anel(c.x, c.y, rr, 2 * s, Desenho.Hex("#e0435e"));
-                    Tracos.Arco(c.x, c.y, rr + 4 * s, 3 * s, at[0], Desenho.Hex("#ff8a9a")); if (at[1] > .01f) Tracos.Arco(c.x, c.y, rr + 8 * s, 2 * s, at[1], Desenho.Hex("#f3d58e"));
+                    Tracos.Disco(c.x, c.y, rr, new Color(224 / 255f, 67 / 255f, 94 / 255f, .35f)); Tracos.Anel(c.x, c.y, rr, 2 * s, Desenho.Hex("#e3262e"));
+                    Tracos.Arco(c.x, c.y, rr + 4 * s, 3 * s, at[0], Desenho.Hex("#ff8a9a")); if (at[1] > .01f) Tracos.Arco(c.x, c.y, rr + 8 * s, 2 * s, at[1], Desenho.Hex("#ffffff"));
                 }
             }
             foreach (var q in R.quedas)
@@ -124,7 +124,7 @@ namespace RitualReversal
                 else if (o.team == "H") Tracos.Losango(c.x, c.y, 4.5f * s, cor, Color.black);
                 else { Tracos.Disco(c.x, c.y, 5.5f * s, Color.black); Tracos.Disco(c.x, c.y, 5 * s, cor); }
                 if (o.eu) Tracos.Anel(c.x, c.y, 9 * s, 1.4f * s, Color.white);
-                TextoBase(c.x, c.y - 10 * s, o.nome, Mathf.RoundToInt(10.5f * s), Desenho.Hex("#e8e0d0"));
+                TextoBase(c.x, c.y - 10 * s, o.nome, Mathf.RoundToInt(10.5f * s), Desenho.Hex("#ece6da"));
             }
         }
     }

@@ -15,7 +15,7 @@ namespace RitualReversal
         {
             var L = log != null ? Noite.Lances(log) : null; if (L == null || L.Count == 0) return 0; var eu = Eu(); float y0 = y;
             y += H3(x, y, w, "Lances da noite") - 6 + 6;
-            int n = Mathf.Max(1, Mathf.FloorToInt((w + 8) / (220 + 8))); float cw = (w - 8 * (n - 1)) / n; var stB = Css("serif", 17, BONE); var stS = Css("400", 13, Hx("#c9bfae")); var stT = Css("400", 12, MUDO, TextAnchor.UpperRight);
+            int n = Mathf.Max(1, Mathf.FloorToInt((w + 8) / (220 + 8))); float cw = (w - 8 * (n - 1)) / n; var stB = Css("serif", 17, BONE); var stS = Css("400", 13, Hx("#c9c3b8")); var stT = Css("400", 12, MUDO, TextAnchor.UpperRight);
             for (int i = 0; i < L.Count; i += n)
             {
                 float hl = 0; for (int j = i; j < Mathf.Min(L.Count, i + n); j++) hl = Mathf.Max(hl, 7 + AlturaNormal(stB) + AlturaParagrafo(L[j].sub, stS, cw - 22, LN(16)) + 7);
@@ -63,7 +63,7 @@ namespace RitualReversal
                         var st = th ? Css("500", 17, MUDO) : Css("400", 17, BONE); var stn = th ? Css("500", 17, MUDO, TextAnchor.UpperRight) : Css("400", 17, BONE, TextAnchor.UpperRight);
                         Linha(x + 8, yy + 6, cols[0] - 16, lh, cel[0], th ? st : Css("600", 17, c0 ?? BONE)); Linha(x + cols[0] + 8, yy + 6, cols[1] - 16, lh, cel[1], st);
                         for (int i = 0; i < 6; i++) Linha(x + cols[0] + cols[1] + i * numW + 8, yy + 6, numW - 16, lh, cel[2 + i], stn);
-                        Caixa(new Rect(x, yy + hl - 1, w, 1), Hx("#333a42"));
+                        Caixa(new Rect(x, yy + hl - 1, w, 1), Hx("#262626"));
                     }
                     yy += hl;
                 };
@@ -109,7 +109,7 @@ namespace RitualReversal
             var ev = mk.Where(m => m.tipo != "momento").Take(12).ToList();
             if (ev.Count > 0)
             {
-                var stE = Css("400", 14, Hx("#cfc6b6")); var stB = Css("600", 14, GOLD);
+                var stE = Css("400", 14, Hx("#c9c3b8")); var stB = Css("600", 14, GOLD);
                 y += 6 + ListaMarcos(x, y + 6, w, ev.Select(m => new[] { Noite.Relogio(m.rt), m.txt }).ToList(), i => stE, stB);
             }
             return y - y0;
@@ -145,7 +145,7 @@ namespace RitualReversal
         float DesafioCss(float x, float y, float w)
         {
             if (!desAtivo || desFeito == null) return 0; var r = desFeito; float y0 = y; y += 12;
-            var stS = Css("400", 12, GOLD); var stB = Css("serif", 34, GOLD_HI); var stP = Css("400", 15, Hx("#cfc6b6")); var stE = Css("400", 15, CrimsonHi);
+            var stS = Css("400", 12, GOLD); var stB = Css("serif", 34, GOLD_HI); var stP = Css("400", 15, Hx("#c9c3b8")); var stE = Css("400", 15, CrimsonHi);
             string partes = string.Join(" · ", ((List<string>)r["partes"]).ToArray()), em = (bool)r["recorde"] ? "Novo recorde do dia!" : "Recorde do dia: " + r["melhor"];
             float hp = AlturaParagrafo(partes, stP, w - 30, 18), h = 1 + 10 + LN(12) + AlturaNormal(stB) + hp + 18 + 10 + 1;
             if (!medindo)
@@ -174,6 +174,7 @@ namespace RitualReversal
                 return y - y0;
             });
         }
+        string finalMarcado = "";
         // ---------- finalScreen ----------
         void TelaFinalCss()
         {
@@ -182,8 +183,29 @@ namespace RitualReversal
             string titulo = wv.win == null ? "Empate" : minha ? "Vitória da sua equipe" : "Vitória dos adversários";
             PainelTela("final" + g.matchId, 800, (x, y, w) =>
             {
-                float y0 = y; var stH = Css("serif", 32, wv.win == null ? BONE : minha ? GOLD : CrimsonHi); if (!medindo) Linha(x, y, w, AlturaNormal(stH), titulo, stH); y += AlturaNormal(stH) + 8;
-                if (wv.why.Length > 0) y += P(x, y, w, char.ToUpper(wv.why[0]) + wv.why.Substring(1) + ".");
+                float y0 = y;
+                // .fimCab (Nanquim): a faixa de osso que vaza o painel (margem -26 -40 22), a palavra carimbada, o placar, a
+                // pincelada escura e a frase do resultado
+                {
+                    if (!medindo && finalMarcado != (g.matchId ?? "")) { finalMarcado = g.matchId ?? ""; Marcar("final"); }
+                    var sc = A != null && B == null ? A : B != null && A == null ? B : null;
+                    string placar = sc != null ? sc.@sealed + " <color=#c4161c>×</color> " + sc.done + " <color=#5c574f>selados, fendas</color>" : (A != null ? A.done : 0) + " <color=#c4161c>×</color> " + (B != null ? B.done : 0) + " <color=#5c574f>rituais</color>";
+                    var tinta = Hx("#0a0a0a"); int tP = Mathf.RoundToInt(Mathf.Clamp(W * .13f, 84, 150)); var stS = Css("mono", 12, Hx("#5c574f")); var stP = Css("display", tP, tinta); var stN = Css("serif", 30, tinta); var stF = Css("mono", 13, Hx("#3a3630"));
+                    string frase = titulo + "." + (wv.why.Length > 0 ? " " + char.ToUpper(wv.why[0]) + wv.why.Substring(1) + "." : "");
+                    float lhP = Mathf.Round(tP * .8f), hF = AlturaParagrafo(frase, stF, w, Mathf.Round(13 * 1.45f));
+                    float h = 22 + LN(12) + 6 + lhP + 4 + LN(30) + 8 + 22 + 10 + hF + 18;
+                    if (!medindo)
+                    {
+                        Caixa(new Rect(x - 40, y - 26, w + 80, h), BONE); float yy = y - 26 + 22;
+                        Linha(x, yy, w, LN(12), ("fim da noite · " + NomeMapa(MapaMundo)).ToLowerInvariant(), stS); yy += LN(12) + 6;
+                        float yp = yy; string pal = Maiusc(wv.win == null ? "Empate" : minha ? "Vitória" : "Derrota");
+                        ComCarimbo("final", .3f, .15f, x + w * .12f, yp + lhP * .7f, () => Linha(x - .04f * tP, yp, w + 80, lhP, pal, stP)); yy += lhP + 4;
+                        Linha(x, yy, w, LN(30), placar, stN); yy += LN(30) + 8;
+                        DesenharPincel(new Rect(x, yy, Mathf.Min(520, w * .8f), 22), tinta, Sai(Anim("final", .35f, .4f))); yy += 22 + 10;
+                        Paragrafo(x, yy, w, Mathf.Round(13 * 1.45f), frase, stF);
+                    }
+                    y += h - 26 + 22;   // a faixa começa 26 acima e deixa 22 embaixo
+                }
                 System.Func<string, Placar, string[]> linha = (n, s) => new[] { n, s.done.ToString(), s.lastT.HasValue ? Relogio(s.lastT.Value) : "—", Mathf.RoundToInt((float)s.maxP * 100) + "%" };
                 var L = new List<string[]>(); if (A != null) L.Add(linha(B == null ? "Sua equipe (culto)" : "Sua equipe", A)); if (B != null) L.Add(linha(A == null ? "Adversários (culto)" : "Adversários", B));
                 y += Tabela(x, y, w, new[] { "Como Cultistas", "Rituais", "Último ritual", "Maior progresso" }, L, new[] { 90f, 130f, 160f });

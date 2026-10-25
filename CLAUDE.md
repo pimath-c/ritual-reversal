@@ -47,7 +47,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.2)
+## Estado atual (v6.3)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -174,6 +174,16 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `presagio`, `eco_coro`, `runa`, `clarao`, `purificacao`, `sal`, `trovao`, `alucinacao`, `musica_laco`, `pulso_laco`, `bordao_laco`,
   `tensao_laco`); no cliente `lacoGravado`, sem `sfxTone`/`sfxNoise`/`AU.noise`; no Unity `Som.Aviso`, `PassoLaco`, `Hab(cls,x,z,f)`.
   Só sobra um oscilador de 7 Hz que mexe no volume do coro (tremor do selo), sem soar. Sem gravação, o som não toca.
+- v6.3 (notas em `notas/v6.3.md`): interface na direção Nanquim (escolhida pelo dono num quadro de três direções:
+  https://claude.ai/artifact/RwkfQ2mJufeD1EvQJFZfPF). Navegador: camada de tema no fim do <style> (tokens --sangue, --mono;
+  Big Shoulders Display, IBM Plex Sans Condensed e Mono do Google Fonts), título `.tituloJogo` com `.contorno` e `.pincel`
+  (PINCEL), resultado com `.fimCab`, movimento por `marcar(el,cls,ms)` e `UIM` (tranco da munição, `ferido`, feed `.novo`,
+  pips riscados por CSS, `#scr.entrada`, `#scr.fim`), `:root.suave` desliga. Unity: fontes novas em `Resources/Fontes` (OFL),
+  `Css("serif"|"display"|"display400"|"mono"|"mono500")`, métricas IBM Plex 1,025/,275 e Big Shoulders ,984/,213 (`LN`, `LNs`),
+  `EstiloBotao` em texto com `TextoBotao`/`Traco`, `PartidaNanquim.cs` (`Marcar`/`Anim`, `Recorte`, `Pincel`, `TextoContorno`,
+  `ComCarimbo`, `ComEntrada`; `animacaoNaFoto` faz o TesteTelas fotografar o fim das animações), HUD e fim da noite portados.
+  O layout do Unity não está mais pixel a pixel com o navegador (as medidas mudaram com as fontes); o mapa (planta) e o Arsenal
+  continuam no estilo antigo.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

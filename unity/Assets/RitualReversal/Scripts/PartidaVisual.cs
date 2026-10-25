@@ -12,8 +12,8 @@ namespace RitualReversal
 {
     public partial class PartidaLocal
     {
-        static readonly Color OURO = new Color(.82f, .68f, .38f), CARMIM = new Color(.64f, .13f, .23f), CARMIM_VIVO = new Color(.88f, .26f, .37f),
-            ROXO = new Color(.42f, .25f, .56f), ROXO_VIVO = new Color(.75f, .55f, .95f), CINZA = new Color(.35f, .36f, .38f), OSSO = new Color(.91f, .88f, .82f);
+        static readonly Color OURO = new Color(.812f, .784f, .733f), CARMIM = new Color(.769f, .086f, .11f), CARMIM_VIVO = new Color(.89f, .149f, .18f),
+            ROXO = new Color(.42f, .25f, .56f), ROXO_VIVO = new Color(.75f, .55f, .95f), CINZA = new Color(.35f, .36f, .38f), OSSO = new Color(.925f, .902f, .855f);
 
         Mundo mundo; PrimeiraPessoa fp; Pos pos; Som som;
         Entrada ultimaEntrada; float localCd, alucT = 8, coracaoT, sinoT = 45; bool ultimoTiroCab;

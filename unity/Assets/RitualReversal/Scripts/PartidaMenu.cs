@@ -36,11 +36,11 @@ namespace RitualReversal
         {
             if (texSigilo != null) return texSigilo; var D = new Desenho(120, 120, 3, new Color(0, 0, 0, 0));
             System.Func<float, float, List<Vector2>> arco = (a0, a1) => { var p = new List<Vector2>(); for (int i = 0; i <= 48; i++) { float a = Mathf.Lerp(a0, a1, i / 48f); p.Add(new Vector2(60 + Mathf.Cos(a) * 52, 60 + Mathf.Sin(a) * 52)); } return p; };
-            D.Polilinha(arco(-Mathf.PI / 2, -Mathf.PI * 1.5f), 3, Desenho.Hex("#d2ad62")); D.Polilinha(arco(-Mathf.PI / 2, Mathf.PI / 2), 3, Desenho.Hex("#a3203a"));
-            D.Polilinha(new[] { new Vector2(60, 4), new Vector2(60, 116) }, 1.2f, Desenho.Hex("#e8e0d0", .5f));
+            D.Polilinha(arco(-Mathf.PI / 2, -Mathf.PI * 1.5f), 3, Desenho.Hex("#cfc8bb")); D.Polilinha(arco(-Mathf.PI / 2, Mathf.PI / 2), 3, Desenho.Hex("#c4161c"));
+            D.Polilinha(new[] { new Vector2(60, 4), new Vector2(60, 116) }, 1.2f, Desenho.Hex("#ece6da", .5f));
             var olho = new List<Vector2>(); System.Func<Vector2, Vector2, Vector2, float, Vector2> q = (a, c, b, t) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * c + t * t * b;
             for (int i = 0; i <= 32; i++) olho.Add(q(new Vector2(22, 60), new Vector2(60, 102), new Vector2(98, 60), i / 32f)); for (int i = 1; i <= 32; i++) olho.Add(q(new Vector2(98, 60), new Vector2(60, 18), new Vector2(22, 60), i / 32f));
-            D.Polilinha(olho, 2.4f, Desenho.Hex("#e8e0d0")); D.Circulo(60, 70, 12, Desenho.Hex("#a3203a")); D.Circulo(60, 70, 5, Desenho.Hex("#050506"));
+            D.Polilinha(olho, 2.4f, Desenho.Hex("#ece6da")); D.Circulo(60, 70, 12, Desenho.Hex("#c4161c")); D.Circulo(60, 70, 5, Desenho.Hex("#0a0a0a"));
             return texSigilo = D.Textura();
         }
 
@@ -124,17 +124,17 @@ namespace RitualReversal
         {
             // #tutorial: 330 px à esquerda em top 300, borda carmim (dourada no fim), padding 10 × 14 × 12
             if (!tutAtivo || g == null || g.phase != "play" || passosTut == null) return; float x = 26, y = 300, w = 330, wc = w - 3 - 28;
-            var corT = tutFim ? GOLD_HI : CrimsonHi; var stP = Css("400", 16, Hx("#e6dccb"));
+            var corT = tutFim ? GOLD_HI : CrimsonHi; var stP = Css("400", 16, Hx("#c9c3b8"));
             string tit = tutFim ? "TUTORIAL COMPLETO" : "APRENDER · PASSO " + (tutI + 1) + " DE " + passosTut.Count;
             string p = tutFim ? "Você já sabe o básico de " + (tutPapel == "H" ? "caçar" : "celebrar") + ". Termine a noite contra os bots ou saia pela pausa (Esc)." : passosTut[tutI].t;
             float hp = AlturaParagrafo(p, stP, wc, 16 * 1.4f), h = 10 + LN(12) + 4 + hp + 6 + (tutFim ? 0 : LN(13f) + 6 + 3) + 12;
-            Caixa(new Rect(x, y, w, h), new Color(8 / 255f, 9 / 255f, 11 / 255f, .85f)); Caixa(new Rect(x, y, 3, h), corT);
-            float yy = y + 10, xc = x + 3 + 14; Espacada(xc, yy, LN(12), tit, Css("400", 12, corT), .96f); yy += LN(12) + 4;
+            Caixa(new Rect(x, y, w, h), new Color(10 / 255f, 10 / 255f, 10 / 255f, .9f)); Caixa(new Rect(x, y, 2, h), tutFim ? BONE : SANGUE);
+            float yy = y + 10, xc = x + 3 + 14; Espacada(xc, yy, LN(12), tit, Css("mono", 12, corT), .72f); yy += LN(12) + 4;
             yy += Paragrafo(xc, yy, wc, 16 * 1.4f, p, stP) + 6;
             if (!tutFim)
             {
-                Linha(xc, yy, wc, LN(13f), "N pula este passo", Css("400", 13, MUDO)); yy += LN(13f) + 6;
-                Caixa(new Rect(xc, yy, wc, 3), Hx("#2a2f36")); Caixa(new Rect(xc, yy, wc * tutI / passosTut.Count, 3), CrimsonHi);
+                Linha(xc, yy, wc, LN(13f), "N pula este passo", Css("mono", 12, MUDO)); yy += LN(13f) + 6;
+                Caixa(new Rect(xc, yy, wc, 2), Hx("#262626")); Caixa(new Rect(xc, yy, wc * tutI / passosTut.Count, 2), SANGUE);
             }
         }
 
@@ -222,10 +222,10 @@ namespace RitualReversal
         {
             // #dica: 300 px à direita em top 340, borda dourada; entra deslizando 16 px e some em 0,5 s
             if (dicaAtual == null || g == null || g.phase != "play") return; float op = Mathf.Clamp01(Mathf.Min((8 - dicaAberta) / .5f, dicaAberta / .5f)); if (op <= 0) return;
-            float w = 300, x = W - 26 - w + 16 * (1 - op), y = 340, wc = w - 2 - 28, lh = 15 * 1.35f; var st = Css("400", 15, Hx("#ddd3c2", op));
+            float w = 300, x = W - 26 - w + 16 * (1 - op), y = 340, wc = w - 2 - 28, lh = 15 * 1.35f; var st = Css("400", 15, Hx("#c9c3b8", op));
             float h = 9 + 12 * 1.35f + 2 + AlturaParagrafo(dicaAtual, st, wc, lh) + 10;
-            Caixa(new Rect(x, y, w, h), new Color(8 / 255f, 9 / 255f, 11 / 255f, .82f * op)); Caixa(new Rect(x, y, 2, h), new Color(GOLD.r, GOLD.g, GOLD.b, op));
-            Espacada(x + 16, y + 9, 12 * 1.35f, "DICA", Css("400", 12, new Color(GOLD.r, GOLD.g, GOLD.b, op)), .96f); Paragrafo(x + 16, y + 9 + 12 * 1.35f + 2, wc, lh, dicaAtual, st);
+            Caixa(new Rect(x, y, w, h), new Color(10 / 255f, 10 / 255f, 10 / 255f, .9f * op)); Caixa(new Rect(x, y, 2, h), new Color(BONE.r, BONE.g, BONE.b, op));
+            Espacada(x + 16, y + 9, 12 * 1.35f, "DICA", Css("mono", 12, new Color(MUDO.r, MUDO.g, MUDO.b, op)), .72f); Paragrafo(x + 16, y + 9 + 12 * 1.35f + 2, wc, lh, dicaAtual, st);
         }
 
     }

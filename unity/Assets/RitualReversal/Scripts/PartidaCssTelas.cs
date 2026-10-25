@@ -1,6 +1,7 @@
-// As peças das telas do navegador para o IMGUI, desenhadas em retângulos calculados como o CSS faz (sem o GUILayout):
-// button.go (degradê carmim com as pontas chanfradas do clip-path), .go.gold, .go.ghost, os botões de opção (.dif, .set
-// .opts, .labRow, .repCtl: borda fina, dourada quando escolhidos), o link sublinhado (.lk), o campo (input.txt), a caixinha
+// As peças das telas do navegador para o IMGUI, desenhadas em retângulos calculados como o CSS faz (sem o GUILayout).
+// v6.3, direção Nanquim: button.go é texto (Big Shoulders em maiúsculas, vermelho; .gold em osso; .ghost em mono, minúsculas,
+// apagado) com um traço que corre por baixo no cursor e no foco; as opções (.dif, .set .opts, .labRow, .repCtl) são texto
+// mono, a escolhida entre colchetes; o link (.lk) em mono; o campo (input.txt) só com a linha de baixo; a caixinha
 // (checkbox com accent dourado), o fundo da tela (.screen e o degradê lateral do título) e a placa do painel (.panel.plate).
 // Cada tela mede antes de desenhar (medindo = true: nada é desenhado nem clicado), para centrar e rolar como o navegador.
 using System.Collections.Generic;
@@ -11,7 +12,9 @@ namespace RitualReversal
     public partial class PartidaLocal
     {
         bool medindo;
-        static readonly Color BORDA_OP = new Color(58 / 255f, 65 / 255f, 73 / 255f), FUNDO_OP = new Color(14 / 255f, 16 / 255f, 19 / 255f, .7f);
+        static readonly Color SANGUE = new Color(.769f, .086f, .11f);   // --sangue #c4161c
+        static bool SuaveUI() { return PlayerPrefs.GetInt("rr-suave", 0) == 1; }
+        static readonly Color BORDA_OP = new Color(38 / 255f, 38 / 255f, 38 / 255f), FUNDO_OP = new Color(1, 1, 1, .025f);
 
         // ---------- texturas dos botões ----------
         readonly Dictionary<string, GUIStyle> estilosBotao = new Dictionary<string, GUIStyle>();
@@ -62,34 +65,64 @@ namespace RitualReversal
             int tam = 20; string peso = "600"; Color txt = Color.white; RectOffset pad; RectOffset borda; Texture2D tex; var al = TextAnchor.MiddleCenter;
             switch (tipo)
             {
-                case "go": tex = TexBotao(Hx("#b3263f"), Hx("#6e1224"), Hx("#e0435e"), true); pad = new RectOffset(29, 29, 11, 11); borda = new RectOffset(10, 10, 1, 1); break;
-                case "gold": tex = TexBotao(Hx("#b88d3e"), Hx("#6d4f1c"), Hx("#f3d58e"), true); pad = new RectOffset(29, 29, 11, 11); borda = new RectOffset(10, 10, 1, 1); break;
-                case "ghost": tex = TexBotao(new Color(20 / 255f, 23 / 255f, 27 / 255f, .85f), new Color(20 / 255f, 23 / 255f, 27 / 255f, .85f), Hx("#4a525c"), true); pad = new RectOffset(29, 29, 11, 11); borda = new RectOffset(10, 10, 1, 1); txt = BONE; break;
-                // .loja .item .go: 17 px, padding 8 × 18 (dourado com o preço; fantasma com o motivo do bloqueio)
-                case "lojaGold": tex = TexBotao(Hx("#b88d3e"), Hx("#6d4f1c"), Hx("#f3d58e"), true); pad = new RectOffset(19, 19, 9, 9); borda = new RectOffset(10, 10, 1, 1); tam = 17; break;
-                case "lojaGhost": tex = TexBotao(new Color(20 / 255f, 23 / 255f, 27 / 255f, .85f), new Color(20 / 255f, 23 / 255f, 27 / 255f, .85f), Hx("#4a525c"), true); pad = new RectOffset(19, 19, 9, 9); borda = new RectOffset(10, 10, 1, 1); txt = BONE; tam = 17; break;
-                case "ghostP": tex = TexBotao(new Color(20 / 255f, 23 / 255f, 27 / 255f, .85f), new Color(20 / 255f, 23 / 255f, 27 / 255f, .85f), Hx("#4a525c"), true); pad = new RectOffset(17, 17, 6, 6); borda = new RectOffset(10, 10, 1, 1); txt = BONE; tam = 15; break;
+                // button.go: Big Shoulders 800 de 24 px, maiúsculas, vermelho, padding 6 × 0 (7 embaixo), sem fundo
+                case "go": tex = null; pad = new RectOffset(0, 0, 6, 7); borda = new RectOffset(0, 0, 0, 0); peso = "serif"; tam = 24; txt = SANGUE; break;
+                case "gold": tex = null; pad = new RectOffset(0, 0, 6, 7); borda = new RectOffset(0, 0, 0, 0); peso = "serif"; tam = 24; txt = BONE; break;
+                // .go.ghost: mono 14, minúsculas, apagado (osso no cursor), padding 4 × 0 (5 embaixo)
+                case "ghost": case "ghostP": tex = null; pad = new RectOffset(0, 0, 4, 5); borda = new RectOffset(0, 0, 0, 0); peso = "mono"; tam = 14; txt = MUDO; break;
+                // .loja .item .go: 17 px, padding 8 × 18 (o preço em osso; o motivo do bloqueio em mono)
+                case "lojaGold": tex = null; pad = new RectOffset(18, 18, 8, 8); borda = new RectOffset(0, 0, 0, 0); peso = "serif"; tam = 17; txt = BONE; break;
+                case "lojaGhost": tex = null; pad = new RectOffset(18, 18, 8, 8); borda = new RectOffset(0, 0, 0, 0); peso = "mono"; tam = 17; txt = MUDO; break;
                 // .slot: 19 px à esquerda, fundo escuro, borda #3a4149 (a sua vaga, ouro); a do bot com o texto apagado
-                case "slot": case "slotBot": case "slotMe": tex = TexBotao(new Color(14 / 255f, 16 / 255f, 19 / 255f, .8f), new Color(14 / 255f, 16 / 255f, 19 / 255f, .8f), tipo == "slotMe" ? GOLD_HI : BORDA_OP, false); pad = new RectOffset(13, 13, 11, 11); borda = new RectOffset(1, 1, 1, 1); tam = 19; peso = "400"; txt = tipo == "slotBot" ? MUDO : BONE; al = TextAnchor.MiddleLeft; break;
+                case "slot": case "slotBot": case "slotMe": tex = TexBotao(FUNDO_OP, FUNDO_OP, tipo == "slotMe" ? BONE : BORDA_OP, false); pad = new RectOffset(13, 13, 11, 11); borda = new RectOffset(1, 1, 1, 1); tam = 19; peso = "400"; txt = tipo == "slotBot" ? MUDO : BONE; al = TextAnchor.MiddleLeft; break;
                 // #arsenal .abas button: fundo quase transparente, borda ouro .35, cantos de 6 (a escolhida em ouro); .skin: cantos de 8
                 // a vitrine das animações (o painel do arma.js): fundo #2a1d18, borda #6b4a2a, cantos de 5, padding 4 × 7 (9 no tocar)
                 case "vit": case "vitPlay": tex = TexArredondada(Hx("#2a1d18"), Hx("#6b4a2a"), 5); pad = tipo == "vitPlay" ? new RectOffset(10, 10, 5, 5) : new RectOffset(8, 8, 5, 5); borda = new RectOffset(6, 6, 6, 6); tam = 13; peso = "sys"; txt = Hx("#eadfca"); break;
                 case "arsAba": case "arsAbaSel": { bool sl = tipo == "arsAbaSel"; tex = TexArredondada(sl ? new Color(210 / 255f, 173 / 255f, 98 / 255f, .18f) : new Color(1, 1, 1, .04f), sl ? GOLD : new Color(210 / 255f, 173 / 255f, 98 / 255f, .35f), 6); pad = new RectOffset(7, 7, 9, 9); borda = new RectOffset(7, 7, 7, 7); tam = 13; peso = "sys"; txt = sl ? GOLD_HI : BONE; break; }
                 case "arsSkin": case "arsSkinSel": { bool sl = tipo == "arsSkinSel"; tex = TexArredondada(sl ? new Color(210 / 255f, 173 / 255f, 98 / 255f, .08f) : new Color(1, 1, 1, .02f), sl ? GOLD : new Color(232 / 255f, 224 / 255f, 208 / 255f, .14f), 8); pad = new RectOffset(13, 13, 11, 11); borda = new RectOffset(9, 9, 9, 9); tam = 13; peso = "sys"; break; }
-                case "lk": tex = TexBotao(new Color(0, 0, 0, 0), new Color(0, 0, 0, 0), new Color(.91f, .878f, .816f, .3f), false, true); pad = new RectOffset(0, 0, 2, 3); borda = new RectOffset(0, 0, 0, 1); tam = 18; peso = "400"; txt = BONE; break;
+                // .lk: mono 13, minúsculas, apagado; no cursor, osso com o traço vermelho
+                case "lk": tex = null; pad = new RectOffset(0, 0, 2, 2); borda = new RectOffset(0, 0, 0, 0); tam = 13; peso = "mono"; txt = MUDO; break;
                 default:
-                    bool sel = tipo.EndsWith("Sel") || tipo == "repOn"; var fundo = tipo.StartsWith("choice") ? new Color(14 / 255f, 16 / 255f, 19 / 255f, .8f) : FUNDO_OP; tex = TexBotao(fundo, fundo, sel ? GOLD_HI : BORDA_OP, false); borda = new RectOffset(1, 1, 1, 1); peso = "400"; txt = sel ? GOLD_HI : BONE;
-                    if (tipo.StartsWith("lab")) { tam = 14; pad = new RectOffset(10, 10, 4, 4); } else if (tipo.StartsWith("set")) { tam = 16; pad = new RectOffset(1, 1, 7, 7); } else if (tipo.StartsWith("rep")) { tam = 15; pad = new RectOffset(10, 10, 5, 5); } else { tam = 15; pad = new RectOffset(13, 13, 4, 4); }
+                    bool sel = tipo.EndsWith("Sel") || tipo == "repOn";
+                    if (tipo.StartsWith("choice"))
+                    {   // .choice: a caixa fica (fundo quase nada, borda #262626; a escolhida em osso)
+                        tex = TexBotao(FUNDO_OP, FUNDO_OP, sel ? BONE : BORDA_OP, false); borda = new RectOffset(1, 1, 1, 1); peso = "400"; txt = BONE; tam = 15; pad = new RectOffset(13, 13, 4, 4); break;
+                    }
+                    // .dif button, .set .opts button, .labRow, .repCtl: mono 13 sem caixa; a escolhida em osso, entre colchetes
+                    tex = null; borda = new RectOffset(0, 0, 0, 0); peso = "mono"; tam = 13; txt = sel ? BONE : Hx("#6e6a62"); pad = new RectOffset(0, 0, 2, 2);
                     break;
             }
             s = new GUIStyle(Css(peso, tam, txt, al)) { padding = pad, border = borda, wordWrap = false };
             s.normal.background = tex; s.hover.background = tex; s.active.background = tex; s.focused.background = tex;
             s.normal.textColor = s.hover.textColor = s.active.textColor = s.focused.textColor = txt;
-            if (tipo == "lk") { s.hover.textColor = GOLD_HI; }
+            if (tipo == "lk" || tipo == "ghost" || tipo == "ghostP" || tipo == "lojaGhost" || tex == null && txt != BONE && txt != SANGUE) { s.hover.textColor = BONE; }
             if (tipo == "arsSkin") s.hover.background = TexArredondada(new Color(1, 1, 1, .02f), new Color(210 / 255f, 173 / 255f, 98 / 255f, .6f), 8);   // .skin:hover
             estilosBotao[tipo] = s; return s;
         }
-        float LarguraBotao(string txt, string tipo) { return Larg(txt, EstiloBotao(tipo)); }   // o CalcSize já soma o padding
+        // o texto como o CSS mostra: maiúsculas nos .go (text-transform), minúsculas nos fantasmas e nos links, a opção escolhida
+        // entre colchetes (::before e ::after)
+        static string TextoBotao(string txt, string tipo)
+        {
+            if (string.IsNullOrEmpty(txt)) return txt; string t = tipo.EndsWith("|mudo") ? tipo.Substring(0, tipo.Length - 5) : tipo;
+            switch (t)
+            {
+                case "go": case "gold": case "lojaGold": return txt.ToUpper(new System.Globalization.CultureInfo("pt-BR"));
+                case "ghost": case "ghostP": case "lojaGhost": case "lk": return txt.ToLower(new System.Globalization.CultureInfo("pt-BR"));
+            }
+            if (!t.StartsWith("choice") && !t.StartsWith("slot") && !t.StartsWith("vit") && !t.StartsWith("ars") && (t.EndsWith("Sel") || t == "repOn")) return "[" + txt + "]";
+            return txt;
+        }
+        // o traço que corre por baixo (button.go::after, .lk::after): na cor do texto nos .go, vermelho nos fantasmas e nos links
+        static bool TemTraco(string tipo) { return tipo == "go" || tipo == "gold" || tipo == "ghost" || tipo == "ghostP" || tipo == "lk" || tipo == "lojaGold" || tipo == "lojaGhost"; }
+        readonly Dictionary<string, float> tracos = new Dictionary<string, float>();
+        void Traco(Rect r, string tipo, bool ligado)
+        {
+            if (!TemTraco(tipo)) return; string k = tipo + "|" + r.x.ToString("0") + "|" + r.y.ToString("0"); float v; tracos.TryGetValue(k, out v);
+            v = Mathf.MoveTowards(v, ligado ? 1 : 0, Time.unscaledDeltaTime / .12f); if (SuaveUI()) v = ligado ? 1 : 0; tracos[k] = v; if (v <= 0) return;
+            var c = tipo == "go" ? SANGUE : tipo == "gold" || tipo == "lojaGold" ? BONE : SANGUE; float y = tipo == "lk" ? r.yMax : r.yMax - 2;
+            Caixa(new Rect(r.x, y, r.width * v, 2), c);
+        }
+        float LarguraBotao(string txt, string tipo) { return Larg(TextoBotao(txt, tipo), EstiloBotao(tipo)); }   // o CalcSize já soma o padding
         float AlturaBotao(string tipo) { var s = EstiloBotao(tipo); return Mathf.Round(AlturaNormal(s)) + s.padding.vertical; }
         // o botão num retângulo, com o foco do controle e a contagem do Bt (PartidaNavPad)
         bool BotaoCss(Rect r, string txt, string tipo, bool ativo = true)
@@ -97,11 +130,13 @@ namespace RitualReversal
             if (medindo) { if (ativo && !primeiroFoco.HasValue) primeiroFoco = r; return false; }
             // button.go:disabled tem opacity .35: o IMGUI já pinta o desativado com metade do alfa, o GUI.color tira o resto
             int i = padContagem++; var e0 = GUI.enabled; var c0 = GUI.color; GUI.enabled = e0 && ativo; if (!ativo) GUI.color = new Color(c0.r, c0.g, c0.b, c0.a * .7f);
-            bool b = BotaoNitido(r, txt, EstiloBotao(tipo)); GUI.enabled = e0; GUI.color = c0;
+            bool b = BotaoNitido(r, TextoBotao(txt, tipo), EstiloBotao(tipo)); GUI.enabled = e0; GUI.color = c0;
             if (b) cliqueNaPassada = true;
-            if (padNav && i == padFoco && Event.current.type == EventType.Repaint)
+            bool foco = padNav && i == padFoco;
+            if (Event.current.type == EventType.Repaint && ativo) Traco(r, tipo, foco || r.Contains(Event.current.mousePosition));
+            if (foco && Event.current.type == EventType.Repaint)
             {
-                Moldura(new Rect(r.x - 5, r.y - 5, r.width + 10, r.height + 10), GOLD_HI, 2);   // outline 2px com offset 3px
+                if (!TemTraco(tipo)) Moldura(new Rect(r.x - 5, r.y - 5, r.width + 10, r.height + 10), BONE, 1);   // as opções sem traço: um contorno fino
                 if (padConfirmar && padConfirmarQuadro == Time.frameCount && ativo) { padConfirmar = false; cliqueNaPassada = true; return true; }
             }
             return b && ativo;
@@ -110,8 +145,9 @@ namespace RitualReversal
         bool BotaoDuasLinhas(Rect r, string tit, string sub, string tipo)
         {
             if (medindo) return false; bool b = BotaoCss(r, tit, tipo + "|mudo");
-            Linha(r.x + 29, r.y + 11, r.width - 58, 24, tit, Css("600", 20, tipo == "ghost" ? BONE : Color.white));
-            Linha(r.x + 29, r.y + 11 + 24 + 2, r.width - 58, LN(13f), sub, Css("400", 13, MUDO));
+            // .desafioBtn é um .go.ghost: o título em mono 14 e a linha de baixo em mono 13
+            Linha(r.x, r.y + 4, r.width, LN(14f), TextoBotao(tit, tipo), Css("mono", 14, tipo == "ghost" ? MUDO : SANGUE));
+            Linha(r.x, r.y + 4 + LN(14f) + 2, r.width, LN(13f), TextoBotao(sub, tipo), Css("mono", 13, MUDO));
             return b;
         }
         // input.txt
@@ -121,22 +157,23 @@ namespace RitualReversal
             if (medindo) { if (!primeiroFoco.HasValue) primeiroFoco = r; return valor; }
             if (sCampoCss == null)
             {
-                sCampoCss = new GUIStyle(Css("400", 20, BONE)) { padding = new RectOffset(11, 11, 9, 9), border = new RectOffset(1, 1, 1, 1), clipping = TextClipping.Clip };
-                var t = TexBotao(Hx("#0f1215"), Hx("#0f1215"), Hx("#4a525c"), false); var tf = TexBotao(Hx("#0f1215"), Hx("#0f1215"), GOLD, false);
+                // input.txt: mono 16, sem fundo, só a linha de baixo (osso no foco)
+                sCampoCss = new GUIStyle(Css("mono", 16, BONE)) { padding = new RectOffset(2, 2, 6, 6), border = new RectOffset(0, 0, 0, 1), clipping = TextClipping.Clip };
+                var t = TexBotao(new Color(0, 0, 0, 0), new Color(0, 0, 0, 0), Hx("#6e6a62"), false, true); var tf = TexBotao(new Color(0, 0, 0, 0), new Color(0, 0, 0, 0), BONE, false, true);
                 sCampoCss.normal.background = sCampoCss.hover.background = t; sCampoCss.focused.background = tf; sCampoCss.normal.textColor = sCampoCss.focused.textColor = sCampoCss.hover.textColor = BONE;
             }
             // esticado numa .linha (align-items: stretch), o texto do campo fica no meio da altura
-            int pv = Mathf.RoundToInt((r.height - 2 - 24) / 2) + 1; GUIStyle st;
-            if (!camposCss.TryGetValue(pv, out st)) { st = new GUIStyle(sCampoCss) { padding = new RectOffset(11, 11, pv, pv) }; camposCss[pv] = st; }
+            int pv = Mathf.RoundToInt((r.height - 1 - 21) / 2); GUIStyle st;
+            if (!camposCss.TryGetValue(pv, out st)) { st = new GUIStyle(sCampoCss) { padding = new RectOffset(2, 2, pv, pv) }; camposCss[pv] = st; }
             var v = CampoNitido(r, valor, max, st, nome);
-            if (string.IsNullOrEmpty(v) && dica != null) Linha(r.x + 11, r.y + pv, r.width - 22, 24, dica, Css("400", 20, new Color(.46f, .46f, .46f)));
+            if (string.IsNullOrEmpty(v) && dica != null) Linha(r.x + 2, r.y + pv, r.width - 4, 24, dica, Css("mono", 16, new Color(.46f, .46f, .46f)));
             return v;
         }
         // a caixinha (accent dourado) com o rótulo; clicar em qualquer parte troca
         bool CaixinhaCss(float x, float y, string txt, bool v, GUIStyle st)
         {
             if (medindo) return v; var r = new Rect(x, y + 3, 13, 13);
-            if (v) { Caixa(r, GOLD); Caixa(new Rect(r.x + 3, r.y + 6, 2, 4), Hx("#050506")); Caixa(new Rect(r.x + 5, r.y + 8, 5, 2), Hx("#050506")); Caixa(new Rect(r.x + 8, r.y + 3, 2, 6), Hx("#050506")); }
+            if (v) { Caixa(r, GOLD); Caixa(new Rect(r.x + 3, r.y + 6, 2, 4), Hx("#0a0a0a")); Caixa(new Rect(r.x + 5, r.y + 8, 5, 2), Hx("#0a0a0a")); Caixa(new Rect(r.x + 8, r.y + 3, 2, 6), Hx("#0a0a0a")); }
             else { Caixa(r, Hx("#ffffff", .9f)); Moldura(r, Hx("#767676")); }
             Linha(x + 13 + 6, y, 600, 18, txt, st);
             var toda = new Rect(x, y, 13 + 6 + Larg(txt, st), 19); if (GUI.Button(toda, "", GUIStyle.none)) { if (som != null) som.Tocar("click"); return !v; }
@@ -144,48 +181,40 @@ namespace RitualReversal
         }
 
         // ---------- o fundo e o painel ----------
-        Texture2D texFundoTela, texFundoTitulo;
-        // .screen: radial-gradient(ellipse at 50% 38%, rgba(40,14,24,.55), rgba(3,3,4,.94) 70%)
+        Texture2D texFundoTitulo;
+        // .screen (Nanquim): preto chapado rgba(10,10,10,.94)
         void FundoTela()
         {
             if (medindo) return;
-            if (texFundoTela == null)
-            {
-                int N = 96; texFundoTela = new Texture2D(N, N, TextureFormat.RGBA32, false); var p = new Color[N * N];
-                for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
-                    {
-                        // a elipse vai até o canto mais longe (de 50%, 38%: o de baixo); 70% dela já é a cor de fora
-                        float dx = ((x + .5f) / N - .5f) / .5f, dy = (1 - (y + .5f) / N - .38f) / .62f, d = Mathf.Sqrt(dx * dx + dy * dy) / 1.4142f;
-                        p[y * N + x] = Color.Lerp(new Color(40 / 255f, 14 / 255f, 24 / 255f, .55f), new Color(3 / 255f, 3 / 255f, 4 / 255f, .94f), Mathf.Clamp01(d / .7f));
-                    }
-                texFundoTela.SetPixels(p); texFundoTela.Apply(false, true); texFundoTela.wrapMode = TextureWrapMode.Clamp;
-            }
-            GUI.DrawTexture(new Rect(0, 0, W, H), texFundoTela);
+            Caixa(new Rect(0, 0, W, H), new Color(10 / 255f, 10 / 255f, 10 / 255f, .94f));
         }
-        // #scr.inicial: linear-gradient(90deg, .94 0%, .72 38%, .15 70%, 0 100%)
+        // #scr.inicial (Nanquim): linear-gradient(90deg, .97 0%, .86 40%, .25 72%, 0 100%) de #0a0a0a
         void FundoTitulo()
         {
             if (medindo) return;
             if (texFundoTitulo == null)
             {
                 int n = 128; texFundoTitulo = new Texture2D(n, 1, TextureFormat.RGBA32, false); var p = new Color[n];
-                for (int i = 0; i < n; i++) { float f = (i + .5f) / n, a = f < .38f ? Mathf.Lerp(.94f, .72f, f / .38f) : f < .7f ? Mathf.Lerp(.72f, .15f, (f - .38f) / .32f) : Mathf.Lerp(.15f, 0, (f - .7f) / .3f); p[i] = new Color(3 / 255f, 3 / 255f, 6 / 255f, a); }
+                for (int i = 0; i < n; i++) { float f = (i + .5f) / n, a = f < .4f ? Mathf.Lerp(.97f, .86f, f / .4f) : f < .72f ? Mathf.Lerp(.86f, .25f, (f - .4f) / .32f) : Mathf.Lerp(.25f, 0, (f - .72f) / .28f); p[i] = new Color(10 / 255f, 10 / 255f, 10 / 255f, a); }
                 texFundoTitulo.SetPixels(p); texFundoTitulo.Apply(false, true); texFundoTitulo.wrapMode = TextureWrapMode.Clamp;
             }
             GUI.DrawTexture(new Rect(0, 0, W, H), texFundoTitulo);
         }
-        // .panel.plate: o degradê do HUD com a borda bronze e os cantos cortados
-        void PainelCss(Rect r) { if (!medindo) Placa(r); }
+        // .panel.plate (Nanquim): sem placa, o texto direto no fundo
+        void PainelCss(Rect r) { }
 
         // ---------- texto nas telas (h2, h3, p, .lede, .fine) ----------
         // devolvem a altura usada; com medindo, só medem
-        float H2(float x, float y, float w, string txt, TextAnchor al = TextAnchor.UpperLeft) { var st = Css("serif", 32, BONE, al); float h = AlturaNormal(st); if (!medindo) Linha(x, y, w, h, txt, st); return h + 8; }
-        float H3(float x, float y, float w, string txt, Color? cor = null) { var st = Css("serif", 21, cor ?? BONE); float h = AlturaNormal(st); if (!medindo) Linha(x, y + 14, w, h, txt, st); return 14 + h + 6; }
+        // .panel h2/h3 (Nanquim): Big Shoulders 800 em maiúsculas, 44 e 22 px, linha de .95
+        static string Maiusc(string t) { return t == null ? t : t.ToUpper(new System.Globalization.CultureInfo("pt-BR")); }
+        float H2(float x, float y, float w, string txt, TextAnchor al = TextAnchor.UpperLeft) { var st = Css("serif", 44, BONE, al); float h = Mathf.Round(44 * .95f); if (!medindo) Linha(x, y, w, h, Maiusc(txt), st); return h + 8; }
+        float H3(float x, float y, float w, string txt, Color? cor = null) { var st = Css("serif", 22, cor ?? BONE); float h = Mathf.Round(22 * .95f); if (!medindo) Linha(x, y + 18, w, h, Maiusc(txt), st); return 18 + h + 6; }
         // o .panel p: 18 px, linha de 1,45, no máximo 64ch de largura (a caixa fica à esquerda, como a margem 6px 0)
         // fine: o .fine (margem 12 auto 0: a caixa de 64ch fica no meio e o texto centrado)
         float P(float x, float y, float w, string txt, int tam = 18, Color? cor = null, float lh = 1.45f, TextAnchor al = TextAnchor.UpperLeft, float maxCh = 64, bool fine = false)
         {
-            var st = Css("400", tam, cor ?? Hx("#cfc7b8"), al); float l = tam * lh, wb = maxCh > 0 ? Mathf.Min(w, Larg("0", st) * maxCh) : w;
+            if (fine) { tam = 13; }   // .fine: mono 13
+            var st = Css(fine ? "mono" : "400", tam == 18 ? 17 : tam, cor ?? Hx("#c9c3b8"), al); tam = st.fontSize; float l = tam * lh, wb = maxCh > 0 ? Mathf.Min(w, Larg("0", st) * maxCh) : w;
             if (fine) { x += (w - wb) / 2; y += 12; }
             float h = medindo ? AlturaParagrafo(txt, st, wb, l) : Paragrafo(x, y, wb, l, txt, st); return h + (fine ? 12 : 0);
         }

@@ -12,7 +12,7 @@ namespace RitualReversal
 {
     public partial class PartidaLocal
     {
-        static readonly Color OURO_VIVO = new Color(.953f, .835f, .557f), CARMIM_HI = new Color(.878f, .263f, .369f), MUDO = new Color(.639f, .608f, .557f), TEXTO_LEG = new Color(.867f, .827f, .761f);
+        static readonly Color OURO_VIVO = new Color(1f, 1f, 1f), CARMIM_HI = new Color(.89f, .149f, .18f), MUDO = new Color(.635f, .616f, .576f), TEXTO_LEG = new Color(.788f, .765f, .722f);
 
         // ---------------------------------------------------------------------------------------------------------------
         // Legendas: o que se ouve, de onde vem e a que distância (LEG_TXT: texto, alcance, cor)
@@ -74,9 +74,9 @@ namespace RitualReversal
                 // .perto vem depois de .rit no CSS: perto, até o ritual fica branco
                 Color ct = perto ? Color.white : it.cor == "rit" ? new Color(1f, .604f, .671f) : TEXTO_LEG; ct.a = op;
                 Color cm = it.cor == "rit" ? CARMIM_HI : marca == "seta" && it.cor == "cult" ? new Color(.773f, .549f, 1f) : OURO_VIVO; cm.a = op;
-                var st = Css("400", 15, ct); var sm = Css("400", 13, new Color(MUDO.r, MUDO.g, MUDO.b, op));
+                var st = Css("mono", 13, ct); var sm = Css("mono", 11, new Color(MUDO.r, MUDO.g, MUDO.b, op));   // Nanquim: mono 12,5 e 11,5
                 float wt = Larg(it.txt, st), ws = resto != "" ? Larg(resto, sm) : 0, w = 8 + 12 + 7 + wt + (resto != "" ? 7 + ws : 0) + 12;
-                float x = toque ? W - 200 - w : 26; Caixa(new Rect(x, y, w, h), new Color(0, 0, 0, .58f * op));
+                float x = toque ? W - 200 - w : 26; Caixa(new Rect(x, y, w, h), new Color(10 / 255f, 10 / 255f, 10 / 255f, .5f * op));
                 float cx = x + 8 + 6, cy = y + 2 + lh / 2;
                 if (marca == "seta") Tracos.SetaSom(cx, cy, ang, cm);
                 else if (marca == "aqui" || it.cor == "rit") Tracos.Disco(cx, cy, 4, cm);   // .rit i.sem também é cheio
@@ -139,7 +139,7 @@ namespace RitualReversal
                 float x = px(gr * Mathf.Deg2Rad); if (float.IsNaN(x)) continue; float op = mascara(x); string nome = null;
                 switch (gr) { case 0: nome = "N"; break; case 45: nome = "NE"; break; case 90: nome = "L"; break; case 135: nome = "SE"; break; case 180: nome = "S"; break; case 225: nome = "SO"; break; case 270: nome = "O"; break; case 315: nome = "NO"; break; }
                 // os pontos e os marcadores são <i>: itálico (sintético, a Barlow e a DejaVu daqui não têm o itálico)
-                if (nome != null) Linha(x0 + x - 30, y0 + 6, 60, LN(13f), nome, Css("600", 13, A(gr == 0 ? CrimsonHi : Hx("#cfc6b6"), op), TextAnchor.UpperCenter, FontStyle.Italic), .9f);
+                if (nome != null) Linha(x0 + x - 30, y0 + 6, 60, LN(13f), nome, Css("mono500", 11, A(gr == 0 ? CrimsonHi : Hx("#c9c3b8"), op), TextAnchor.UpperCenter), .9f);
                 else Caixa(new Rect(x0 + x, y0, 1, 6), new Color(.91f, .878f, .816f, .35f * op));
             }
             Action<double, double, Color, string, bool> mk = (x, z, c, ch, grande) =>
@@ -150,7 +150,7 @@ namespace RitualReversal
             foreach (var a in g.actors)
             {
                 if (a == m || a.team != m.team || a.st == "dead" || EscondidoNoCliente(a)) continue;
-                mk(a.x, a.z, a.st == "down" ? CrimsonHi : m.team == "C" ? Hx("#ff8fa3") : GOLD_HI, a.st == "down" ? "✚" : "◆", false);
+                mk(a.x, a.z, a.st == "down" ? CrimsonHi : m.team == "C" ? Hx("#ff8b8f") : GOLD_HI, a.st == "down" ? "✚" : "◆", false);
             }
             foreach (var Al in g.altars) { if (Al.state != "active" || (papel == "H" && !Al.localized)) continue; mk(Al.x, Al.z, CrimsonHi, "✶", true); }
             if (g.lab == null || g.lab.economia) foreach (var n in Mapa.NPCS) { if ((n.time == null || n.time == m.team) && Mathf.Sqrt((float)((n.x - P.x) * (n.x - P.x) + (n.z - P.z) * (n.z - P.z))) < 60) mk(n.x, n.z, Hx("#e8d6a8"), "○", false); }
@@ -189,14 +189,14 @@ namespace RitualReversal
             if (lanceAtual == null) return;
             // #lance: faixa que esmaece nas pontas (18% / 82%), bordas douradas (carmim no lance do culto), padding 4 × 44 × 6
             float op = Mathf.Clamp01(Mathf.Min((4.2f - lanceT) / .25f, lanceT / .9f)), y = H * .3f + 64;
-            Color cs = lanceAtual.c ? CrimsonHi : GOLD_HI, ct = lanceAtual.meu ? GOLD_HI : BONE, cb = Hx("#c9bfae"); cs.a = ct.a = cb.a = op;
-            var stS = Css("400", 11, cs); var stB = Css("serif", 22, ct, TextAnchor.UpperCenter); var stP = Css("400", 14, cb, TextAnchor.UpperCenter);
+            Color cs = lanceAtual.c ? CrimsonHi : GOLD_HI, ct = lanceAtual.meu ? GOLD_HI : BONE, cb = Hx("#c9c3b8"); cs.a = ct.a = cb.a = op;
+            var stS = Css("mono", 11, cs); var stB = Css("serif", 24, ct, TextAnchor.UpperCenter); var stP = Css("mono", 13, cb, TextAnchor.UpperCenter);   // Nanquim
             string peq = "LANCE DA NOITE"; float esp = 11 * .24f, wS = 0; foreach (var ch in peq) wS += (ch == ' ' ? Larg("a a", stS) - Larg("aa", stS) : Larg(ch.ToString(), stS)) + esp;
             float hS = LN(11f), hB = AlturaNormal(stB), hP = LN(16f), w = Mathf.Max(wS, Mathf.Max(Larg(lanceAtual.tit, stB), Larg(lanceAtual.sub, stP))) + 88, h = 4 + hS + hB + hP + 6, x = W / 2 - w / 2;
             var o = GUI.color; GUI.color = new Color(1, 1, 1, op); GUI.DrawTexture(new Rect(x, y, w, h), TexFaixaLance); GUI.color = o;
             var borda = lanceAtual.c ? new Color(.878f, .263f, .369f, .6f * op) : new Color(.953f, .835f, .557f, .55f * op); Caixa(new Rect(x, y, w, 1), borda); Caixa(new Rect(x, y + h - 1, w, 1), borda);
             Espacada(W / 2 - wS / 2 + esp / 2, y + 4, hS, peq, stS, esp);
-            Linha(x, y + 4 + hS, w, hB, lanceAtual.tit, stB); Linha(x, y + 4 + hS + hB, w, hP, lanceAtual.sub, stP);
+            Linha(x, y + 4 + hS, w, hB, Maiusc(lanceAtual.tit), stB); Linha(x, y + 4 + hS + hB, w, hP, lanceAtual.sub, stP);
         }
 
         // ---------------------------------------------------------------------------------------------------------------
@@ -270,10 +270,10 @@ namespace RitualReversal
             // a linha de baixo, quem derrubou e, morto, quem você acompanha
             if (esp) { PintarDegrade(new Rect(0, 0, W, H * .28f), new Color(0, 0, 0, .55f), new Color(0, 0, 0, 0), true); PintarDegrade(new Rect(0, H * .75f, W, H * .25f), new Color(0, 0, 0, 0), new Color(0, 0, 0, .5f), true); }
             else GUI.DrawTexture(new Rect(0, 0, W, H), TexQueda);
-            var stH = Css("serif", esp ? 34 : 44, BONE, TextAnchor.UpperCenter); var stP = Css("400", 20, MUDO, TextAnchor.UpperCenter); var stQ = Css("400", 20, BONE, TextAnchor.UpperCenter); var stE = Css("400", 16, Hx("#cfc6b6"), TextAnchor.UpperCenter);
+            var stH = Css("display", esp ? 34 : 72, BONE, TextAnchor.UpperCenter); var stP = Css("mono", 15, MUDO, TextAnchor.UpperCenter); var stQ = Css("mono", 15, BONE, TextAnchor.UpperCenter); var stE = Css("mono", 13, Hx("#c9c3b8"), TextAnchor.UpperCenter);   // Nanquim
             string acomp = m.st == "dead" ? (espAlvo != null ? "Acompanhando " + Cor("<b>" + espAlvo.name + "</b>", GOLD_HI) + (espN > 1 ? " · " + EntradaUnity.Nome("fire") + " troca" : "") : "Nenhum aliado de pé: vendo onde você caiu") : "";
             float hH = AlturaNormal(stH), hP = 24, h = hH + 6 + hP + 6 + (espQuem != "" ? 6 + hP + 6 : 6) + (acomp != "" ? 8 + LN(16) : 0), y = esp ? 190 : H / 2 - h / 2;
-            Linha(0, y, W, hH, tit, stH); y += hH + 6; Linha(0, y, W, hP, sub, stP); y += hP + 6;
+            Linha(0, y, W, hH, Maiusc(tit), stH); y += hH + 6; Linha(0, y, W, hP, sub, stP); y += hP + 6;
             if (espQuem != "") { Linha(0, y + 6, W, hP, espQuem, stQ); y += 6 + hP + 6; } else y += 6;
             if (acomp != "") Linha(0, y + 8, W, LN(16), acomp, stE);
         }
@@ -322,7 +322,7 @@ namespace RitualReversal
             // #caderno: 360 px à direita, top 120, padding 10 × 14, borda clara, um bloco .cd por altar (borda de cima escura)
             if (!cadernoAberto || g == null || g.phase != "play") return;
             if (cadId != g.matchId) { cadId = g.matchId; notasCad.Clear(); }
-            float x = W - 26 - 360, y = 120, w = 360, wc = w - 28; var stN = Css("serif", 17, BONE); var stD = Css("400", 14, Hx("#cfc6b6")); var stE = Css("400", 12, MUDO);
+            float x = W - 26 - 360, y = 120, w = 360, wc = w - 28; var stN = Css("serif", 16, BONE); var stD = Css("400", 14, Hx("#c9c3b8")); var stE = Css("mono", 12, MUDO);
             // a linha do nome: o b (IM Fell 17) divide a linha com o strut do corpo (Barlow 16): a subida da Barlow e a descida da IM Fell
             float subN = Mathf.Max(Ar(16), SubidaPx(stN)), hN = subN + Mathf.Max(Ar(16 * .2f), AlturaNormal(stN) - SubidaPx(stN)), lhD = LN(13.5f), lhE = LN(12.5f); var blocos = new List<float>(); float h = 1 + 10 + LN(12) + 4;
             var dados = new List<string[]>();
@@ -333,13 +333,13 @@ namespace RitualReversal
                 float hb = 1 + 5 + hN + AlturaParagrafo(e[1], stD, wc, lhD) + (nota != null ? 1 + AlturaParagrafo(nota, stE, wc, lhE) : 0) + 6; blocos.Add(hb); h += hb;
             }
             h = Mathf.Min(h + 10 + 1, H - 300); var caixa = new Rect(x, y, w, h);
-            Caixa(caixa, new Color(8 / 255f, 9 / 255f, 11 / 255f, .97f)); Moldura(caixa, new Color(.91f, .878f, .816f, .16f));
+            Caixa(caixa, new Color(10 / 255f, 10 / 255f, 10 / 255f, .9f));
             Grupo(new Rect(x + 1, y + 1, w - 2, h - 2));   // o overflow:hidden
-            float yy = 10; Espacada(14 - 1, yy, LN(12), "CADERNO DOS ALTARES · " + EntradaUnity.Nome("caderno").ToUpper() + " FECHA", Css("400", 12, GOLD), .96f); yy += LN(12) + 4;
+            float yy = 10; Espacada(14 - 1, yy, LN(12), "CADERNO DOS ALTARES · " + EntradaUnity.Nome("caderno").ToUpper() + " FECHA", Css("mono", 12, MUDO), .72f); yy += LN(12) + 4;
             for (int i = 0; i < dados.Count; i++)
             {
-                var d = dados[i]; Caixa(new Rect(13, yy, wc, 1), Hx("#262b31")); float yl = yy + 1 + 5, bas = yl + subN;
-                NaBase(13, bas, wc, d[0], stN); var cc = CorCaderno(d[3]); var stI = Css("600", 13, cc); float xi = 13 + Larg(d[0], stN) + 8, wi = Larg(d[1], stI) + 12;
+                var d = dados[i]; Caixa(new Rect(13, yy, wc, 1), Hx("#222222")); float yl = yy + 1 + 5, bas = yl + subN;
+                NaBase(13, bas, wc, Maiusc(d[0]), stN); var cc = CorCaderno(d[3]); var stI = Css("600", 13, cc); float xi = 13 + Larg(Maiusc(d[0]), stN) + 8, wi = Larg(d[1], stI) + 12;
                 float topoI = bas - 13 - (AlturaNormal(stI) - LN(13f)) / 2; Moldura(new Rect(xi, topoI, wi, LN(13f)), cc); NaBase(xi + 6, bas, wi, d[1], stI);
                 float yd = yl + hN; yd += Paragrafo(13, yd, wc, lhD, d[2], stD); if (d[4] != null) Paragrafo(13, yd + 1, wc, lhE, d[4], stE);
                 yy += blocos[i];

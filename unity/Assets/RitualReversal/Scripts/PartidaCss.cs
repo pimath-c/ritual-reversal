@@ -1,8 +1,9 @@
 // O texto e as caixas do HUD como o CSS do navegador os põe: cada linha numa caixa de altura line-height com a linha de
 // base onde o navegador a põe (meia entrelinha em cima, depois a subida da fonte), quebra de linha feita aqui (o GUIStyle
 // não tem line-height), sombra do texto (text-shadow 0 1px 2px #000) com uma cópia escura um pixel abaixo, molduras de 1 px,
-// degradês (os linear-gradient das barras e das faixas do HUD) e o brilho suave dos box-shadow. As fontes do navegador:
-// Barlow Condensed em quatro pesos (400 do corpo, 500, 600 dos números, 700 das teclas) e IM Fell English.
+// degradês (os linear-gradient das barras e das faixas do HUD) e o brilho suave dos box-shadow. As fontes do navegador
+// (v6.3, direção Nanquim): IBM Plex Sans Condensed em quatro pesos (400 do corpo, 500, 600, 700), Big Shoulders Display
+// (800 nos títulos, "serif"; 900 nos números grandes, "display"; 400, "display400") e IBM Plex Mono (400 e 500, "mono").
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,8 +17,10 @@ namespace RitualReversal
         // Windows faltam glifos)
         static Font fonteSimbolo, fonteSimboloN;
         // subida e descida de cada fonte (hhea, em em): a altura "normal" da linha no navegador é a soma
-        static float SubidaEm(Font f) { return f == null ? 1f : f == fonteSistema ? subSis : f == fonteSans ? subSans : f == fonteSerif || f == fonteSerifIt ? .905f : f == fonteSimbolo || f == fonteSimboloN ? .928f : 1f; }
-        static float DescidaEm(Font f) { return f == null ? .2f : f == fonteSistema ? descSis : f == fonteSans ? descSans : f == fonteSerif || f == fonteSerifIt ? .363f : f == fonteSimbolo || f == fonteSimboloN ? .236f : .2f; }
+        // (hhea: IBM Plex 1,025 e 0,275; Big Shoulders ,984 e ,213; DejaVu ,928 e ,236)
+        static bool Ombros(Font f) { return f != null && (f == fonteSerif || f == fonteSerifIt || f == fonteDisplay || f == fonteDisplay400); }
+        static float SubidaEm(Font f) { return f == null ? 1.025f : f == fonteSistema ? subSis : f == fonteSans ? subSans : Ombros(f) ? .984f : f == fonteSimbolo || f == fonteSimboloN ? .928f : 1.025f; }
+        static float DescidaEm(Font f) { return f == null ? .275f : f == fonteSistema ? descSis : f == fonteSans ? descSans : Ombros(f) ? .213f : f == fonteSimbolo || f == fonteSimboloN ? .236f : .275f; }
         // o system-ui do navegador (o painel do Arsenal e o campo do chat da partida): a fonte da interface do sistema
         // operacional, com as métricas dela (hhea); a primeira da lista que estiver instalada
         static Font fonteSistema; static float subSis = .928f, descSis = .236f;
@@ -41,16 +44,16 @@ namespace RitualReversal
                     var fo = Font.CreateDynamicFontFromOSFont(f[0], 16); if (fo == null) continue;
                     sub = float.Parse(f[1], System.Globalization.CultureInfo.InvariantCulture); desc = float.Parse(f[2], System.Globalization.CultureInfo.InvariantCulture); return fo;
                 }
-            sub = 1; desc = .2f; return null;   // nenhuma achada: fica a Barlow (o Css troca "sys" e "sans" por ela)
+            sub = 1.025f; desc = .275f; return null;   // nenhuma achada: fica a IBM Plex (o Css troca "sys" e "sans" por ela)
         }
         static float LNsis(float px) { return Ar(px * subSis) + Ar(px * descSis); }
         static float LNsans(float px) { return Ar(px * subSans) + Ar(px * descSans); }
         // o line-height: normal do navegador: a subida e a descida arredondadas, cada uma, para o pixel (as duas fontes não
-        // têm entrelinha extra); LN e LNs são a mesma conta para a Barlow e para a IM Fell num tamanho qualquer
+        // têm entrelinha extra); LN e LNs são a mesma conta para a IBM Plex e para a Big Shoulders num tamanho qualquer
         static float Ar(float v) { return Mathf.Floor(v + .5f); }
         static float SubidaPx(GUIStyle st) { return Ar(SubidaEm(st.font) * st.fontSize); }
         static float AlturaNormal(GUIStyle st) { return SubidaPx(st) + Ar(DescidaEm(st.font) * st.fontSize); }
-        static float LN(float px) { return Ar(px) + Ar(px * .2f); }
+        static float LN(float px) { return Ar(px * 1.025f) + Ar(px * .275f); }
         // line-height normal quando a linha usa um glifo que a fonte não tem: o Chromium junta as medidas da fonte reserva
         // (a DejaVu Sans: subida .928, descida .236) às da fonte, e a linha cresce (o ☉ de 12 px dá 15 no lugar de 14)
         static float AlturaNormalCom(string txt, GUIStyle st)
@@ -59,17 +62,19 @@ namespace RitualReversal
             if (!falta) return AlturaNormal(st);
             return Mathf.Max(SubidaPx(st), Ar(.928f * st.fontSize)) + Mathf.Max(AlturaNormal(st) - SubidaPx(st), Ar(.236f * st.fontSize));
         }
-        // o meio de um vertical-align: middle numa linha normal da Barlow (topo em 0): a linha de base menos meia altura-x (.506)
-        static float MeioX(float px) { return Ar(px) - .253f * px; }
-        static float LNs(float px) { return Ar(px * .905f) + Ar(px * .363f); }
+        // o meio de um vertical-align: middle numa linha normal da IBM Plex (topo em 0): a linha de base menos meia altura-x (.516)
+        static float MeioX(float px) { return Ar(px * 1.025f) - .258f * px; }
+        static float LNs(float px) { return Ar(px * .984f) + Ar(px * .213f); }
 
         readonly Dictionary<string, GUIStyle> estilosCss = new Dictionary<string, GUIStyle>();
-        // peso: 400, 500, 600, 700 (Barlow) ou "serif"/"serifIt"
+        // peso: 400, 500, 600, 700 (IBM Plex Sans Condensed), "serif"/"serifIt" (Big Shoulders 800), "display" (900),
+        // "display400", "mono", "mono500"
         GUIStyle Css(string peso, int tam, Color cor, TextAnchor al = TextAnchor.UpperLeft, FontStyle fs = FontStyle.Normal)
         {
             string k = peso + "|" + tam + "|" + ColorUtility.ToHtmlStringRGBA(cor) + "|" + (int)al + "|" + (int)fs; GUIStyle s;
             if (estilosCss.TryGetValue(k, out s)) return s;
-            var f = peso == "sys" ? fonteSistema ?? fonteCond400 : peso == "sans" ? fonteSans ?? fonteCond400 : peso == "serif" ? fonteSerif : peso == "serifIt" ? fonteSerifIt : peso == "700" ? fonteCond700 : peso == "600" ? fonteCond600 : peso == "500" ? fonteCond : fonteCond400;
+            var f = peso == "sys" ? fonteSistema ?? fonteCond400 : peso == "sans" ? fonteSans ?? fonteCond400 : peso == "serif" ? fonteSerif : peso == "serifIt" ? fonteSerifIt : peso == "display" ? fonteDisplay : peso == "display400" ? fonteDisplay400
+                : peso == "mono" ? fonteMono : peso == "mono500" ? fonteMono500 : peso == "700" ? fonteCond700 : peso == "600" ? fonteCond600 : peso == "500" ? fonteCond : fonteCond400;
             s = new GUIStyle(GUI.skin.label) { fontSize = tam, wordWrap = false, richText = true, alignment = al, padding = new RectOffset(0, 0, 0, 0), margin = new RectOffset(0, 0, 0, 0), clipping = TextClipping.Overflow, fontStyle = fs };
             s.font = f ?? fonteCond; s.normal.textColor = cor; estilosCss[k] = s; return s;
         }

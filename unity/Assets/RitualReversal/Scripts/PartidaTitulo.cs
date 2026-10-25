@@ -1,6 +1,7 @@
 // O título do navegador (titleScreen e #scr.inicial): uma coluna de 470 px a 7% da esquerda, no meio da altura, sobre o
-// degradê lateral; o sigilo, o nome em IM Fell, a frase em itálico, o botão carmim, o papel e os bots em botões de
-// opção, o laboratório dobrável, o desafio da noite, os links sublinhados e o jogo online (servidor, nome e Criar sala,
+// degradê lateral. v6.3, direção Nanquim: o nome enorme em Big Shoulders 900 (a segunda palavra só no contorno) saindo pela
+// borda, a pincelada vermelha, a frase em mono, o botão vermelho com a seta, as opções em mono entre colchetes, o
+// laboratório dobrável, o desafio da noite, os links em mono e o jogo online (servidor, nome e Criar sala,
 // sala pública, salas abertas, código e Entrar na sala). Medido antes de desenhar; rola se não couber.
 using System.Collections.Generic;
 using System.Linq;
@@ -33,33 +34,51 @@ namespace RitualReversal
         float ColunaTitulo(float x, float y0, float w)
         {
             float y = y0;
-            if (!medindo) GUI.DrawTexture(new Rect(x, y, 74, 74), Sigilo()); y += 74 + 6;
-            // o .panel h1 vence o .tituloJogo no navegador: clamp(42px, 6vw, 68px), linha de 1, margens 6 e 4
-            int t1 = Mathf.RoundToInt(Mathf.Clamp(W * .06f, 42, 68)); var stT = Css("serif", t1, BONE); float lhT = t1; y += 6;
-            if (!medindo) { Tracos.Brilho(x + Larg("Ritual Reversal", stT) / 2, y + lhT / 2 + 2, Larg("Ritual Reversal", stT) / 2 + 30, lhT / 2 + 18, new Color(0, 0, 0, .55f)); Linha(x, y, w, lhT, "Ritual Reversal", stT); }
-            y += lhT + 4;
-            var stL = Css("serifIt", 19, Hx("#bfb6a6")); float wl = Mathf.Min(w, Larg("0", stL) * 40);
-            y += Ps(x, y, wl, UmaNoite ? "Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence." : "Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.", stL, 19 * 1.45f) + 22;
+            // a tinta entra uma vez por sessão: as palavras reveladas da esquerda, a pincelada pintada, o resto subindo
+            if (!medindo && !tituloEntrou) { tituloEntrou = true; Marcar("titulo"); }
+            // #scr .tituloJogo: Big Shoulders 900, clamp(64px, 7vw, 128px), linha de ,8, margem esquerda de -,06em, sem quebra
+            int t1 = Mathf.RoundToInt(Mathf.Clamp(W * .07f, 64, 128)); var stT = Css("display", t1, BONE); float lhT = Mathf.Round(t1 * .8f), xt = x - .06f * t1; y += 6;
+            {
+                float k1 = Sai(Anim("titulo", .5f)), k2 = Sai(Anim("titulo", .5f, .22f)), yy = y;
+                float l1 = Larg("RITUAL", stT) + 8, l2 = Larg("REVERSAL", stT) + 8;
+                Recorte(new Rect(xt - 4, yy - 4, l1 * k1, lhT + 8), () => Linha(xt, yy, W, lhT, "RITUAL", stT), k1);
+                Recorte(new Rect(xt - 4, yy + lhT - 4, l2 * k2 + 4, lhT + 8), () => TextoContorno(xt, yy + lhT, W, lhT, "REVERSAL", stT, BONE, new Color(.04f, .04f, .04f), 1), k2);
+            }
+            y += 2 * lhT + 6;
+            // .pincel: min(560px, 92%) × 26, 2 px em cima e 18 embaixo, pintada da esquerda (aos ,55 s)
+            DesenharPincel(new Rect(x, y + 2, Mathf.Min(560, w * .92f), 26), SANGUE, Sai(Anim("titulo", .35f, .55f))); y += 2 + 26 + 18;
+            // #scr.inicial .lede: mono 14, linha de 1,55, no máximo 46ch, apagada
+            var stL = Css("mono", 14, MUDO); float wl = Mathf.Min(w, Larg("0", stL) * 46);
+            float yl = y; ComEntrada("titulo", .35f, .75f, d => y = yl + Ps(x, yl + d, wl, UmaNoite ? "Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence." : "Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.", stL, Mathf.Round(14 * 1.55f)) + 22);
             // v6.2: o mapa (no navegador a página recarrega; aqui o mundo é desmontado e montado de novo)
             y += LinhaOpcoes(x, y, "Mapa", new[] { new[] { "catedral", NOME_MAPA["catedral"] }, new[] { "asilo", NOME_MAPA["asilo"] } }, MapaMundo, k => { PlayerPrefs.SetString("rr-mapa", k); TrocarMundo(k); }) + 12;
-            // .acoes: coluna com 12 px entre as peças
-            string bs = "Jogar sozinho, com bots"; float hb = AlturaBotao("go");
-            if (BotaoCss(new Rect(x, y, LarguraBotao(bs, "go"), hb), bs, "go")) IniciarSolo(PapelSolo, null, false, false); y += hb + 12;
+            // .acoes: coluna com 14 px entre as peças; o #bSolo maior (clamp(30px, 2,6vw, 40px)) com a seta que cutuca
+            string bs = "Jogar sozinho, com bots"; var stJ = Css("serif", Mathf.RoundToInt(Mathf.Clamp(W * .026f, 30, 40)), SANGUE); float hb = Mathf.Round(AlturaNormal(stJ)) + 13, wj = Larg("JOGAR SOZINHO, COM BOTS →", stJ);
+            if (BotaoCss(new Rect(x, y, wj, hb), bs, "nada")) IniciarSolo(PapelSolo, null, false, false);
+            if (!medindo)
+            {
+                // @keyframes cutucar (2,4 s): parada até 70%, 6 px à direita aos 80%, de volta aos 100%
+                float f = (Time.unscaledTime % 2.4f) / 2.4f, cut = SuaveUI() ? 0 : f < .7f ? 0 : f < .8f ? 6 * (f - .7f) / .1f : 6 * (1 - (f - .8f) / .2f);
+                string sem = "JOGAR SOZINHO, COM BOTS "; Linha(x, y + 6, wj, AlturaNormal(stJ), sem, stJ); Linha(x + LargTrecho(sem, stJ) + cut, y + 6, 60, AlturaNormal(stJ), "→", stJ);
+                Traco(new Rect(x, y, wj, hb), "go", (padNav && padContagem - 1 == padFoco) || new Rect(x, y, wj, hb).Contains(Event.current.mousePosition));
+            }
+            y += hb + 14;
             y += LinhaOpcoes(x, y, "Você", new[] { new[] { "H", "Caça" }, new[] { "C", "Celebra" }, new[] { "?", "Sorteia" } }, PapelSolo, k => { papelSolo = k; PlayerPrefs.SetString("rr-papel", k); }) + 12;
             y += LinhaOpcoes(x, y, "Bots inimigos", new[] { new[] { "facil", "Fácil" }, new[] { "normal", "Normal" }, new[] { "dificil", "Difícil" } }, dificuldade, k => { dificuldade = k; PlayerPrefs.SetString("rr-dif", k); }) + 12;
             y += PainelLabCss(x, y, Mathf.Min(640, w), LabSolo, MudarLabSolo) + 12;
             {
                 var D = DesafioDe(HojeDesafio()); object rec; var des = O(Perfil(), "desafios"); bool tem = des.TryGetValue(HojeDesafio(), out rec) && rec != null;
                 string sub = "Hoje você " + (D[1] == "H" ? "caça" : "celebra") + ", " + Mundo.CLIMAS[D[2]].nome.ToLowerInvariant() + ", contra bots difíceis" + (tem ? " · recorde " + System.Convert.ToInt32(rec) : "");
-                float wd = Mathf.Max(Larg("Desafio da noite", Css("600", 20, BONE)), Larg(sub, Css("400", 13, MUDO))) + 58, hd = 1 + 10 + 24 + 2 + LN(13f) + 10 + 1;
+                float wd = Mathf.Max(Larg("desafio da noite", Css("mono", 14, MUDO)), Larg(sub.ToLowerInvariant(), Css("mono", 13, MUDO))), hd = 4 + LN(14f) + 2 + LN(13f) + 5;
                 if (BotaoDuasLinhas(new Rect(x, y, wd, hd), "Desafio da noite", sub, "ghost")) IniciarDesafio(); y += hd + 12;
             }
+            // .links: quebram linha (8 px entre as linhas, 20 entre os links)
             float xl = x; float hl = AlturaBotao("lk");
             foreach (var l in new[] { new[] { "aprender", "Aprender a jogar" }, new[] { "como", "Como jogar" }, new[] { "perfil", "Perfil" }, new[] { "novidades", "Novidades" }, new[] { "arsenal", "Arsenal" }, new[] { "ajustes", "Ajustes" } })
             {
-                float wk = LarguraBotao(l[1], "lk");
+                float wk = LarguraBotao(l[1], "lk"); if (xl > x && xl + wk > x + w) { xl = x; y += hl + 8; }
                 if (BotaoCss(new Rect(xl, y, wk, hl), l[1], "lk")) { som.Tocar("click"); if (l[0] == "arsenal") IniciarArsenal(); else { telaMenu = l[0]; } }
-                xl += wk + 18;
+                xl += wk + 20;
             }
             y += hl;
             y += OnlineCss(x, y, w);
@@ -71,13 +90,14 @@ namespace RitualReversal
         // .dif: o rótulo apagado e os botões de opção, 6 px entre eles
         float LinhaOpcoes(float x, float y, string rotulo, string[][] ops, string atual, System.Action<string> muda)
         {
-            var stR = Css("400", 15, MUDO); float h = AlturaBotao("op"), xx = x;
-            if (!medindo) Linha(xx, y + (h - 18) / 2, 200, 18, rotulo, stR); xx += Larg(rotulo, stR) + 4 + 6;
+            // .dif (Nanquim): o rótulo em mono 13 apagado com 82 px no mínimo, 14 px entre as peças
+            var stR = Css("mono", 13, Hx("#6e6a62")); float h = AlturaBotao("op"), xx = x;
+            if (!medindo) Linha(xx, y + (h - LN(13)) / 2, 200, LN(13), rotulo, stR); xx += Mathf.Max(82, Larg(rotulo, stR)) + 14;
             foreach (var o in ops)
             {
                 bool sel = atual == o[0]; float wb = LarguraBotao(o[1], sel ? "opSel" : "op");
                 if (BotaoCss(new Rect(xx, y, wb, h), o[1], sel ? "opSel" : "op") && !sel) { muda(o[0]); som.Tocar("click"); }
-                xx += wb + 6;
+                xx += wb + 14;
             }
             return h;
         }
@@ -86,7 +106,7 @@ namespace RitualReversal
         float PainelLabCss(float x, float y, float w, Lab lab, System.Action<Lab> muda)
         {
             var L = Lab.De(lab); var mud = LabMudancas(L); float wc = w - 26, xc = x + 13;
-            var stS = Css("400", 15, BONE); var stSb = Css("500", 15, GOLD_HI); float lhS = LN(15f);
+            var stS = Css("mono", 13, BONE); var stSb = Css("mono500", 13, BONE); float lhS = LN(15f);
             string res = "Laboratório de playtest", extra = mud.Count > 0 ? " · " + mud.Count + (mud.Count > 1 ? " regras alteradas" : " regra alterada") : "";
             string aviso = "Para testar com pessoas: mude uma regra por vez e compare as noites no relatório do fim da partida. A primeira opção de cada linha é a regra normal." + (muda == null ? " Só o anfitrião muda." : "");
             bool links = muda != null && mud.Count > 0;
@@ -99,7 +119,7 @@ namespace RitualReversal
             }
             h += 6 + 1;
             float yy = y + 4;
-            if (!medindo) { var caixa = new Rect(x, yy, w, h); Caixa(caixa, new Color(8 / 255f, 9 / 255f, 11 / 255f, .55f)); Moldura(caixa, BORDA_OP); }
+            if (!medindo) { var caixa = new Rect(x, yy, w, h); Caixa(caixa, FUNDO_OP); Moldura(caixa, BORDA_OP); }
             yy += 1 + 6;
             // o marcador do details (▼ aberto, ▶ fechado) e o resumo; clicar troca
             if (!medindo)
@@ -139,7 +159,7 @@ namespace RitualReversal
         // .online: a linha de cima, o servidor, o nome e Criar sala, a sala pública, as salas abertas, o código e Entrar
         float OnlineCss(float x, float y, float w)
         {
-            float y0 = y; y += 22; if (!medindo) Caixa(new Rect(x, y, w, 1), new Color(.91f, .878f, .816f, .14f)); y += 1 + 14;
+            float y0 = y; y += 22; if (!medindo) Caixa(new Rect(x, y, w, 1), Hx("#262626")); y += 1 + 14;
             float hc = 42, hb = AlturaBotao("go");
             y += Titulo3(x, y, w, "Servidor") + 8;
             servidor = CampoCss(new Rect(x, y, 260, hc), servidor, 120, "iServ", "ex.: abcd.trycloudflare.com"); y += hc + 14;
@@ -153,7 +173,7 @@ namespace RitualReversal
                 foreach (var s in salas.ToList())
                 {
                     float hs = AlturaBotao("ghostP"); var stC = Css("400", 20, GOLD_HI); string b = "Entrar"; float wb = LarguraBotao(b, "ghostP");
-                    if (!medindo) { Linha(x, y + 4, 80, hs, s.code, stC); Linha(x + 76, y + 4, w - 76 - wb - 12, hs, s.anfitriao + " · " + s.jogadores + " de 4" + (s.mapa != null && s.mapa != "catedral" ? " · " + NomeMapa(s.mapa) : ""), Css("400", 15, Hx("#cfc6b6"))); }
+                    if (!medindo) { Linha(x, y + 4, 80, hs, s.code, stC); Linha(x + 76, y + 4, w - 76 - wb - 12, hs, s.anfitriao + " · " + s.jogadores + " de 4" + (s.mapa != null && s.mapa != "catedral" ? " · " + NomeMapa(s.mapa) : ""), Css("400", 15, Hx("#c9c3b8"))); }
                     if (BotaoCss(new Rect(x + w - wb, y + 4, wb, hs), b, "ghostP")) { codigoDigitado = s.code; Conectar(false, s.code); }
                     y += hs + 8;
                 }
@@ -165,6 +185,7 @@ namespace RitualReversal
             return y - y0;
         }
         // o h3 do título: margem 0 em cima e 8 embaixo
-        float Titulo3(float x, float y, float w, string txt) { var st = Css("serif", 21, BONE); float h = AlturaNormal(st); if (!medindo) Linha(x, y, w, h, txt, st); return h; }
+        float Titulo3(float x, float y, float w, string txt) { var st = Css("serif", 22, BONE); float h = Mathf.Round(22 * .95f); if (!medindo) Linha(x, y, w, h, Maiusc(txt), st); return h; }
+        bool tituloEntrou;
     }
 }

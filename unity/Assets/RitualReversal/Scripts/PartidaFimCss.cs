@@ -59,7 +59,7 @@ namespace RitualReversal
                     for (int i = 0; i < nc; i++) { string t = i < cel.Length ? cel[i] : ""; hc[i] = t == "" ? (cols[i].fine && !th ? lhF : lh) : AlturaParagrafo(t, est(i, th), larg[i] - 16, cols[i].fine && !th ? lhF : lh); h = Mathf.Max(h, hc[i]); }
                     if (!medindo) { float xx = x; for (int i = 0; i < nc && i < cel.Length; i++) { Paragrafo(xx + 8, yy + 6 + (h - hc[i]) / 2, larg[i] - 16, cols[i].fine && !th ? lhF : lh, cel[i], est(i, th)); xx += larg[i]; } }
                 }
-                if (!medindo) Caixa(new Rect(x, yy + 6 + h + 6, w, 1), Hx("#333a42"));
+                if (!medindo) Caixa(new Rect(x, yy + 6 + h + 6, w, 1), Hx("#262626"));
                 yy += 6 + h + 6 + 1;
             }
             return yy - y + 10;
@@ -134,7 +134,7 @@ namespace RitualReversal
                 var mk = R.mkFinal ?? R.mk; var ult = mk.Where(m => m.tipo != "momento" && m.rt <= repT).Reverse().Take(4).ToList();
                 // #repEv (ul.ltEv): o ul vazio ainda tem a margem de cima, que não some no 18 da fileira (columns faz dele um
                 // contexto próprio)
-                var stTb = Css("600", 14, GOLD); y += 6 + ListaMarcos(x, y + 6, w, ult.Select(m => new[] { Relogio(m.rt), m.txt }).ToList(), i => Css("400", 14, i == 0 ? BONE : Hx("#cfc6b6")), stTb);
+                var stTb = Css("600", 14, GOLD); y += 6 + ListaMarcos(x, y + 6, w, ult.Select(m => new[] { Relogio(m.rt), m.txt }).ToList(), i => Css("400", 14, i == 0 ? BONE : Hx("#c9c3b8")), stTb);
                 y += FileiraBotoes(x, y, w, "Voltar ao resultado", "go", true, (System.Action)(() => repAberto = false));
                 return y - y0;
             });

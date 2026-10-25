@@ -27,7 +27,7 @@ namespace RitualReversal
                     float xd = x + w;
                     for (int i = cel.Length - 1; i >= 1; i--) { float cw = largNum[i - 1]; xd -= cw; Linha(xd + 8, yy + 6, cw - 16, lh, cel[i], th ? Css("500", 17, MUDO, TextAnchor.UpperRight) : Css("400", 17, BONE, TextAnchor.UpperRight)); }
                     Linha(x + 8, yy + 6, xd - x - 16, lh, cel[0], th ? stTh : c0.HasValue ? Css("400", 17, c0.Value) : stTd);
-                    Caixa(new Rect(x, yy + hl - 1, w, 1), Hx("#333a42"));
+                    Caixa(new Rect(x, yy + hl - 1, w, 1), Hx("#262626"));
                 }
                 yy += hl;
             };
@@ -54,7 +54,7 @@ namespace RitualReversal
         // .passo: o número numa caixa de 28 px com borda dourada, o título e o texto ao lado
         float Passo(float x, float y, float w, int n, string t, string d)
         {
-            var stB = Css("600", 16, GOLD, TextAnchor.UpperCenter); var stT = Css("600", 18, BONE); var stD = Css("400", 16, Hx("#c9c1b2"));
+            var stB = Css("600", 16, GOLD, TextAnchor.UpperCenter); var stT = Css("600", 18, BONE); var stD = Css("400", 16, Hx("#c9c3b8"));
             float xt = x + 28 + 12, wt = w - 40; if (!medindo) { var r = new Rect(x, y, 28, 28); Moldura(r, GOLD); Linha(r.x, r.y + 4, 28, LN(16), n.ToString(), stB); Linha(xt, y, wt, LN(18f), t, stT); }
             float h = LN(18f) + Ps(xt, y + LN(18f), wt, d, stD, 16 * 1.4f); return Mathf.Max(28, h);
         }
@@ -97,7 +97,7 @@ namespace RitualReversal
             {
                 float y0 = y; y += H2(x, y, w, "Novidades da v5.8", TextAnchor.UpperCenter); y += Lede(x, y, w, "O que mudou desde a última versão.") - 14 + 12;
                 // .novidades: duas colunas (10 × 22), a barra dourada e o título serifado
-                float cw = (w - 22) / 2; var stB = Css("serif", 19, GOLD_HI); var stS = Css("400", 15, Hx("#cfc6b6"));
+                float cw = (w - 22) / 2; var stB = Css("serif", 19, GOLD_HI); var stS = Css("400", 15, Hx("#c9c3b8"));
                 for (int i = 0; i < NOVIDADES.Length; i += 2)
                 {
                     float hl = 0;

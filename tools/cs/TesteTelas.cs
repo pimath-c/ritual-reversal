@@ -25,7 +25,8 @@ namespace RitualReversal
         void Foto(string nome, float dt = 1 / 30f, int largura = 1920, int altura = 1080)
         {
             if (string.IsNullOrEmpty(pastaFotos)) return; int w0 = Screen.width, h0 = Screen.height; Screen.width = largura; Screen.height = altura;
-            fotoPendente = nome; TQuadro(dt); Screen.width = w0; Screen.height = h0;
+            // a foto mostra o fim das animações da interface (o navegador fotografa depois de esperar)
+            animacaoNaFoto = true; fotoPendente = nome; TQuadro(dt); animacaoNaFoto = false; Screen.width = w0; Screen.height = h0;
         }
         void TQuadro(float dt = 1 / 30f, int passosExtras = 0)
         {

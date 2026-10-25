@@ -124,6 +124,8 @@ namespace UnityEngine
         public static void Box(Rect r, string t, GUIStyle s) { Desenho2D.Estilo(r, t, s); }
         public static void Box(Rect r, GUIContent c, GUIStyle s) { Desenho2D.Estilo(r, c.text, s); }
         public static void DrawTexture(Rect r, Texture t) { DrawTexture(r, t, ScaleMode.StretchToFill); }
+        // só um pedaço da textura (a pincelada pintada até a metade): aqui sai a textura inteira esticada no retângulo
+        public static void DrawTextureWithTexCoords(Rect r, Texture t, Rect uv) { DrawTexture(r, t, ScaleMode.StretchToFill); }
         public static void DrawTexture(Rect r, Texture t, ScaleMode m) { if (t == null) throw new Exception("GUI.DrawTexture com textura nula"); Desenho2D.Textura(r, t, Color.white, null, m); }
         public static string TextField(Rect r, string t, int max, GUIStyle s) { string n = proximoNome; proximoNome = null; Desenho2D.Estilo(r, t, s, false, n != null && n == foco); return t; }
         public static string TextArea(Rect r, string t, int max, GUIStyle s) { string n = proximoNome; proximoNome = null; Desenho2D.Estilo(r, t, s, false, n != null && n == foco); return t; }
@@ -191,7 +193,8 @@ namespace UnityEngine
         static string Limpo(string t) { return System.Text.RegularExpressions.Regex.Replace(t ?? "", "<[^>]*>", ""); }
         public static void Texto(string t) { controles++; textos.Add(Limpo(t)); }
         // como no Unity, o botão responde na passada do clique (MouseUp), não no Layout nem no Repaint
-        public static bool Apertado(string t) { Texto(t); if (apertar != null && Limpo(t).Contains(apertar) && Event.current.type == EventType.MouseUp) { apertar = null; return true; } return false; }
+        // sem diferença de maiúsculas: a direção Nanquim mostra os botões em maiúsculas e os fantasmas em minúsculas
+        public static bool Apertado(string t) { Texto(t); if (apertar != null && Limpo(t).ToLowerInvariant().Contains(apertar.ToLowerInvariant()) && Event.current.type == EventType.MouseUp) { apertar = null; return true; } return false; }
         static void Abre(string k) { controles++; pilha.Add(k); }
         static void Fecha(string k) { if (pilha.Count == 0 || pilha[pilha.Count - 1] != k) { erros.Add("End" + k + " sem Begin" + k + " (aberto: " + (pilha.Count > 0 ? pilha[pilha.Count - 1] : "nada") + ")"); return; } pilha.RemoveAt(pilha.Count - 1); }
 

@@ -77,7 +77,7 @@ namespace RitualReversal
             if (conqAtual == null) return;
             // #conquista: entra e sai pela direita com o transform do CSS (.5 s, cubic-bezier(.2,.9,.3,1.2), que passa um pouco do ponto)
             float dx = conqT > 0 ? 360 * (1 - CurvaCss(.2f, .9f, .3f, 1.2f, (4.5f - conqT) / .5f)) : 360 * CurvaCss(.2f, .9f, .3f, 1.2f, -conqT / .5f);
-            float w = 300, x = W - 22 - w + dx; var stDesc = Css("400", 14, Hx("#cfc6b6"));
+            float w = 300, x = W - 22 - w + dx; var stDesc = Css("400", 14, Hx("#c9c3b8"));
             var linhas = Quebrar(conqAtual[2], stDesc, w - 30); float h = 2 + 20 + LN(12) + LNs(22f) + linhas.Count * LN(16), y = H - 150 - h;
             var r = new Rect(x, y, w, h); PintarDegrade(r, new Color(38 / 255f, 32 / 255f, 20 / 255f, .95f), new Color(18 / 255f, 15 / 255f, 10 / 255f, .95f), true); Moldura(r, GOLD);
             float yy = y + 11; Espacada(x + 15, yy, LN(12), "CONQUISTA", Css("400", 12, GOLD), .96f); yy += LN(12);

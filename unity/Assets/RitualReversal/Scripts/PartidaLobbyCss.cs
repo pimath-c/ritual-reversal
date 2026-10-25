@@ -93,7 +93,7 @@ namespace RitualReversal
         void ChatLista(Rect r)
         {
             if (medindo) return;
-            Caixa(r, new Color(8 / 255f, 9 / 255f, 11 / 255f, .6f)); Moldura(r, Hx("#333a42"));
+            Caixa(r, new Color(8 / 255f, 9 / 255f, 11 / 255f, .6f)); Moldura(r, Hx("#262626"));
             var stM = Css("400", 15, BONE); var stN = Css("700", 15, BONE); var stNe = Css("700", 15, GOLD_HI); var stP = Css("400", 12, BONE);
             float wi = r.width - 22, lh = 15 * 1.4f;
             var msgs = new List<List<KeyValuePair<string, GUIStyle>>>();
@@ -140,7 +140,7 @@ namespace RitualReversal
             {
                 float y0 = y; y += H2(x, y, w, "Conexão perdida", TextAnchor.UpperCenter);
                 // o p com text-align center e margin 0 auto: a caixa de 64ch no meio
-                var st = Css("400", 18, Hx("#cfc7b8"), TextAnchor.UpperCenter); float wb = Mathf.Min(w, Larg("0", st) * 64);
+                var st = Css("400", 18, Hx("#c9c3b8"), TextAnchor.UpperCenter); float wb = Mathf.Min(w, Larg("0", st) * 64);
                 y += Ps(x + (w - wb) / 2, y, wb, "Um bot está jogando no seu lugar. Tentando voltar à sala " + salaCodigo + "…", st, 18 * 1.45f);
                 // p.wait: o .panel p vence o .wait (18 px, cor do parágrafo, margem 6, caixa de 64ch à esquerda); só o center fica
                 y += 6 + P(x, y + 6, w, "Tentativa " + (reconTent + 1) + ", sua vaga fica guardada por mais " + Mathf.CeilToInt(Mathf.Max(0, reconAte - Time.realtimeSinceStartup)) + " s", 18, null, 1.45f, TextAnchor.UpperCenter);
