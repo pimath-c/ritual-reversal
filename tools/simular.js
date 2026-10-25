@@ -4,6 +4,7 @@
 // Com LAB=fogo=a,execucao=6 (mesmo formato de tools/comparar-cs.js), as partidas usam o laboratório de playtest.
 // Com CFG=ecoProg=0,ataqueCanal=0 muda números do CFG (só nesta execução), para medir uma regra de cada vez.
 // Com SEMENTE=123 as partidas são reproduzíveis: a partida i usa o sorteio Mulberry32(123 + i) e o id sim-s123-00i.
+// Com MAPA=asilo as noites são no Asilo Blackwater (padrão: a catedral).
 // Duas variantes com a mesma semente começam do mesmo sorteio (as noites se separam quando a regra muda algo).
 'use strict';
 const fs=require('fs'), path=require('path');
@@ -21,9 +22,9 @@ const lab=labDoAmbiente(), t0=Date.now(), semente=process.env.SEMENTE!=null?+pro
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 for(let i=0;i<N;i++){
   if(semente!=null) Math.random=mulberry32(semente+i);
-  const g=Sim.createGame({timers:true,slots,matchId:semente!=null?`sim-s${semente}-${String(i+1).padStart(3,'0')}`:`sim-${t0}-${String(i+1).padStart(3,'0')}`,lab});
+  const g=Sim.createGame({timers:true,slots,matchId:semente!=null?`sim-s${semente}-${String(i+1).padStart(3,'0')}`:`sim-${t0}-${String(i+1).padStart(3,'0')}`,lab,mapa:process.env.MAPA||undefined});
   let n=0; while(g.phase!=='final'&&n<30*60*20){ Sim.step(g,1/30); g.events.length=0; n++; }
-  fs.writeFileSync(path.join(dir,g.matchId+'.json'),JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,semente:semente!=null?semente+i:null,cfg:process.env.CFG||null,match:g.matchId,lab:g.lab,slots:g.slots,scores:g.scores,stats:g.stats,events:g.log},null,1));
+  fs.writeFileSync(path.join(dir,g.matchId+'.json'),JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,mapa:g.mapa,semente:semente!=null?semente+i:null,cfg:process.env.CFG||null,match:g.matchId,lab:g.lab,slots:g.slots,scores:g.scores,stats:g.stats,events:g.log},null,1));
   process.stdout.write(`\r${i+1}/${N} partidas`);
 }
 console.log(`\nRegistros em ${dir}. Agora rode: node tools/analisar.js ${dir}`);

@@ -426,16 +426,141 @@ const WALLDEF=WALLS; // compatibilidade com o cliente
   const NPC_DEF=[{id:'ermitao',nome:'o Ermitão',x:CAB[0]-1,z:CAB[1],time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
     {id:'carpideira',nome:'a Carpideira',x:ORA[0]+1,z:ORA[1],time:'C',vende:['reagente','cinza','pocao','amuleto']},
     {id:'mercador',nome:'o Mercador sem Rosto',x:ENCR[0]+6,z:ENCR[1]-4,time:null,vende:['reagente','municao','pocao']}];
-  return {id:'catedral',nome:'Catedral',HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,TUMBA_PTS,NPC_DEF};
+  return {id:'catedral',nome:'Catedral',HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,naNevoa:(x,z)=>zoneAt(x,z)==='Floresta',TUMBA_PTS,NPC_DEF};
+}
+// ============ ASILO BLACKWATER ============
+// Segundo mapa (planta aprovada em 25/10, docs/asilo): um asilo na beira de um lago. Saguão e capela no centro, duas alas
+// (oeste: quartos, refeitório, enfermaria e o anexo da hidroterapia; leste: celas, lavanderia, isolamento e as caldeiras),
+// e o terreno em volta: horta (caça), gramado com o coreto, cemitério (culto), margem do lago e trilhas laterais.
+// A planta é escrita como espaços abertos (salas, corredores, pátios) e vãos entre eles; o que sobra é parede, montada
+// em caixas por uma varredura de células de 0,5 m. Portas (vãos com porta) abrem e fecham; cada setor tem um quadro de
+// força que apaga as lâmpadas da ala. Mesmo eixo da catedral: x para leste, z para o sul, o lago ao norte.
+function mapaAsilo(){
+  const HALF={x:108,z:72};
+  const nada={x1:0,x2:0,z1:0,z2:0};
+  const E=[];   // espaços: [nome, x1, x2, z1, z2, interior?]
+  const esp=(n,x1,x2,z1,z2,int)=>E.push({nome:n,x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),int:int!==false});
+  const V=[];   // vãos: os que têm porta abrem e fecham
+  const vao=(x1,x2,z1,z2,porta)=>V.push({x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),porta:!!porta});
+  // ---------- terreno ----------
+  esp('Gramado',-60,60,26,62,false); esp('Horta',-102,-62,10,62,false); esp('Cemitério',62,102,10,62,false);
+  esp('Margem',-106,106,-66,-60,false); esp('Pátio Norte',-46,46,-60,-43,false);
+  esp('Trilha Oeste',-106,-102,-60,62,false); esp('Trilha Leste',102,106,-60,62,false); esp('Píer',-2.5,2.5,-72,-66,false);
+  for(const s of [-1,1]){ vao(s*62,s*60,38,42); vao(s*62,s*60,54,58); vao(s*102,s*106,14,18); vao(s*102,s*106,44,48); }
+  // ---------- bloco central ----------
+  esp('Saguão',-12,12,2,24); vao(-3,3,24,26,true);
+  esp('Corredor da Capela',-3,3,-12,2);
+  esp('Arquivo',-12,-4,-12,0); vao(-4,-3,-8,-5,true);
+  esp('Farmácia',4,12,-12,0); vao(3,4,-8,-5,true);
+  esp('Capela',-12,12,-40,-12); vao(-2,2,-43,-40,true);
+  // ---------- alas: a oeste escrita, a leste espelhada ----------
+  const ala=(s,N)=>{ const X=(a,b)=>[s*a,s*b];
+    esp('Corredor '+N.ala,...X(12,48),8,12); vao(...X(12,12.5),8,12);
+    [[14,24],[25,35],[36,46]].forEach(([a,b],i)=>{ esp(N.n1[i],...X(a,b),-2,7); vao(...X(a+3,a+5),7,8,i===1); esp(N.s1[i],...X(a,b),13,22); vao(...X(a+3,a+5),12,13,i===1); });
+    esp('Escada '+N.ala,...X(48,52),-20,24); vao(...X(48,52),24,26,true);
+    esp('Galeria '+N.ala,...X(52,84),-20,-16);
+    esp(N.refeitorio,...X(56,84),-32,-21); vao(...X(70,74),-21,-20);
+    esp(N.rouparia,...X(52,55),-32,-21); vao(...X(52,55),-21,-20,true);
+    esp(N.estar,...X(56,69),-15,-4); vao(...X(60,63),-16,-15);
+    esp(N.consultorio,...X(70,84),-15,-4); vao(...X(74,77),-16,-15,true);
+    esp(N.ala_fim,...X(85,100),-34,6); vao(...X(84,85),-20,-16,true); vao(...X(90,94),6,10);
+    esp(N.anexo,...X(48,76),-56,-38); vao(...X(60,64),-38,-32); vao(...X(62,66),-60,-56); vao(...X(46,48),-51,-47,true); };
+  ala(-1,{ala:'Oeste',n1:['Quadro Oeste','Quartos 2','Quartos 1'],s1:['Quartos 3','Sala de Visitas','Quartos 4'],refeitorio:'Refeitório',rouparia:'Rouparia',estar:'Sala de Estar',consultorio:'Consultório',ala_fim:'Enfermaria',anexo:'Hidroterapia'});
+  ala(1,{ala:'Leste',n1:['Quadro Leste','Celas 2','Celas 1'],s1:['Celas 3','Sala de Contenção','Celas 4'],refeitorio:'Lavanderia',rouparia:'Depósito',estar:'Oficina',consultorio:'Eletrochoque',ala_fim:'Isolamento',anexo:'Caldeiras'});
+
+  // ---------- paredes: o que não é espaço nem vão, em caixas ----------
+  const WALLS=[];
+  const W=(x1,x2,z1,z2,h,kind,extra)=>{ const w={x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h,tall:h>2.2,kind}; if(extra) Object.assign(w,extra); WALLS.push(w); return w; };
+  { const P=.5, X0=-HALF.x, Z0=-HALF.z, nx=HALF.x*2/P, nz=HALF.z*2/P, ab=new Uint8Array(nx*nz);
+    const marca=r=>{ for(let i=Math.round((r.x1-X0)/P);i<Math.round((r.x2-X0)/P);i++) for(let j=Math.round((r.z1-Z0)/P);j<Math.round((r.z2-Z0)/P);j++) ab[j*nx+i]=1; };
+    E.forEach(marca); V.forEach(marca);
+    // linhas de células sólidas; uma corrida que se repete igual na linha de baixo vira a mesma caixa
+    let abertas=new Map();
+    const fecha=(k,q,j)=>{ const x1=X0+q.i0*P, x2=X0+q.i1*P, z1=Z0+q.j0*P, z2=Z0+j*P;
+      const int=E.some(e=>e.int&&x1<e.x2+.6&&x2>e.x1-.6&&z1<e.z2+.6&&z2>e.z1-.6);
+      if(z2<=-66) W(x1,x2,z1,z2,.3,'lago'); else if(int) W(x1,x2,z1,z2,4.5,'parede'); else W(x1,x2,z1,z2,3,'muro'); };
+    for(let j=0;j<=nz;j++){ const agora=new Map();
+      if(j<nz){ let i=0; while(i<nx){ if(ab[j*nx+i]){ i++; continue; } let f=i; while(f<nx&&!ab[j*nx+f]) f++; agora.set(i+'-'+f,{i0:i,i1:f}); i=f; } }
+      for(const [k,q] of abertas){ if(agora.has(k)) agora.set(k,q); else fecha(k,q,j); }
+      for(const [k,q] of agora) if(!q.j0&&q.j0!==0) q.j0=j;
+      abertas=agora; } }
+  // ---------- móveis (cobertura) ----------
+  const leito=(x,z,ao)=>ao==='x'?W(x-1,x+1,z-.45,z+.45,.75,'leito'):W(x-.45,x+.45,z-1,z+1,.75,'leito');
+  for(let z=-31;z<=3;z+=3.6){ if(z>-19&&z<-9) continue; leito(-98.6,z,'x'); leito(-86.4,z,'x'); leito(98.6,z,'x'); leito(86.4,z,'x'); }   // enfermaria e isolamento
+  for(const z of [-24,-21,-18]){ W(-9,-2.2,z,z+.7,.95,'banco'); W(2.2,9,z,z+.7,.95,'banco'); }                                         // bancos da capela
+  for(const s of [-1,1]){
+    for(const z of [-29,-24]) for(const x of [62,72]) W(s*x-2,s*x+2,z,z+.9,.9,s<0?'mesa':'tanque');                                    // refeitório / lavanderia
+    W(s*67-2,s*67+2,-12,-11,.9,s<0?'mesa':'bancada');                                                                                  // sala de estar / oficina
+    W(s*80-1,s*80+1,-11,-8,.95,s<0?'maca':'cadeira_eletrica');                                                                         // consultório / eletrochoque
+  }
+  // hidroterapia: dois tanques rasos (água que deixa lento) e banheiras; caldeiras: as máquinas e a pilha de carvão
+  for(const x of [-73,-55]) W(x-1.1,x+1.1,-41.5,-40.5,.85,'banheira');
+  W(-72,-70,-53,-52,.85,'banheira'); W(-54,-52,-53,-52,.85,'banheira');
+  W(53,57,-54,-50,3.6,'caldeira'); W(67,71,-54,-50,3.6,'caldeira'); W(58,61,-41,-39.5,1.1,'carvao'); W(73,75,-46,-42,1.1,'carvao');
+  W(-4,4,6,7,1.1,'balcao');                                                                                                           // balcão do saguão
+  for(let k=0;k<6;k++){ const a=k*Math.PI/3+Math.PI/6, x=r2(Math.cos(a)*5.2), z=r2(46+Math.sin(a)*5.2); W(x-.3,x+.3,z-.3,z+.3,3.4,'coluna_coreto'); }
+  for(let x=-96;x<=-68;x+=7) for(const z of [16,24,32]) W(x-2.4,x+2.4,z-.5,z+.5,.55,'canteiro');                                     // horta
+  const LAPIDES=[];
+  for(let x=67;x<=97;x+=5) for(let z=16;z<=58;z+=6){ if(Math.hypot(x-90,z-50)<9||Math.hypot(x-80,z-56)<5||Math.hypot(x-76,z-24)<4||Math.hypot(x-92,z-34)<4) continue; LAPIDES.push(W(x-.45,x+.45,z-.15,z+.15,1.05,'lapide')); }
+  for(const z of [33,58]) for(const x of [-40,-24,24,40]) W(x-1.2,x+1.2,z-.3,z+.3,.9,'banco');                                         // bancos do gramado
+  // ---------- altares, nascimentos, pontos ----------
+  const ALTARS=[{name:'Enfermaria',x:-92,z:-14},{name:'Capela',x:0,z:-30},{name:'Isolamento',x:92,z:-14},
+    {name:'Hidroterapia',x:-62,z:-47},{name:'Coreto',x:0,z:46},{name:'Caldeiras',x:62,z:-47}];
+  const SPAWN={H:{x:-90,z:50,yaw:-1.06},C:{x:90,z:50,yaw:1.06}};
+  const PISTA_PTS=[[-104,-30],[104,-30],[-38,-52],[38,-52],[-30,10],[30,10],[-40,50],[40,50]];
+  const ERVA_PTS=[[-70,-26],[70,-26],[-62,-10],[62,-10],[8,-6],[-8,-6],[-30,18],[30,18]];
+  const SENTINELA_PTS=[[-80,-18],[0,-8],[80,-18],[-50,-49],[0,30],[50,-49]];
+  const TUMBA_PTS=[[76,24],[92,34],[-60,-63],[60,-63],[-8,-37],[8,-37]];
+  const REAG=[[-96,28],[96,28],[-30,-63],[30,-63],[-66,-52],[66,-45],[-95,-30],[95,-30],[-78,-24],[78,-24]];
+  const NPC_DEF=[{id:'ermitao',nome:'o Zelador',x:-80,z:56,time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
+    {id:'carpideira',nome:'a Enfermeira-chefe',x:80,z:56,time:'C',vende:['reagente','cinza','pocao','amuleto']},
+    {id:'mercador',nome:'o Paciente 13',x:0,z:14,time:null,vende:['reagente','municao','pocao']}];
+  // quadros de força: um por setor do eco, cada um apaga as lâmpadas da sua ala
+  const QUADROS=[{setor:'oeste',x:-19,z:1},{setor:'centro',x:-8,z:-10},{setor:'leste',x:19,z:1}];
+  const setorDe=x=>x<-12.5?'oeste':x>12.5?'leste':'centro';
+  // portas: os vãos com porta; a porta ocupa o vão inteiro e, fechada, é parede
+  const PORTAS_DIN=V.filter(v=>v.porta).map((v,i)=>({i,x1:v.x1,x2:v.x2,z1:v.z1,z2:v.z2,x:r2((v.x1+v.x2)/2),z:r2((v.z1+v.z2)/2),eixo:v.x2-v.x1>=v.z2-v.z1?'x':'z'}));
+  // âncoras de navegação dos dois lados de cada vão (vãos de 2 m não caem na grade de 2 m)
+  const PORTAS=[]; V.forEach(v=>{ const cx=(v.x1+v.x2)/2, cz=(v.z1+v.z2)/2;
+    if(v.x2-v.x1>=v.z2-v.z1){ const o=(v.z2-v.z1)/2+.9; PORTAS.push({x:cx,z:cz-o},{x:cx,z:cz+o}); } else { const o=(v.x2-v.x1)/2+.9; PORTAS.push({x:cx-o,z:cz},{x:cx+o,z:cz}); } });
+  // luzes: lâmpadas no teto de cada sala e corredor (do setor da ala) e lampiões no terreno, sempre acesos
+  const CANDLES=[];
+  E.forEach(e=>{ if(!e.int) return; const lx=e.x2-e.x1, lz=e.z2-e.z1, ao=lx>=lz, L=ao?lx:lz, n=Math.max(1,Math.round(L/9));
+    for(let k=0;k<n;k++){ const t=(k+.5)/n, x=r2(ao?e.x1+lx*t:(e.x1+e.x2)/2), z=r2(ao?(e.z1+e.z2)/2:e.z1+lz*t); CANDLES.push([x,z,'lampada',setorDe(x)]); } });
+  [[-20,30],[20,30],[-20,58],[20,58],[-84,20],[84,20],[-50,-63],[50,-63],[0,-69],[-30,-50],[30,-50],[-104,-20],[104,-20]].forEach(([x,z])=>CANDLES.push([x,z,'lanterna']));
+  CANDLES.push([SPAWN.H.x+3,SPAWN.H.z+3,'fogueira'],[SPAWN.C.x-3,SPAWN.C.z+4,'braseiro']);
+  // zonas: o interior é coberto e só tem a luz das lâmpadas; o terreno tem luar e a névoa do lago
+  const ZONAS=E.map(e=>e.int?{name:'Asilo',sala:e.nome,x1:e.x1,x2:e.x2,z1:e.z1,z2:e.z2,luar:0,coberto:true}:{name:'Terreno',sala:e.nome,x1:e.x1,x2:e.x2,z1:e.z1,z2:e.z2,luar:.42});
+  const zonaDe=(x,z)=>{ for(const Z of ZONAS) if(x>Z.x1&&x<Z.x2&&z>Z.z1&&z<Z.z2) return Z; return null; };
+  const zoneAt=(x,z)=>{ const Z=zonaDe(x,z); return Z?Z.name:'Asilo'; };
+  const coberto=(x,z)=>{ const Z=zonaDe(x,z); return !Z||!!Z.coberto; };   // os vãos das portas também têm teto
+  const naNevoa=(x,z)=>zoneAt(x,z)==='Terreno';
+  // água rasa dos tanques da hidroterapia: anda-se a 70%
+  const AGUA=[{x1:-75,x2:-65,z1:-55,z2:-49},{x1:-59,x2:-49,z1:-55,z2:-49}];
+  const LUGARES=E.filter(e=>!/^(Corredor|Galeria|Escada|Trilha|Píer)/.test(e.nome)&&(e.x2-e.x1)*(e.z2-e.z1)>=80).map(e=>({name:e.nome,x:r2((e.x1+e.x2)/2),z:r2((e.z1+e.z2)/2)}));
+  const TAREFAS=[
+    {H:[{id:'pistas',nome:'Recolha pistas nos oratórios do asilo',meta:3,rec:3},{id:'sentinelas',nome:'Acenda sentinelas nos caminhos dos altares: elas denunciam consagrações por perto',meta:2,rec:3}],
+     C:[{id:'ervas',nome:'Junte láudano e ervas na farmácia e nas alas',meta:4,rec:3},{id:'tumulos',nome:'Profane as covas dos internos: cada uma rende um reagente',meta:2,rec:3}]},
+    TAREFAS_PADRAO[1],TAREFAS_PADRAO[2]];
+  // colisão: paredes, móveis e o tampo dos altares (como na catedral)
+  const BOX=[]; const addCol=(x1,x2,z1,z2,h,tall)=>BOX.push({x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),h,tall});
+  WALLS.forEach(w=>addCol(w.x1,w.x2,w.z1,w.z2,w.h,w.tall));
+  ALTARS.forEach(a=>addCol(a.x-1.3,a.x+1.3,a.z-0.65,a.z+0.65,1.1,false));
+  const TALL=BOX.filter(b=>b.tall);
+  return {id:'asilo',nome:'Asilo Blackwater',HALF,PROMONTORIO:nada,DESFILADEIRO:nada,CATEDRAL:nada,CLAUSTRO:nada,ZONAS,ZONES:[],zonaDe,zoneAt,
+    naCatedral:()=>false,coberto,foraDaMata:()=>true,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS:[],TRAVESSIAS:[],ABISMO:[],PILLARS:[],PEWS:[],LAPIDES,REAG,
+    TRILHAS:[],CLAREIRAS:[],PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA:[],naTrilha:()=>false,ARCOS:[],ARVORES:[],ARBUSTOS:[],CANDLES,BOX,TALL,WALLDEF:WALLS,
+    luarFora:()=>0,naNevoa,TUMBA_PTS,NPC_DEF,TAREFAS,ESPACOS:E,VAOS:V,PORTAS_DIN,QUADROS,AGUA};
 }
 // ============ MAPA ATIVO ============
 // Cada mapa é um objeto montado uma vez (mapaCatedral, mapaAsilo). As regras e os bots leem os nomes abaixo, que apontam
 // para o mapa ativo: cada entrada da simulação (createGame, step, act, snapshot...) ativa o mapa da partida antes de
 // qualquer conta. O servidor roda salas com mapas diferentes no mesmo processo; como tudo é síncrono, basta trocar.
-let HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,GRADE,NAV,WP,TUMBAS,PONTOS_DEF,NPCS,MAPA_ATIVO=null;
+let HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,GRADE,NAV,WP,TUMBAS,PONTOS_DEF,NPCS,naNevoa,TAREFAS,PORTAS_DIN,QUADROS,AGUA,MAPA_ATIVO=null;
 const MAPAS={};
 function usarMapa(M){ if(MAPA_ATIVO===M) return M; MAPA_ATIVO=M;
-  ({HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,GRADE,NAV,WP,TUMBAS,PONTOS_DEF,NPCS}=M); return M; }
+  ({HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,GRADE,NAV,WP,TUMBAS,PONTOS_DEF,NPCS,naNevoa}=M);
+  TAREFAS=M.TAREFAS||TAREFAS_PADRAO; PORTAS_DIN=M.PORTAS_DIN||[]; QUADROS=M.QUADROS||[]; AGUA=M.AGUA||[]; return M; }
 
 function segBox(ax,az,bx,bz,b,inf){
   const x1=b.x1-inf,x2=b.x2+inf,z1=b.z1-inf,z2=b.z2+inf, dx=bx-ax,dz=bz-az; let t0=0,t1=1;
@@ -684,11 +809,10 @@ function prepararMapa(M){
   construirNav(); M.NAV=NAV; M.WP=WP;
   pontosDoMapa(M); MAPA_ATIVO=null; usarMapa(M);
   return MAPAS[M.id]=M; }
-const FABRICAS={catedral:mapaCatedral};
-const IDS_MAPAS=['catedral'];
+const FABRICAS={catedral:mapaCatedral,asilo:mapaAsilo};
+const IDS_MAPAS=['catedral','asilo'];
 function mapa(id){ if(!FABRICAS[id]) id='catedral'; return MAPAS[id]||prepararMapa(FABRICAS[id]()); }
 const ativar=g=>{ const M=g&&g.mapa?mapa(g.mapa):mapa('catedral'); if(MAPA_ATIVO!==M) usarMapa(M); };
-mapa('catedral');
 const ITENS={
   reagente:{nome:'Reagente',preco:3,time:'C',desc:'Um frasco para consagrar ou iniciar um ritual.'},
   cinza:{nome:'Cinza de Chamariz',preco:3,time:'C',desc:'Mais um Chamariz para a equipe.'},
@@ -697,13 +821,14 @@ const ITENS={
   oleo:{nome:'Óleo de lamparina',preco:1,time:'H',desc:'Enche a carga da Lanterna e do EVP.'},
   pocao:{nome:'Tônico amargo',preco:2,time:null,desc:'Recupera 60 de vida em 4 s.'},
   amuleto:{nome:'Amuleto',preco:6,time:null,momento:1,desc:'+25 de vida máxima até o amanhecer. Um por noite.'}};
-const TAREFAS=[
+const TAREFAS_PADRAO=[
   {H:[{id:'pistas',nome:'Recolha pistas nos santuários da floresta',meta:3,rec:3},{id:'sentinelas',nome:'Acenda sentinelas nos caminhos dos altares: elas denunciam consagrações por perto',meta:2,rec:3}],
    C:[{id:'ervas',nome:'Colha ervas-noturnas na floresta',meta:4,rec:3},{id:'tumulos',nome:'Profane túmulos no cemitério: cada um rende um reagente',meta:2,rec:3}]},
   {H:[{id:'purgar',nome:'Purgue um altar consagrado',meta:1,rec:4},{id:'selar',nome:'Entre num círculo e comece a selar',meta:1,rec:5}],
    C:[{id:'consagrar',nome:'Consagre altares',meta:2,rec:4},{id:'ritual',nome:'Complete um ritual',meta:1,rec:5}]},
   {H:[{id:'final',nome:'Sele dois dos três rituais ou resista até o amanhecer',meta:0,rec:0}],
    C:[{id:'final',nome:'Vença dois dos três rituais antes do amanhecer',meta:0,rec:0}]}];
+mapa('catedral');
 // o fim do Crepúsculo vem do laboratório (180 s no padrão)
 const momentoDe=(rt,crep)=>{ const M=CFG.momentos; for(let i=0;i<M.length;i++) if(rt<(i===0&&crep?crep:M[i].ate)) return i; return M.length-1; };
 const fendas=g=>g.altars.filter(A=>A.state==='fenda').length;
@@ -1220,7 +1345,7 @@ function updatePickups(g,dt){
 const noCone=(a,t,alc,cos)=>{ const dx=t.x-a.x,dz=t.z-a.z,d=Math.hypot(dx,dz); if(d>alc||d<.01) return d<=.01; return (dx*-Math.sin(a.yaw)+dz*-Math.cos(a.yaw))/d>=cos; };
 function canSee(g,b,t,range){
   if(t.st==='dead'||b.blindT>0) return false; const d=dist(b,t); if(d>range) return false; if(t.veuT>0&&d>8&&!(b.lantern&&noCone(b,t,16,.9))) return false; // Véu: silhueta tênue, só some de longe
-  if(d>CFG.nevoaAlcance&&(zoneAt(b.x,b.z)==='Floresta'||zoneAt(t.x,t.z)==='Floresta')) return false; // névoa da mata
+  if(d>CFG.nevoaAlcance&&(naNevoa(b.x,b.z)||naNevoa(t.x,t.z))) return false; // névoa da mata (no asilo, a do lago, lá fora)
   if(d>7){ const fx=-Math.sin(b.yaw),fz=-Math.cos(b.yaw); if(((t.x-b.x)*fx+(t.z-b.z)*fz)/d<.35&&g.t-b.hitT>2) return false; }
   if(!losClear(b,t)) return false;
   const lit=lightAt(g,t.x,t.z)+(t.lantern?.8:0)+(g.t-t.lastShotT<1.5?.8:0);
