@@ -379,7 +379,121 @@ R['charco_laco'] = lambda: _laco_cq('cq_frogs-loop-1.mp3', 14, -10)    # sapos d
 R['fogo_laco'] = lambda: _laco_cq('cq_brazier-loop-1.mp3', 9, -10)     # fornos da Carvoaria
 R['chuva_laco'] = lambda: _laco_cq('cq_rain-loop-1.mp3', 14, -8)       # chuva (clima)
 
+# ---------------- v6.3: o que era sintetizado (bipes, osciladores e ruído) agora sai de gravações ----------------
+@receita('clique')          # botões da interface: um estalo seco e baixo
+def _():
+    a = fade(ler('perc_snap.flac', 0, .05, 2.2, 'highpass=f=2000'), sai=.03)
+    b = fade(ler('default_place_node_metal.2.ogg', 0, .05, 2.0, 'highpass=f=1500'), sai=.03)
+    return [pico(a, -14), pico(b, -15)]
+
+@receita('aviso')           # frase rápida, ping marcado, passo do tutorial: um toque curto de sino
+def _():
+    return [pico(fade(ler('perc_bell2.flac', 0, .5, tx, 'highpass=f=700'), sai=.4, curva=3), -12) for tx in (1.6, 1.8)]
+
+@receita('ping')            # sensor do Caçador: o jogo muda a altura com a leitura (mais perto, mais agudo)
+def _():
+    return [pico(fade(ler('perc_bell2.flac', 0, .45, 1.0, 'highpass=f=400'), sai=.35, curva=2.5), -8)]
+
+@receita('vazio')           # gatilho sem munição, sigilo sem fervor, feitiço recarregando
+def _():
+    a = fade(ler('default_dig_metal.ogg', 0, .05, 1.9, 'highpass=f=1500'), sai=.03)
+    return [pico(a, -12)]
+
+@receita('coracao')         # batimento (sanidade baixa, sendo executado): dois golpes surdos
+def _():
+    k = lambda tx: fade(ler('drum_heavy_kick.flac', 0, .18, tx, 'lowpass=f=150'), sai=.12)
+    return [pico(mix((k(.8), 0, 0), (k(.74), .19, -3)), -3)]
+
+@receita('tambor')          # o tambor do Grande Ritual (acelera com o progresso)
+def _():
+    t = fade(ler('drum_tom_lo_hard.flac', 0, .7, .66, 'lowpass=f=500'), sai=.4)
+    k = fade(ler('drum_heavy_kick.flac', 0, .3, .8, 'lowpass=f=200'), sai=.2)
+    return [pico(ff(mix((t, 0, 0), (k, 0, -4)), 'aecho=0.7:0.4:180:0.25'), -3)]
+
+@receita('presagio')        # presságio: um ritual vai começar (o ar desce e escurece)
+def _():
+    b = fade(janela_pico('misc_cineboom.flac', .05, 3.0, taxa=.55, af='lowpass=f=600'), ent=.05, sai=1.6)
+    w = fade(ler('ambi_dark_woosh.flac', 0, 3.0, .7, 'lowpass=f=2500'), ent=.6, sai=1.2)
+    return [pico(mix((b, 0, 0), (w, 0, -6)), -2)]
+
+@receita('eco_coro')        # eco do coro: três vozes graves vindas do setor do ritual
+def _():
+    v = [fade(ff(ler('ambi_choir.flac', 0, None, .5 * tx), 'atempo=0.75'), ent=.25, sai=1.2) for tx in (1.0, 1.26, 1.5)]
+    return [pico(ff(mix((v[0], 0, 0), (v[1], .14, -2), (v[2], .28, -4)), 'aecho=0.8:0.5:300:0.3'), -3)]
+
+@receita('runa')            # Runa e Véu: vidro esfregado subindo e um toque de sino
+def _():
+    a = fade(ler('ambi_glass_rub.flac', .1, .7, 1.25, 'highpass=f=500'), ent=.05, sai=.4)
+    b = fade(ler('perc_bell2.flac', 0, .6, 1.35, 'highpass=f=800'), sai=.45, curva=3)
+    return [pico(mix((a, 0, 0), (b, .12, -8)), -4)]
+
+@receita('clarao')          # Flash: a pólvora acende de uma vez
+def _():
+    f = fade(ler('tnt_ignite.ogg', 0, .45, 1.4, 'highpass=f=1200'), sai=.3)
+    s = fade(ler('perc_snap.flac', 0, .06, 1.3, 'highpass=f=1500'), sai=.04)
+    return [pico(mix((f, 0, 0), (s, 0, -3)), -3)]
+
+@receita('purificacao')     # Purificação: sino claro com o coro por cima
+def _():
+    b = fade(ler('perc_bell.flac', 0, 1.4, 1.5), sai=.9)
+    c = fade(ff(ler('ambi_choir.flac', 0, None, 1.5), 'atempo=0.8'), ent=.05, sai=.8)
+    return [pico(mix((b, 0, 0), (c, .03, -9)), -3)]
+
+@receita('sal')             # Círculo de Sal: sal escorrendo da mão no chão
+def _():
+    a = fade(ler('default_sand_footstep.2.ogg', 0, .3, 1.6, 'highpass=f=1800'), ent=.03, sai=.2)
+    b = fade(ler('default_gravel_dig.1.ogg', 0, .25, 1.8, 'highpass=f=2200'), sai=.2)
+    return [pico(mix((a, 0, 0), (b, .12, -4), (a, .26, -6)), -6)]
+
+@receita('trovao')          # trovão depois do relâmpago: estrondo longo e baixo
+def _():
+    out = []
+    for tx in (.55, .5):
+        b = fade(janela_pico('misc_cineboom.flac', .05, 4.0, taxa=tx, af='lowpass=f=450'), ent=.08, sai=2.4)
+        e = fade(ler(EXPL, 0, 1.4, tx * .7, 'lowpass=f=240'), ent=.05, sai=1.2)
+        out.append(pico(mix((b, 0, 0), (e, .1, -3)), -2))
+    return out
+
+@receita('alucinacao')      # sanidade baixa: passos que não são de ninguém
+def _():
+    return [pico(mix(*[(fade(ler(f'default_sand_footstep.{i}.ogg', 0, .25, .85, 'lowpass=f=900'), sai=.1), k * .38, -k)
+                       for k, i in enumerate((1, 2, 3))]), -6)]
+
+def _acorde_coro(semis, dur):
+    """Um acorde do coro gravado: uma cópia por nota (semitons a partir do ré do coro, uma oitava abaixo), esticada até dur."""
+    vozes = []
+    for s in semis:
+        x = ff(ler('ambi_choir.flac', 0, None, .5 * 2 ** (s / 12)), 'atempo=0.5,atempo=0.5')
+        while len(x) < int(dur * SR): x = np.concatenate([x, x])   # o coro gravado é curto: emenda até a duração do acorde
+        vozes.append((fade(x[:int(dur * SR)], ent=1.6, sai=1.8, curva=1), 0, -2 * len(vozes)))
+    return mix(*vozes)
+
+@receita('musica_laco')     # música da tela inicial (laço): ré menor (Rém, Si♭, Solm, Lá) no coro gravado, sino a cada volta, eco de nave
+def _():
+    acordes = [[0, 3, 7], [-4, 0, 3], [-7, -4, 0], [-5, -1, 2]]; passo = 6.4
+    camadas = [(_acorde_coro(a, passo + 1.8), i * passo, 0) for i, a in enumerate(acordes)]
+    camadas.append((fade(ler('mcl_bells_bell_stroke.ogg', 0, 6.0, .5, 'lowpass=f=2500'), sai=3), .9, -6))
+    camadas.append((fade(ler('ambi_haunted_hum.flac', 0, None, .5, 'lowpass=f=400'), ent=2, sai=3), 2.0, -16))
+    y = ff(mix(*camadas), 'aecho=0.8:0.55:430:0.45')
+    y = y[:int((4 * passo + 1.8) * SR)]
+    return [pico(laco(y, 1.8), -6)]
+
+R['pulso_laco'] = lambda: [pico(laco(ler('ambi_haunted_hum.flac', 0, None, .4, 'lowpass=f=170,lowpass=f=170,lowpass=f=200,tremolo=f=1.3:d=0.8'), 1.5), -4)]   # pulsação grave do ritual (laço)
+R['bordao_laco'] = lambda: [pico(laco(ler('ambi_haunted_hum.flac', 0, None, .5, 'lowpass=f=320,lowpass=f=320,lowpass=f=400,tremolo=f=0.25:d=0.4'), 1.5), -4)] # bordão do Grande Ritual (laço)
+@receita('tensao_laco')     # trilha de tensão (laço): bordão grave e um chiado alto de vidro
+def _():
+    d = ler('ambi_haunted_hum.flac', 0, None, .5, 'lowpass=f=180,lowpass=f=180,lowpass=f=220,tremolo=f=0.35:d=0.5')
+    c = ler('ambi_glass_hum.flac', 0, None, 1.2, 'bandpass=f=3200:width_type=q:w=2')
+    n = min(len(d), len(c))
+    return [pico(laco(mix((d[:n], 0, 0), (c[:n], 0, -10)), 1.5), -4)]
+
 USO = {   # para que serve cada som no jogo (vai para docs/AUDIO.md)
+  'clique': 'botões da interface', 'aviso': 'frase rápida, ping marcado e passo do tutorial', 'ping': 'sensor do Caçador (altura pela leitura)',
+  'vazio': 'gatilho sem munição, sem fervor ou feitiço recarregando', 'coracao': 'batimento (sanidade baixa, sendo executado)',
+  'tambor': 'tambor do Grande Ritual', 'presagio': 'presságio de ritual', 'eco_coro': 'eco do coro (25% do ritual)', 'runa': 'Runa e Véu',
+  'clarao': 'Flash', 'purificacao': 'Purificação', 'sal': 'Círculo de Sal', 'trovao': 'trovão na tempestade', 'alucinacao': 'passos alucinados (sanidade baixa)',
+  'musica_laco': 'música da tela inicial (laço)', 'pulso_laco': 'pulsação do ritual em andamento (laço)', 'bordao_laco': 'bordão do Grande Ritual (laço)',
+  'tensao_laco': 'trilha de tensão (laço)',
   'tiro_carabina': 'tiro da carabina de alavanca (Soldado, Rastreador)', 'tiro_revolver': 'tiro do revólver (Exorcista)',
   'alavanca': 'ciclo da alavanca depois do tiro', 'cao': 'cão do revólver e tambor', 'recarga': 'recarga (abrir, cartuchos, fechar)',
   'cartucho': 'cartucho entrando pela portinhola da carabina', 'cartucho_fim': 'último cartucho assentado no tubo',
@@ -451,12 +565,15 @@ def escrever_doc(usos, fontes, autores):
          '- v6: os arquivos `cq_*.mp3` são cortes (trecho e ganho) que o repositório hoffspot/conquest fez de gravações CC0 do Freesound e de',
          '  uma gravação em domínio público do National Park Service (EUA). A gravação de cada um é CC0 ou domínio público; o corte vem com o',
          '  repositório, sob Apache 2.0 (<https://www.apache.org/licenses/LICENSE-2.0>), cuja licença e aviso valem para esses arquivos.',
+         '- Desde a v6.3 nada é sintetizado: os bipes, o vento de ruído, a música do menu, a tensão e as pulsações dos rituais, que eram',
+         '  osciladores e ruído no Web Audio e no Som.cs, viram receitas sobre as mesmas gravações (`clique`, `ping`, `musica_laco`...).',
+         '  Nenhum som do jogo foi gerado por IA.',
          '- O tiro não é a gravação de uma arma: é montado com gravações reais em CC0 (explosão, impacto, estalo e mecanismo de metal).',
          '  Quando os sites de áudio estiverem acessíveis, troque por gravações de armas reais e rode o script de novo.', '',
          '## Como foi conferido', '',
          '- Ninguém ouviu estes sons durante o desenvolvimento: o ambiente não tem saída de áudio. Cada arquivo foi conferido por',
          '  medida (duração, pico, ataque, centroide e bandas do espectro) e por espectrograma, e todos decodificam no Chromium',
-         '  (o teste `tools/navegador.js` exige as 67 variações carregadas sem falha). **Falta ouvir em fones e ajustar volumes.**', '',
+         '  (o teste `tools/navegador.js` exige todas as variações carregadas sem falha: 128 na v6.3). **Falta ouvir em fones e ajustar volumes.**', '',
          '## Sons do jogo', '', '| Som | Uso no jogo | Gravações | Licenças |', '| --- | --- | --- | --- |']
     for nome, us in usos.items():
         lic = sorted({fontes[u]['licenca'] for u in us})

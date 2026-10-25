@@ -114,7 +114,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `ritualIniciado/Marco/Selado/Fenda/Interrompido`, `O.runas`, `O.rv`). Sons gravados: `assets/sons/fontes` (CC0 e
   CC BY 3.0, origem em `fontes.json`), `python3 tools/montar-sons.py` gera `assets/sons/jogo/*.mp3`, `client/sons.js`
   (embutido por build.js e build-mobile.js, servido pelo servidor) e `docs/AUDIO.md`; no cliente `tocar(nome,opções)`
-  com variação, limite de vozes e reserva sintetizada. Ninguém ouviu os sons ainda (ambiente sem áudio).
+  com variação e limite de vozes (a reserva sintetizada saiu na v6.2b). Ninguém ouviu os sons ainda (ambiente sem áudio).
 - v5.8a (notas em `notas/v5.8a.md`): a v5.8 no Unity. `montar-sons.py` copia os MP3 para `Resources/Sons`; `Som.cs`
   (`Amostra`, `Tiro`, `Passo`, laços gravados do ritual), `PrimeiraPessoa.cs` (perfis de arma, `Acerto`, `Golpe`,
   `Tranco`, `AoPasso`, `camFx` em PlayerPrefs "rr-camfx"), `Personagens.cs` (`Arma.alav/cao/tambor`, `Boneco.reac`),
@@ -169,6 +169,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `Mundo.Construir(mapa)` pula mata e catedral viva no asilo; `PartidaVisual.TrocarMundo(id)` desmonta e monta (título: linha
   "Mapa", PlayerPrefs "rr-mapa"; online: welcome/lobby com o mapa da sala; `Rede.Ler` lê mapa, portas e energia). Planta:
   `PlantaFixa.TexturaAsilo` e `PlantaAsiloBase`. O `TesteTelas` joga uma noite no asilo (porta, apagão, planta).
+- v6.2b (notas em `notas/v6.2b.md`): nenhum som é sintetizado nem feito por IA. Bipes, vento de ruído, música do menu, tensão,
+  pulsação dos rituais e as reservas viraram receitas em `montar-sons.py` (`clique`, `aviso`, `ping`, `vazio`, `coracao`, `tambor`,
+  `presagio`, `eco_coro`, `runa`, `clarao`, `purificacao`, `sal`, `trovao`, `alucinacao`, `musica_laco`, `pulso_laco`, `bordao_laco`,
+  `tensao_laco`); no cliente `lacoGravado`, sem `sfxTone`/`sfxNoise`/`AU.noise`; no Unity `Som.Aviso`, `PassoLaco`, `Hab(cls,x,z,f)`.
+  Só sobra um oscilador de 7 Hz que mexe no volume do coro (tremor do selo), sem soar. Sem gravação, o som não toca.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e
@@ -191,7 +196,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   shader `Resources/RitualReversalBrilho.shader` para brilhos e sprites), `Mundo*.cs` (buildWorld, floresta,
   catedral viva, altares, céu/luzes/névoa/Grande Ritual, atores/efeitos/partículas), `Personagens.cs`
   (makeCharacter/animateActor, armas, cetro), `PrimeiraPessoa.cs` (viewmodels, lanterna, câmera), `Pos.cs`
-  (Volume do URP), `Som.cs` (todos os SFX e laços sintetizados em OnAudioFilterRead). Menu "Criar cena do jogo".
+  (Volume do URP), `Som.cs` (todos os SFX e laços gravados, misturados em OnAudioFilterRead). Menu "Criar cena do jogo".
   Online: `Rede.cs` (WebSocket, snapshot -> Jogo) e `PartidaOnline.cs` (lobby, previsão, interpolação, reconexão),
   mesmo protocolo do navegador; `Ator.hidden` só existe no cliente. Ajustes na pausa e no título (PlayerPrefs).
   v6 no Unity: `MundoV6.cs` é o `client/mundo.js` (catedral, interior, pontes, desfiladeiro, pisos, peças novas, mesma
@@ -240,7 +245,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Relatório do playtest: `Noite.Relatorio` é o `Sim.relatorio` (o `unity-noite.js` compara os dois sobre o mesmo registro,
   campo a campo); `PartidaRelatorio.cs` tem os dados (perguntas em PlayerPrefs "rr-resp-<partida>", copiar, baixar) e a tela é o `TelaRelatorioCss`.
   Frases rápidas e falas do bot aliado: `PartidaFalas.cs` (V abre, 1 a 6). Música do menu e trilha de tensão: `Visual/SomMusica.cs`
-  (sintetizadas no OnAudioFilterRead; a partida passa o nível em `som.Tensao`, `AtualizarTensao` no PartidaVisual).
+  (laços gravados `musica_laco`/`tensao_laco`; a partida passa o nível em `som.Tensao`, `AtualizarTensao` no PartidaVisual).
   Kit e mira: `PartidaKit.cs` (fileira de ferramentas com recarga, mira cruz/ponto/círculo com cor e tamanho que abre com o
   tiro, linha de quadros/ping); brilho em `Pos.brilho`; pausa com a cola das teclas.
   Sem abrir o Unity, `tools/unity-telas.js` roda o `PartidaLocal` inteiro (Update e as duas passadas do OnGUI) contra

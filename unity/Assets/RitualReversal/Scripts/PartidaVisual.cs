@@ -54,7 +54,7 @@ namespace RitualReversal
             mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
             fp.arma.raizMundo = mundo.raiz; mundo.AoExecutar = E => fp.Executou();
             // trovão: ruído grave e um tom que cai, mais tarde quanto mais longe o relâmpago (o atraso já passou)
-            mundo.AoTrovao = d => { som.Ruido(float.NaN, float.NaN, 1, 2.8f + d, Som.Tipo.PassaBaixa, 150, .8f, .9f); som.Tom(float.NaN, float.NaN, 1, 48, 26, 2.4f, Som.Onda.Seno, .5f); Legenda("trovao", float.NaN, float.NaN, "Trovão"); };
+            mundo.AoTrovao = d => { som.Tocar("trovao"); Legenda("trovao", float.NaN, float.NaN, "Trovão"); };
         }
 
         void LimparVisual() { if (mundo != null) mundo.Limpar(); if (som != null) som.Silenciar(); }
@@ -98,7 +98,7 @@ namespace RitualReversal
                 float s = (float)m.sanity;
                 // (o passo do jogador toca no ciclo do balanço da câmera: fp.AoPasso)
                 ProgressoInvestigacao(papel);
-                if (s < 40) { alucT -= dt; if (alucT <= 0) { alucT = Random.Range(6f, 12f); float an = Random.Range(0, Mathf.PI * 2); if (Random.value < .5f) som.Tocar("whisper", (float)m.x + Mathf.Cos(an) * 6, (float)m.z + Mathf.Sin(an) * 6, 1); else som.Tocar("alucinacao"); } }
+                if (s < 40) { alucT -= dt; if (alucT <= 0) { alucT = Random.Range(6f, 12f); float an = Random.Range(0, Mathf.PI * 2); if (Random.value < .5f) som.Tocar("whisper", (float)m.x + Mathf.Cos(an) * 6, (float)m.z + Mathf.Sin(an) * 6); else som.Tocar("alucinacao"); } }
                 if (s < 15) { coracaoT -= dt; if (coracaoT <= 0) { coracaoT = .85f; som.Tocar("heart"); } }
                 {
                     var E = m.st == "down" ? mundo.ExecRecente(m.id) : null; veuExe = Mathf.Lerp(veuExe, E != null ? .3f + E.k * .7f : 0, Mathf.Min(1, dt * 6));
@@ -215,7 +215,7 @@ namespace RitualReversal
                     break;
                 case "hab":
                     {
-                        Ator quem = g.actors.Find(a => a.id == e.Int("a")); som.Hab(quem != null ? quem.cls : "", x, z);
+                        Ator quem = g.actors.Find(a => a.id == e.Int("a")); som.Hab(quem != null ? quem.cls : "", x, z, e.Str("f"));
                         if (e.Int("a") == eu) { var al = e["alvos"] as System.Collections.ICollection; int n = al != null ? al.Count : 0; string f = e.Str("f"); NotaHab(TextoHab(f, n), n > 0 || f == "runa" || f == "veu" || f == "sal" ? OURO : CINZA * 2); if (f == "empurrao") fp.kickP += .02f; fp.Hab(); }
                         break;
                     }
@@ -316,7 +316,7 @@ namespace RitualReversal
             int quem = e.Int("a"); var ator = g.actors.Find(x => x.id == quem); string k = e.Str("k"); int i = e.Int("i");
             string txt = k == "altar" && i >= 0 && i < g.altars.Count ? "Altar " + g.altars[i].name : k == "inimigo" ? "Inimigo visto" : "Aqui";
             pings.RemoveAll(p => p.a == quem); pings.Add(new PingV { a = quem, x = (float)e.Num("x"), z = (float)e.Num("z"), t = k == "inimigo" ? 6 : 10, txt = txt, nome = ator != null ? ator.name : "Aliado" });
-            Feed((ator != null ? ator.name : "Aliado") + " marcou: " + txt, MeuPapel() == "H" ? "h" : "c"); som.Tom(float.NaN, float.NaN, 1, 880, 990, .1f, Som.Onda.Seno, .18f); som.Tom(float.NaN, float.NaN, 1, 1320, 1320, .12f, Som.Onda.Seno, .12f, .09f);
+            Feed((ator != null ? ator.name : "Aliado") + " marcou: " + txt, MeuPapel() == "H" ? "h" : "c"); som.Aviso(.6f, 1.15f);
         }
 
         // trilha de tensão: cresce com o perigo (inimigo à vista e perto, ritual ao alcance do ouvido, sanidade baixa, ferimento

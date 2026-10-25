@@ -30,6 +30,7 @@ const VISTAS=[ // v6: um ponto de cada região e de cada travessia do mapa novo
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const page=await browser.newPage({viewport:{width:1280,height:720}});
+  page.setDefaultTimeout(240000);   // no swiftshader lento um screenshot pode passar de 30 s
   const erros=[];
   page.on('pageerror',e=>erros.push('pageerror: '+e.message));
   page.on('console',m=>{ const t=m.text(); if(m.type()==='error'&&!/api\/info|ERR_FAILED/.test(t)) erros.push('console: '+t); }); // a sondagem do servidor falha de propósito em file://
@@ -128,9 +129,10 @@ const VISTAS=[ // v6: um ponto de cada região e de cada travessia do mapa novo
   await page.waitForTimeout(1500);
   await page.evaluate(o=>{ const g=__T.game, m=g.actors.find(a=>a.id===o.m), c=g.actors.find(a=>a.id===o.c);
     g.events.push({type:'tracer',a:m.id,x0:m.x,y0:1.42,z0:m.z,x1:c.x+.3,y1:1.7,z1:c.z,alvo:c.id,cab:true},{type:'hit',a:m.id,alvo:c.id,derrubou:false}); },cb);
-  await page.waitForFunction(id=>{ const mm=__T.actorMeshes.get(id); return mm&&mm.userData.anim.reac; },cb.c,{timeout:8000}).catch(()=>{});
+  // a reação dura 0,65 s: confere antes da foto (no swiftshader lento a foto passa de 10 s)
+  const reagiu=await page.waitForFunction(id=>{ const mm=__T.actorMeshes.get(id); return mm&&mm.userData.anim.reac; },cb.c,{timeout:8000}).then(()=>true,()=>false);
+  const ac=await page.evaluate(id=>({marca:document.querySelector('#hitmark').className}),cb.c); ac.reacao=reagiu;
   await page.screenshot({path:path.join(OUT,'combate-acerto.png')});
-  const ac=await page.evaluate(id=>({marca:document.querySelector('#hitmark').className,reacao:!!(__T.actorMeshes.get(id)&&__T.actorMeshes.get(id).userData.anim.reac)}),cb.c);
   await page.evaluate(o=>{ __T.game.events.push({type:'hit',a:o.m,alvo:o.c,derrubou:false,escudo:true}); },cb);
   await page.waitForFunction(()=>document.querySelector('#hitmark').className==='escudo',null,{timeout:8000}).catch(()=>{});
   const esc=await page.evaluate(()=>document.querySelector('#hitmark').className);
@@ -180,7 +182,7 @@ const VISTAS=[ // v6: um ponto de cada região e de cada travessia do mapa novo
   await page.evaluate(()=>{ Object.assign(__T.game.altars[0],window.__antes0); });
   // eco do coro a leste: a faixa marca os dois altares do setor e a legenda diz de onde vem o coro
   await page.evaluate(()=>{ const g=__T.game; g.eco={setor:'leste',t:g.rt}; g.events.push({type:'eco',setor:'leste',altares:[2,5]}); });
-  await page.waitForTimeout(1500);
+  await page.waitForFunction(()=>document.querySelectorAll('#strip .pip.eco').length===2&&/Coro distante/.test(document.querySelector('#legendas').textContent),null,{timeout:12000}).catch(()=>{});   // no swiftshader lento, 1,5 s às vezes não bastava
   const eco=await page.evaluate(()=>({pips:document.querySelectorAll('#strip .pip.eco').length,legenda:[...document.querySelectorAll('#legendas div')].map(d=>d.textContent).join(' | ')}));
   console.log('eco:',JSON.stringify(eco)); if(eco.pips!==2) erros.push('eco não marcou os dois altares do setor'); if(!/Coro distante/.test(eco.legenda)) erros.push('eco sem legenda');
   await page.screenshot({path:path.join(OUT,'eco.png')});

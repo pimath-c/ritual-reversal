@@ -31,7 +31,7 @@ namespace RitualReversal
         void ReceberFala(int a, int f, string team, float x, float z)
         {
             var quem = g.actors.Find(q => q.id == a); string nome = quem != null ? quem.name : "Aliado", txt = TextoFala(f, team);
-            Feed(nome + ": " + txt, MeuPapel() == "H" ? "h" : "c"); som.Tom(float.NaN, float.NaN, 1, 660, 740, .09f, Som.Onda.Triangulo, .14f);
+            Feed(nome + ": " + txt, MeuPapel() == "H" ? "h" : "c"); som.Aviso(.4f, .9f);
             if (f == 0 || f == 3) { pings.RemoveAll(p => p.a == a); pings.Add(new PingV { a = a, x = x, z = z, t = 8, txt = txt, nome = nome }); }
             if (quem != null && quem.cid != EU) Legenda("fala" + a, x, z, nome + ": " + txt, "", 1e9f);
         }

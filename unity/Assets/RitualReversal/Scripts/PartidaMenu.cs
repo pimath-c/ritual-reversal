@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Só sons gravados (v6.2b)","Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA."},
             new[]{"Culto que se defende (v6.1)","Do primeiro playtest com duas pessoas: os Cultistas controlados pelo jogo, canalizando, só reagiam a quem chegava a 8 m, e uma dupla de Caçadores derrubava o culto de longe sem levar um tiro. Agora quem canaliza revida quem o acertou e quem chega a 20 m (atacar ainda pausa a canalização)."},
             new[]{"Catedral e desfiladeiro (v6)","O mapa foi refeito em duas regiões: a catedral em cruz no alto do promontório e a mata ao sul, separadas por um desfiladeiro com três travessias (a Ponte Grande, a árvore caída e o aqueduto). Cada parte da mata tem o seu reagente."},
             new[]{"Cobertura e agachar (v6)","Túmulos, muretas e pedras baixas agora param tiros e sigilos abaixo da altura deles. Agachado (C, ou o botão B do controle) você anda na metade da velocidade, com passos que só se ouvem a 5 m, e fica mais baixo atrás da cobertura."},
@@ -114,7 +115,7 @@ namespace RitualReversal
             }
             var P = passosTut[tutI];
             if (P.avanca && !tutAvancou) { tutAvancou = true; double ate = Noite.FimMomento(g.lab, 0); if (g.rt < ate - 3) g.rt = ate - 3; }
-            if (P.feito(m)) { tutI++; tutAvancou = false; som.Tom(float.NaN, float.NaN, 1, 660, 880, .18f, Som.Onda.Seno, .2f); return; }
+            if (P.feito(m)) { tutI++; tutAvancou = false; som.Aviso(.6f); return; }
             tutAlvo = P.alvo != null ? P.alvo(m) : null;
         }
         void PularPassoTutorial() { if (!tutAtivo || tutFim) return; tutI++; tutAvancou = false; som.Tocar("click"); }

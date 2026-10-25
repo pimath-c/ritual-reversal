@@ -14,6 +14,9 @@ Gerado por `python3 tools/montar-sons.py` (não edite à mão as tabelas). As gr
 - v6: os arquivos `cq_*.mp3` são cortes (trecho e ganho) que o repositório hoffspot/conquest fez de gravações CC0 do Freesound e de
   uma gravação em domínio público do National Park Service (EUA). A gravação de cada um é CC0 ou domínio público; o corte vem com o
   repositório, sob Apache 2.0 (<https://www.apache.org/licenses/LICENSE-2.0>), cuja licença e aviso valem para esses arquivos.
+- Desde a v6.3 nada é sintetizado: os bipes, o vento de ruído, a música do menu, a tensão e as pulsações dos rituais, que eram
+  osciladores e ruído no Web Audio e no Som.cs, viram receitas sobre as mesmas gravações (`clique`, `ping`, `musica_laco`...).
+  Nenhum som do jogo foi gerado por IA.
 - O tiro não é a gravação de uma arma: é montado com gravações reais em CC0 (explosão, impacto, estalo e mecanismo de metal).
   Quando os sites de áudio estiverem acessíveis, troque por gravações de armas reais e rode o script de novo.
 
@@ -21,7 +24,7 @@ Gerado por `python3 tools/montar-sons.py` (não edite à mão as tabelas). As gr
 
 - Ninguém ouviu estes sons durante o desenvolvimento: o ambiente não tem saída de áudio. Cada arquivo foi conferido por
   medida (duração, pico, ataque, centroide e bandas do espectro) e por espectrograma, e todos decodificam no Chromium
-  (o teste `tools/navegador.js` exige as 67 variações carregadas sem falha). **Falta ouvir em fones e ajustar volumes.**
+  (o teste `tools/navegador.js` exige todas as variações carregadas sem falha: 128 na v6.3). **Falta ouvir em fones e ajustar volumes.**
 
 ## Sons do jogo
 
@@ -89,6 +92,24 @@ Gerado por `python3 tools/montar-sons.py` (não edite à mão as tabelas). As gr
 | `charco_laco` | fundo perto do Charco (laço) | cq_frogs-loop-1.mp3 | Domínio público (NPS, EUA) |
 | `fogo_laco` | fornos da Carvoaria (laço) | cq_brazier-loop-1.mp3 | CC0 1.0 |
 | `chuva_laco` | chuva, no clima de chuva (laço) | cq_rain-loop-1.mp3 | CC0 1.0 |
+| `clique` | botões da interface | default_place_node_metal.2.ogg, perc_snap.flac | CC0 1.0 |
+| `aviso` | frase rápida, ping marcado e passo do tutorial | perc_bell2.flac | CC0 1.0 |
+| `ping` | sensor do Caçador (altura pela leitura) | perc_bell2.flac | CC0 1.0 |
+| `vazio` | gatilho sem munição, sem fervor ou feitiço recarregando | default_dig_metal.ogg | CC BY 3.0 |
+| `coracao` | batimento (sanidade baixa, sendo executado) | drum_heavy_kick.flac | CC0 1.0 |
+| `tambor` | tambor do Grande Ritual | drum_heavy_kick.flac, drum_tom_lo_hard.flac | CC0 1.0 |
+| `presagio` | presságio de ritual | ambi_dark_woosh.flac, misc_cineboom.flac | CC0 1.0 |
+| `eco_coro` | eco do coro (25% do ritual) | ambi_choir.flac | CC0 1.0 |
+| `runa` | Runa e Véu | ambi_glass_rub.flac, perc_bell2.flac | CC0 1.0 |
+| `clarao` | Flash | perc_snap.flac, tnt_ignite.ogg | CC0 1.0 |
+| `purificacao` | Purificação | ambi_choir.flac, perc_bell.flac | CC0 1.0 |
+| `sal` | Círculo de Sal | default_gravel_dig.1.ogg, default_sand_footstep.2.ogg | CC0 1.0 |
+| `trovao` | trovão na tempestade | misc_cineboom.flac, tnt_explode.ogg | CC0 1.0 |
+| `alucinacao` | passos alucinados (sanidade baixa) | default_sand_footstep.1.ogg, default_sand_footstep.2.ogg, default_sand_footstep.3.ogg | CC0 1.0 |
+| `musica_laco` | música da tela inicial (laço) | ambi_choir.flac, ambi_haunted_hum.flac, mcl_bells_bell_stroke.ogg | CC0 1.0 |
+| `pulso_laco` | pulsação do ritual em andamento (laço) | ambi_haunted_hum.flac | CC0 1.0 |
+| `bordao_laco` | bordão do Grande Ritual (laço) | ambi_haunted_hum.flac | CC0 1.0 |
+| `tensao_laco` | trilha de tensão (laço) | ambi_glass_hum.flac, ambi_haunted_hum.flac | CC0 1.0 |
 
 ## Créditos (gravações usadas)
 
