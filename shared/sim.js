@@ -38,7 +38,11 @@ const CFG={
   // menos de botRevidaPerto m (antes só a 8 m: Caçadores humanos derrubavam o culto de longe sem levar um tiro).
   // 200 noites de bots: culto 30% → 37%. Testado e descartado: o Guardião sair do círculo para vigiar depois do eco (26%)
   botRevida:2.5, botRevidaPerto:20,
+  // asilo: segurar E para abrir/fechar uma porta; cortar a luz de uma ala (culto) e religar (caça); quanto dura o apagão;
+  // velocidade na água rasa da hidroterapia
+  porta:.35, cortarLuz:4, religarLuz:6, apagao:90, aguaVel:.7,
 };
+const NOME_SETOR={oeste:'oeste',centro:'central',leste:'leste'};
 // setores do eco: cada setor tem dois altares (um no promontório e um na mata)
 const SETORES=[{id:'oeste',nome:'a oeste',altares:[0,3]},{id:'centro',nome:'no centro',altares:[1,4]},{id:'leste',nome:'a leste',altares:[2,5]}];
 const setorDoAltar=i=>SETORES.find(s=>s.altares.includes(i));
@@ -580,7 +584,9 @@ function algum(G,x1,z1,x2,z2,fn){ G.vez++; const c=G.c;
   return false; }
 // Segmentos longos atravessam muitas células: percorre a grade só pelas células que a linha toca (DDA),
 // em vez da caixa inteira que envolve o segmento.
-function segClear(ax,az,bx,bz,inf,list){ const G=grade(list);
+function segClear(ax,az,bx,bz,inf,list){
+  if(PORTAS_FECHADAS.length&&(list===BOX||list===TALL)) for(const b of PORTAS_FECHADAS) if(segBox(ax,az,bx,bz,b,inf)>=0) return false;
+  const G=grade(list);
   if(!G){ for(const b of list){ if(segBox(ax,az,bx,bz,b,inf)>=0) return false; } return true; }
   const L=Math.hypot(bx-ax,bz-az);
   if(L<G.c*2) return !algum(G,Math.min(ax,bx)-inf,Math.min(az,bz)-inf,Math.max(ax,bx)+inf,Math.max(az,bz)+inf,b=>segBox(ax,az,bx,bz,b,inf)>=0);
@@ -591,25 +597,28 @@ function segClear(ax,az,bx,bz,inf,list){ const G=grade(list);
       for(const i of a){ if(G.marca[i]===G.vez) continue; G.marca[i]=G.vez; if(segBox(ax,az,bx,bz,G.list[i],inf)>=0) return false; } } }
   return true; }
 const losClear=(a,b)=>segClear(a.x,a.z,b.x,b.z,0,TALL);
-function occlusion(ax,az,bx,bz){ let n=0; algum(grade(TALL),Math.min(ax,bx),Math.min(az,bz),Math.max(ax,bx),Math.max(az,bz),b=>{ if(segBox(ax,az,bx,bz,b,0)>=0){ n++; if(n>=3) return true; } return false; }); return Math.pow(0.55,n); }
+function occlusion(ax,az,bx,bz){ let n=portasNoCaminho(ax,az,bx,bz); if(n>=3) return Math.pow(0.55,n); algum(grade(TALL),Math.min(ax,bx),Math.min(az,bz),Math.max(ax,bx),Math.max(az,bz),b=>{ if(segBox(ax,az,bx,bz,b,0)>=0){ n++; if(n>=3) return true; } return false; }); return Math.pow(0.55,n); }
 // primeira peça alta atingida por um raio (tiros, sinalizadores). Devolve a distância ao longo do raio.
 // lista: TALL (padrão) ou BOX, para tiros que também param na cobertura baixa (com alturaEm, só quando passam abaixo dela)
 function raioParede(ox,oz,dx,dz,alcance,inf,alturaEm,lista){ let best=alcance; const G=grade(lista||TALL), n=Math.ceil(alcance/(G.c*.5)); G.vez++;
+  for(const b of PORTAS_FECHADAS){ const t=segBox(ox,oz,ox+dx*alcance,oz+dz*alcance,b,inf); if(t>=0&&t*alcance<best&&(!alturaEm||alturaEm(t*alcance)<b.h)) best=t*alcance; }
   for(let k=0;k<=n;k++){ const px=ox+dx*alcance*k/n, pz=oz+dz*alcance*k/n; if(k/n*alcance>best+G.c) break; const r=G.c*.5+inf;
     for(let cx=Math.floor((px-r)/G.c);cx<=Math.floor((px+r)/G.c);cx++) for(let cz=Math.floor((pz-r)/G.c);cz<=Math.floor((pz+r)/G.c);cz++){ const a=G.m.get(cx*1000+cz); if(!a) continue;
       for(const i of a){ if(G.marca[i]===G.vez) continue; G.marca[i]=G.vez; const b=G.list[i], t=segBox(ox,oz,ox+dx*alcance,oz+dz*alcance,b,inf); if(t<0) continue; const d=t*alcance;
         if(d<best&&(!alturaEm||alturaEm(d)<b.h)) best=d; } } }
   return best; }
+function empurra(p,r,b){ const cx=clamp(p.x,b.x1,b.x2), cz=clamp(p.z,b.z1,b.z2), dx=p.x-cx, dz=p.z-cz, d=Math.hypot(dx,dz);
+  if(d<r){ if(d>1e-6){ p.x=cx+dx/d*r; p.z=cz+dz/d*r; } else { const l=p.x-b.x1,rr=b.x2-p.x,t=p.z-b.z1,bb=b.z2-p.z,m=Math.min(l,rr,t,bb); if(m===l)p.x=b.x1-r; else if(m===rr)p.x=b.x2+r; else if(m===t)p.z=b.z1-r; else p.z=b.z2+r; } } }
 function resolve(p,r){
   for(let it=0;it<4;it++){
-    algum(grade(BOX),p.x-r,p.z-r,p.x+r,p.z+r,b=>{ const cx=clamp(p.x,b.x1,b.x2), cz=clamp(p.z,b.z1,b.z2), dx=p.x-cx, dz=p.z-cz, d=Math.hypot(dx,dz);
-      if(d<r){ if(d>1e-6){ p.x=cx+dx/d*r; p.z=cz+dz/d*r; } else { const l=p.x-b.x1,rr=b.x2-p.x,t=p.z-b.z1,bb=b.z2-p.z,m=Math.min(l,rr,t,bb); if(m===l)p.x=b.x1-r; else if(m===rr)p.x=b.x2+r; else if(m===t)p.z=b.z1-r; else p.z=b.z2+r; } }
-      return false; });
+    algum(grade(BOX),p.x-r,p.z-r,p.x+r,p.z+r,b=>{ empurra(p,r,b); return false; });
+    for(const b of PORTAS_FECHADAS) empurra(p,r,b);
     p.x=clamp(p.x,-HALF.x+r,HALF.x-r); p.z=clamp(p.z,-HALF.z+r,HALF.z-r);
   }
 }
 // Verdadeiro se um círculo de raio r em p não encosta em nenhuma peça.
-function livre(p,r){ return !algum(grade(BOX),p.x-r,p.z-r,p.x+r,p.z+r,b=>{ const cx=clamp(p.x,b.x1,b.x2), cz=clamp(p.z,b.z1,b.z2); return Math.hypot(p.x-cx,p.z-cz)<r-.02; }); }
+function livre(p,r){ const toca=b=>{ const cx=clamp(p.x,b.x1,b.x2), cz=clamp(p.z,b.z1,b.z2); return Math.hypot(p.x-cx,p.z-cz)<r-.02; };
+  if(algum(grade(BOX),p.x-r,p.z-r,p.x+r,p.z+r,toca)) return false; for(const b of PORTAS_FECHADAS) if(toca(b)) return false; return true; }
 
 // ============ NAVEGAÇÃO ============
 // Grade de 2 m sobre o mapa inteiro, ligada em 8 direções, mais âncoras (portas, altares, reagentes, spawns,
@@ -812,7 +821,13 @@ function prepararMapa(M){
 const FABRICAS={catedral:mapaCatedral,asilo:mapaAsilo};
 const IDS_MAPAS=['catedral','asilo'];
 function mapa(id){ if(!FABRICAS[id]) id='catedral'; return MAPAS[id]||prepararMapa(FABRICAS[id]()); }
-const ativar=g=>{ const M=g&&g.mapa?mapa(g.mapa):mapa('catedral'); if(MAPA_ATIVO!==M) usarMapa(M); };
+const ativar=g=>{ const M=g&&g.mapa?mapa(g.mapa):mapa('catedral'); if(MAPA_ATIVO!==M) usarMapa(M); PORTAS_FECHADAS=(g&&g.fechadas)||SEM_PORTAS; };
+// portas fechadas da partida ativa: entram na colisão, na visão, nos tiros e no som como paredes (no asilo; a catedral não tem)
+const SEM_PORTAS=[]; let PORTAS_FECHADAS=SEM_PORTAS;
+function recalcularPortas(g){ g.fechadas=PORTAS_DIN.filter(p=>!g.portas[p.i].aberta).map(p=>({x1:p.x1,x2:p.x2,z1:p.z1,z2:p.z2,h:4.5,tall:true,porta:p.i})); PORTAS_FECHADAS=g.fechadas; }
+// quantas portas fechadas a linha atravessa (som abafado: metade do alcance por porta)
+function portasNoCaminho(ax,az,bx,bz){ let n=0; for(const b of PORTAS_FECHADAS) if(segBox(ax,az,bx,bz,b,0)>=0) n++; return n; }
+const naAgua=(x,z)=>{ for(const q of AGUA) if(x>q.x1&&x<q.x2&&z>q.z1&&z<q.z2) return true; return false; };
 const ITENS={
   reagente:{nome:'Reagente',preco:3,time:'C',desc:'Um frasco para consagrar ou iniciar um ritual.'},
   cinza:{nome:'Cinza de Chamariz',preco:3,time:'C',desc:'Mais um Chamariz para a equipe.'},
@@ -848,6 +863,9 @@ function prepararNoite(g){
     ...PONTOS_DEF.erva.map(p=>({tipo:'erva',x:p.x,z:p.z,ativo:true,t:0})),
     ...PONTOS_DEF.tumulo.map(p=>({tipo:'tumulo',x:p.x,z:p.z,ativo:true}))].map((p,i)=>Object.assign(p,{i}));
   g.sal=[]; g.realocar=[]; g.tarefas={H:[],C:[]}; g.rastros=[]; g.pegadas=[];
+  // asilo: portas começam abertas e a luz acesa em todas as alas (a catedral não tem nada disso)
+  if(PORTAS_DIN.length){ g.portas=PORTAS_DIN.map(p=>({i:p.i,aberta:true})); recalcularPortas(g); }
+  if(QUADROS.length){ g.energia={}; QUADROS.forEach(q=>g.energia[q.setor]=0); }
 }
 function novoMomento(g,mi){
   g.momento=mi; const T=TAREFAS[mi]; g.tarefas={H:T.H.map(t=>({...t,prog:0,feita:false})),C:T.C.map(t=>({...t,prog:0,feita:false}))};
@@ -913,7 +931,8 @@ const semAura=k=>k==='?'||k==='visto'||k==='descartado'||k==='purgado'; // nada 
 // ============ LUZ E SANIDADE ============
 function lightAt(g,x,z){ ativar(g);
   let L=0;
-  for(const [cx,cz] of CANDLES){ const d=Math.hypot(x-cx,z-cz); if(d<8.5) L+=1-d/8.5; }
+  const en=g&&g.energia;
+  for(const c of CANDLES){ if(en&&c[3]&&en[c[3]]>g.t) continue; const d=Math.hypot(x-c[0],z-c[1]); if(d<8.5) L+=1-d/8.5; }   // lâmpadas de ala sem luz não contam
   const Z=zonaDe(x,z);
   if(Z) L+=Z.luar; // luar das zonas: o Claustro e a capela desabada não têm teto; o promontório e as pontes, céu aberto
   else L+=luarFora(x,z); // fora das zonas (na catedral, a floresta: luar só nas clareiras e trilhas)
@@ -942,7 +961,7 @@ function moveHuman(g,a,inp,dt){ ativar(g);
   a.moving=false;
   if(a.st==='dead'||a.stunT>0||len<0.01) return;
   mx/=len; mz/=len;
-  let sp=a.speed*(a.slowT>0?.6:1); if(a.st==='down') sp=.8; else { if(a.inp.sp&&mz<0&&a.sealing<0&&!a.ag) sp=CFG.sprint*(a.speed/CFG.speed); if(a.ag) sp*=CFG.agachadoVel; if(a.sealing>=0) sp*=.4; if(a.hp<a.maxHp*.5) sp*=.9; }
+  let sp=a.speed*(a.slowT>0?.6:1); if(a.st==='down') sp=.8; else { if(a.inp.sp&&mz<0&&a.sealing<0&&!a.ag) sp=CFG.sprint*(a.speed/CFG.speed); if(a.ag) sp*=CFG.agachadoVel; if(a.sealing>=0) sp*=.4; if(a.hp<a.maxHp*.5) sp*=.9; if(AGUA.length&&naAgua(a.x,a.z)) sp*=CFG.aguaVel; }
   const s=Math.sin(a.yaw),c=Math.cos(a.yaw);
   moverSeguro(a,a.x+(mx*c+mz*s)*sp*dt,a.z+(-mx*s+mz*c)*sp*dt,.4); a.moving=true;
 }
@@ -1089,6 +1108,12 @@ function contexts(g,a){ ativar(g);
     if(a.team==='H'&&p.tipo==='sentinela'&&!p.acesa){ out.e={key:'pt'+p.i,type:'ponto',P:p.i,label:'Segure E para acender a sentinela',time:4}; return out; }
     if(a.team==='C'&&p.tipo==='erva'){ out.e={key:'pt'+p.i,type:'ponto',P:p.i,label:'Segure E para colher a erva-noturna',time:2.5}; return out; }
     if(a.team==='C'&&p.tipo==='tumulo'){ out.e={key:'pt'+p.i,type:'ponto',P:p.i,label:'Segure E para profanar o túmulo',time:4}; return out; } }
+  if(g.energia) for(const q of QUADROS){ if(Math.hypot(a.x-q.x,a.z-q.z)>2.2) continue; const apagada=g.energia[q.setor]>g.t, nome=NOME_SETOR[q.setor];
+    if(a.team==='C'&&!apagada){ out.e={key:'qd'+q.setor,type:'quadro',setor:q.setor,label:`Segure E para cortar a luz da ala ${nome}`,time:CFG.cortarLuz}; return out; }
+    if(a.team==='H'&&apagada){ out.e={key:'qd'+q.setor,type:'quadro',setor:q.setor,label:`Segure E para religar a luz da ala ${nome}`,time:CFG.religarLuz}; return out; }
+    out.info=apagada?`A luz da ala ${nome} está cortada`:`A luz da ala ${nome} está acesa`; return out; }
+  if(g.portas){ let P=null,pd=2.1; for(const q of PORTAS_DIN){ const d=Math.hypot(a.x-clamp(a.x,q.x1,q.x2),a.z-clamp(a.z,q.z1,q.z2)); if(d<pd){ pd=d; P=q; } }
+    if(P&&!(a.team==='H'&&g.altars.some(A=>A.state==='active'&&inCircle(a,A)))){ const ab=g.portas[P.i].aberta; out.e={key:'porta'+P.i,type:'porta',P:P.i,label:ab?'Segure E para fechar a porta':'Segure E para abrir a porta',time:CFG.porta}; return out; } }
   if(a.team==='H'){
     for(const A of g.altars) if(A.state==='active'&&inCircle(a,A)){ out.e={key:'seal'+A.i,type:'seal',A:A.i,label:'Segure E para selar',time:0}; return out; }
     for(const A of g.altars) if(A.state==='awake'&&dist(a,A)<3.4){ out.e={key:'purge'+A.i,type:'purge',A:A.i,label:'Segure E para purgar o altar',time:CFG.purge}; return out; }
@@ -1123,12 +1148,23 @@ function acaoNegada(g,a,ctx,A,R){
     case 'decoy': return !A||A.chosen||A.state!=='dormant'?'altar não está livre':g.decoys<1?'sem Chamarizes':null;
     case 'purge': return !A||A.state!=='awake'?'altar não está desperto':null;
     case 'transfer': return !A||A.chosen||A.state!=='dormant'?'destino não está livre':null;
+    case 'porta': { const P=PORTAS_DIN[ctx.P]; if(!P||!g.portas) return 'sem porta';
+      if(g.portas[P.i].aberta&&g.actors.some(o=>o.st!=='dead'&&o.x>P.x1-.45&&o.x<P.x2+.45&&o.z>P.z1-.45&&o.z<P.z2+.45)) return 'alguém está na porta'; return null; }
+    case 'quadro': { if(!g.energia||!(ctx.setor in g.energia)) return 'sem quadro'; const ap=g.energia[ctx.setor]>g.t; return a.team==='C'?(ap?'a luz já está cortada':null):(ap?null:'a luz já está acesa'); }
   }
   return null; }
 function doAction(g,a,ctx){
   const A=ctx.A!=null?g.altars[ctx.A]:null, R=ctx.R!=null?g.reagents[ctx.R]:null, B=ctx.b!=null?g.actors.find(x=>x.id===ctx.b):null;
   const neg=acaoNegada(g,a,ctx,A,R); if(neg){ logE(g,'acao_negada',{who:a.name,tipo:ctx.type,motivo:neg}); return; }
   switch(ctx.type){
+    case 'porta': { const P=PORTAS_DIN[ctx.P], st=g.portas[P.i]; st.aberta=!st.aberta; recalcularPortas(g);
+      ev(g,{type:'porta',i:P.i,aberta:st.aberta,a:a.id}); ev(g,{type:'sfx',k:st.aberta?'porta_abre':'porta_fecha',x:P.x,z:P.z,a:a.id});
+      if(a.human) logE(g,'porta',{who:a.name,aberta:st.aberta}); break; }
+    case 'quadro': { const corta=a.team==='C', nome=NOME_SETOR[ctx.setor]; g.energia[ctx.setor]=corta?g.t+CFG.apagao:0;
+      const q=QUADROS.find(q=>q.setor===ctx.setor);
+      ev(g,{type:'energia',setor:ctx.setor,ligada:!corta}); ev(g,{type:'sfx',k:'estalo',x:q.x,z:q.z,a:a.id});
+      feed(g,corta?`As luzes da ala ${nome} se apagaram.`:`A luz da ala ${nome} voltou.`,corta?'c':'h');
+      logE(g,'energia',{who:a.name,team:a.team,setor:ctx.setor,ligada:!corta}); break; }
     case 'ponto': { const p=g.pontos[ctx.P]; if(!p||!p.ativo) break;
       if(p.tipo==='pista'){ p.ativo=false; ganhaObolos(g,a,1); tarefaProg(g,'H','pistas');
         // o sinal responde "onde NÃO está": descarta um altar que o culto não escolheu e que a equipe ainda não conhece
@@ -1372,7 +1408,9 @@ function botMove(g,b,dt,mul){
     if(!ai.path.length||comp(nova)<comp(ai.path)*.85) ai.path=nova; ai.repath=g.t+3; }
   let tgt=ai.path[0]; if(!tgt) return; let dx=tgt.x-b.x,dz=tgt.z-b.z,d=Math.hypot(dx,dz);
   if(d<.7){ ai.path.shift(); if(!ai.path.length) return; tgt=ai.path[0]; dx=tgt.x-b.x; dz=tgt.z-b.z; d=Math.hypot(dx,dz); }
-  const sp=(b.st==='down'?.8:CFG.botSpeed*(b.speed/CFG.speed))*mul*(b.sealing>=0?.4:1)*(b.slowT>0?.6:1);
+  // asilo: porta fechada no caminho, a menos de 1,6 m: o bot para e abre
+  for(const P of PORTAS_FECHADAS) if(Math.hypot(b.x-clamp(b.x,P.x1,P.x2),b.z-clamp(b.z,P.z1,P.z2))<1.6&&segBox(b.x,b.z,tgt.x,tgt.z,P,.3)>=0){ b.moving=false; botHold(g,b,'porta'+P.porta,CFG.porta,dt,{type:'porta',P:P.porta}); return; }
+  let sp=(b.st==='down'?.8:CFG.botSpeed*(b.speed/CFG.speed))*mul*(b.sealing>=0?.4:1)*(b.slowT>0?.6:1); if(AGUA.length&&naAgua(b.x,b.z)) sp*=CFG.aguaVel;
   const bx0=b.x,bz0=b.z; b.x+=dx/d*sp*dt; b.z+=dz/d*sp*dt; b.moving=true;
   if(!ai.target) b.yaw=lerpAngle(b.yaw,Math.atan2(-dx,-dz),.15);
   for(const o of g.actors){ if(o===b||o.st==='dead') continue; const ox=b.x-o.x,oz=b.z-o.z,od=Math.hypot(ox,oz); if(od<.8&&od>.01){ b.x+=ox/od*(.8-od)*.5; b.z+=oz/od*(.8-od)*.5; } }
@@ -1460,6 +1498,9 @@ function aiHunter(g,b,dt){
   if(botAtendePing(g,b,dt,fighting)) return;
   if(!fighting&&botNoite(g,b,dt)) return;
   const act=g.altars.filter(A=>A.state==='active'&&A.localized).sort((x,y)=>dist(b,x)-dist(b,y))[0];
+  // asilo: ala no escuro com o quadro por perto (até 45 m; 15 m se há ritual descoberto): o bot religa a luz
+  if(g.energia&&!fighting){ const q=QUADROS.filter(q=>g.energia[q.setor]>g.t&&Math.hypot(b.x-q.x,b.z-q.z)<(act?15:45)&&!(ai.ignora&&ai.ignora['qd'+q.setor]>g.t)).sort((x,y)=>Math.hypot(b.x-x.x,b.z-x.z)-Math.hypot(b.x-y.x,b.z-y.z))[0];
+    if(q){ if(Math.hypot(b.x-q.x,b.z-q.z)<1.8){ b.moving=false; botHold(g,b,'qd'+q.setor,CFG.religarLuz,dt,{type:'quadro',setor:q.setor}); return; } setGoal(g,b,q.x,q.z,'qd'+q.setor); botMove(g,b,dt,1); return; } }
   if(act){
     if(inCircle(b,act)){ const close=ai.target&&dist(b,ai.target)<11&&b.hp>45;
       if(!close){ b.sealing=act.i; b.moving=false; return; }
@@ -1563,6 +1604,10 @@ function aiCult(g,b,dt){
       if(tgt===R&&dist(b,R)<1.8){ b.moving=false; if(!fighting||b.hold.t>0) botHold(g,b,'col'+R.i,CFG.collect,dt,{type:'collect',R:R.i}); return; }
       const ox=tgt===P?0:.9; setGoal(g,b,tgt.x+ox,tgt.z,'r'+tgt.x+','+tgt.z); botMove(g,b,dt,1); return; }
   }
+  if(g.energia&&T.state==='awake'&&!T.decoy&&b.reag>0&&!bloqueioRitual(g)){ const q=QUADROS.find(q=>q.setor===setorDoAltar(T.i).id);
+    if(q&&!(g.energia[q.setor]>g.t)&&Math.hypot(b.x-q.x,b.z-q.z)+Math.hypot(q.x-T.x,q.z-T.z)<dist(b,T)+40&&!(ai.ignora&&ai.ignora['qd'+q.setor]>g.t)){
+      if(Math.hypot(b.x-q.x,b.z-q.z)<1.8){ b.moving=false; botHold(g,b,'qd'+q.setor,CFG.cortarLuz,dt,{type:'quadro',setor:q.setor}); return; }
+      setGoal(g,b,q.x,q.z,'qd'+q.setor); botMove(g,b,dt,1); return; } }
   if(b.reag>0){ const s=circleSpot(T,b);
     if(dist(b,T)<3.3){ b.moving=false; ai.emperrado=0;
       if(T.state==='dormant') botHold(g,b,'cons'+T.i,CFG.consecrate,dt,{type:'consecrate',A:T.i});
@@ -1584,6 +1629,8 @@ function step(g,dt){ ativar(g);
 }
 function playStep(g,dt){
   G_ATUAL=g;
+  // asilo: o apagão de uma ala acaba sozinho
+  if(g.energia) for(const k in g.energia) if(g.energia[k]>0&&g.t>=g.energia[k]){ g.energia[k]=0; ev(g,{type:'energia',setor:k,ligada:true}); feed(g,`A luz da ala ${NOME_SETOR[k]} voltou sozinha.`,''); logE(g,'energia',{setor:k,ligada:true,sozinha:true}); }
   for(const a of g.actors){
     a._vx=(a.x-(a._px!=null?a._px:a.x))/dt; a._vz=(a.z-(a._pz!=null?a._pz:a.z))/dt; a._px=a.x; a._pz=a.z;
     a.hist.push([g.t,a.x,a.z]); while(a.hist.length&&a.hist[0][0]<g.t-1.2) a.hist.shift();
@@ -1697,7 +1744,7 @@ function winner(g){ ativar(g);
 // O servidor passa cada evento por aqui antes de mandar a um cliente. Esconder no HUD não basta: o que chega no
 // cliente pode ser lido por quem modificar o jogo. Sons e efeitos com posição só chegam a quem estaria perto o
 // bastante para ouvir ou ver (ou se o emissor está à vista da equipe); informação de equipe só chega à equipe.
-const ALCANCE_SOM={shot:55,sigil:35,step:16,passoForte:24,passoLeve:5,collect:26,flare:20,rune:30,arrasto:45,push:28,flash:30,purify:30};
+const ALCANCE_SOM={porta_abre:20,porta_fecha:24,estalo:50,shot:55,sigil:35,step:16,passoForte:24,passoLeve:5,collect:26,flare:20,rune:30,arrasto:45,push:28,flash:30,purify:30};
 const visivelPara=(g,a,role)=>!!(a._visto&&a._visto[role]>g.t);
 function eventoPara(g,e,me,role){ ativar(g);
   const t=e.type;
@@ -1717,7 +1764,7 @@ function eventoPara(g,e,me,role){ ativar(g);
   const em=e.a!=null?g.actors.find(a=>a.id===e.a):null;
   if(em&&(em.team===role||visivelPara(g,em,role))) return e;
   const ouvintes=me&&me.st!=='dead'?[me]:g.actors.filter(a=>a.team===role&&a.st!=='dead'); // morto: ouve pelo aliado que acompanha
-  return ouvintes.some(o=>Math.hypot(o.x-x,o.z-z)<=raio*1.2+2)?e:null;
+  return ouvintes.some(o=>{ const n=PORTAS_FECHADAS.length?portasNoCaminho(o.x,o.z,x,z):0; return Math.hypot(o.x-x,o.z-z)<=(n?raio*Math.pow(.5,Math.min(n,2)):raio)*1.2+2; })?e:null;
 }
 
 // ============ SNAPSHOT (servidor → cliente) ============
@@ -1755,11 +1802,12 @@ function snapshot(g,role){ ativar(g);
     know:hide?g.know.slice():g.know.map(()=>'?'),
     momento:g.momento,tarefas:{[role]:(g.tarefas&&g.tarefas[role])||[]},pontos:(g.pontos||[]).map(p=>({i:p.i,tipo:p.tipo,x:p.x,z:p.z,ativo:p.ativo,acesa:p.acesa})),sal:(g.sal||[]).map(q=>({id:q.id,x:q.x,z:q.z})),feit:Object.assign({},g.feit),
     decoys:hide?0:g.decoys,transferUsed:hide?false:g.transferUsed,pegadas:hide?(g.pegadas||[]):[],rastros:hide?(g.rastros||[]).filter(R=>g.rt-R.t<180).map(R=>({x:R.x,z:R.z,t:R.t})):[],picks:hide?[]:g.picks.slice(),ready:Object.assign({},g.ready),cls:Object.assign({},g.cls),
-    scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT,lab:g.lab,eco:g.eco};
+    scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT,lab:g.lab,eco:g.eco,mapa:g.mapa,portas:g.portas?g.portas.map(p=>p.aberta?1:0):undefined,energia:g.energia?Object.fromEntries(Object.entries(g.energia).map(([k,v])=>[k,v>g.t?r2(v-g.t):0])):undefined};
 }
 
-const API={livre,raioParede,FEITICOS,FEIT_BY_TEAM,ITENS,TAREFAS,momentoDe,CFG,CLASSES,CLASS_BY_TEAM,segBox,segClear,losClear,occlusion,resolve,findPath,DIF,LAB_OPCOES,labDe,relatorio,CADENCIA_HUMANA,SETORES,damage,_botHold:botHold,_doAction:doAction,_traceShot:traceShot,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES,usarMapa:id=>usarMapa(mapa(id)),mapa,IDS_MAPAS,get mapaAtivo(){ return MAPA_ATIVO&&MAPA_ATIVO.id; }};
+const API={livre,raioParede,FEITICOS,FEIT_BY_TEAM,ITENS,momentoDe,CFG,CLASSES,CLASS_BY_TEAM,segBox,segClear,losClear,occlusion,resolve,findPath,DIF,LAB_OPCOES,labDe,relatorio,CADENCIA_HUMANA,SETORES,damage,_botHold:botHold,_doAction:doAction,_traceShot:traceShot,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES,usarMapa:id=>usarMapa(mapa(id)),mapa,IDS_MAPAS,get mapaAtivo(){ return MAPA_ATIVO&&MAPA_ATIVO.id; }};
 // os nomes do mapa leem sempre o mapa ativo (o cliente chama Sim.usarMapa ao entrar numa partida)
-for(const k of ["PORTAS", "PISTA_PTS", "ERVA_PTS", "SENTINELA_PTS", "SEG_TRILHA", "ZONAS", "zonaDe", "coberto", "foraDaMata", "PROMONTORIO", "DESFILADEIRO", "TRAVESSIAS", "ABISMO", "ARCOS", "PONTOS_DEF", "CATEDRAL", "naCatedral", "ARVORES", "ARBUSTOS", "TRILHAS", "CLAREIRAS", "PORTAIS", "LAPIDES", "NAV", "NPCS", "WP", "HALF", "CLAUSTRO", "ZONES", "zoneAt", "LUGARES", "ALTARS", "SPAWN", "REAG", "CANDLES", "WALLS", "WALLDEF", "PILLARS", "PEWS", "BOX", "TALL"]) Object.defineProperty(API,k,{get:()=>MAPA_ATIVO[k],enumerable:true});
+Object.defineProperties(API,{PORTAS:{get:()=>PORTAS,enumerable:true},PISTA_PTS:{get:()=>PISTA_PTS,enumerable:true},ERVA_PTS:{get:()=>ERVA_PTS,enumerable:true},SENTINELA_PTS:{get:()=>SENTINELA_PTS,enumerable:true},SEG_TRILHA:{get:()=>SEG_TRILHA,enumerable:true},ZONAS:{get:()=>ZONAS,enumerable:true},zonaDe:{get:()=>zonaDe,enumerable:true},coberto:{get:()=>coberto,enumerable:true},foraDaMata:{get:()=>foraDaMata,enumerable:true},PROMONTORIO:{get:()=>PROMONTORIO,enumerable:true},DESFILADEIRO:{get:()=>DESFILADEIRO,enumerable:true},TRAVESSIAS:{get:()=>TRAVESSIAS,enumerable:true},ABISMO:{get:()=>ABISMO,enumerable:true},ARCOS:{get:()=>ARCOS,enumerable:true},PONTOS_DEF:{get:()=>PONTOS_DEF,enumerable:true},CATEDRAL:{get:()=>CATEDRAL,enumerable:true},naCatedral:{get:()=>naCatedral,enumerable:true},ARVORES:{get:()=>ARVORES,enumerable:true},ARBUSTOS:{get:()=>ARBUSTOS,enumerable:true},TRILHAS:{get:()=>TRILHAS,enumerable:true},CLAREIRAS:{get:()=>CLAREIRAS,enumerable:true},PORTAIS:{get:()=>PORTAIS,enumerable:true},LAPIDES:{get:()=>LAPIDES,enumerable:true},NAV:{get:()=>NAV,enumerable:true},NPCS:{get:()=>NPCS,enumerable:true},WP:{get:()=>WP,enumerable:true},HALF:{get:()=>HALF,enumerable:true},CLAUSTRO:{get:()=>CLAUSTRO,enumerable:true},ZONES:{get:()=>ZONES,enumerable:true},zoneAt:{get:()=>zoneAt,enumerable:true},LUGARES:{get:()=>LUGARES,enumerable:true},ALTARS:{get:()=>ALTARS,enumerable:true},SPAWN:{get:()=>SPAWN,enumerable:true},REAG:{get:()=>REAG,enumerable:true},CANDLES:{get:()=>CANDLES,enumerable:true},WALLS:{get:()=>WALLS,enumerable:true},WALLDEF:{get:()=>WALLDEF,enumerable:true},PILLARS:{get:()=>PILLARS,enumerable:true},PEWS:{get:()=>PEWS,enumerable:true},BOX:{get:()=>BOX,enumerable:true},TALL:{get:()=>TALL,enumerable:true},PORTAS_DIN:{get:()=>PORTAS_DIN,enumerable:true},QUADROS:{get:()=>QUADROS,enumerable:true},AGUA:{get:()=>AGUA,enumerable:true},naNevoa:{get:()=>naNevoa,enumerable:true},TAREFAS:{get:()=>TAREFAS,enumerable:true}});
+API.NOME_SETOR=NOME_SETOR; API.naAgua=(x,z)=>naAgua(x,z);
 return API;
 });

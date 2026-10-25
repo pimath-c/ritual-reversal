@@ -7,6 +7,8 @@
 // 3. Partidas só de bots, conferindo a cada passo: ninguém dentro de parede, fora do mapa, com NaN ou vida inválida.
 'use strict';
 const Sim=require('../shared/sim.js');
+// MAPA=asilo roda tudo no Asilo Blackwater (as partidas criadas sem mapa passam a usar o escolhido)
+if(process.env.MAPA){ const cg=Sim.createGame; Sim.createGame=o=>cg(Object.assign({mapa:process.env.MAPA},o)); Sim.usarMapa(process.env.MAPA); console.log('Mapa:',Sim.mapaAtivo); }
 const N=+process.argv[2]||6;
 let falhas=0; const falha=m=>{ falhas++; console.log('  FALHA:',m); };
 const t0=Date.now();
@@ -48,7 +50,7 @@ console.log(`   ${nCam} caminhadas ok; média ${(somaT/Math.max(1,nCam)).toFixed
 
 // 3. O snapshot não entrega a posição de inimigos que ninguém da equipe está vendo
 console.log('3. Visibilidade no snapshot');
-{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'vis'});
+{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'vis',mapa:'catedral'});   // posições da catedral
   for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
   const h=g.actors.find(a=>a.team==='H'), outroH=g.actors.find(a=>a.team==='H'&&a!==h), c=g.actors.find(a=>a.team==='C'), c2=g.actors.find(a=>a.team==='C'&&a!==c);
   h.human=true; outroH.st='dead'; c2.x=140; c2.z=90; // o segundo Cultista fica longe, fora de qualquer vista
@@ -63,7 +65,7 @@ console.log('3. Visibilidade no snapshot');
   console.log('   inimigos só aparecem com linha de visão até 75 m (ou revelados pelo Sal)'); }
 // 4. Regras do círculo (v5.5) e bots que não podem empacar
 console.log('4. Regras do círculo e bots');
-{ const nova=()=>{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'reg'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
+{ const nova=()=>{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:null,name:'b'+j})),matchId:'reg',mapa:'catedral'}); for(let i=0;i<3000&&g.phase!=='play';i++) Sim.step(g,1/30);
     g.rt=300; for(const a of g.actors){ a.st='dead'; a.respawnT=999; } return g; };
   // eco: aos 25% a caça ouve o setor do ritual (Capela Leste fica a leste, com o Carvalho Oco)
   { const g=nova(), A=g.altars[2], c=g.actors.find(a=>a.team==='C'); Object.assign(A,{state:'active',chosen:true,prog:.2,cp:0,localized:false,eco:false});
@@ -195,11 +197,11 @@ console.log('8. Interrupções, lances e disputa no círculo');
 console.log('   ok');
 // 9. v6: a cobertura baixa protege de verdade e o agachado se move devagar e em silêncio
 console.log('9. Cobertura baixa e andar agachado');
-{ const nova=()=>{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:j===0?'eu':null,name:'b'+j})),matchId:'cob'}); for(let i=0;i<3000&&g.phase!=='play';i++){ Sim.act(g,'eu',{type:'ready'}); Sim.step(g,1/30); }
+{ const nova=()=>{ const g=Sim.createGame({timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:j===0?'eu':null,name:'b'+j})),matchId:'cob',mapa:'catedral'}); for(let i=0;i<3000&&g.phase!=='play';i++){ Sim.act(g,'eu',{type:'ready'}); Sim.step(g,1/30); }
     g.rt=300; for(const a of g.actors){ a.st='dead'; a.respawnT=999; } return g; };
   const viva=(a,x,z)=>Object.assign(a,{st:'alive',hp:a.maxHp,invuln:0,x,z,hist:[],ag:false});
   // túmulo no braço oeste do transepto: x -28..-24, z -75,5..-74, 1,1 m de altura; o atirador fica no mesmo braço
-  const tum=Sim.WALLS.find(w=>w.kind==='tumba'&&w.x1===-28&&w.z1===-75.5); if(!tum) falha('túmulo do teste não existe');
+  Sim.usarMapa('catedral'); const tum=Sim.WALLS.find(w=>w.kind==='tumba'&&w.x1===-28&&w.z1===-75.5); if(!tum) falha('túmulo do teste não existe');
   const tiro=(alvoY,ag)=>{ const g=nova(), h=g.actors.find(a=>a.team==='H'), c=g.actors.find(a=>a.team==='C'); viva(h,-26,-65); viva(c,-26,-76.5); c.ag=!!ag;
     const d=Math.hypot(0,c.z-h.z), dy=(alvoY-1.62)/d, L=Math.hypot(1,dy); Sim._traceShot(g,h,h.x,1.62,h.z,0/L,dy/L,-1/L,g.t,false); return c.hp<c.maxHp; };
   if(tiro(.5)) falha('tiro na altura das pernas atravessou um túmulo de 1,1 m');
@@ -210,13 +212,52 @@ console.log('9. Cobertura baixa e andar agachado');
     g.proj.push({id:9999,x:-26,y:.8,z:-67,vx:0,vy:0,vz:-48,owner:c.id,team:'C',life:2.5,dmg:17}); for(let i=0;i<30&&g.proj.length;i++) Sim.step(g,1/30);
     const b=g.events.find(e=>e.type==='burst'); if(h.hp<h.maxHp) falha('sigilo baixo atravessou o túmulo'); else if(!b||Math.abs(b.z+74)>.8) falha('sigilo deveria estourar no túmulo ('+JSON.stringify(b)+')'); }
   // agachado: metade da velocidade, sem corrida, passos que só se ouvem de perto
-  { const g=nova(), h=g.actors.find(a=>a.cid==='eu'), c=g.actors.find(a=>a.team!==h.team); viva(h,0,-50); viva(c,0,-46); h.human=true; g.events.length=0;
+  { const g=nova(), h=g.actors.find(a=>a.cid==='eu'), c=g.actors.find(a=>a.team!==h.team); viva(h,0,-50); viva(c,0,-46); c.stunT=999; h.human=true; g.events.length=0;   // o bot parado: um Empurrão dele mudaria a conta
     for(let i=0;i<30;i++){ Sim.moveHuman(g,h,{mx:0,mz:-1,sp:true,ag:true,yaw:Math.PI,pitch:0,fire:false,use:false,use2:false,c:{q:0,f:0,g:0,r:0,ab:0}},1/30); Sim.step(g,1/30); }
     const andou=Math.abs(h.z+50), esperado=h.speed*Sim.CFG.agachadoVel; if(Math.abs(andou-esperado)>.35) falha(`agachado andou ${andou.toFixed(2)} m em 1 s (esperado ${esperado.toFixed(2)}, sem corrida)`);
     const p=g.events.find(e=>e.type==='sfx'&&e.a===h.id&&(e.k==='passoLeve'||e.k==='step'||e.k==='passoForte'));
     if(!p||p.k!=='passoLeve') falha('agachado deveria fazer passos leves, não '+(p&&p.k));
     else { const perto=Sim.eventoPara(g,{...p,x:c.x+3,z:c.z},c,'C'), longe=Sim.eventoPara(g,{...p,x:c.x+9,z:c.z},c,'C'); if(!perto||longe) falha('passos leves: deveriam chegar a 3 m e não a 9 m'); } }
   console.log('   túmulo para tiro e sigilo baixos, agachado fica coberto, anda a metade e quase não se ouve'); }
+// 9b. Asilo Blackwater: portas e quadros de força (sempre roda, no asilo, qualquer que seja o MAPA)
+console.log('9b. Asilo: portas, quadros de força e água');
+{ const nova=()=>{ const g=Sim.createGame({mapa:'asilo',timers:true,slots:[0,1,2,3].map(j=>({team:j<2?'A':'B',cid:j===0?'eu':null,name:'b'+j})),matchId:'asilo'}); for(let i=0;i<3000&&g.phase!=='play';i++){ Sim.act(g,'eu',{type:'ready'}); Sim.step(g,1/30); }
+    g.rt=300; for(const a of g.actors){ a.st='dead'; a.respawnT=999; } return g; };
+  const viva=(a,x,z)=>Object.assign(a,{st:'alive',hp:a.maxHp,invuln:0,x,z,hist:[],ag:false,stunT:0});
+  const g=nova(), h=g.actors.find(a=>a.team==='H'), c=g.actors.find(a=>a.team==='C');
+  const P=Sim.PORTAS_DIN.find(p=>p.x===0&&p.z===25); if(!P) falha('a porta principal do saguão não existe');
+  else {
+    if(!g.portas||!g.portas[P.i].aberta) falha('as portas deveriam começar abertas');
+    viva(h,0,23.5); const ctx=Sim.contexts(g,h); if(!ctx.e||ctx.e.type!=='porta') falha('perto da porta, o E deveria ser "porta" ('+JSON.stringify(ctx)+')');
+    viva(h,0,25); Sim._doAction(g,h,{type:'porta',P:P.i}); if(!g.portas[P.i].aberta) falha('fechou a porta com alguém no vão');
+    viva(h,0,22); Sim._doAction(g,h,{type:'porta',P:P.i}); if(g.portas[P.i].aberta) falha('a porta não fechou');
+    if(Sim.losClear({x:0,z:20},{x:0,z:30})) falha('porta fechada deveria cortar a visão');
+    const w={x:0,z:22}; for(let i=0;i<60;i++){ w.z+=.1; Sim.resolve(w,.4); } if(w.z>24) falha('atravessou a porta fechada (z='+w.z.toFixed(2)+')');
+    // o som atravessa abafado: um tiro a 40 m do outro lado não chega; a 20 m chega
+    viva(c,0,60); const tiro=(x,z)=>Sim.eventoPara(g,{type:'sfx',k:'shot',x,z},c,'C');
+    if(!tiro(0,20)===false) {} if(tiro(0,16)) falha('tiro a 44 m atrás da porta fechada não deveria ser ouvido');
+    viva(c,0,30); if(!tiro(0,14)) falha('tiro a 16 m atrás da porta fechada deveria ser ouvido');
+    // o bot da caça abre a porta que está no caminho
+    for(const a of g.actors) if(a!==h){ a.st='dead'; a.respawnT=999; }
+    const b=g.actors.find(a=>a.team==='H'&&a!==h)||h; viva(b,0,20); b.human=false; viva(h,-150,-150); h.st='dead';
+    b.ai.goal=null; b.ai.path=[]; let abriu=false;
+    for(let i=0;i<30*8&&!abriu;i++){ b.ai.alert={x:0,z:40,t:g.t}; Sim.step(g,1/30); abriu=g.portas[P.i].aberta; }
+    if(!abriu) falha('o bot não abriu a porta fechada no caminho (está em '+b.x.toFixed(1)+','+b.z.toFixed(1)+')');
+  }
+  // quadro de força: o culto corta, as lâmpadas da ala apagam, a luz volta sozinha depois do apagão; a caça religa antes
+  { const g2=nova(), c2=g2.actors.find(a=>a.team==='C'), h2=g2.actors.find(a=>a.team==='H'), Q=Sim.QUADROS.find(q=>q.setor==='oeste');
+    const L0=Sim.lightAt(g2,-41,10); viva(c2,Q.x,Q.z+.8); const ctx=Sim.contexts(g2,c2); if(!ctx.e||ctx.e.type!=='quadro') falha('perto do quadro, o culto deveria poder cortar a luz');
+    Sim._doAction(g2,c2,{type:'quadro',setor:'oeste'}); const L1=Sim.lightAt(g2,-41,10);
+    if(!(L1<L0-.3)) falha(`cortar a luz deveria escurecer o corredor oeste (${L0.toFixed(2)} → ${L1.toFixed(2)})`);
+    if(Sim.lightAt(g2,41,10)<L0-.01) falha('cortar a luz oeste apagou a ala leste');
+    viva(h2,Q.x,Q.z+.8); Sim._doAction(g2,h2,{type:'quadro',setor:'oeste'}); if(Math.abs(Sim.lightAt(g2,-41,10)-L0)>.01) falha('religar não devolveu a luz');
+    Sim._doAction(g2,c2,{type:'quadro',setor:'oeste'}); for(let i=0;i<30*(Sim.CFG.apagao+1);i++) Sim.step(g2,1/30);
+    if(Math.abs(Sim.lightAt(g2,-41,10)-L0)>.01) falha('a luz não voltou sozinha depois do apagão'); }
+  // água rasa: anda-se a 70%
+  { const g3=nova(), a=g3.actors.find(x=>x.cid==='eu'); a.human=true;
+    const anda=(x,z)=>{ viva(a,x,z); for(let i=0;i<30;i++){ Sim.moveHuman(g3,a,{mx:1,mz:0,sp:false,ag:false,yaw:0,pitch:0,fire:false,use:false,use2:false,c:{q:0,f:0,g:0,r:0,ab:0}},1/30); Sim.step(g3,1/30); } return Math.abs(a.x-x); };
+    const seco=anda(-60,-44), molhado=anda(-74,-50.5); if(Math.abs(molhado/seco-Sim.CFG.aguaVel)>.08) falha(`na água deveria andar a ${Sim.CFG.aguaVel*100}% (seco ${seco.toFixed(2)} m, água ${molhado.toFixed(2)} m)`); }
+}
 console.log(`10. ${N} partidas só de bots com invariantes`);
 const dentroDeParede=a=>!Sim.livre(a,.3);
 let passos=0, tempoStep=0, piorStep=0, reinicios=0; const res={B:0,A:0}; const fendas=[], quedas={H:0,C:0};
