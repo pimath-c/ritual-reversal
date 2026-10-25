@@ -7,7 +7,7 @@
 <title>Ritual Reversal — Protótipo v5.8</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&family=Big+Shoulders+Display:wght@400;800;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --crimson:#a3203a; --crimson-hi:#e0435e; --violet:#6b3a8a; --gold:#d2ad62; --gold-hi:#f3d58e;
@@ -386,6 +386,155 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 #girar{ display:none; position:fixed; inset:0; z-index:99; background:#050507; color:var(--bone); place-items:center; font-family:var(--serif); font-size:22px; text-align:center; padding:30px; }
 @media (orientation:portrait){ body.toque #girar{ display:grid; } }
 @media (max-height:430px){ #top{ transform:translateX(-50%) scale(.8); transform-origin:top center; } .screen .panel{ transform:scale(.86); transform-origin:top center; } }
+/* ================= v6.3: direção Nanquim =================
+   Preto, osso e um único vermelho. Sem placas, sem degradês, sem cantos chanfrados: a hierarquia vem do tamanho
+   (Big Shoulders Display nos títulos e números, IBM Plex Sans Condensed no corpo, IBM Plex Mono nos rótulos).
+   Movimento só quando algo acontece (tiro, dano, feed, altar riscado, anúncio); "Clarões e tremor: reduzidos" e o
+   prefers-reduced-motion desligam tudo (:root.suave). */
+:root{
+  --bg:#0a0a0a; --bone:#ece6da; --muted:#a29d93; --dim:#6e6a62; --sangue:#c4161c;
+  --crimson:#c4161c; --crimson-hi:#e3262e; --gold:#cfc8bb; --gold-hi:#ffffff; --violet:#5a5560; --steel:#6e6a62;
+  --serif:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;
+  --cond:'IBM Plex Sans Condensed','Arial Narrow','Roboto Condensed',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+:root.dalt{ --crimson:#2f5fa8; --crimson-hi:#6ea8ff; --sangue:#2f5fa8; }
+/* telas: preto chapado, texto direto, sem caixa */
+.screen{ background:rgba(10,10,10,.94); }
+.plate,.panel.plate{ background:none; border:0; clip-path:none; }
+.panel h1,.panel h2,.panel h3{ font-family:var(--serif); font-weight:800; text-transform:uppercase; letter-spacing:.01em; line-height:.95; }
+.panel h2{ font-size:44px; } .panel h3{ font-size:22px; margin:18px 0 6px; color:var(--bone); }
+.panel p{ font-size:17px; color:#c9c3b8; }
+.lede{ font-family:var(--mono) !important; font-style:normal !important; font-size:14px !important; color:var(--muted) !important; }
+.fine,.wait{ font-family:var(--mono); font-size:13px !important; }
+/* botões: texto; o principal em vermelho; sob o cursor ou o foco, um traço corre por baixo */
+button.go{ position:relative; font-family:var(--serif); font-weight:800; font-size:24px; text-transform:uppercase; letter-spacing:.02em; line-height:1;
+  color:var(--sangue); background:none; border:0; padding:6px 0 7px; clip-path:none; }
+button.go::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:2px; background:currentColor; transform:scaleX(0); transform-origin:0 50%; transition:transform .12s ease-out; }
+button.go:hover::after,button.go:focus-visible::after{ transform:scaleX(1); }
+button.go:focus-visible{ outline:none; }
+button.go.gold{ background:none; color:var(--bone); }
+button.go.ghost{ background:none; color:var(--muted); font-family:var(--mono); font-weight:400; font-size:14px; text-transform:lowercase; letter-spacing:0; padding:4px 0 5px; }
+button.go.ghost:hover,button.go.ghost:focus-visible{ color:var(--bone); } button.go.ghost::after{ background:var(--sangue); }
+button.go:disabled::after{ display:none; }
+.btnrow{ gap:10px 26px; align-items:baseline; }
+.seta{ display:inline-block; }
+/* opções: a escolhida entre colchetes, as outras apagadas */
+.dif{ font-family:var(--mono); font-size:13px; color:var(--dim); gap:14px; } .dif span{ min-width:82px; }
+.dif button,.set .opts button,.repCtl .opts button{ font-family:var(--mono); font-size:13px; color:var(--dim); background:none; border:0; padding:2px 0; position:relative; }
+.set .opts{ gap:14px; } .set .opts button{ flex:0 0 auto; }
+.dif button:hover,.set .opts button:hover,.repCtl .opts button:hover{ color:var(--bone); }
+.dif button.sel,.set .opts button.sel,.repCtl .opts button.on{ color:var(--bone); border:0; }
+.dif button.sel::before,.set .opts button.sel::before,.repCtl .opts button.on::before{ content:'['; } .dif button.sel::after,.set .opts button.sel::after,.repCtl .opts button.on::after{ content:']'; }
+.set{ font-size:15px; } .set label{ font-family:var(--mono); font-size:13px; color:var(--muted); } .set b{ color:var(--bone); font-family:var(--mono); font-weight:400; }
+input.txt{ font-family:var(--mono); font-size:16px; background:none; border:0; border-bottom:1px solid var(--dim); padding:6px 2px; } input.txt:focus{ outline:none; border-bottom-color:var(--bone); }
+.lk{ font-family:var(--mono); font-size:13px; color:var(--muted); text-transform:lowercase; border-bottom:0; position:relative; }
+.lk::after{ content:''; position:absolute; left:0; right:0; bottom:-2px; height:2px; background:var(--sangue); transform:scaleX(0); transform-origin:0 50%; transition:transform .12s ease-out; }
+.lk:hover,.lk:focus-visible{ color:var(--bone); border-bottom:0; } .lk:hover::after,.lk:focus-visible::after{ transform:scaleX(1); }
+.links{ flex-wrap:wrap; gap:8px 20px; }
+.choice,.slot,.bindrow,.premio,.loja .item,.cq,.lances div,details.lab,.desafio,#chatLista{ background:rgba(255,255,255,.025); border:1px solid #262626; border-radius:0; }
+.choice b,.premio b,.loja .item b,.lances b,.cq b,.desafio b,.novidades b{ font-family:var(--serif); font-weight:800; text-transform:uppercase; letter-spacing:.01em; color:var(--bone); }
+.choice.sel,.slot.me,.premio.meu,.bindrow.cap{ border-color:var(--bone); box-shadow:none; }
+.lances div{ border-left:2px solid var(--bone); } .lances div.c{ border-left-color:var(--sangue); } .lances div.meu{ background:rgba(236,230,218,.06); }
+.novidades div{ border-left:2px solid var(--dim); } .desafio{ border-color:var(--dim); } .desafio small,.novidades span{ font-family:var(--cond); }
+table.res{ font-family:var(--mono); font-size:13.5px; } table.res th{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:400; }
+table.res th,table.res td{ border-bottom:1px solid #222; }
+.keys kbd,.cola kbd,.bindrow kbd,#falas kbd,#interact kbd,.tool kbd{ font-family:var(--mono); font-weight:500; color:var(--bone); border:1px solid #3a3a3a; }
+.passo>b{ border-color:var(--dim); color:var(--bone); font-family:var(--mono); }
+details.lab summary{ font-family:var(--mono); font-size:13px; } details.lab summary b{ color:var(--bone); }
+/* título: a palavra enorme saindo pela borda, a segunda só no contorno, a pincelada vermelha embaixo */
+#scr.inicial{ background:linear-gradient(90deg, rgba(10,10,10,.97) 0%, rgba(10,10,10,.86) 40%, rgba(10,10,10,.25) 72%, rgba(10,10,10,0) 100%); }
+#scr.inicial .sigil{ display:none; }
+#scr .tituloJogo{ font-family:var(--serif); font-weight:900; text-transform:uppercase; font-size:clamp(76px,11.5vw,184px); line-height:.8; letter-spacing:-.01em; margin:0 0 6px -.06em; text-shadow:none; white-space:nowrap; }
+.tituloJogo span{ display:block; } .tituloJogo .contorno{ color:transparent; -webkit-text-stroke:2px var(--bone); }
+.pincel{ display:block; width:min(560px,92%); height:26px; margin:2px 0 18px; }
+.pincel path{ fill:var(--sangue); }
+#scr.inicial .acoes{ gap:14px; } #bSolo{ font-size:clamp(30px,2.6vw,40px); white-space:nowrap; }
+#scr.inicial .lede{ font-size:14px !important; line-height:1.55; color:var(--muted) !important; max-width:46ch; }
+#scr.inicial .online{ border-top:1px solid #262626; }
+/* HUD: números grandes, rótulos em mono, nada de caixas */
+#top .side{ font-family:var(--mono); font-size:12px; color:var(--muted); } #top .side b{ font-family:var(--serif); font-weight:800; font-size:30px; }
+#clock{ font-family:var(--serif); font-weight:800; font-size:40px; letter-spacing:.01em; }
+#roundName{ font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.06em; text-transform:lowercase; } #regra{ font-family:var(--mono); }
+.pip{ font-family:var(--mono); font-size:10.5px; color:var(--bone); text-transform:lowercase; }
+.pip>div:nth-child(2){ position:relative; display:inline-block; }
+.pip .gem{ width:14px; height:14px; border:1px solid var(--dim); background:rgba(10,10,10,.6); }
+.pip .gem i{ font-size:9px; font-weight:500; font-family:var(--mono); color:var(--muted); }
+.pip.awake .gem{ border-color:var(--bone); border-style:dotted; background:none; } .pip.awake .gem i{ color:var(--bone); }
+.pip.confirmed .gem{ border-color:var(--bone); background:var(--bone); box-shadow:none; } .pip.confirmed .gem i{ color:var(--bg); }
+.pip.active .gem{ border-color:var(--sangue); background:var(--sangue); box-shadow:none; animation:none; } .pip.active .gem i{ color:var(--bone); } .pip.active{ color:var(--crimson-hi); }
+.pip.fenda .gem{ border-color:var(--sangue); background:var(--bg); } .pip.fenda .gem i{ color:var(--crimson-hi); } .pip.fenda{ color:var(--crimson-hi); }
+.pip.farol .gem{ border-color:var(--bone); background:var(--bone); } .pip.farol .gem i{ color:var(--bg); }
+.pip.purged .gem{ border-color:var(--muted); } .pip.purged .gem i{ color:var(--muted); }
+.pip.clean,.pip.decoy,.pip.purged{ color:var(--dim); }
+.pip.clean>div:nth-child(2)::after,.pip.decoy>div:nth-child(2)::after,.pip.purged>div:nth-child(2)::after{ content:''; position:absolute; left:-1px; right:-1px; top:52%; height:1px; background:currentColor; animation:riscar .35s ease-out both; }
+.pip.decoy .gem i{ text-decoration:none; }
+.pip.eco .gem{ outline:1px dashed var(--crimson-hi); outline-offset:3px; animation:ecoPisca 1.6s ease-in-out infinite; } .pip.eco{ color:var(--crimson-hi); }
+.pip .bar{ height:2px; background:#262626; } .pip .bar span{ background:var(--sangue); }
+#feed div{ font-family:var(--mono); font-size:12.5px; background:none; border-left:0; padding:1px 0; text-shadow:0 1px 2px #000,0 0 6px rgba(0,0,0,.8); }
+#feed div.c{ color:#ff8b8f; } #feed div.h{ color:var(--bone); } #feed div.big{ font-family:var(--serif); font-weight:800; font-size:20px; text-transform:uppercase; }
+#feed div.novo{ animation:digitar .45s steps(18,end) both; }
+#roleLine{ font-family:var(--mono); font-size:12px; text-transform:lowercase; letter-spacing:.04em; } #roleLine small{ font-family:var(--mono); font-size:11px; }
+.meter .lab{ font-family:var(--mono); font-size:11px; color:var(--muted); align-items:baseline; } .meter .lab b{ font-family:var(--serif); font-weight:800; font-size:30px; line-height:1; }
+#hpText{ color:var(--crimson-hi); font-size:40px !important; }
+.meter .trk{ height:2px; background:rgba(236,230,218,.14); } #hpFill{ background:var(--bone); } #shFill{ background:rgba(236,230,218,.5); } #sanFill{ background:var(--muted); }
+.bolsa{ font-family:var(--mono); font-size:11px; } .bolsa b{ color:var(--bone); font-family:var(--serif); font-weight:800; font-size:18px; }
+#ammo{ font-family:var(--serif); font-weight:900; font-size:88px; line-height:.85; letter-spacing:-.01em; } #ammo small{ font-family:var(--serif); font-weight:400; font-size:26px; color:var(--muted); }
+#ammo.tranco{ animation:tranco .18s ease-out; transform-origin:100% 100%; }
+.tool{ background:none; border:0; font-family:var(--mono); font-size:11.5px; color:var(--muted); padding:2px 4px 4px; min-width:0; }
+.tool kbd{ display:inline; border:0; padding:0; margin-right:5px; font-size:11.5px; color:var(--bone); }
+.tool .cd{ background:rgba(10,10,10,.7); } .tool.on{ color:var(--bone); } .tool.on kbd{ color:var(--crimson-hi); }
+#sensor .v{ font-family:var(--mono); font-size:13px; color:var(--bone); } #sensor .trk{ height:2px; } #sensor .trk span{ background:var(--bone); }
+#interact .lbl{ font-family:var(--mono); font-size:14px; background:none; text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.8); } #interact kbd{ border:0; color:var(--crimson-hi); padding:0; margin-right:8px; }
+#ring{ stroke:var(--bone); }
+#race{ background:rgba(10,10,10,.72); } #race .t{ font-family:var(--serif); font-weight:800; text-transform:uppercase; font-size:20px; }
+#race .row{ font-family:var(--mono); font-size:12px; } #race .track{ height:3px; background:#222; border:0; } #race .track span{ background:var(--sangue) !important; } #race .sel .track span{ background:var(--bone) !important; }
+#race .note{ font-family:var(--mono); font-size:12px; }
+#anuncio b{ font-family:var(--serif); font-weight:900; text-transform:uppercase; letter-spacing:.01em; animation:carimbo .32s ease-out both; }
+#anuncio span{ font-family:var(--mono); font-size:15px; }
+#lance{ background:rgba(10,10,10,.82); border-color:rgba(236,230,218,.4); } #lance small{ font-family:var(--mono); color:var(--bone); } #lance.c small{ color:var(--crimson-hi); }
+#lance b{ font-family:var(--serif); font-weight:800; text-transform:uppercase; font-size:24px; } #lance span{ font-family:var(--mono); font-size:12.5px; } #lance.meu b{ color:var(--bone); }
+#death h2{ font-family:var(--serif); font-weight:900; text-transform:uppercase; font-size:72px; letter-spacing:.01em; } #death p{ font-family:var(--mono); font-size:15px; } #death small{ font-family:var(--mono); }
+#habNota{ font-family:var(--mono); font-size:14px; background:none; border-left:0; text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.9); }
+#dica,#tutorial,#caderno,#falas,#conquista{ background:rgba(10,10,10,.9); border:0; }
+#dica{ border-left:2px solid var(--bone); font-family:var(--cond); } #dica small,#tutorial small,#caderno small,#falas small,#conquista small{ font-family:var(--mono); letter-spacing:.06em; color:var(--muted); }
+#tutorial{ border-left:2px solid var(--sangue); } #tutorial small{ color:var(--crimson-hi); } #tutorial .barra{ height:2px; } #tutorial .barra span{ background:var(--sangue); }
+#conquista{ border-left:2px solid var(--bone); } #conquista b{ font-family:var(--serif); font-weight:800; text-transform:uppercase; color:var(--bone); }
+#caderno .cd b{ font-family:var(--serif); font-weight:800; text-transform:uppercase; font-size:16px; } #caderno .cd{ border-top-color:#222; }
+#tarefas{ font-family:var(--mono); font-size:12px; } #tarefas b{ font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:lowercase; color:var(--muted); }
+#legendas .lg{ font-family:var(--mono); font-size:12.5px; background:rgba(10,10,10,.5); } #legendas .lg svg{ fill:var(--bone); } #legendas .lg i.aqui{ background:var(--bone); } #legendas .lg i.sem{ border-color:var(--bone); }
+#legendas .lg small{ font-size:11.5px; }
+.mk{ font-family:var(--mono); font-size:12px; } .mk b{ background:var(--bone); } .mk.cult b{ background:var(--sangue); }
+#bussola .ct{ font-family:var(--mono); font-weight:500; font-size:11px; } #bussola .ct.n{ color:var(--crimson-hi); } #bussola::after{ border-bottom-color:var(--bone); }
+#hurt{ background:radial-gradient(ellipse at center, transparent 40%, rgba(150,6,12,.6) 100%); }
+#vitals.ferido #hpText{ animation:ferido .28s linear; }
+/* fim da noite: a faixa de osso com a palavra carimbada; o resto entra em fila */
+.fimCab{ background:var(--bone); color:var(--bg); margin:-26px -40px 22px; padding:22px 40px 18px; position:relative; overflow:hidden; }
+.fimCab small{ display:block; font-family:var(--mono); font-size:12px; color:#5c574f; text-transform:lowercase; }
+.fimCab h2{ display:block; color:var(--bg); font-family:var(--serif); font-weight:900; text-transform:uppercase; font-size:clamp(84px,13vw,150px); line-height:.8; letter-spacing:-.02em; margin:6px 0 4px -.04em; transform-origin:12% 70%; animation:carimbo .3s .15s ease-out both; }
+.fimCab span{ display:block; font-family:var(--serif); font-weight:800; text-transform:uppercase; font-size:30px; line-height:1; } .fimCab span i{ font-style:normal; color:var(--sangue); } .fimCab span em{ font-style:normal; font-weight:400; color:#5c574f; }
+.fimCab svg{ display:block; width:min(520px,80%); height:22px; margin-top:8px; transform-origin:0 50%; animation:pintar .35s .4s ease-out both; } .fimCab svg path{ fill:var(--bg); }
+.fimCab p{ color:#3a3630 !important; font-family:var(--mono); font-size:13px !important; margin:10px 0 0 !important; }
+#scr.fim .panel>*:not(.fimCab){ animation:entrar .35s ease-out both; }
+#scr.fim .panel>*:nth-child(2){ animation-delay:.55s; } #scr.fim .panel>*:nth-child(3){ animation-delay:.65s; } #scr.fim .panel>*:nth-child(4){ animation-delay:.75s; } #scr.fim .panel>*:nth-child(n+5){ animation-delay:.85s; }
+/* entrada do título, uma vez por página */
+#scr.entrada .tituloJogo span{ animation:revelar .5s ease-out both; } #scr.entrada .tituloJogo .contorno{ animation-delay:.22s; }
+#scr.entrada .pincel{ transform-origin:0 50%; animation:pintar .35s .55s ease-out both; }
+#scr.entrada .panel>*:not(.tituloJogo):not(.pincel){ animation:entrar .35s .75s ease-out both; }
+#scr.entrada #bSolo .seta,#scr.inicial #bSolo .seta{ animation:cutucar 2.4s 2s ease-in-out infinite; }
+@keyframes revelar{ from{ clip-path:inset(0 100% 0 0); } to{ clip-path:inset(0 -2% 0 0); } }
+@keyframes pintar{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
+@keyframes entrar{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+@keyframes carimbo{ 0%{ opacity:0; transform:scale(1.14); } 60%{ opacity:1; transform:scale(.99); } 80%{ transform:translate(2px,-1px); } 100%{ opacity:1; transform:none; } }
+@keyframes tranco{ 0%{ transform:scale(1.08) translateX(2px); } 100%{ transform:none; } }
+@keyframes ferido{ 0%{ color:var(--bone); transform:translateX(-3px); } 30%{ transform:translateX(3px); } 60%{ transform:translateX(-2px); } 100%{ transform:none; } }
+@keyframes riscar{ from{ transform:scaleX(0); transform-origin:0 50%; } to{ transform:scaleX(1); transform-origin:0 50%; } }
+@keyframes digitar{ from{ clip-path:inset(0 100% 0 0); } to{ clip-path:inset(0 0 0 0); } }
+@keyframes ecoPisca{ 0%,12%,24%,100%{ opacity:1; } 6%,18%{ opacity:.25; } }
+@keyframes cutucar{ 0%,70%,100%{ transform:none; } 80%{ transform:translateX(6px); } }
+:root.suave *,:root.suave *::before,:root.suave *::after{ animation:none !important; transition:none !important; }
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after{ animation:none !important; transition:none !important; } }
+@media (max-width:760px){ .fimCab{ margin:-26px -16px 18px; padding:18px 16px 14px; } .tituloJogo{ white-space:normal; } }
 </style>
 </head>
 <body>
@@ -1922,7 +2071,7 @@ function sairParaMenu(msg){ AV.forEach((O,i)=>ritualLoopStop(i)); grandeLoopStop
 // cor do culto nas plantas e no replay (azul no modo para daltonismo)
 const corCulto=()=>SET.dalt?'#6ea8ff':'#e0435e';
 function applySet(){
-  document.documentElement.classList.toggle('dalt',!!SET.dalt);
+  document.documentElement.classList.toggle('dalt',!!SET.dalt); document.documentElement.classList.toggle('suave',!!SET.suave);
   if(AU.master) AU.master.gain.value=SET.vol;
   renderer.toneMappingExposure=1.25*(SET.brilho||1);
   aplicarMira();
@@ -2209,7 +2358,7 @@ function interpActors(){
 
 // ================= EVENTS → FX =================
 const feedEl=$('#feed');
-function feed(msg,cls){ const el=document.createElement('div'); el.textContent=msg; if(cls) el.className=cls; feedEl.prepend(el); while(feedEl.children.length>6) feedEl.lastChild.remove(); setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),700); },6000); }
+function feed(msg,cls){ const el=document.createElement('div'); el.textContent=msg; el.className=(cls?cls+' ':'')+'novo'; feedEl.prepend(el); while(feedEl.children.length>6) feedEl.lastChild.remove(); setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),700); },6000); }
 let atordT=0;
 let hurtT=0,hitT=0,blindT=0,sensorShowT=0,sensorV=0;
 const tracers=[];
@@ -2935,6 +3084,8 @@ function updateHUD(dt,m){
   $('#nameA').textContent=role==='H'?'Sua equipe (caça)':'Sua equipe (culto)'; $('#nameB').textContent=role==='H'?'Adversários (culto)':'Adversários (caça)';
   if(!m) return; buildTools(m);
   $('#roleLine').innerHTML=`${esc(CLASSES[m.cls].name)}<small>${m.team==='H'?'Caçador':'Cultista'}</small>`; $('#roleLine').style.color=m.team==='H'?'var(--gold)':'var(--crimson-hi)';
+  { const hp=Math.max(0,Math.ceil(m.hp)), am=m.team==='H'?m.ammo:Math.floor(m.fervor); // tranco no número que caiu
+    if(UIM.hp!=null&&hp<UIM.hp) marcar($('#vitals'),'ferido',300); if(UIM.ammo!=null&&am<UIM.ammo) marcar($('#ammo'),'tranco',200); UIM.hp=hp; UIM.ammo=am; }
   $('#hpText').textContent=Math.max(0,Math.ceil(m.hp)); $('#hpFill').style.width=(m.hp/m.maxHp*100)+'%'; $('#shFill').style.width=(m.shield>0?m.shield/m.maxHp*100:0)+'%';
   $('#sanText').textContent=Math.round(m.sanity); $('#sanFill').style.width=m.sanity+'%';
   $('#sanLab').textContent=m.sanity<15?'Sanidade: pânico, você se denuncia':m.sanity<40?'Sanidade: abalado':m.sanity<70?'Sanidade: inquieto':'Sanidade';
@@ -3071,8 +3222,13 @@ function mapSvg(svg,opts){
 // ================= SCREENS =================
 const scr=$('#scr'), scrBody=$('#scrBody');
 let screenKey='';
-function setScreen(key,html,bind){ if(screenKey===key) return false; screenKey=key; scrBody.innerHTML=html; scr.classList.add('on'); scr.classList.toggle('inicial',key.startsWith('title')); if(bind) bind(); const b=scrBody.querySelector('button:not([disabled]),input'); if(b) setTimeout(()=>b.focus(),30); return true; }
+function setScreen(key,html,bind){ if(screenKey===key) return false; screenKey=key; scrBody.innerHTML=html; scr.classList.add('on'); scr.classList.toggle('inicial',key.startsWith('title')); scr.classList.toggle('fim',key.startsWith('final')); if(bind) bind(); const b=scrBody.querySelector('button:not([disabled]),input'); if(b) setTimeout(()=>b.focus(),30); return true; }
+// v6.3: movimento da interface. Põe a classe de novo (a animação recomeça) e tira depois de ms (ou no fim da animação)
+const UIM={entrou:false,ammo:null,hp:null};
+function marcar(el,cls,ms){ if(!el||SET.suave) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  clearTimeout(el['_t'+cls]); el['_t'+cls]=setTimeout(()=>el.classList.remove(cls),ms||600); }
 function hideScreen(){ if(screenKey!==''){ screenKey=''; scr.classList.remove('on'); } }
+const PINCEL='<svg class="pincel" viewBox="0 0 700 40" preserveAspectRatio="none" aria-hidden="true"><path d="M4 22 C120 10 260 30 420 16 C540 6 620 24 696 14 L696 26 C610 38 520 22 410 32 C260 44 120 26 4 32 Z"/></svg>';
 const SIGIL=`<svg class="sigil" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 8 A52 52 0 0 0 60 112" fill="none" stroke="#d2ad62" stroke-width="3"/><path d="M60 8 A52 52 0 0 1 60 112" fill="none" stroke="#a3203a" stroke-width="3"/><line x1="60" y1="4" x2="60" y2="116" stroke="#e8e0d0" stroke-width="1.2" opacity=".5"/><path d="M22 60 Q60 102 98 60 Q60 18 22 60Z" fill="none" stroke="#e8e0d0" stroke-width="2.4" transform="rotate(180 60 60)"/><circle cx="60" cy="70" r="12" fill="#a3203a"/><circle cx="60" cy="70" r="5" fill="#050506"/></svg>`;
 let ONLINE_OK=false, titleMsg='', SONDANDO=false;
 // Endereço digitado no app: "abcd.trycloudflare.com" vira https://; IP de rede local ou "host:porta" vira http://.
@@ -3095,10 +3251,10 @@ function showTitle(msg){ titleMsg=msg||''; screenKey=''; }
 function salaSalva(){ try{ return sessionStorage.getItem('rr-sala')||''; }catch(e){ return ''; } }
 function titleScreen(){
   let savedName=''; try{ savedName=localStorage.getItem('rr-name')||''; }catch(e){}
-  setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva()+(SET.dificuldade||'')+(SET.papelSolo||'')+JSON.stringify(SET.lab||{}),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
+  setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva()+(SET.dificuldade||'')+(SET.papelSolo||'')+JSON.stringify(SET.lab||{}),`${SIGIL}<h1 class="tituloJogo"><span>Ritual</span><span class="contorno">Reversal</span></h1><svg class="pincel" viewBox="0 0 700 40" preserveAspectRatio="none" aria-hidden="true"><path d="M4 22 C120 10 260 30 420 16 C540 6 620 24 696 14 L696 26 C610 38 520 22 410 32 C260 44 120 26 4 32 Z"/></svg>
     <p class="lede">${UMA_NOITE()?'Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence.':'Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.'}</p>
     <div class="dif mapaSel" role="group" aria-label="Mapa"><span>Mapa</span>${Sim.IDS_MAPAS.map(k=>`<button data-mapa="${k}" class="${MAPA_BOOT===k?'sel':''}">${NOME_MAPA[k]}</button>`).join('')}</div>
-    <div class="acoes"><button class="go" id="bSolo">Jogar sozinho, com bots</button>
+    <div class="acoes"><button class="go" id="bSolo">Jogar sozinho, com bots <span class="seta">→</span></button>
       <div class="dif" role="group" aria-label="Seu papel"><span>Você</span>${[['H','Caça'],['C','Celebra'],['?','Sorteia']].map(([k,n])=>`<button data-papel="${k}" class="${(SET.papelSolo||'H')===k?'sel':''}">${n}</button>`).join('')}</div>
       <div class="dif" role="group" aria-label="Dificuldade dos bots"><span>Bots inimigos</span>${[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([k,n])=>`<button data-dif="${k}" class="${(SET.dificuldade||'normal')===k?'sel':''}">${n}</button>`).join('')}</div>
       ${labPainel(SET.lab,true)}
@@ -3114,6 +3270,7 @@ function titleScreen(){
     <p class="err" id="err">${esc(titleMsg)}</p>
     <p class="fine">${ONLINE_OK?'Use fones: o som diz onde e em que fase está cada ritual.':APP?'Para jogar online, alguém roda o servidor do projeto; digite aqui o endereço que ele mostra.':'Para jogar online com amigos, rode o servidor do projeto e abra o link dele.'}</p>`,
   ()=>{ $('#bSolo').onclick=()=>{ audioInit(); startLocal(); };
+    if(!UIM.entrou){ UIM.entrou=true; marcar(scr,'entrada',1900); } // a tinta entra uma vez por página
     ligarLab(v=>{ SET.lab=v; saveSet(); screenKey=''; });
     scrBody.querySelectorAll('.mapaSel button').forEach(b=>b.onclick=()=>{ const k=b.dataset.mapa; if(k===MAPA_BOOT) return; SET.mapa=k; saveSet(); SFX.click(); $('#loading').style.display=''; $('#loading').textContent=`Montando ${NOME_MAPA[k]}…`; setTimeout(()=>recarregarNoMapa(k),30); });
     scrBody.querySelectorAll('.dif:not(.mapaSel) button:not([data-lab])').forEach(b=>b.onclick=()=>{ if(b.dataset.papel) SET.papelSolo=b.dataset.papel; else SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
@@ -3383,7 +3540,8 @@ function finalScreen(){
   const title=w.win==null?'Empate':mineW?'Vitória da sua equipe':'Vitória dos adversários';
   const row=(n,s)=>!s?'':`<tr><td>${n}</td><td class="n">${s.done}</td><td class="n">${s.lastT!=null?fmt(s.lastT):'—'}</td><td class="n">${Math.round(s.maxP*100)}%</td></tr>`;
   const isHost=MODE==='local'||NET.host===meCid;
-  setScreen('final'+(V.matchId||'')+(DES.feito?DES.feito.p:''),`<h2 style="color:${w.win==null?'var(--bone)':mineW?'var(--gold)':'var(--crimson-hi)'}">${title}</h2><p>${w.why[0].toUpperCase()+w.why.slice(1)}.</p>
+  const sc=A&&!B?A:B&&!A?B:null, placar=sc?`${sc.sealed} <i>×</i> ${sc.done} <em>selados, fendas</em>`:`${A?A.done:0} <i>×</i> ${B?B.done:0} <em>rituais</em>`;
+  setScreen('final'+(V.matchId||'')+(DES.feito?DES.feito.p:''),`<div class="fimCab"><small>fim da noite · ${esc((NOME_MAPA[MAPA_BOOT]||'').toLowerCase())}</small><h2>${w.win==null?'Empate':mineW?'Vitória':'Derrota'}</h2><span>${placar}</span>${PINCEL}<p>${title}. ${w.why[0].toUpperCase()+w.why.slice(1)}.</p></div>
     <table class="res"><tr><th>Como Cultistas</th><th class="n">Rituais</th><th class="n">Último ritual</th><th class="n">Maior progresso</th></tr>${row(A&&!B?'Sua equipe (culto)':'Sua equipe',A)}${row(B&&!A?'Adversários (culto)':'Adversários',B)}</table>${blocoDesafio()}${lancesDaNoite(logDaNoite())}${premios(logDaNoite())}${placarJogadores(logDaNoite())}${graficoNoite(1)}${graficoNoite(2)}${statsTable()}
     <div class="btnrow">${temReplay(1)?'<button class="go ghost" id="bRep1">Rever a noite</button>':''}${!UMA_NOITE()&&temReplay(2)?'<button class="go ghost" id="bRep2">Rever a rodada 2</button>':''}<button class="go ghost" id="bRel">Relatório do playtest</button><button class="go ghost" id="bLog">Baixar registro (.json)</button>${isHost?`<button class="go" id="bAgain">Jogar de novo</button>${MODE==='online'?'<button class="go ghost" id="bLobby">Voltar ao lobby</button>':''}`:'<span class="wait">O anfitrião decide o próximo passo.</span>'}</div><p class="wait" id="logMsg"></p>`,
   ()=>{ $('#bLog').onclick=downloadLog; $('#bRel').onclick=()=>{ REL.aberto=true; screenKey=''; SFX.click(); }; [1,2].forEach(r=>{ const b=$('#bRep'+r); if(b) b.onclick=()=>{ REP.aberto=true; REP.r=r; REP.t=0; REP.play=true; screenKey=''; }; }); const a=$('#bAgain'); if(a) a.onclick=()=>{ if(MODE==='local'&&game) game.matchId=DES.ativo?String(game.matchId).split('#')[0]+'#'+Date.now():String(Date.now()); sendAct({type:'restart'}); /* id novo: o perfil conta a revanche e o clima muda (no desafio, o clima do dia fica) */ }; const l=$('#bLobby'); if(l) l.onclick=()=>ws.send(JSON.stringify({t:'lobby'})); });

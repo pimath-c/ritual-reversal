@@ -5,3 +5,8 @@ Ambas sob a SIL Open Font License 1.1 (OFL-IMFellEnglish.txt e OFL-BarlowCondens
 Origem: https://github.com/google/fonts (ofl/imfellenglish e ofl/barlowcondensed).
 - DejaVu Sans (Bitstream Vera / DejaVu), regular e negrito: só para os símbolos que a Barlow não tem (◆ ✓ ✕ ✚ ✶ ✦ ⬥ ◉ ☉ ...),
   que no navegador vêm da fonte reserva do sistema (a DejaVu Sans no Linux). Licença em LICENCA-DejaVu.txt.
+- v6.3, direção Nanquim (as mesmas do navegador, do Google Fonts):
+  Big Shoulders Display (The Big Shoulders Project Authors), 400/800/900: títulos, números do HUD, botões principais.
+  IBM Plex Sans Condensed (IBM), 400/500/600/700: o corpo. IBM Plex Mono (IBM), 400/500: rótulos, feed, opções, tabelas.
+  Ambas sob a SIL Open Font License 1.1 (OFL-BigShouldersDisplay.txt e OFL-IBMPlex.txt nesta pasta).
+  Origem: https://github.com/google/fonts (ofl/bigshouldersdisplay, ofl/ibmplexsanscondensed, ofl/ibmplexmono).

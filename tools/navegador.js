@@ -234,7 +234,7 @@ const VISTAS=[ // v6: um ponto de cada região e de cada travessia do mapa novo
     await page.waitForFunction(()=>__T.game.phase==='final',null,{timeout:30000}); await page.waitForTimeout(2500);
     const fin=await page.evaluate(()=>({titulo:(document.querySelector('#scrBody h2')||{}).textContent||'',grafico:!!document.querySelector('svg.linhaTempo'),lances:[...document.querySelectorAll('.lances div')].map(d=>d.textContent).join(' | ')}));
     if(!/Chamariz de b2/.test(fin.lances)) erros.push('o resultado não listou os lances da noite: '+fin.lances);
-    console.log('resultado:',JSON.stringify(fin)); if(!/Vitória|Empate/.test(fin.titulo)) erros.push('tela de resultado não abriu: '+fin.titulo); if(!fin.grafico) erros.push('resultado sem a linha do tempo');
+    console.log('resultado:',JSON.stringify(fin)); if(!/Vitória|Derrota|Empate/.test(fin.titulo)) erros.push('tela de resultado não abriu: '+fin.titulo); if(!fin.grafico) erros.push('resultado sem a linha do tempo');
     await page.screenshot({path:path.join(OUT,'resultado.png')});
     // relatório do playtest: tabelas da noite, perguntas e o texto para copiar
     await page.click('#bRel'); await page.waitForFunction(()=>document.querySelectorAll('.perguntas textarea').length===6,null,{timeout:20000}).catch(()=>{});

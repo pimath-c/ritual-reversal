@@ -2,7 +2,7 @@
 // As telas do navegador com os mesmos nomes das fotos do Unity (tools/unity-telas.js com FOTOS=), para pôr lado a lado:
 // título, laboratório, menus, entrada, HUD, pausa, ajustes da pausa, caderno, frases, planta, resumo, resultado,
 // relatório, Rever a noite, escolha dos altares, HUD do culto, tutorial e Arsenal, em 1920×1080, com as fontes do jogo
-// (IM Fell English e Barlow Condensed) servidas de unity/Assets/RitualReversal/Resources/Fontes no lugar do Google Fonts.
+// (IM Fell English, Barlow Condensed, Big Shoulders Display e IBM Plex) servidas de unity/Assets/RitualReversal/Resources/Fontes no lugar do Google Fonts.
 // Uso: THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]
 'use strict';
 const fs=require('fs'), path=require('path'), os=require('os');
@@ -11,7 +11,10 @@ const ROOT=path.join(__dirname,'..'), OUT=path.resolve(process.argv[2]||path.joi
 const THREE_DIR=process.env.THREE_DIR, FONTES=path.join(ROOT,'unity','Assets','RitualReversal','Resources','Fontes');
 fs.mkdirSync(OUT,{recursive:true});
 const CSS_FONTES=[['IM Fell English','normal',400,'IMFellEnglish-Regular'],['IM Fell English','italic',400,'IMFellEnglish-Italic'],
-  ...[[400,'Regular'],[500,'Medium'],[600,'SemiBold'],[700,'Bold']].map(([w,n])=>['Barlow Condensed','normal',w,'BarlowCondensed-'+n])]
+  ...[[400,'Regular'],[500,'Medium'],[600,'SemiBold'],[700,'Bold']].map(([w,n])=>['Barlow Condensed','normal',w,'BarlowCondensed-'+n]),
+  ...[[400,'Regular'],[800,'ExtraBold'],[900,'Black']].map(([w,n])=>['Big Shoulders Display','normal',w,'BigShouldersDisplay-'+n]),   // v6.3, direção Nanquim
+  ...[[400,'Regular'],[500,'Medium']].map(([w,n])=>['IBM Plex Mono','normal',w,'IBMPlexMono-'+n]),
+  ...[[400,'Regular'],[500,'Medium'],[600,'SemiBold'],[700,'Bold']].map(([w,n])=>['IBM Plex Sans Condensed','normal',w,'IBMPlexSansCondensed-'+n])]
   .map(([f,s,w,a])=>`@font-face{font-family:'${f}';font-style:${s};font-weight:${w};src:url(https://fontes.local/${a}.ttf) format('truetype');}`).join('\n');
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
