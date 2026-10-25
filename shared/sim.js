@@ -87,6 +87,7 @@ const CLASS_BY_TEAM={H:['soldado','exorcista','rastreador'],C:['ritualista','gua
 // O desfiladeiro bloqueia a passagem, mas não a visão nem os tiros.
 // Coordenadas: x para leste, z para o sul (o norte é z negativo). Metros. Sem espelhamento: os papéis trocam a cada
 // rodada e cada papel nasce sempre do mesmo lado, então as duas equipes vivem o mesmo mapa.
+function mapaCatedral(){
 const HALF={x:145,z:100};
 const PROMONTORIO={x1:-82,x2:82,z1:-100,z2:-22};   // o maciço da catedral (dentro do desfiladeiro)
 const DESFILADEIRO={x1:-98,x2:98,z1:-100,z2:-6};   // promontório + desfiladeiro: tudo que não é mata
@@ -416,6 +417,25 @@ PEWS.forEach(p=>addCol(p[0],p[1],p[2],p[3],0.95,false));
 ALTARS.forEach(a=>addCol(a.x-1.3,a.x+1.3,a.z-0.65,a.z+0.65,1.1,false));
 const TALL=BOX.filter(b=>b.tall);
 const WALLDEF=WALLS; // compatibilidade com o cliente
+  // o luar fora das zonas: na mata, só nas clareiras e ao longo das trilhas largas; a mata fechada é breu
+  const luarFora=(x,z)=>{ let lua=0; for(const c of CLAREIRAS){ const d=Math.hypot(x-c.x,z-c.z); if(d<c.r+2) lua=Math.max(lua,.55*clamp((c.r+2-d)/4,0,1)); }
+    if(lua<.42) for(const sg of SEG_TRILHA){ if(sg.estreita) continue; const d=distSeg(x,z,sg); if(d<sg.w/2+1){ lua=Math.max(lua,.42*clamp((sg.w/2+1-d)/1.5,0,1)); if(lua>=.42) break; } }
+    return lua; };
+  // pontos que só viram posição depois da navegação (pontoNav): túmulos a profanar e mercadores
+  const TUMBA_PTS=LAPIDES.filter((w,i)=>i%Math.max(1,Math.floor(LAPIDES.length/6))===0).slice(0,6).map(w=>[(w.x1+w.x2)/2,w.z1-1.2]);
+  const NPC_DEF=[{id:'ermitao',nome:'o Ermitão',x:CAB[0]-1,z:CAB[1],time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
+    {id:'carpideira',nome:'a Carpideira',x:ORA[0]+1,z:ORA[1],time:'C',vende:['reagente','cinza','pocao','amuleto']},
+    {id:'mercador',nome:'o Mercador sem Rosto',x:ENCR[0]+6,z:ENCR[1]-4,time:null,vende:['reagente','municao','pocao']}];
+  return {id:'catedral',nome:'Catedral',HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,TUMBA_PTS,NPC_DEF};
+}
+// ============ MAPA ATIVO ============
+// Cada mapa é um objeto montado uma vez (mapaCatedral, mapaAsilo). As regras e os bots leem os nomes abaixo, que apontam
+// para o mapa ativo: cada entrada da simulação (createGame, step, act, snapshot...) ativa o mapa da partida antes de
+// qualquer conta. O servidor roda salas com mapas diferentes no mesmo processo; como tudo é síncrono, basta trocar.
+let HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,GRADE,NAV,WP,TUMBAS,PONTOS_DEF,NPCS,MAPA_ATIVO=null;
+const MAPAS={};
+function usarMapa(M){ if(MAPA_ATIVO===M) return M; MAPA_ATIVO=M;
+  ({HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,GRADE,NAV,WP,TUMBAS,PONTOS_DEF,NPCS}=M); return M; }
 
 function segBox(ax,az,bx,bz,b,inf){
   const x1=b.x1-inf,x2=b.x2+inf,z1=b.z1-inf,z2=b.z2+inf, dx=bx-ax,dz=bz-az; let t0=0,t1=1;
@@ -424,7 +444,7 @@ function segBox(ax,az,bx,bz,b,inf){
   return t0;
 }
 // Grade espacial: cada checagem de colisão ou visão olha só as peças das células por onde passa.
-const GRADE={};
+// GRADE: uma por mapa (fica no objeto do mapa)
 function grade(list){ const chave=list===BOX?'b':list===TALL?'t':null; if(!chave) return null; if(GRADE[chave]) return GRADE[chave];
   const G={c:6,m:new Map(),marca:new Uint32Array(list.length),vez:0,list};
   list.forEach((b,i)=>{ for(let cx=Math.floor(b.x1/G.c);cx<=Math.floor(b.x2/G.c);cx++) for(let cz=Math.floor(b.z1/G.c);cz<=Math.floor(b.z2/G.c);cz++){ const k=cx*1000+cz; let a=G.m.get(k); if(!a) G.m.set(k,a=[]); a.push(i); } });
@@ -470,8 +490,9 @@ function livre(p,r){ return !algum(grade(BOX),p.x-r,p.z-r,p.x+r,p.z+r,b=>{ const
 // Grade de 2 m sobre o mapa inteiro, ligada em 8 direções, mais âncoras (portas, altares, reagentes, spawns,
 // mercadores, pontos de tarefa). A* com fila binária em vetores tipados: o mapa tem ~15 mil nós e cada
 // busca visita só uma fração deles. Nós fora da maior componente conexa nunca são usados como início ou fim.
-const NAV={passo:2}; const WP=[];
-{
+// constrói a navegação do mapa ativo (usa BOX, PORTAS, ALTARS... do mapa ativo)
+function construirNav(){ NAV={passo:2}; WP=[];
+
   const P=NAV.passo; NAV.nx=Math.floor((HALF.x*2-4)/P)+1; NAV.nz=Math.floor((HALF.z*2-4)/P)+1; NAV.x0=-HALF.x+2; NAV.z0=-HALF.z+2; // coordenadas pares: cabem nos vãos de 3 m entre paredes em coordenadas inteiras
   NAV.cel=new Int32Array(NAV.nx*NAV.nz).fill(-1);
   const livreNo=(x,z)=>livre({x,z},.8);
@@ -529,11 +550,11 @@ const BOT_NAMES={A:['Irmã Beatriz','Irmão Tomé'],B:['Irmão Cinza','Madre Ves
 function defaultSlots(){ return [{team:'A',cid:'local',name:'Você'},{team:'A',cid:null,name:'Irmã Beatriz'},{team:'B',cid:null,name:'Irmão Cinza'},{team:'B',cid:null,name:'Madre Vesper'}]; }
 const roleOf=(g,team)=>((g.round===1)===(team==='A'))?'H':'C';
 function createGame(opts){
-  opts=opts||{};
+  opts=opts||{}; const mapaId=FABRICAS[opts.mapa]?opts.mapa:'catedral'; ativar({mapa:mapaId});
   const g={opts:opts,t:0,rt:0,phase:'pick',phaseT:0,round:1,timers:!!opts.timers,slots:(opts.slots||defaultSlots()).map(s=>({...s})),
     altars:[],reagents:REAG.map(([x,z],i)=>({i,x,z,has:true,t:0})),actors:[],proj:[],pickups:[],flares:[0,1,2,3,4,5].map(()=>({x:0,z:0,t:0})),
     know:[],visit:[],decoys:2,transferUsed:false,lastResolveT:0,endAt:0,events:[],log:[],scores:{A:null,B:null},stats:{},picks:[],ready:{},cls:{},
-    nid:1,feit:{},buff:{ess:0,selo:0},firstContact:null,matchId:opts.matchId||String(Date.now()),lab:labDe(opts.lab)};
+    nid:1,feit:{},buff:{ess:0,selo:0},firstContact:null,matchId:opts.matchId||String(Date.now()),lab:labDe(opts.lab),mapa:mapaId};
   enterPick(g,1);
   return g;
 }
@@ -597,7 +618,7 @@ function timeoutPhase(g){
   else if(g.phase==='summary') afterSummary(g);
 }
 function afterSummary(g){ if(g.round===1&&(g.opts&&g.opts.noites||CFG.noites)>1) enterPick(g,2); else { g.phase='final'; g.phaseT=0; } }
-function act(g,cid,a){
+function act(g,cid,a){ ativar(g);
   const slot=g.slots.find(s=>s.cid===cid); if(!slot||!a) return;
   const role=roleOf(g,slot.team);
   if(a.type==='pick'&&g.phase==='pick'&&role==='C'){ const i=a.i|0; if(i<0||i>5) return; if(g.picks.includes(i)) g.picks=g.picks.filter(k=>k!==i); else if(g.picks.length<3) g.picks.push(i); }
@@ -621,14 +642,14 @@ function act(g,cid,a){
     if(f===0||f===3){ g.pedidos=(g.pedidos||0)+1; for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human&&o.st==='alive') o.ai.pedido={x:r2(me.x),z:r2(me.z),k:'ponto',ate:g.t+20,chegou:-1,n:g.pedidos}; }
     if(f===2) for(const o of g.actors) if(o!==me&&o.team===me.team&&!o.human) o.ai.pedido=null; }
 }
-function dropHuman(g,cid){
+function dropHuman(g,cid){ ativar(g);
   const s=g.slots.find(s=>s.cid===cid); if(!s) return; s.cid=null; if(g.phase!=='final') logE(g,'saiu',{who:s.name,fase:g.phase});
   const a=g.actors.find(a=>a.cid===cid); if(a){ a.cid=null; a.human=false; a.inp.fire=false; a.inp.use=false; a.inp.ag=false; a.ag=false; }
   delete g.ready[cid];
   if((g.phase==='intro'||g.phase==='summary')&&allReady(g)){ if(g.phase==='intro') startPlay(g); else afterSummary(g); }
 }
 // Devolve a vaga (e o personagem, com vida, reagentes e posição) a quem reconectou.
-function reclaimHuman(g,slotIdx,cid,name){
+function reclaimHuman(g,slotIdx,cid,name){ ativar(g);
   const s=g.slots[slotIdx]; if(!s||s.cid) return false;
   s.cid=cid; if(name) s.name=name;
   const a=g.actors.find(a=>a.slot===slotIdx);
@@ -646,18 +667,28 @@ const VERSAO='6.1', REGISTRO=3;
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.
 const pontoNav=(x,z)=>{ let m=null,md=1e9; for(let i=0;i<WP.length;i++){ if(NAV.comp[i]!==NAV.principal) continue; const w=WP[i], d=Math.hypot(w.x-x,w.z-z); if(d<md){ md=d; m=w; } } return {x:m.x,z:m.z}; };
-// túmulos a profanar: seis lápides do cemitério, espalhadas pelas fileiras
-const TUMBAS=LAPIDES.filter((w,i)=>i%Math.max(1,Math.floor(LAPIDES.length/6))===0).slice(0,6).map(w=>pontoNav((w.x1+w.x2)/2,w.z1-1.2));
-const PONTOS_DEF={
-  pista:PISTA_PTS.map(([x,z])=>pontoNav(x,z)),
-  sentinela:SENTINELA_PTS.map(([x,z])=>pontoNav(x,z)),
-  erva:ERVA_PTS.map(([x,z])=>pontoNav(x,z)),
-  tumulo:TUMBAS,
-};
-const NPCS=[
-  {id:'ermitao',nome:'o Ermitão',...pontoNav(CAB[0]-1,CAB[1]),time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
-  {id:'carpideira',nome:'a Carpideira',...pontoNav(ORA[0]+1,ORA[1]),time:'C',vende:['reagente','cinza','pocao','amuleto']},
-  {id:'mercador',nome:'o Mercador sem Rosto',...pontoNav(ENCR[0]+6,ENCR[1]-4),time:null,vende:['reagente','municao','pocao']}];
+// túmulos, pontos de tarefa e mercadores ficam sobre nós de navegação de cada mapa (prepararMapa)
+function pontosDoMapa(M){
+  M.TUMBAS=M.TUMBA_PTS.map(([x,z])=>pontoNav(x,z));
+  M.PONTOS_DEF={
+    pista:M.PISTA_PTS.map(([x,z])=>pontoNav(x,z)),
+    sentinela:M.SENTINELA_PTS.map(([x,z])=>pontoNav(x,z)),
+    erva:M.ERVA_PTS.map(([x,z])=>pontoNav(x,z)),
+    tumulo:M.TUMBAS,
+  };
+  M.NPCS=M.NPC_DEF.map(n=>({id:n.id,nome:n.nome,...pontoNav(n.x,n.z),time:n.time,vende:n.vende}));
+}
+// monta a colisão, a navegação e os pontos de um mapa e o deixa ativo
+function prepararMapa(M){
+  M.GRADE={}; usarMapa(M); MAPA_ATIVO=null; usarMapa(M);
+  construirNav(); M.NAV=NAV; M.WP=WP;
+  pontosDoMapa(M); MAPA_ATIVO=null; usarMapa(M);
+  return MAPAS[M.id]=M; }
+const FABRICAS={catedral:mapaCatedral};
+const IDS_MAPAS=['catedral'];
+function mapa(id){ if(!FABRICAS[id]) id='catedral'; return MAPAS[id]||prepararMapa(FABRICAS[id]()); }
+const ativar=g=>{ const M=g&&g.mapa?mapa(g.mapa):mapa('catedral'); if(MAPA_ATIVO!==M) usarMapa(M); };
+mapa('catedral');
 const ITENS={
   reagente:{nome:'Reagente',preco:3,time:'C',desc:'Um frasco para consagrar ou iniciar um ritual.'},
   cinza:{nome:'Cinza de Chamariz',preco:3,time:'C',desc:'Mais um Chamariz para a equipe.'},
@@ -702,7 +733,7 @@ function tarefaProg(g,role,id,n){ const t=(g.tarefas&&g.tarefas[role]||[]).find(
   t.prog=Math.min(t.meta,t.prog+(n||1)); if(t.prog>=t.meta){ t.feita=true; const paga=g.lab.economia; if(paga) g.actors.filter(a=>a.team===role).forEach(a=>a.obolos+=t.rec);
     feed(g,paga?`Tarefa cumprida: ${t.nome}. +${t.rec} óbolos para cada um.`:`Tarefa cumprida: ${t.nome}.`,role==='H'?'h':'c',role); ev(g,{type:'tarefa',team:role,id}); logE(g,'tarefa',{team:role,id}); } }
 const ganhaObolos=(g,a,n)=>{ if(g.lab.economia) a.obolos+=n; };
-function comprar(g,cid,npcId,itemId){
+function comprar(g,cid,npcId,itemId){ ativar(g);
   const a=g.actors.find(x=>x.cid===cid), n=NPCS.find(x=>x.id===npcId), it=ITENS[itemId];
   const nega=msg=>{ if(a) ev(g,{type:'feed',msg,cls:'',to:a.id}); };
   if(!a||!n||!it||a.st!=='alive'||!g.lab.economia) return; if(dist(a,n)>3.2) return nega('Chegue mais perto para negociar.');
@@ -755,15 +786,12 @@ function sentinelaAvisa(g,A,oque){ const s=g.pontos.find(p=>p.tipo==='sentinela'
 // purgado; 'desperto' há vozes (consagrado ou Chamariz); 'confirmado' resíduo de reagente; 'chamariz' sem resíduo; 'ativo'.
 const semAura=k=>k==='?'||k==='visto'||k==='descartado'||k==='purgado'; // nada desperto conhecido ali
 // ============ LUZ E SANIDADE ============
-function lightAt(g,x,z){
+function lightAt(g,x,z){ ativar(g);
   let L=0;
   for(const [cx,cz] of CANDLES){ const d=Math.hypot(x-cx,z-cz); if(d<8.5) L+=1-d/8.5; }
   const Z=zonaDe(x,z);
   if(Z) L+=Z.luar; // luar das zonas: o Claustro e a capela desabada não têm teto; o promontório e as pontes, céu aberto
-  else { // na floresta, o luar só chega nas clareiras e ao longo das trilhas; a mata fechada é breu
-    let lua=0; for(const c of CLAREIRAS){ const d=Math.hypot(x-c.x,z-c.z); if(d<c.r+2) lua=Math.max(lua,.55*clamp((c.r+2-d)/4,0,1)); }
-    if(lua<.42) for(const sg of SEG_TRILHA){ if(sg.estreita) continue; const d=distSeg(x,z,sg); if(d<sg.w/2+1){ lua=Math.max(lua,.42*clamp((sg.w/2+1-d)/1.5,0,1)); if(lua>=.42) break; } }
-    L+=lua; }
+  else L+=luarFora(x,z); // fora das zonas (na catedral, a floresta: luar só nas clareiras e trilhas)
   for(const f of g.flares) if(f.t>0){ const d=Math.hypot(x-f.x,z-f.z); if(d<12) L+=1.4*(1-d/12); }
   for(const A of g.altars){ if(A.state==='farol'){ const d=Math.hypot(x-A.x,z-A.z); if(d<12) L+=1.3*(1-d/12); } if(A.state==='fenda'){ const d=Math.hypot(x-A.x,z-A.z); if(d<9) L-=0.8*(1-d/9); } }
   return L;
@@ -781,7 +809,7 @@ function updateSanity(g,a,dt){
 }
 
 // ============ MOVIMENTO (também usado na predição do cliente) ============
-function moveHuman(g,a,inp,dt){
+function moveHuman(g,a,inp,dt){ ativar(g);
   if(inp){ a.inp.mx=clamp(+inp.mx||0,-1,1); a.inp.mz=clamp(+inp.mz||0,-1,1); a.inp.sp=!!inp.sp; if(isFinite(inp.yaw)) a.inp.yaw=+inp.yaw; if(isFinite(inp.pitch)) a.inp.pitch=clamp(+inp.pitch,-1.5,1.5);
     a.inp.fire=!!inp.fire; a.inp.use=!!inp.use; a.inp.use2=!!inp.use2; a.inp.ag=!!inp.ag; if(isFinite(inp.viewT)) a.inp.viewT=+inp.viewT; if(inp.c) a.inp.c=inp.c; }
   a.yaw=a.inp.yaw; a.pitch=a.inp.pitch; a.ag=!!a.inp.ag&&a.st==='alive';
@@ -923,7 +951,7 @@ function useAbility(g,a){
 
 // ============ CONTEXTOS (E / T) ============
 const inCircle=(a,A)=>Math.hypot(a.x-A.x,a.z-A.z)<=CFG.circleR;
-function contexts(g,a){
+function contexts(g,a){ ativar(g);
   const out={e:null,t:null,info:null};
   if(!a||a.st!=='alive') return out;
   for(const b of g.actors){ if(b===a||b.hidden||b.st!=='down'||dist(a,b)>1.8) continue;
@@ -1424,7 +1452,7 @@ function aiCult(g,b,dt){
 }
 
 // ============ PASSO PRINCIPAL ============
-function step(g,dt){
+function step(g,dt){ ativar(g);
   g.t+=dt;
   if(g.phase==='play'){ g.rt+=dt; playStep(g,dt); }
   else if(g.timers&&g.phase!=='final'){ g.phaseT-=dt; if(g.phaseT<=0) timeoutPhase(g); }
@@ -1531,7 +1559,7 @@ function relatorio(log,r){ r=r||1;
       sangraram:mortes.filter(e=>e.how==='bleed').length,reanimacoes:c('revive').length},
     sessao:{saidas:c('saiu').length,reconexoes:c('reconnect').length,botsReiniciados:c('bot_reiniciado').length}};
 }
-function winner(g){
+function winner(g){ ativar(g);
   if(!((g.opts&&g.opts.noites||CFG.noites)>1)){ const S=g.scores.B; if(!S) return null; return S.done>=2?{win:'B',why:'os Cultistas venceram dois dos três rituais'}:{win:'A',why:(S.sealed||0)>=2?'os Caçadores selaram dois dos três rituais':'os Caçadores resistiram até o amanhecer'}; }
   const A=g.scores.A,B=g.scores.B; if(!A||!B) return null;
   if(A.done!==B.done) return {win:A.done>B.done?'A':'B',why:'mais rituais completados'};
@@ -1546,7 +1574,7 @@ function winner(g){
 // bastante para ouvir ou ver (ou se o emissor está à vista da equipe); informação de equipe só chega à equipe.
 const ALCANCE_SOM={shot:55,sigil:35,step:16,passoForte:24,passoLeve:5,collect:26,flare:20,rune:30,arrasto:45,push:28,flash:30,purify:30};
 const visivelPara=(g,a,role)=>!!(a._visto&&a._visto[role]>g.t);
-function eventoPara(g,e,me,role){
+function eventoPara(g,e,me,role){ ativar(g);
   const t=e.type;
   if(e.to!=null&&(!me||e.to!==me.id)) return null;
   if(t==='feed') return e.team&&e.team!==role?null:e;
@@ -1570,7 +1598,7 @@ function eventoPara(g,e,me,role){
 // ============ SNAPSHOT (servidor → cliente) ============
 const ACT_FIELDS=['feitico','amuleto','id','cid','human','name','team','cls','maxHp','st','reag','sealing','ammo','reserve','fervor','lantern','flares','moving','deaths','revUsed','ag'];
 const ACT_NUM=['ataqueT','obolos','veuT','slowT','revelT','curaT','x','z','yaw','pitch','hp','downT','respawnT','reloadT','sanity','carga','sensorCd','abilCd','lastShotT','blindT','stunT','runeT','shield','invuln','speed'];
-function snapshot(g,role){
+function snapshot(g,role){ ativar(g);
   const hide=role==='H';
   return {t:r2(g.t),rt:r2(g.rt),phase:g.phase,phaseT:r2(g.phaseT),round:g.round,timers:g.timers,matchId:g.matchId,
     slots:g.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),
@@ -1605,6 +1633,8 @@ function snapshot(g,role){
     scores:g.scores,stats:g.stats,buff:{ess:g.buff.ess>g.t?r2(g.buff.ess-g.t):0,selo:g.buff.selo>g.t?r2(g.buff.selo-g.t):0},lastResolveT:g.lastResolveT,lab:g.lab,eco:g.eco};
 }
 
-return {PORTAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,ZONAS,zonaDe,coberto,foraDaMata,PROMONTORIO,DESFILADEIRO,TRAVESSIAS,ABISMO,ARCOS,PONTOS_DEF,CATEDRAL,naCatedral,ARVORES,ARBUSTOS,TRILHAS,CLAREIRAS,PORTAIS,LAPIDES,NAV,livre,raioParede,FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,TAREFAS,momentoDe,WP,CFG,CLASSES,CLASS_BY_TEAM,HALF,CLAUSTRO,ZONES,zoneAt,LUGARES,ALTARS,SPAWN,REAG,CANDLES,WALLS,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,segClear,losClear,occlusion,resolve,findPath,
-  DIF,LAB_OPCOES,labDe,relatorio,CADENCIA_HUMANA,SETORES,damage,_botHold:botHold,_doAction:doAction,_traceShot:traceShot,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES};
+const API={livre,raioParede,FEITICOS,FEIT_BY_TEAM,ITENS,TAREFAS,momentoDe,CFG,CLASSES,CLASS_BY_TEAM,segBox,segClear,losClear,occlusion,resolve,findPath,DIF,LAB_OPCOES,labDe,relatorio,CADENCIA_HUMANA,SETORES,damage,_botHold:botHold,_doAction:doAction,_traceShot:traceShot,eventoPara,ALCANCE_SOM,VERSAO,REGISTRO,createGame,step,act,dropHuman,reclaimHuman,moveHuman,contexts,lightAt,snapshot,roleOf,winner,mareFactor,inCircle,dist,clamp,lerp,BOT_NAMES,usarMapa:id=>usarMapa(mapa(id)),mapa,IDS_MAPAS,get mapaAtivo(){ return MAPA_ATIVO&&MAPA_ATIVO.id; }};
+// os nomes do mapa leem sempre o mapa ativo (o cliente chama Sim.usarMapa ao entrar numa partida)
+for(const k of ["PORTAS", "PISTA_PTS", "ERVA_PTS", "SENTINELA_PTS", "SEG_TRILHA", "ZONAS", "zonaDe", "coberto", "foraDaMata", "PROMONTORIO", "DESFILADEIRO", "TRAVESSIAS", "ABISMO", "ARCOS", "PONTOS_DEF", "CATEDRAL", "naCatedral", "ARVORES", "ARBUSTOS", "TRILHAS", "CLAREIRAS", "PORTAIS", "LAPIDES", "NAV", "NPCS", "WP", "HALF", "CLAUSTRO", "ZONES", "zoneAt", "LUGARES", "ALTARS", "SPAWN", "REAG", "CANDLES", "WALLS", "WALLDEF", "PILLARS", "PEWS", "BOX", "TALL"]) Object.defineProperty(API,k,{get:()=>MAPA_ATIVO[k],enumerable:true});
+return API;
 });
