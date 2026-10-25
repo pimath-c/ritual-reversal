@@ -6,6 +6,7 @@
 // habilidade, compra, escolhe altares e classe), dirigido pelo mesmo sorteio nos dois lados: cobre o código do jogador.
 // Precisa do Mono (mcs e mono). Uso: node tools/comparar-cs.js [partidas] [semente] [passos por partida] [bots|H|C]
 // Com DIF=facil ou DIF=dificil no ambiente, os bots inimigos do jogador roteirizado jogam nessa dificuldade.
+// Com MAPA=asilo, as duas versões jogam no Asilo Blackwater (portas, quadros de força e água rasa).
 // Com LAB=crepusculo=90,fogo=b,execucao=6,economia=0,formato=placar, as duas versões jogam com o laboratório de playtest.
 'use strict';
 const fs=require('fs'), path=require('path'), os=require('os'), {execFileSync}=require('child_process');
@@ -29,6 +30,7 @@ function linha(Sim,g,nLog){
   p.push(g.proj.map(q=>q.id+'@'+H(q.x)+','+H(q.y)+','+H(q.z)).join(';'));
   p.push(g.pickups.map(q=>q.id+q.kind+'@'+H(q.x)+','+H(q.z)).join(';'));
   p.push('d'+g.decoys+(g.transferUsed?'T':'F'));
+  if(g.portas) p.push('P'+g.portas.map(x=>x.aberta?'1':'0').join('')+';'+Object.entries(g.energia).map(([k,v])=>k+H(v)).join(','));
   for(const e of g.events){ const d=Object.assign({},e); delete d.type; p.push('E'+e.type+O(d)); }
   for(let i=nLog;i<g.log.length;i++) p.push('L'+O(g.log[i]));
   return p.join('|');
@@ -75,7 +77,7 @@ const Sim=require('../shared/sim.js');
 const saidaJS=path.join(tmp,'js.txt'), fd=fs.openSync(saidaJS,'w'), cobertura={};
 let t0=Date.now();
 for(let m=0;m<partidas;m++){
-  const g=Sim.createGame({timers:true,slots:slotsDe(),matchId:'cmp'+m,dificuldade:process.env.DIF||undefined,lab:labDoAmbiente()}); // DIF=facil|dificil testa a dificuldade dos bots
+  const g=Sim.createGame({timers:true,slots:slotsDe(),matchId:'cmp'+m,dificuldade:process.env.DIF||undefined,lab:labDoAmbiente(),mapa:process.env.MAPA||undefined}); // DIF=facil|dificil testa a dificuldade dos bots
   let nLog=0; const D={alvo:null,trocaT:0,path:[],c:{q:0,f:0,g:0,r:0,ab:0},compraT:0}, r=mulberry32((semente^0x5bd1e995)+m);
   for(let n=0;n<passos&&g.phase!=='final';n++){ if(modo==='bots') Sim.step(g,1/30); else roteiro(Sim,g,D,r); fs.writeSync(fd,linha(Sim,g,nLog)+'\n'); nLog=g.log.length; g.events.length=0; }
   g.log.forEach(e=>cobertura[e.ev]=(cobertura[e.ev]||0)+1);

@@ -17,7 +17,7 @@ namespace RitualReversal.Simulacao
         {
             if (t.st == "dead" || b.blindT > 0) return false; double d = Dist(b, t); if (d > range) return false;
             if (t.veuT > 0 && d > 8 && !(b.lantern && NoCone(b, t, 16, .9))) return false; // Véu: silhueta tênue, só some de longe
-            if (d > CFG.nevoaAlcance && (Mapa.ZoneAt(b.x, b.z) == "Floresta" || Mapa.ZoneAt(t.x, t.z) == "Floresta")) return false; // névoa da mata
+            if (d > CFG.nevoaAlcance && (Mapa.NaNevoa(b.x, b.z) || Mapa.NaNevoa(t.x, t.z))) return false; // névoa da mata (no asilo, a do lago, lá fora)
             if (d > 7) { double fx = -JS.Sin(b.yaw), fz = -JS.Cos(b.yaw); if (((t.x - b.x) * fx + (t.z - b.z) * fz) / d < .35 && g.t - b.hitT > 2) return false; }
             if (!Mapa.LosClear(b, t)) return false;
             double lit = LightAt(g, t.x, t.z) + (t.lantern ? .8 : 0) + (g.t - t.lastShotT < 1.5 ? .8 : 0);
@@ -54,7 +54,11 @@ namespace RitualReversal.Simulacao
             if (g.t > ai.repath) { var nova = Mapa.FindPath(b, ai.goal); if (ai.path.Count == 0 || Comprimento(b, nova) < Comprimento(b, ai.path) * .85) ai.path = nova; ai.repath = g.t + 3; }
             if (ai.path.Count == 0) return; var tgt = ai.path[0]; double dx = tgt.x - b.x, dz = tgt.z - b.z, d = JS.Hypot(dx, dz);
             if (d < .7) { ai.path.RemoveAt(0); if (ai.path.Count == 0) return; tgt = ai.path[0]; dx = tgt.x - b.x; dz = tgt.z - b.z; d = JS.Hypot(dx, dz); }
-            double sp = (b.st == "down" ? .8 : CFG.botSpeed * (b.speed / CFG.speed)) * mul * (b.sealing >= 0 ? .4 : 1) * (b.slowT > 0 ? .6 : 1);
+            // asilo: porta fechada no caminho, a menos de 1,6 m: o bot para e abre
+            foreach (var P in Mapa.PORTAS_FECHADAS)
+                if (JS.Hypot(b.x - JS.Clamp(b.x, P.x1, P.x2), b.z - JS.Clamp(b.z, P.z1, P.z2)) < 1.6 && Mapa.SegBox(b.x, b.z, tgt.x, tgt.z, P, .3) >= 0)
+                { b.moving = false; BotHold(g, b, "porta" + P.porta, CFG.porta, dt, new Ctx { type = "porta", P = P.porta }); return; }
+            double sp = (b.st == "down" ? .8 : CFG.botSpeed * (b.speed / CFG.speed)) * mul * (b.sealing >= 0 ? .4 : 1) * (b.slowT > 0 ? .6 : 1); if (Mapa.AGUA.Count > 0 && Mapa.NaAgua(b.x, b.z)) sp *= CFG.aguaVel;
             double bx0 = b.x, bz0 = b.z; b.x += dx / d * sp * dt; b.z += dz / d * sp * dt; b.moving = true;
             if (ai.target == null) b.yaw = LerpAngle(b.yaw, JS.Atan2(-dx, -dz), .15);
             foreach (var o in g.actors) { if (o == b || o.st == "dead") continue; double ox = b.x - o.x, oz = b.z - o.z, od = JS.Hypot(ox, oz); if (od < .8 && od > .01) { b.x += ox / od * (.8 - od) * .5; b.z += oz / od * (.8 - od) * .5; } }
@@ -202,6 +206,16 @@ namespace RitualReversal.Simulacao
             if (BotAtendePing(g, b, dt, fighting)) return;
             if (!fighting && BotNoite(g, b, dt)) return;
             var act = JS.Primeiro(g.altars.Where(A => A.state == "active" && A.localized).ToList(), (x, y) => Dist(b, x) - Dist(b, y));
+            // asilo: ala no escuro com o quadro por perto (até 45 m; 15 m se há ritual descoberto): o bot religa a luz
+            if (g.energia != null && !fighting)
+            {
+                var q = JS.Primeiro(Mapa.QUADROS.Where(x => g.energia[x.setor] > g.t && JS.Hypot(b.x - x.x, b.z - x.z) < (act != null ? 15 : 45) && !ai.Ignorado("qd" + x.setor, g.t)).ToList(), (x, y) => JS.Hypot(b.x - x.x, b.z - x.z) - JS.Hypot(b.x - y.x, b.z - y.z));
+                if (q != null)
+                {
+                    if (JS.Hypot(b.x - q.x, b.z - q.z) < 1.8) { b.moving = false; BotHold(g, b, "qd" + q.setor, CFG.religarLuz, dt, new Ctx { type = "quadro", setor = q.setor }); return; }
+                    SetGoal(g, b, q.x, q.z, "qd" + q.setor); BotMove(g, b, dt, 1); return;
+                }
+            }
             if (act != null)
             {
                 if (InCircle(b, act))
@@ -376,6 +390,15 @@ namespace RitualReversal.Simulacao
                 {
                     if (tgt == R && Dist(b, R) < 1.8) { b.moving = false; if (!fighting || b.hold.t > 0) BotHold(g, b, "col" + R.i, CFG.collect, dt, new Ctx { type = "collect", R = R.i }); return; }
                     double ox = tgt == P ? 0 : .9; SetGoal(g, b, tgt.x + ox, tgt.z, "r" + JS.Num(tgt.x) + "," + JS.Num(tgt.z)); BotMove(g, b, dt, 1); return;
+                }
+            }
+            if (g.energia != null && T.state == "awake" && !T.decoy && b.reag > 0 && BloqueioRitual(g) == null)
+            {
+                var q = Mapa.QUADROS.FirstOrDefault(x => x.setor == SetorDoAltar(T.i).id);
+                if (q != null && !(g.energia[q.setor] > g.t) && JS.Hypot(b.x - q.x, b.z - q.z) + JS.Hypot(q.x - T.x, q.z - T.z) < Dist(b, T) + 40 && !ai.Ignorado("qd" + q.setor, g.t))
+                {
+                    if (JS.Hypot(b.x - q.x, b.z - q.z) < 1.8) { b.moving = false; BotHold(g, b, "qd" + q.setor, CFG.cortarLuz, dt, new Ctx { type = "quadro", setor = q.setor }); return; }
+                    SetGoal(g, b, q.x, q.z, "qd" + q.setor); BotMove(g, b, dt, 1); return;
                 }
             }
             if (b.reag > 0)

@@ -1,14 +1,20 @@
 // Mapa da simulação: caixas de colisão, grade espacial, linha de visão, tiros contra paredes e navegação (A*).
-// Porte da parte "MAPA" e "NAVEGAÇÃO" de shared/sim.js. A planta vem de Resources/simulacao.json, gerado por
-// tools/exportar-mapa.js a partir do próprio sim.js: o mapa continua tendo uma fonte só.
+// Porte da parte "MAPA" e "NAVEGAÇÃO" de shared/sim.js. A planta vem de Resources/simulacao.json (catedral) e
+// simulacao-<id>.json (asilo...), gerados por tools/exportar-mapa.js a partir do próprio sim.js: uma fonte só.
+// Vários mapas (como o usarMapa/ativar do JS): cada Carregar guarda os campos estáticos do mapa num DadosMapa, e Usar
+// troca todos de uma vez. Ativar(jogo) põe o mapa da partida e as portas fechadas dela antes de qualquer conta.
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace RitualReversal.Simulacao
 {
     public class Ponto { public double x, z; public Ponto() { } public Ponto(double x, double z) { this.x = x; this.z = z; } }
 
-    public class Caixa { public double x1, x2, z1, z2, h; public bool tall; }
+    public class Caixa { public double x1, x2, z1, z2, h; public bool tall; public int porta = -1; }
+    // asilo: porta que abre e fecha (fechada, entra como parede), quadro de força de um setor
+    public class PortaDin { public int i; public double x1, x2, z1, z2, x, z; public string eixo; }
+    public class Quadro : Ponto { public string setor; }
 
     public class AltarDef { public string name; public double x, z; }
     public class SpawnDef { public double x, z, yaw; }
@@ -60,11 +66,61 @@ namespace RitualReversal.Simulacao
         public static List<Zona> ZONAS = new List<Zona>();
         public static int navNos, navArestas, navPrincipalJS; // conferência exportada pelo JS
         public static bool Carregado;
+        // o que muda de um mapa para outro nas regras (simulacao.json): nome fora das zonas, se fora é coberto, a zona com
+        // névoa, a tarefa do Crepúsculo; no asilo, portas, quadros de força (luzes por setor) e água rasa
+        public static string ID = "catedral", NOME = "Catedral", ZONA_FORA = "Floresta", NEVOA = "Floresta"; public static bool COBERTO_FORA;
+        public static Dictionary<string, TarefaDef[]> TAREFA0;
+        public static List<PortaDin> PORTAS_DIN = new List<PortaDin>(); public static List<Quadro> QUADROS = new List<Quadro>();
+        public static List<Caixa> AGUA = new List<Caixa>(); public static List<string> LUZ_SETOR = new List<string>();
+
+        // ---------- vários mapas ----------
+        // portas fechadas da partida ativa (não são do mapa: cada partida tem as suas)
+        public static readonly List<Caixa> SEM_PORTAS = new List<Caixa>(); public static List<Caixa> PORTAS_FECHADAS = SEM_PORTAS;
+        class DadosMapa { public Dictionary<FieldInfo, object> v = new Dictionary<FieldInfo, object>(); }
+        static readonly Dictionary<string, DadosMapa> MAPAS = new Dictionary<string, DadosMapa>();
+        static FieldInfo[] camposMapa;
+        static FieldInfo[] Campos()
+        {
+            if (camposMapa != null) return camposMapa; var l = new List<FieldInfo>();
+            foreach (var f in typeof(Mapa).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                if (!f.IsLiteral && !f.IsInitOnly && f.Name != "PORTAS_FECHADAS" && f.Name != "camposMapa" && !f.Name.Contains("<")) l.Add(f);
+            return camposMapa = l.ToArray();
+        }
+        static void Guardar(string id) { var D = new DadosMapa(); foreach (var f in Campos()) D.v[f] = f.GetValue(null); MAPAS[id] = D; }
+        public static bool Tem(string id) { return id != null && MAPAS.ContainsKey(id); }
+        public static IEnumerable<string> Ids { get { return MAPAS.Keys; } }
+        // deixa ativo um mapa já carregado (sem ele, fica o atual)
+        public static void Usar(string id)
+        {
+            if (id == null || id == ID && Carregado) return; DadosMapa D; if (!MAPAS.TryGetValue(id, out D)) return;
+            foreach (var kv in D.v) kv.Key.SetValue(null, kv.Value);
+        }
+        // o mapa da partida e as portas fechadas dela (o ativar(g) do sim.js)
+        public static void Ativar(Jogo g)
+        {
+            Usar(g != null && g.mapa != null ? g.mapa : "catedral");
+            PORTAS_FECHADAS = g != null && g.fechadas != null ? g.fechadas : SEM_PORTAS;
+        }
 
         // ---------- carga ----------
         public static void Carregar(string json)
         {
             var R = Json.O(Json.Ler(json));
+            NovasListas();
+            object v0;
+            ID = R.TryGetValue("id", out v0) && v0 is string ? (string)v0 : "catedral"; NOME = R.TryGetValue("nome", out v0) && v0 is string ? (string)v0 : "Catedral";
+            ZONA_FORA = R.TryGetValue("zonaFora", out v0) && v0 is string ? (string)v0 : "Floresta"; NEVOA = R.TryGetValue("nevoa", out v0) && v0 is string ? (string)v0 : "Floresta";
+            COBERTO_FORA = R.TryGetValue("cobertoFora", out v0) && v0 is bool && (bool)v0;
+            TAREFA0 = null;
+            if (R.TryGetValue("tarefas0", out v0) && v0 != null)
+            {
+                TAREFA0 = new Dictionary<string, TarefaDef[]>();
+                foreach (var kv in Json.O(v0)) { var l = new List<TarefaDef>(); foreach (var o in Json.L(kv.Value)) { var t = Json.O(o); l.Add(new TarefaDef { id = Json.S(t["id"]), nome = Json.S(t["nome"]), meta = (int)Json.D(t["meta"]), rec = (int)Json.D(t["rec"]) }); } TAREFA0[kv.Key] = l.ToArray(); }
+            }
+            if (R.TryGetValue("portasDin", out v0)) foreach (var o in Json.L(v0)) { var q = Json.L(o); PORTAS_DIN.Add(new PortaDin { i = (int)Json.D(q[0]), x1 = Json.D(q[1]), x2 = Json.D(q[2]), z1 = Json.D(q[3]), z2 = Json.D(q[4]), x = Json.D(q[5]), z = Json.D(q[6]), eixo = Json.S(q[7]) }); }
+            if (R.TryGetValue("quadros", out v0)) foreach (var o in Json.L(v0)) { var q = Json.L(o); QUADROS.Add(new Quadro { setor = Json.S(q[0]), x = Json.D(q[1]), z = Json.D(q[2]) }); }
+            if (R.TryGetValue("agua", out v0)) foreach (var o in Json.L(v0)) { var q = Json.L(o); AGUA.Add(new Caixa { x1 = Json.D(q[0]), x2 = Json.D(q[1]), z1 = Json.D(q[2]), z2 = Json.D(q[3]) }); }
+            if (R.TryGetValue("luzSetor", out v0)) foreach (var o in Json.L(v0)) LUZ_SETOR.Add(o as string);
             var half = Json.O(R["half"]); HX = Json.D(half["x"]); HZ = Json.D(half["z"]);
             var cat = Json.O(R["catedral"]); CAT_X1 = Json.D(cat["x1"]); CAT_X2 = Json.D(cat["x2"]); CAT_Z1 = Json.D(cat["z1"]); CAT_Z2 = Json.D(cat["z2"]);
             var cl = Json.O(R["claustro"]); CL_X1 = Json.D(cl["x1"]); CL_X2 = Json.D(cl["x2"]); CL_Z1 = Json.D(cl["z1"]); CL_Z2 = Json.D(cl["z2"]);
@@ -104,8 +160,20 @@ namespace RitualReversal.Simulacao
             CLAREIRAS.Clear(); foreach (var o in Json.L(R["clareiras"])) { var v = Json.L(o); CLAREIRAS.Add(new Clareira { x = Json.D(v[0]), z = Json.D(v[1]), r = Json.D(v[2]) }); }
             SEG_TRILHA.Clear(); foreach (var o in Json.L(R["trilhas"])) { var v = Json.L(o); SEG_TRILHA.Add(new Segmento { ax = Json.D(v[0]), az = Json.D(v[1]), bx = Json.D(v[2]), bz = Json.D(v[3]), w = Json.D(v[4]), estreita = Json.D(v[5]) != 0 }); }
             var conf = Json.O(R["conferencia"]); navNos = (int)Json.D(conf["nos"]); navArestas = (int)Json.D(conf["arestas"]); navPrincipalJS = (int)Json.D(conf["principal"]);
+            PORTAS_FECHADAS = SEM_PORTAS;   // a navegação é montada com todas as portas abertas (como no prepararMapa do JS)
             MontarNavegacao();
             Carregado = true;
+            Guardar(ID);
+        }
+        // cada mapa tem as suas listas: as do mapa carregado antes continuam guardadas no DadosMapa dele
+        static void NovasListas()
+        {
+            BOX = new List<Caixa>(); TALL = new List<Caixa>(); ALTARS = new List<AltarDef>(); SPAWN = new Dictionary<string, SpawnDef>();
+            REAG = new List<Ponto>(); PORTAS = new List<Ponto>(); PORTAIS = new List<PortalDef>();
+            PISTA_PTS = new List<Ponto>(); ERVA_PTS = new List<Ponto>(); SENTINELA_PTS = new List<Ponto>(); PONTOS_DEF = new Dictionary<string, List<Ponto>>();
+            NPCS = new List<Npc>(); CANDLES = new List<Ponto>(); CLAREIRAS = new List<Clareira>(); SEG_TRILHA = new List<Segmento>();
+            WP = new List<NoNav>(); ZONAS = new List<Zona>(); idx = new Dictionary<int, List<int>>();
+            PORTAS_DIN = new List<PortaDin>(); QUADROS = new List<Quadro>(); AGUA = new List<Caixa>(); LUZ_SETOR = new List<string>();
         }
 
         static void Pares(object v, List<Ponto> saida) { saida.Clear(); foreach (var o in Json.L(v)) { var p = Json.L(o); saida.Add(new Ponto(Json.D(p[0]), Json.D(p[1]))); } }
@@ -113,10 +181,14 @@ namespace RitualReversal.Simulacao
         // ---------- zonas ----------
         // a primeira zona que contém o ponto vale; fora de todas é Floresta (igual a zonaDe/zoneAt de shared/sim.js)
         public static Zona ZonaDe(double x, double z) { foreach (var Z in ZONAS) if (x > Z.x1 && x < Z.x2 && z > Z.z1 && z < Z.z2) return Z; return null; }
-        public static string ZoneAt(double x, double z) { var Z = ZonaDe(x, z); return Z != null ? Z.name : "Floresta"; }
+        public static string ZoneAt(double x, double z) { var Z = ZonaDe(x, z); return Z != null ? Z.name : ZONA_FORA; }
+        public static bool NaNevoa(double x, double z) { return ZoneAt(x, z) == NEVOA; }   // a mata na catedral; o terreno em volta do asilo
+        public static bool NaAgua(double x, double z) { foreach (var q in AGUA) if (x > q.x1 && x < q.x2 && z > q.z1 && z < q.z2) return true; return false; }
+        // quantas portas fechadas a linha atravessa (som abafado)
+        public static int PortasNoCaminho(double ax, double az, double bx, double bz) { int n = 0; foreach (var b in PORTAS_FECHADAS) if (SegBox(ax, az, bx, bz, b, 0) >= 0) n++; return n; }
         public static bool NaCatedral(double x, double z) { var n = ZoneAt(x, z); return n == "Catedral" || n == "Claustro"; }
         public static bool NoClaustro(double x, double z) { return ZoneAt(x, z) == "Claustro"; }
-        public static bool Coberto(double x, double z) { var Z = ZonaDe(x, z); return Z != null && Z.coberto; }
+        public static bool Coberto(double x, double z) { var Z = ZonaDe(x, z); return Z != null ? Z.coberto : COBERTO_FORA; }
         public static double DistSeg(double x, double z, Segmento s)
         {
             double dx = s.bx - s.ax, dz = s.bz - s.az, L = dx * dx + dz * dz; double t = L != 0 ? ((x - s.ax) * dx + (z - s.az) * dz) / L : 0; t = JS.Clamp(t, 0, 1);
@@ -155,6 +227,7 @@ namespace RitualReversal.Simulacao
         // segmentos longos percorrem só as células que a linha toca
         public static bool SegClear(double ax, double az, double bx, double bz, double inf, Grade G)
         {
+            if (PORTAS_FECHADAS.Count > 0 && (G == GB || G == GT)) foreach (var b in PORTAS_FECHADAS) if (SegBox(ax, az, bx, bz, b, inf) >= 0) return false;
             double L = JS.Hypot(bx - ax, bz - az);
             if (L < G.c * 2) return !Algum(G, Math.Min(ax, bx) - inf, Math.Min(az, bz) - inf, Math.Max(ax, bx) + inf, Math.Max(az, bz) + inf, b => SegBox(ax, az, bx, bz, b, inf) >= 0);
             int n = (int)Math.Ceiling(L / (G.c * .5)); G.vez++;
@@ -177,6 +250,7 @@ namespace RitualReversal.Simulacao
         public static double RaioParede(double ox, double oz, double dx, double dz, double alcance, double inf, Func<double, double> alturaEm = null, Grade lista = null)
         {
             double best = alcance; var G = lista ?? GT; int n = (int)Math.Ceiling(alcance / (G.c * .5)); G.vez++;
+            foreach (var b in PORTAS_FECHADAS) { double t = SegBox(ox, oz, ox + dx * alcance, oz + dz * alcance, b, inf); if (t >= 0 && t * alcance < best && (alturaEm == null || alturaEm(t * alcance) < b.h)) best = t * alcance; }
             for (int k = 0; k <= n; k++)
             {
                 double px = ox + dx * alcance * k / n, pz = oz + dz * alcance * k / n; if ((double)k / n * alcance > best + G.c) break; double r = G.c * .5 + inf;
@@ -199,28 +273,31 @@ namespace RitualReversal.Simulacao
         {
             for (int it = 0; it < 4; it++)
             {
-                Algum(GB, p.x - r, p.z - r, p.x + r, p.z + r, b =>
-                {
-                    double cx = JS.Clamp(p.x, b.x1, b.x2), cz = JS.Clamp(p.z, b.z1, b.z2), dx = p.x - cx, dz = p.z - cz, d = JS.Hypot(dx, dz);
-                    if (d < r)
-                    {
-                        if (d > 1e-6) { p.x = cx + dx / d * r; p.z = cz + dz / d * r; }
-                        else
-                        {
-                            double l = p.x - b.x1, rr = b.x2 - p.x, t = p.z - b.z1, bb = b.z2 - p.z, m = Math.Min(Math.Min(l, rr), Math.Min(t, bb));
-                            if (m == l) p.x = b.x1 - r; else if (m == rr) p.x = b.x2 + r; else if (m == t) p.z = b.z1 - r; else p.z = b.z2 + r;
-                        }
-                    }
-                    return false;
-                });
+                Algum(GB, p.x - r, p.z - r, p.x + r, p.z + r, b => { Empurra(p, r, b); return false; });
+                foreach (var b in PORTAS_FECHADAS) Empurra(p, r, b);
                 p.x = JS.Clamp(p.x, -HX + r, HX - r); p.z = JS.Clamp(p.z, -HZ + r, HZ - r);
             }
         }
 
-        // verdadeiro se um círculo de raio r em p não encosta em nenhuma peça
+        static void Empurra(Ponto p, double r, Caixa b)
+        {
+            double cx = JS.Clamp(p.x, b.x1, b.x2), cz = JS.Clamp(p.z, b.z1, b.z2), dx = p.x - cx, dz = p.z - cz, d = JS.Hypot(dx, dz);
+            if (d < r)
+            {
+                if (d > 1e-6) { p.x = cx + dx / d * r; p.z = cz + dz / d * r; }
+                else
+                {
+                    double l = p.x - b.x1, rr = b.x2 - p.x, t = p.z - b.z1, bb = b.z2 - p.z, m = Math.Min(Math.Min(l, rr), Math.Min(t, bb));
+                    if (m == l) p.x = b.x1 - r; else if (m == rr) p.x = b.x2 + r; else if (m == t) p.z = b.z1 - r; else p.z = b.z2 + r;
+                }
+            }
+        }
+
+        // verdadeiro se um círculo de raio r em p não encosta em nenhuma peça (nem numa porta fechada)
         public static bool Livre(Ponto p, double r)
         {
-            return !Algum(GB, p.x - r, p.z - r, p.x + r, p.z + r, b => { double cx = JS.Clamp(p.x, b.x1, b.x2), cz = JS.Clamp(p.z, b.z1, b.z2); return JS.Hypot(p.x - cx, p.z - cz) < r - .02; });
+            Func<Caixa, bool> toca = b => { double cx = JS.Clamp(p.x, b.x1, b.x2), cz = JS.Clamp(p.z, b.z1, b.z2); return JS.Hypot(p.x - cx, p.z - cz) < r - .02; };
+            if (Algum(GB, p.x - r, p.z - r, p.x + r, p.z + r, toca)) return false; foreach (var b in PORTAS_FECHADAS) if (toca(b)) return false; return true;
         }
         public static bool Livre(double x, double z, double r) { return Livre(new Ponto(x, z), r); }
 

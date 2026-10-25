@@ -31,6 +31,8 @@ namespace RitualReversal.Simulacao
         public static double ecoProg = 0.25, ataqueCanal = .6; public static bool danoInterrompeExecucao = true;
         // v6.1: o bot do culto canalizando revida quem o acertou há menos de botRevida s ou quem está a menos de botRevidaPerto m
         public static double botRevida = 2.5, botRevidaPerto = 20;
+        // asilo: segurar E para abrir/fechar uma porta; cortar a luz de uma ala (culto) e religar (caça); duração do apagão; água rasa
+        public static double porta = .35, cortarLuz = 4, religarLuz = 6, apagao = 90, aguaVel = .7;
         // lances da noite (só reconhecimento): Chamariz que prendeu a caça por 20 s, defesa com o selo passando de 50%, selo com o ritual em 85%,
         // ritual achado antes do eco já em andamento (8%)
         public static double iscaLance = 20, defesaLance = .5, limiteLance = .85, achouLance = .08;
@@ -85,6 +87,7 @@ namespace RitualReversal.Simulacao
                 {"H", new[]{ new TarefaDef{id="final",nome="Sele dois dos três rituais ou resista até o amanhecer",meta=0,rec=0} }},
                 {"C", new[]{ new TarefaDef{id="final",nome="Vença dois dos três rituais antes do amanhecer",meta=0,rec=0} }} },
         };
+        public static readonly Dictionary<string, string> NOME_SETOR = new Dictionary<string, string> { { "oeste", "oeste" }, { "centro", "central" }, { "leste", "leste" } };
         public static readonly Dictionary<string, string[]> BOT_NAMES = new Dictionary<string, string[]> { { "A", new[] { "Irmã Beatriz", "Irmão Tomé" } }, { "B", new[] { "Irmão Cinza", "Madre Vesper" } } };
     }
 
@@ -167,7 +170,7 @@ namespace RitualReversal.Simulacao
     public class Acao { public string type, cls, f, npc, item, k; public int i; public double x, z; }
 
     // contexto da tecla E/T: o que dá para fazer onde o jogador está
-    public class Ctx { public string key = "", type, label, npc; public double time; public int? b, P, A, R, from; }
+    public class Ctx { public string key = "", type, label, npc, setor; public double time; public int? b, P, A, R, from; }
     public class Contextos { public Ctx e, t; public string info; }
 
     // eventos para o cliente (sons, efeitos, mensagens) e registro da partida (log) para estatísticas e testes
@@ -188,7 +191,7 @@ namespace RitualReversal.Simulacao
     }
     public class Vencedor { public string win, why; }
 
-    public class OpcoesJogo { public bool timers; public List<Slot> slots; public string matchId; public int noites; public string dificuldade; public Lab lab; }
+    public class OpcoesJogo { public bool timers; public List<Slot> slots; public string matchId; public int noites; public string dificuldade; public Lab lab; public string mapa; }
     // Laboratório de playtest: variações que o anfitrião escolhe para comparar noites (o padrão é a regra normal).
     // crepusculo: segundos até a Vigília; fogo: selo sob fogo de 1 e de 2 inimigos; execucao: segundos para executar; economia: óbolos e mercadores.
     public class Lab
@@ -230,5 +233,8 @@ namespace RitualReversal.Simulacao
         public List<Rastro> rastros = new List<Rastro>(); public List<Pegada> pegadas = new List<Pegada>();
         public int pedidos;
         public Eco eco; public HashSet<int> suspeitaC = new HashSet<int>(); // eco do coro para a caça; altares que o culto sabe que foram descobertos
+        // o mapa da partida; no asilo, portas (aberta?) e as fechadas como caixas, e o fim do apagão de cada ala (0 = luz acesa),
+        // na ordem dos quadros (a ordem do objeto do JS)
+        public string mapa = "catedral"; public List<bool> portas; public List<Caixa> fechadas; public Dictionary<string, double> energia;
     }
 }

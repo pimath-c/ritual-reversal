@@ -48,7 +48,8 @@ namespace RitualReversal.Simulacao
         public static Jogo CreateGame(OpcoesJogo opts = null)
         {
             if (opts == null) opts = new OpcoesJogo();
-            var g = new Jogo { opts = opts, timers = opts.timers, matchId = opts.matchId ?? DateTime.Now.Ticks.ToString(), lab = Lab.De(opts.lab) };
+            string mapaId = Mapa.Tem(opts.mapa) ? opts.mapa : "catedral"; Mapa.Ativar(new Jogo { mapa = mapaId });
+            var g = new Jogo { opts = opts, timers = opts.timers, matchId = opts.matchId ?? DateTime.Now.Ticks.ToString(), lab = Lab.De(opts.lab), mapa = mapaId };
             foreach (var s in (opts.slots ?? DefaultSlots())) g.slots.Add(new Slot(s.team, s.cid, s.name));
             for (int i = 0; i < Mapa.REAG.Count; i++) g.reagents.Add(new Reagente { i = i, x = Mapa.REAG[i].x, z = Mapa.REAG[i].z, has = true, t = 0 });
             for (int i = 0; i < 6; i++) g.flares.Add(new Sinalizador());
@@ -132,6 +133,7 @@ namespace RitualReversal.Simulacao
 
         public static void Act(Jogo g, string cid, Acao a)
         {
+            Mapa.Ativar(g);
             var slot = g.slots.FirstOrDefault(s => s.cid == cid); if (slot == null || a == null) return;
             string role = RoleOf(g, slot.team);
             if (a.type == "pick" && g.phase == "pick" && role == "C") { int i = a.i; if (i < 0 || i > 5) return; if (g.picks.Contains(i)) g.picks.Remove(i); else if (g.picks.Count < 3) g.picks.Add(i); }
@@ -163,6 +165,7 @@ namespace RitualReversal.Simulacao
         }
         public static void DropHuman(Jogo g, string cid)
         {
+            Mapa.Ativar(g);
             var s = g.slots.FirstOrDefault(x => x.cid == cid); if (s == null) return; s.cid = null; if (g.phase != "final") LogE(g, "saiu", "who", s.name, "fase", g.phase);
             var a = g.actors.FirstOrDefault(x => x.cid == cid); if (a != null) { a.cid = null; a.human = false; a.inp.fire = false; a.inp.use = false; a.inp.ag = false; a.ag = false; }
             g.ready.Remove(cid);
@@ -200,10 +203,18 @@ namespace RitualReversal.Simulacao
             for (int i = 0; i < P.Count; i++) P[i].i = i;
             g.pontos = P; g.sal = new List<Sal>(); g.realocar = new List<double>();
             g.tarefas = new Dictionary<string, List<Tarefa>> { { "H", new List<Tarefa>() }, { "C", new List<Tarefa>() } }; g.rastros = new List<Rastro>(); g.pegadas = new List<Pegada>();
+            // asilo: portas começam abertas e a luz acesa em todas as alas (a catedral não tem nada disso)
+            if (Mapa.PORTAS_DIN.Count > 0) { g.portas = Mapa.PORTAS_DIN.Select(p => true).ToList(); RecalcularPortas(g); }
+            if (Mapa.QUADROS.Count > 0) { g.energia = new Dictionary<string, double>(); foreach (var q in Mapa.QUADROS) g.energia[q.setor] = 0; }
+        }
+        static void RecalcularPortas(Jogo g)
+        {
+            g.fechadas = Mapa.PORTAS_DIN.Where(p => !g.portas[p.i]).Select(p => new Caixa { x1 = p.x1, x2 = p.x2, z1 = p.z1, z2 = p.z2, h = 4.5, tall = true, porta = p.i }).ToList();
+            Mapa.PORTAS_FECHADAS = g.fechadas;
         }
         static void NovoMomento(Jogo g, int mi)
         {
-            g.momento = mi; var T = Regras.TAREFAS[mi];
+            g.momento = mi; var T = mi == 0 && Mapa.TAREFA0 != null ? Mapa.TAREFA0 : Regras.TAREFAS[mi];
             Func<TarefaDef, Tarefa> nova = t => new Tarefa { id = t.id, nome = t.nome, meta = t.meta, rec = t.rec };
             g.tarefas = new Dictionary<string, List<Tarefa>> { { "H", T["H"].Select(nova).ToList() }, { "C", T["C"].Select(nova).ToList() } };
             if (mi > 0) { Ev(g, "momento", "i", mi, "nome", CFG.momentoNome[mi]); Feed(g, mi == 1 ? "A Vigília começou: os altares despertam." : "A Hora Morta chegou: rituais mais rápidos, a névoa se fecha.", "big"); }
@@ -304,8 +315,14 @@ namespace RitualReversal.Simulacao
         // ============ LUZ E SANIDADE ============
         public static double LightAt(Jogo g, double x, double z)
         {
-            double L = 0;
-            foreach (var c in Mapa.CANDLES) { double d = JS.Hypot(x - c.x, z - c.z); if (d < 8.5) L += 1 - d / 8.5; }
+            Mapa.Ativar(g);
+            double L = 0; var en = g != null ? g.energia : null;
+            for (int k = 0; k < Mapa.CANDLES.Count; k++)
+            {
+                var c = Mapa.CANDLES[k]; string st = k < Mapa.LUZ_SETOR.Count ? Mapa.LUZ_SETOR[k] : null;
+                if (en != null && st != null && en.ContainsKey(st) && en[st] > g.t) continue;   // lâmpadas de ala sem luz não contam
+                double d = JS.Hypot(x - c.x, z - c.z); if (d < 8.5) L += 1 - d / 8.5;
+            }
             var Z = Mapa.ZonaDe(x, z);
             if (Z != null) L += Z.luar; // luar das zonas: o Claustro e a capela desabada não têm teto; o promontório e as pontes, céu aberto
             else // na floresta, o luar só chega nas clareiras e ao longo das trilhas; a mata fechada é breu
@@ -338,6 +355,7 @@ namespace RitualReversal.Simulacao
         // ============ MOVIMENTO (também serve de predição no cliente) ============
         public static void MoveHuman(Jogo g, Ator a, Entrada inp, double dt)
         {
+            Mapa.Ativar(g);
             if (inp != null)
             {
                 a.inp.mx = JS.Clamp(double.IsNaN(inp.mx) ? 0 : inp.mx, -1, 1); a.inp.mz = JS.Clamp(double.IsNaN(inp.mz) ? 0 : inp.mz, -1, 1); a.inp.sp = inp.sp;
@@ -353,7 +371,7 @@ namespace RitualReversal.Simulacao
             mx /= len; mz /= len;
             double sp = a.speed * (a.slowT > 0 ? .6 : 1);
             if (a.st == "down") sp = .8;
-            else { if (a.inp.sp && mz < 0 && a.sealing < 0 && !a.ag) sp = CFG.sprint * (a.speed / CFG.speed); if (a.ag) sp *= CFG.agachadoVel; if (a.sealing >= 0) sp *= .4; if (a.hp < a.maxHp * .5) sp *= .9; }
+            else { if (a.inp.sp && mz < 0 && a.sealing < 0 && !a.ag) sp = CFG.sprint * (a.speed / CFG.speed); if (a.ag) sp *= CFG.agachadoVel; if (a.sealing >= 0) sp *= .4; if (a.hp < a.maxHp * .5) sp *= .9; if (Mapa.AGUA.Count > 0 && Mapa.NaAgua(a.x, a.z)) sp *= CFG.aguaVel; }
             double s = JS.Sin(a.yaw), c = JS.Cos(a.yaw);
             MoverSeguro(a, a.x + (mx * c + mz * s) * sp * dt, a.z + (-mx * s + mz * c) * sp * dt, .4); a.moving = true;
         }
@@ -528,6 +546,7 @@ namespace RitualReversal.Simulacao
         public static bool InCircle(Ponto a, Ponto A) { return JS.Hypot(a.x - A.x, a.z - A.z) <= CFG.circleR; }
         public static Contextos Contexts(Jogo g, Ator a)
         {
+            Mapa.Ativar(g);
             var o = new Contextos();
             if (a == null || a.st != "alive") return o;
             foreach (var b in g.actors)
@@ -549,6 +568,23 @@ namespace RitualReversal.Simulacao
                 if (a.team == "H" && p.tipo == "sentinela" && !p.acesa) { o.e = new Ctx { key = "pt" + p.i, type = "ponto", P = p.i, label = "Segure E para acender a sentinela", time = 4 }; return o; }
                 if (a.team == "C" && p.tipo == "erva") { o.e = new Ctx { key = "pt" + p.i, type = "ponto", P = p.i, label = "Segure E para colher a erva-noturna", time = 2.5 }; return o; }
                 if (a.team == "C" && p.tipo == "tumulo") { o.e = new Ctx { key = "pt" + p.i, type = "ponto", P = p.i, label = "Segure E para profanar o túmulo", time = 4 }; return o; }
+            }
+            // asilo: quadro de força da ala (o culto corta, a caça religa) e portas (abrir/fechar)
+            if (g.energia != null) foreach (var q in Mapa.QUADROS)
+                {
+                    if (JS.Hypot(a.x - q.x, a.z - q.z) > 2.2) continue; bool apagada = g.energia[q.setor] > g.t; string nome = Regras.NOME_SETOR[q.setor];
+                    if (a.team == "C" && !apagada) { o.e = new Ctx { key = "qd" + q.setor, type = "quadro", setor = q.setor, label = "Segure E para cortar a luz da ala " + nome, time = CFG.cortarLuz }; return o; }
+                    if (a.team == "H" && apagada) { o.e = new Ctx { key = "qd" + q.setor, type = "quadro", setor = q.setor, label = "Segure E para religar a luz da ala " + nome, time = CFG.religarLuz }; return o; }
+                    o.info = apagada ? "A luz da ala " + nome + " está cortada" : "A luz da ala " + nome + " está acesa"; return o;
+                }
+            if (g.portas != null)
+            {
+                PortaDin P = null; double pd = 2.1;
+                foreach (var q in Mapa.PORTAS_DIN) { double d = JS.Hypot(a.x - JS.Clamp(a.x, q.x1, q.x2), a.z - JS.Clamp(a.z, q.z1, q.z2)); if (d < pd) { pd = d; P = q; } }
+                if (P != null && !(a.team == "H" && g.altars.Any(A => A.state == "active" && InCircle(a, A))))
+                {
+                    bool ab = g.portas[P.i]; o.e = new Ctx { key = "porta" + P.i, type = "porta", P = P.i, label = ab ? "Segure E para fechar a porta" : "Segure E para abrir a porta", time = CFG.porta }; return o;
+                }
             }
             if (a.team == "H")
             {
@@ -596,6 +632,16 @@ namespace RitualReversal.Simulacao
                 case "decoy": return A == null || A.chosen || A.state != "dormant" ? "altar não está livre" : g.decoys < 1 ? "sem Chamarizes" : null;
                 case "purge": return A == null || A.state != "awake" ? "altar não está desperto" : null;
                 case "transfer": return A == null || A.chosen || A.state != "dormant" ? "destino não está livre" : null;
+                case "porta":
+                    {
+                        var P = ctx.P.HasValue && ctx.P.Value >= 0 && ctx.P.Value < Mapa.PORTAS_DIN.Count ? Mapa.PORTAS_DIN[ctx.P.Value] : null; if (P == null || g.portas == null) return "sem porta";
+                        if (g.portas[P.i] && g.actors.Any(o => o.st != "dead" && o.x > P.x1 - .45 && o.x < P.x2 + .45 && o.z > P.z1 - .45 && o.z < P.z2 + .45)) return "alguém está na porta"; return null;
+                    }
+                case "quadro":
+                    {
+                        if (g.energia == null || ctx.setor == null || !g.energia.ContainsKey(ctx.setor)) return "sem quadro"; bool ap = g.energia[ctx.setor] > g.t;
+                        return a.team == "C" ? (ap ? "a luz já está cortada" : null) : (ap ? null : "a luz já está acesa");
+                    }
             }
             return null;
         }
@@ -605,6 +651,20 @@ namespace RitualReversal.Simulacao
             string neg = AcaoNegada(g, a, ctx, A, R); if (neg != null) { LogE(g, "acao_negada", "who", a.name, "tipo", ctx.type, "motivo", neg); return; }
             switch (ctx.type)
             {
+                case "porta":
+                    {
+                        var P = Mapa.PORTAS_DIN[ctx.P.Value]; bool ab = !g.portas[P.i]; g.portas[P.i] = ab; RecalcularPortas(g);
+                        Ev(g, "porta", "i", P.i, "aberta", ab, "a", a.id); Ev(g, "sfx", "k", ab ? "porta_abre" : "porta_fecha", "x", P.x, "z", P.z, "a", a.id);
+                        if (a.human) LogE(g, "porta", "who", a.name, "aberta", ab); break;
+                    }
+                case "quadro":
+                    {
+                        bool corta = a.team == "C"; string nome = Regras.NOME_SETOR[ctx.setor]; g.energia[ctx.setor] = corta ? g.t + CFG.apagao : 0;
+                        var q = Mapa.QUADROS.First(x => x.setor == ctx.setor);
+                        Ev(g, "energia", "setor", ctx.setor, "ligada", !corta); Ev(g, "sfx", "k", "estalo", "x", q.x, "z", q.z, "a", a.id);
+                        Feed(g, corta ? "As luzes da ala " + nome + " se apagaram." : "A luz da ala " + nome + " voltou.", corta ? "c" : "h");
+                        LogE(g, "energia", "who", a.name, "team", a.team, "setor", ctx.setor, "ligada", !corta); break;
+                    }
                 case "ponto":
                     {
                         var p = ctx.P.HasValue && ctx.P.Value < g.pontos.Count ? g.pontos[ctx.P.Value] : null; if (p == null || !p.ativo) break;
@@ -916,6 +976,7 @@ namespace RitualReversal.Simulacao
         // ============ PASSO PRINCIPAL ============
         public static void Step(Jogo g, double dt)
         {
+            Mapa.Ativar(g);
             g.t += dt;
             if (g.phase == "play") { g.rt += dt; PlayStep(g, dt); }
             else if (g.timers && g.phase != "final") { g.phaseT -= dt; if (g.phaseT <= 0) TimeoutPhase(g); }
@@ -923,6 +984,11 @@ namespace RitualReversal.Simulacao
         static void PlayStep(Jogo g, double dt)
         {
             G_ATUAL = g;
+            // asilo: o apagão de uma ala acaba sozinho
+            if (g.energia != null) foreach (var k in g.energia.Keys.ToList()) if (g.energia[k] > 0 && g.t >= g.energia[k])
+                    {
+                        g.energia[k] = 0; Ev(g, "energia", "setor", k, "ligada", true); Feed(g, "A luz da ala " + Regras.NOME_SETOR[k] + " voltou sozinha.", ""); LogE(g, "energia", "setor", k, "ligada", true, "sozinha", true);
+                    }
             foreach (var a in g.actors)
             {
                 a._vx = (a.x - (a._px.HasValue ? a._px.Value : a.x)) / dt; a._vz = (a.z - (a._pz.HasValue ? a._pz.Value : a.z)) / dt; a._px = a.x; a._pz = a.z;
@@ -995,6 +1061,7 @@ namespace RitualReversal.Simulacao
         }
         public static Vencedor Winner(Jogo g)
         {
+            Mapa.Ativar(g);
             if (!(Noites(g) > 1))
             {
                 var S = g.scores["B"]; if (S == null) return null;

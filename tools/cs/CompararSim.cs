@@ -38,6 +38,7 @@ static class CompararSim
         p.Add(string.Join(";", g.proj.Select(q => q.id + "@" + H(q.x) + "," + H(q.y) + "," + H(q.z))));
         p.Add(string.Join(";", g.pickups.Select(q => q.id + q.kind + "@" + H(q.x) + "," + H(q.z))));
         p.Add("d" + g.decoys + (g.transferUsed ? "T" : "F"));
+        if (g.portas != null) p.Add("P" + string.Join("", g.portas.Select(x => x ? "1" : "0")) + ";" + string.Join(",", g.energia.Select(kv => kv.Key + H(kv.Value))));
         foreach (var e in g.events) { var d = new Dictionary<string, object>(e.d); p.Add("E" + e.type + O(d)); }
         for (int i = nLog; i < g.log.Count; i++) { var r = g.log[i]; var d = new Dictionary<string, object>(r.d); d["t"] = r.t; d["r"] = r.r; d["ev"] = r.ev; p.Add("L" + O(d)); }
         return string.Join("|", p);
@@ -95,6 +96,9 @@ static class CompararSim
     static int Main(string[] args)
     {
         Sim.Iniciar(File.ReadAllText(args[0]));
+        // os outros mapas ao lado (simulacao-asilo.json...); MAPA=asilo no ambiente joga nele
+        foreach (var f in Directory.GetFiles(Path.GetDirectoryName(Path.GetFullPath(args[0])), "simulacao-*.json")) Mapa.Carregar(File.ReadAllText(f));
+        string mapa = Environment.GetEnvironmentVariable("MAPA"); Mapa.Usar(mapa ?? "catedral");
         uint semente = uint.Parse(args[1]); int passos = int.Parse(args[2]); string saida = args[3]; int partidas = args.Length > 4 ? int.Parse(args[4]) : 1; string modo = args.Length > 5 ? args[5] : "bots";
         Console.Error.WriteLine("nav C#: " + Mapa.WP.Count + " nós, " + Mapa.Arestas() + " arestas, principal " + Mapa.principal + " (JS: " + Mapa.navNos + ", " + Mapa.navArestas + ", " + Mapa.navPrincipalJS + ")");
         JS.Random = JS.Mulberry32(semente);
@@ -103,7 +107,7 @@ static class CompararSim
             for (int m = 0; m < partidas; m++)
             {
                 var slots = new List<Slot>(); for (int j = 0; j < 4; j++) slots.Add(new Slot(j < 2 ? "A" : "B", (modo == "H" && j == 0) || (modo == "C" && j == 2) ? "eu" : null, "b" + j));
-                var g = Sim.CreateGame(new OpcoesJogo { timers = true, slots = slots, matchId = "cmp" + m, dificuldade = Environment.GetEnvironmentVariable("DIF"), lab = LabDoAmbiente() });
+                var g = Sim.CreateGame(new OpcoesJogo { timers = true, slots = slots, matchId = "cmp" + m, dificuldade = Environment.GetEnvironmentVariable("DIF"), lab = LabDoAmbiente(), mapa = mapa });
                 int nLog = 0; var D = new Dir(); var r = JS.Mulberry32((semente ^ 0x5bd1e995u) + (uint)m);
                 for (int n = 0; n < passos && g.phase != "final"; n++)
                 {
