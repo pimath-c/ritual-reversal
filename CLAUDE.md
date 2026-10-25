@@ -14,6 +14,7 @@ commits em português.
 - `shared/sim.js` — simulação compartilhada (navegador e servidor): regras, mapa, navegação A* em grade, bots,
   snapshot. Mapa compacto: coordenadas da floresta escritas na planta original (`HALF0`) e mapeadas por `mataXZ`.
 - `client/index.html` — cliente inteiro (render, HUD, áudio, rede, controles de toque, níveis de qualidade).
+- `client/asilo.js` — o Asilo Blackwater (`RR_ASILO`): salas, portas, lâmpadas e quadros de força.
 - `client/mundo.js` — a catedral, as pontes, o desfiladeiro e as peças do mapa da v6 (`RR_MUNDO`); `client/arma.js` — primeira
   pessoa (mãos, clipes, inspeções); `client/skins.js` — skins das armas (`RR_SKINS`, ver `docs/SKINS.md`). Os três são
   embutidos por build.js/build-mobile.js e servidos pelo servidor.
@@ -29,6 +30,7 @@ commits em português.
     node tools/protocolo.js         # servidor + clientes falsos
     python3 tools/montar-sons.py    # só se mudar uma gravação ou receita (precisa de ffmpeg ou pip install imageio-ffmpeg numpy)
     node tools/build.js             # gera dist/ritual-reversal.html
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador-asilo.js   # Asilo Blackwater: portas, quadros, planta, fotos
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador.js   # Chromium, 17 vistas, Arsenal, velas, reagente, execução
     node tools/fluxo.js                     # mapa: distâncias pelo A*, exposição, invariantes do design (grava dist/fluxo)
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/alturas.js     # nenhuma peça alta parece mais baixa do que bloqueia
@@ -45,7 +47,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6)
+## Estado atual (v6.2)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -146,6 +148,20 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   sem nenhuma queda de Caçador): o bot do culto canalizando revida quem o acertou há menos de `CFG.botRevida` (2,5 s) ou quem
   está a menos de `CFG.botRevidaPerto` (20 m; antes 8). Só bots, nenhuma regra; portado ao C# (bit a bit). `VERSAO` 6.1.
   Bots, sementes 1000–1199: culto 30% → 37%. Descartado: o Guardião vigiar fora do círculo depois do eco (26%).
+- v6.2 (notas em `notas/v6.2.md`): segundo mapa, **Asilo Blackwater** (`mapaAsilo()` no sim.js; a catedral é `mapaCatedral()`, igual
+  byte a byte). Vários mapas: `FABRICAS`, `mapa(id)`, `prepararMapa`, `usarMapa(M)` troca os nomes do módulo e `ativar(g)` no começo
+  de cada entrada (createGame, act, step, snapshot...) põe o mapa do jogo e as portas fechadas (`PORTAS_FECHADAS`); `opts.mapa` e
+  `g.mapa`, `Sim.usarMapa(id)`, `Sim.IDS_MAPAS`. Asilo: espaços e vãos (`ESPACOS`, `VAOS`) viram paredes, 18 portas (`PORTAS_DIN`,
+  `g.portas`, `CFG.porta` .35 s, fechada é parede e abafa o som, bots abrem no caminho), quadros de força por ala (`QUADROS`,
+  `g.energia` com o fim do apagão, `CFG.cortarLuz` 4/`religarLuz` 6/`apagao` 90; `lightAt` ignora as lâmpadas da ala sem luz),
+  água (`AGUA`, `CFG.aguaVel` .7), eventos 'porta'/'energia', sons porta_abre/porta_fecha/estalo; snapshot com `mapa`, `portas` (1/0)
+  e `energia` (segundos que faltam). Planta e distâncias em `docs/asilo/`. `MAPA=asilo` em `tools/simular.js` e `tools/testar.js`.
+  Cliente: um mapa por página (`MAPA_BOOT` de sessionStorage 'rr-mapa-boot' ou `SET.mapa`; trocar recarrega, `recarregarNoMapa`),
+  escolha no título e mapa da sala no lobby/salas; `client/asilo.js` (`RR_ASILO`, embutido pelos builds e servido pelo servidor:
+  salas, portas de correr, lâmpadas por ala, quadros, móveis, lago) com `atualizar(dt, estadoMapa(V), agora)`; planta do Tab
+  `plantaAsilo`/`plantaAsiloDin`. Servidor: o mapa é escolhido ao criar a sala (`r.mapa`), vai no welcome/lobby/salas/registro.
+  Teste: `node tools/navegador-asilo.js` (porta, folha, luz, planta, fotos em dist/asilo). Bots, 200 noites: culto 45% no asilo.
+  Falta: o asilo no Unity (sim em C#, visual, escolha do mapa).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

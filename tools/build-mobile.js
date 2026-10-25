@@ -22,6 +22,7 @@ html=html.split(CDN).join('vendor/three/')
   .replace('<script src="arma.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','arma.js'),'utf8')+'\n</script>') // armas, mãos e animação da primeira pessoa
   .replace('<script src="mundo.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','mundo.js'),'utf8')+'\n</script>') // catedral, desfiladeiro e subáreas da mata
   .replace('<script src="skins.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','skins.js'),'utf8')+'\n</script>') // skins das armas
+  .replace('<script src="asilo.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','asilo.js'),'utf8')+'\n</script>') // Asilo Blackwater
   .replace('<script src="modelos.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','modelos.js'),'utf8')+'\n</script>') // modelos 3D (tools/montar-modelos.py)
   .replace('<head>','<head>\n<script>window.RR_APP=true;</script>');
 if(!html.includes('window.RR_APP=true')) throw new Error('não achei <head> para marcar o app');

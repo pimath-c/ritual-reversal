@@ -79,6 +79,14 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
   await espera(500);
   const vivo=cliente('Depois'); await vivo.pronto.catch(()=>falha('servidor caiu')); vivo.envia({t:'hello',create:true,name:'Depois'});
   if(!await vivo.ate(m=>m.t==='welcome')) falha('servidor não responde depois do lixo');
+  // sala no Asilo Blackwater: o mapa vai no welcome, no lobby e na partida; quem entra recebe o mapa da sala
+  const As=cliente('Asilo'), Bs=cliente('Visita'); await As.pronto; await Bs.pronto; As.envia({t:'hello',create:true,name:'Asilo',mapa:'asilo'});
+  const wa=await As.ate(m=>m.t==='welcome'); if(!wa||wa.mapa!=='asilo') falha('sala do asilo sem o mapa no welcome: '+JSON.stringify(wa));
+  else { Bs.envia({t:'hello',code:wa.code,name:'Visita',mapa:'catedral'}); const wb=await Bs.ate(m=>m.t==='welcome'); if(!wb||wb.mapa!=='asilo') falha('quem entra não recebe o mapa da sala');
+    As.envia({t:'start'}); const sa=await As.ate(m=>m.t==='snap'&&m.s&&m.s.mapa,12000)||await As.ate(m=>m.t==='snap',4000); const mp=sa&&(sa.s?sa.s.mapa:sa.mapa);
+    if(mp!=='asilo') falha('a partida da sala do asilo não está no asilo: '+mp);
+    else { const st=sa.s||sa; if(!Array.isArray(st.portas)||st.portas.length!==18||!st.energia) falha('snapshot do asilo sem portas/energia'); else console.log('  asilo: welcome, lobby e partida no mapa da sala; 18 portas e energia no snapshot'); } }
+  const lixoMapa=cliente('Lixo'); await lixoMapa.pronto; lixoMapa.envia({t:'hello',create:true,name:'Lixo',mapa:'../../etc'}); const wl=await lixoMapa.ate(m=>m.t==='welcome'); if(!wl||wl.mapa!=='catedral') falha('mapa desconhecido deveria virar catedral');
   if(/erro não tratado|TypeError|ReferenceError/.test(saida)) falha('erro no log do servidor:\n'+saida);
   fim();
 })().catch(e=>fim(String(e&&e.stack||e)));

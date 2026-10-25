@@ -15,11 +15,13 @@ const tagArma='<script src="arma.js"></script>', arma=fs.readFileSync(path.join(
 const tagMundo='<script src="mundo.js"></script>', mundo=fs.readFileSync(path.join(ROOT,'client','mundo.js'),'utf8');
 const tagSkins='<script src="skins.js"></script>', skins=fs.readFileSync(path.join(ROOT,'client','skins.js'),'utf8');
 const tagModelos='<script src="modelos.js"></script>', modelos=fs.readFileSync(path.join(ROOT,'client','modelos.js'),'utf8');
+const tagAsilo='<script src="asilo.js"></script>', asilo=fs.readFileSync(path.join(ROOT,'client','asilo.js'),'utf8');
+if(!cli.includes(tagAsilo)) throw new Error('client/index.html não tem '+tagAsilo);
 if(!cli.includes(tagModelos)) throw new Error('client/index.html não tem '+tagModelos);
 if(!cli.includes(tagSkins)) throw new Error('client/index.html não tem '+tagSkins);
 if(!cli.includes(tagMundo)) throw new Error('client/index.html não tem '+tagMundo);
 if(!cli.includes(tagArma)) throw new Error('client/index.html não tem '+tagArma);
 if(!cli.includes(tagSons)) throw new Error('client/index.html não tem '+tagSons);
 fs.mkdirSync(path.dirname(out),{recursive:true});
-fs.writeFileSync(out,cli.replace(tag,()=>'<script>\n'+sim+'\n</script>').replace(tagSons,()=>'<script>\n'+sons+'</script>').replace(tagArma,()=>'<script>\n'+arma+'\n</script>').replace(tagMundo,()=>'<script>\n'+mundo+'\n</script>').replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>'<script>\n'+modelos+'\n</script>'));
+fs.writeFileSync(out,cli.replace(tag,()=>'<script>\n'+sim+'\n</script>').replace(tagSons,()=>'<script>\n'+sons+'</script>').replace(tagArma,()=>'<script>\n'+arma+'\n</script>').replace(tagMundo,()=>'<script>\n'+mundo+'\n</script>').replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>'<script>\n'+modelos+'\n</script>').replace(tagAsilo,()=>'<script>\n'+asilo+'\n</script>'));
 console.log('gerado',out,(fs.statSync(out).size/1024).toFixed(0)+' KB');

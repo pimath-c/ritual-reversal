@@ -11,11 +11,11 @@ const LOGDIR=path.join(ROOT,'logs'); fs.mkdirSync(LOGDIR,{recursive:true});
 const TICK=1/30, SNAP_EVERY=1.5; // 30 Hz de simulação, 20 Hz de snapshots
 const RESERVA_MS=120000; // quanto tempo a vaga de quem caiu fica guardada
 
-const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8'],'/sons.js':['client/sons.js','application/javascript; charset=utf-8'],'/arma.js':['client/arma.js','application/javascript; charset=utf-8'],'/mundo.js':['client/mundo.js','application/javascript; charset=utf-8'],'/skins.js':['client/skins.js','application/javascript; charset=utf-8'],'/modelos.js':['client/modelos.js','application/javascript; charset=utf-8']};
+const FILES={'/':['client/index.html','text/html; charset=utf-8'],'/index.html':['client/index.html','text/html; charset=utf-8'],'/sim.js':['shared/sim.js','application/javascript; charset=utf-8'],'/sons.js':['client/sons.js','application/javascript; charset=utf-8'],'/arma.js':['client/arma.js','application/javascript; charset=utf-8'],'/mundo.js':['client/mundo.js','application/javascript; charset=utf-8'],'/skins.js':['client/skins.js','application/javascript; charset=utf-8'],'/modelos.js':['client/modelos.js','application/javascript; charset=utf-8'],'/asilo.js':['client/asilo.js','application/javascript; charset=utf-8']};
 const server=http.createServer((req,res)=>{
   const url=req.url.split('?')[0];
   if(url==='/api/salas'){ // salas públicas que ainda não começaram, para a lista da tela inicial
-    const lista=[...rooms.values()].filter(r=>r.listada&&!r.game&&r.clients.size>0&&r.clients.size<4).map(r=>({code:r.code,anfitriao:(r.clients.get(r.host)||{}).name||'',jogadores:r.clients.size}));
+    const lista=[...rooms.values()].filter(r=>r.listada&&!r.game&&r.clients.size>0&&r.clients.size<4).map(r=>({code:r.code,anfitriao:(r.clients.get(r.host)||{}).name||'',jogadores:r.clients.size,mapa:r.mapa}));
     res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}); return res.end(JSON.stringify(lista.slice(0,20))); }
   if(url==='/api/info'){ res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}); /* o app Android pergunta de outra origem */ return res.end(JSON.stringify({server:'ritual-reversal',rooms:rooms.size})); }
   if(url.startsWith('/logs/')){ const f=path.basename(url); const p=path.join(LOGDIR,f); if(/^[\w-]+\.json$/.test(f)&&fs.existsSync(p)){ res.writeHead(200,{'Content-Type':'application/json','Content-Disposition':`attachment; filename="${f}"`}); return fs.createReadStream(p).pipe(res); } }
@@ -28,7 +28,7 @@ let CID=1;
 function code(){ const L='ABCDEFGHJKLMNPQRSTUVWXYZ'; let c; do{ c=''; for(let i=0;i<4;i++) c+=L[Math.floor(Math.random()*L.length)]; }while(rooms.has(c)); return c; }
 function newRoom(){ const r={code:code(),clients:new Map(),host:null,slots:[0,1,2,3].map(i=>({team:i<2?'A':'B',cid:null,name:Sim.BOT_NAMES[i<2?'A':'B'][i%2]})),game:null,acc:0,snapAcc:0,logFile:null,logN:0,emptyT:0,reservas:new Map(),listada:false}; rooms.set(r.code,r); return r; }
 const send=(ws,o)=>{ if(ws.readyState===1) ws.send(JSON.stringify(o)); };
-function lobbyState(r){ return {t:'lobby',code:r.code,host:r.host,inGame:!!r.game,publica:r.listada,dif:r.dif||'normal',lab:r.lab||null,slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name,vis:c.vis||null}))}; }
+function lobbyState(r){ return {t:'lobby',code:r.code,mapa:r.mapa,host:r.host,inGame:!!r.game,publica:r.listada,dif:r.dif||'normal',lab:r.lab||null,slots:r.slots.map(s=>({team:s.team,name:s.name,cid:s.cid})),players:[...r.clients.values()].map(c=>({cid:c.cid,name:c.name,vis:c.vis||null}))}; }
 // skins escolhidas no Arsenal (só aparência): só nomes curtos em minúsculas por arma; o cliente confere contra o catálogo
 function limparVis(v){ const o={}; if(v&&typeof v==='object') for(const k of ['carabina','revolver','cetro']) if(typeof v[k]==='string'&&/^[a-z]{1,16}$/.test(v[k])) o[k]=v[k]; return o; }
 function broadcastLobby(r){ const m=lobbyState(r); r.clients.forEach(c=>send(c.ws,m)); }
@@ -50,19 +50,19 @@ wss.on('connection',ws=>{
       c.name=String(m.name||'Jogador').replace(/[<>]/g,'').slice(0,16)||'Jogador';
       c.token=typeof m.token==='string'?m.token.slice(0,40):null; c.vis=limparVis(m.vis);
       let r;
-      if(m.create){ r=newRoom(); r.listada=m.publica===true; } else { r=rooms.get(String(m.code||'').toUpperCase()); if(!r) return send(ws,{t:'error',msg:'Sala não encontrada. Confira o código.'}); }
+      if(m.create){ r=newRoom(); r.listada=m.publica===true; r.mapa=Sim.IDS_MAPAS.includes(m.mapa)?m.mapa:'catedral'; } /* o mapa é escolhido ao criar a sala */ else { r=rooms.get(String(m.code||'').toUpperCase()); if(!r) return send(ws,{t:'error',msg:'Sala não encontrada. Confira o código.'}); }
       if(r.game){
         const res=c.token&&r.reservas.get(c.token);
         if(!res||res.ate<Date.now()) return send(ws,{t:'error',msg:'Essa partida já começou. Peça para o anfitrião voltar ao lobby.'});
         if(!Sim.reclaimHuman(r.game,res.i,c.cid,res.name)) return send(ws,{t:'error',msg:'Sua vaga já foi ocupada.'});
         r.reservas.delete(c.token); r.slots[res.i].cid=c.cid; r.slots[res.i].name=res.name; c.name=res.name;
         c.room=r; r.clients.set(c.cid,c); if(!r.host) r.host=c.cid;
-        send(ws,{t:'welcome',cid:c.cid,code:r.code,voltou:true}); broadcastLobby(r);
+        send(ws,{t:'welcome',cid:c.cid,code:r.code,mapa:r.mapa,voltou:true}); broadcastLobby(r);
         console.log(`[${r.code}] ${res.name} reconectou`); return;
       }
       if(!seat(r,c)) return send(ws,{t:'error',msg:'A sala está cheia (4 jogadores).'});
       c.room=r; r.clients.set(c.cid,c); if(!r.host) r.host=c.cid;
-      send(ws,{t:'welcome',cid:c.cid,code:r.code}); broadcastLobby(r); return;
+      send(ws,{t:'welcome',cid:c.cid,code:r.code,mapa:r.mapa}); broadcastLobby(r); return;
     }
     const r=c.room; if(!r) return;
     if(m.t==='chat'){ // conversa da sala: no máximo 140 caracteres, uma mensagem a cada 0,6 s
@@ -79,7 +79,7 @@ wss.on('connection',ws=>{
       // laboratório de playtest: só valores conhecidos passam (labDe descarta o resto)
       if(m.lab&&typeof m.lab==='object'&&!Array.isArray(m.lab)){ const L=Sim.labDe(m.lab), o={}; for(const k in Sim.LAB_OPCOES) o[k]=L[k]; r.lab=o; broadcastLobby(r); } }
     if(m.t==='start'&&!r.game&&c.cid===r.host){
-      r.game=Sim.createGame({timers:true,slots:r.slots,matchId:r.code+'-'+Date.now(),dificuldade:r.dif||'normal',lab:r.lab||null});
+      r.game=Sim.createGame({timers:true,slots:r.slots,matchId:r.code+'-'+Date.now(),dificuldade:r.dif||'normal',lab:r.lab||null,mapa:r.mapa});
       r.logFile=path.join(LOGDIR,r.game.matchId+'.json'); r.logN=0; broadcastLobby(r);
     }
     if(m.t==='lobby'&&r.game&&c.cid===r.host&&r.game.phase==='final'){ flushLog(r,true); r.game=null; r.reservas.clear(); broadcastLobby(r); }
@@ -102,7 +102,7 @@ wss.on('connection',ws=>{
 function flushLog(r,final){
   if(!r.game||!r.logFile) return;
   const L=r.game.log; if(L.length===r.logN&&!final) return;
-  fs.writeFileSync(r.logFile,JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,match:r.game.matchId,dificuldade:(r.game.opts&&r.game.opts.dificuldade)||'normal',lab:r.game.lab,slots:r.slots,scores:r.game.scores,stats:r.game.stats,events:L},null,1)); r.logN=L.length;
+  fs.writeFileSync(r.logFile,JSON.stringify({versao:Sim.VERSAO,registro:Sim.REGISTRO,mapa:r.game.mapa,match:r.game.matchId,dificuldade:(r.game.opts&&r.game.opts.dificuldade)||'normal',lab:r.game.lab,slots:r.slots,scores:r.game.scores,stats:r.game.stats,events:L},null,1)); r.logN=L.length;
 }
 function routeEvents(r){
   const g=r.game; if(!g.events.length) return;

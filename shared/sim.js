@@ -796,7 +796,7 @@ function reclaimHuman(g,slotIdx,cid,name){ ativar(g);
 
 
 // versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
-const VERSAO='6.1', REGISTRO=3;
+const VERSAO='6.2', REGISTRO=3;
 
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.
@@ -1809,5 +1809,6 @@ const API={livre,raioParede,FEITICOS,FEIT_BY_TEAM,ITENS,momentoDe,CFG,CLASSES,CL
 // os nomes do mapa leem sempre o mapa ativo (o cliente chama Sim.usarMapa ao entrar numa partida)
 Object.defineProperties(API,{PORTAS:{get:()=>PORTAS,enumerable:true},PISTA_PTS:{get:()=>PISTA_PTS,enumerable:true},ERVA_PTS:{get:()=>ERVA_PTS,enumerable:true},SENTINELA_PTS:{get:()=>SENTINELA_PTS,enumerable:true},SEG_TRILHA:{get:()=>SEG_TRILHA,enumerable:true},ZONAS:{get:()=>ZONAS,enumerable:true},zonaDe:{get:()=>zonaDe,enumerable:true},coberto:{get:()=>coberto,enumerable:true},foraDaMata:{get:()=>foraDaMata,enumerable:true},PROMONTORIO:{get:()=>PROMONTORIO,enumerable:true},DESFILADEIRO:{get:()=>DESFILADEIRO,enumerable:true},TRAVESSIAS:{get:()=>TRAVESSIAS,enumerable:true},ABISMO:{get:()=>ABISMO,enumerable:true},ARCOS:{get:()=>ARCOS,enumerable:true},PONTOS_DEF:{get:()=>PONTOS_DEF,enumerable:true},CATEDRAL:{get:()=>CATEDRAL,enumerable:true},naCatedral:{get:()=>naCatedral,enumerable:true},ARVORES:{get:()=>ARVORES,enumerable:true},ARBUSTOS:{get:()=>ARBUSTOS,enumerable:true},TRILHAS:{get:()=>TRILHAS,enumerable:true},CLAREIRAS:{get:()=>CLAREIRAS,enumerable:true},PORTAIS:{get:()=>PORTAIS,enumerable:true},LAPIDES:{get:()=>LAPIDES,enumerable:true},NAV:{get:()=>NAV,enumerable:true},NPCS:{get:()=>NPCS,enumerable:true},WP:{get:()=>WP,enumerable:true},HALF:{get:()=>HALF,enumerable:true},CLAUSTRO:{get:()=>CLAUSTRO,enumerable:true},ZONES:{get:()=>ZONES,enumerable:true},zoneAt:{get:()=>zoneAt,enumerable:true},LUGARES:{get:()=>LUGARES,enumerable:true},ALTARS:{get:()=>ALTARS,enumerable:true},SPAWN:{get:()=>SPAWN,enumerable:true},REAG:{get:()=>REAG,enumerable:true},CANDLES:{get:()=>CANDLES,enumerable:true},WALLS:{get:()=>WALLS,enumerable:true},WALLDEF:{get:()=>WALLDEF,enumerable:true},PILLARS:{get:()=>PILLARS,enumerable:true},PEWS:{get:()=>PEWS,enumerable:true},BOX:{get:()=>BOX,enumerable:true},TALL:{get:()=>TALL,enumerable:true},PORTAS_DIN:{get:()=>PORTAS_DIN,enumerable:true},QUADROS:{get:()=>QUADROS,enumerable:true},AGUA:{get:()=>AGUA,enumerable:true},naNevoa:{get:()=>naNevoa,enumerable:true},TAREFAS:{get:()=>TAREFAS,enumerable:true}});
 API.NOME_SETOR=NOME_SETOR; API.naAgua=(x,z)=>naAgua(x,z);
+Object.defineProperties(API,{ESPACOS:{get:()=>MAPA_ATIVO.ESPACOS||[],enumerable:true},VAOS:{get:()=>MAPA_ATIVO.VAOS||[],enumerable:true}});
 return API;
 });

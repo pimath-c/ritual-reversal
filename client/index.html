@@ -452,10 +452,18 @@ body.toque #legendas{ bottom:auto; top:64px; left:auto; right:200px; transform:s
 <script src="mundo.js"></script>
 <script src="skins.js"></script>
 <script src="modelos.js"></script>
+<script src="asilo.js"></script>
 <script>
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
+// v6.2: o mapa desta página. A página monta um mapa só e trocar de mapa recarrega: o escolhido no menu solo ou o da sala
+// em que se entra (a sala tem o mapa de quem a criou). Precisa vir antes de qualquer leitura dos nomes do mapa no Sim.
+const MAPA_BOOT=(()=>{ let m=null; try{ m=sessionStorage.getItem('rr-mapa-boot'); }catch(e){} if(!m) try{ m=JSON.parse(localStorage.getItem('rr-cfg')||'{}').mapa; }catch(e){} return Sim.IDS_MAPAS.includes(m)?m:'catedral'; })();
+Sim.usarMapa(MAPA_BOOT);
+const ASILO=MAPA_BOOT==='asilo';
+const NOME_MAPA={catedral:'Catedral da Dor',asilo:'Asilo Blackwater'};
+function recarregarNoMapa(id,sala){ try{ sessionStorage.setItem('rr-mapa-boot',id); if(sala) sessionStorage.setItem('rr-entrar-sala',JSON.stringify(sala)); else sessionStorage.removeItem('rr-entrar-sala'); }catch(e){} location.reload(); }
 const {FEITICOS,FEIT_BY_TEAM,NPCS,ITENS,CFG,CLASSES,CLASS_BY_TEAM,HALF,CATEDRAL,SPAWN,CANDLES,WALLDEF,PILLARS,PEWS,BOX,TALL,segBox,clamp,lerp}=Sim;
 const rand=(a,b)=>a+Math.random()*(b-a);
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -929,7 +937,8 @@ function buildWorld(){
   MAT.copaCarvalho=new THREE.MeshStandardMaterial({color:0x1c241a,roughness:1,flatShading:true});
   RT.rune=runeTexture(); RT.flame=radialTex('rgba(255,240,200,1)','rgba(255,120,20,0)'); RT.glow=radialTex('rgba(255,255,255,1)','rgba(255,255,255,0)'); RT.beam=beamTex(); RT.shaft=shaftTex(); RT.win=stainedTex(false); RT.rose=stainedTex(true);
   // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de client/mundo.js (RR_MUNDO)
-  CEU.vitrais=[]; MUNDO=window.RR_MUNDO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar}); Object.assign(PECAS,MUNDO.PECAS);
+  CEU.vitrais=[]; if(!ASILO){ MUNDO=window.RR_MUNDO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar}); Object.assign(PECAS,MUNDO.PECAS); }
+  if(!ASILO){ // o céu do asilo vem de client/asilo.js
   // céu noturno sobre o Claustro: o único lugar do mapa onde se vê a lua
   const ceuTex=canvasTex(8,256,(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#010205'); gr.addColorStop(.55,'#060a14'); gr.addColorStop(1,'#101a2c'); c.fillStyle=gr; c.fillRect(0,0,W,H); });
   // cúpula do céu presa à câmera: sem borda em nenhuma direção (um plano deixava uma faixa vazia no horizonte)
@@ -947,6 +956,9 @@ function buildWorld(){
   const lua2=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.glow,color:0x6f88c8,fog:false,transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending})); lua2.scale.set(64,64,1); world.add(lua2);
   CEU.lua=lua; CEU.lua2=lua2; CEU.ceu=ceu; CEU.estrelas=cupula.children.find(o=>o.isPoints)||null;
   const luar=new THREE.PointLight(0x8fa8e0,.9,70,1.5); luar.position.set(-30,26,-54); scene.add(luar); // sobre o jardim do Claustro, a céu aberto
+  }
+  if(ASILO) VIS_ASILO=window.RR_ASILO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,makeNoise,smooth,scene});
+  else {
   // paredes vindas da simulação, com material por tipo
   Sim.WALLS.forEach(w=>{ if(PECAS[w.kind]) return PECAS[w.kind](w);
     const mat=w.kind==='tumba'?MAT.marble:w.kind==='cripta'?MAT.wallDark:w.kind==='biombo'?MAT.wood:MAT.wall;
@@ -956,12 +968,13 @@ function buildWorld(){
   PEWS.forEach(([x1,x2,z1,z2])=>{ for(let x=x1+.3;x<x2-.5;x+=3.1) for(const zz of [z1+.4,z1+2.1]){ if(zz>z2-.5) continue;
     meshBox(x,x+2.7,.42,.52,zz,zz+.55,MAT.wood,2); meshBox(x,x+2.7,.52,1,zz+.5,zz+.62,MAT.wood,2); meshBox(x,x+.1,0,.95,zz,zz+.6,MAT.wood,2); meshBox(x+2.6,x+2.7,0,.95,zz,zz+.6,MAT.wood,2); } });
   MUNDO.construir();
+  }
   scene.add(new THREE.HemisphereLight(0x33476e,0x100a08,.5));
   const moon=new THREE.DirectionalLight(0x8aa2d6,.42); moon.position.set(18,40,26); moon.castShadow=true; moon.shadow.mapSize.set(PERF.nivel>=3?2048:1024,PERF.nivel>=3?2048:1024);
   // O mapa ficou grande demais para uma sombra só: a câmera de sombra acompanha o jogador (ver seguirLua).
   Object.assign(moon.shadow.camera,{left:-60,right:60,top:60,bottom:-60,near:1,far:170}); moon.shadow.bias=-.0006; moon.shadow.normalBias=.03; scene.add(moon,moon.target); CEU.sol=moon;
   const flameMat=new THREE.SpriteMaterial({map:RT.flame,color:0xffc070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true});
-  CANDLES.forEach(([x,z,tipo])=>{ const fonte={x,z,y:2.1,cor:0xff8a36,int:1.6,alc:14};
+  CANDLES.forEach(([x,z,tipo])=>{ if(tipo==='lampada') return; /* lâmpadas do asilo: client/asilo.js */ const fonte={x,z,y:2.1,cor:0xff8a36,int:1.6,alc:14};
     if(tipo==='fogueira'){ for(let k=0;k<6;k++){ const tr=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,1.3,6),MAT.wood); tr.position.set(x,.2,z); tr.rotation.set(Math.PI/2-.35,k/6*Math.PI*2,0); world.add(tr); }
       for(let k=0;k<9;k++){ const p=new THREE.Mesh(new THREE.DodecahedronGeometry(.22,0),MAT.wall); const a=k/9*Math.PI*2; p.position.set(x+Math.cos(a)*.85,.1,z+Math.sin(a)*.85); world.add(p); }
       for(let k=0;k<4;k++){ const f=new THREE.Sprite(flameMat); f.scale.set(.7,1.1,1); f.position.set(x+rand(-.25,.25),.7+k*.12,z+rand(-.25,.25)); world.add(f); flames.push(f); }
@@ -983,7 +996,7 @@ function buildWorld(){
   // Um conjunto fixo de luzes pontuais vai para as fontes mais próximas da câmera: com mais de 30 fontes
   // espalhadas pelo mapa, acender todas deixaria cada pixel pagando por luzes que ele nem alcança.
   for(let i=0;i<12;i++){ const L=new THREE.PointLight(0xff8a36,0,14,2); nivelLuz(L,i<3?0:i<5?1:i<8?2:3); scene.add(L); candleLights.push(L); }
-  reagentMeshes=Sim.REAG.map(([x,z],i)=>modeloReagente(REAG_TIPOS[i]||'sal',x,z));
+  reagentMeshes=Sim.REAG.map(([x,z],i)=>modeloReagente((ASILO?REAG_TIPOS_ASILO:REAG_TIPOS)[i]||'sal',x,z));
   const N=PERF.minimo?500:PERF.leve?1200:2400,pos=new Float32Array(N*3); for(let i=0;i<N;i++){ pos[i*3]=rand(-HALF.x,HALF.x); pos[i*3+1]=rand(.3,12); pos[i*3+2]=rand(-HALF.z,HALF.z); }
   const dg=new THREE.BufferGeometry(); dg.setAttribute('position',new THREE.BufferAttribute(pos,3));
   RT.dust=new THREE.Points(dg,new THREE.PointsMaterial({size:.05,map:RT.glow,color:0xcdbb96,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false})); world.add(RT.dust);
@@ -1625,7 +1638,7 @@ function jato(x,y,z,dx,dy,dz,n,hex,vel,abre,vida,grav){ const c=new THREE.Color(
     const sp=vel*(.5+Math.random()*.8); PART.vel[i*3]=dx*sp+rand(-abre,abre); PART.vel[i*3+1]=dy*sp+rand(-abre,abre)+abre*.4; PART.vel[i*3+2]=dz*sp+rand(-abre,abre);
     PART.life[i]=PART.max[i]=vida*(.6+Math.random()*.6); PART.grav[i]=grav; PART.base[i*3]=c.r; PART.base[i*3+1]=c.g; PART.base[i*3+2]=c.b; } }
 // onde a bala bateu: chão de pedra ou de terra, paredes de pedra da catedral, troncos e madeira lá fora
-function superficieImpacto(x,y,z){ if(y<.1){ const s=superficie(x,z); return s==='pedra'?'pedra':'terra'; } return Sim.naCatedral(x,z)?'pedra':'madeira'; }
+function superficieImpacto(x,y,z){ if(y<.1){ const s=superficie(x,z); return s==='pedra'?'pedra':'terra'; } return ASILO||Sim.naCatedral(x,z)?'pedra':'madeira'; }
 const COR_IMPACTO={pedra:[0x8a8478,0xffc070],madeira:[0x6a4628,0xb08050],terra:[0x4a3a28,0x7a6040]};
 function impactoMundo(x,y,z,ux,uy,uz){ const sup=superficieImpacto(x,y,z), C=COR_IMPACTO[sup];
   jato(x,y,z,-ux,-uy+.3,-uz,sup==='terra'?14:9,C[0],sup==='terra'?2.2:1.6,.5,.7,sup==='terra'?7:3);   // poeira e lascas voltam na direção de quem atirou
@@ -1665,7 +1678,7 @@ function updateParticles(dt){
 }
 let vmH,vmFlash,vmC,vmOrb,vmMaoH,vmMaoC,vmCarabina,vmRevolver,vmCetro,vmRunas=[];
 // a primeira pessoa (armas, mãos, braços e as animações) fica em client/arma.js
-let ARMA=null, MUNDO=null, SKINS=null; const FX0={x:0,y:0,z:0};
+let ARMA=null, MUNDO=null, SKINS=null, VIS_ASILO=null; const FX0={x:0,y:0,z:0};
 function buildViewmodels(){
   SKINS=window.RR_SKINS?window.RR_SKINS({THREE,RT,efeito,tocar}):null;
   ARMA=window.RR_ARMA({nivel:()=>PERF.nivelAtual,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula:()=>ejetarCapsula(),SKINS});
@@ -1798,11 +1811,17 @@ const SFX={
   gota:(x,z)=>tocar('gota',{x,z,raio:14,vol:.35,max:2,varia:.08}),
   assombro:(x,z)=>tocar('assombro',{x,z,raio:30,vol:.6,max:1}),
   hab:(cls,x,z)=>{ if(cls==='soldado'){ sfxTone(x,z,40,5200,3000,.12,'square',.12); } else if(cls==='exorcista'){ [784,1046,1318].forEach((f,i)=>setTimeout(()=>sfxTone(x,z,34,f,f,.9,'sine',.12),i*70)); } else if(cls==='guardiao'){ sfxTone(x,z,34,60,30,.5,'sine',.9); } else { sfxTone(x,z,34,220,660,.9,'sawtooth',.08); } },
+  // Asilo: portas que rangem ao abrir e batem ao fechar; o estalo do quadro de força e a luz morrendo
+  porta_abre:(x,z)=>{ if(tocar('rangido',{x,z,raio:20,vol:.9,max:4,varia:.08})) return; sfxTone(x,z,20,180,120,.6,'sawtooth',.12); sfxNoise(x,z,20,.5,'bandpass',900,6,.25); },
+  porta_fecha:(x,z)=>{ tocar('impacto_madeira',{x,z,raio:24,vol:1,max:4}); sfxNoise(x,z,24,.18,'lowpass',260,1,.8); sfxTone(x,z,24,70,40,.2,'sine',.5); },
+  estalo:(x,z)=>{ tocar('alavanca',{x,z,raio:30,vol:1,max:3}); sfxNoise(x,z,50,.08,'highpass',2400,1,.6); sfxTone(x,z,50,120,30,.9,'sawtooth',.18); },
   estouro:(x,z)=>{ if(tocar('estouro',{x,z,raio:24,vol:.85,max:5})) return; sfxNoise(x,z,22,.25,'bandpass',900,2,.5); sfxTone(x,z,22,420,90,.25,'triangle',.25); },
 };
 // Passos pelo chão de cada lugar: pedra na catedral e no Claustro, terra batida nas trilhas, folhas secas na mata
 // fechada; com chuva, todo passo fora do teto espirra.
-function superficie(x,z){ const zn=Sim.zoneAt(x,z); if(zn==='Catedral'||zn==='Claustro') return 'pedra';
+function superficie(x,z){ if(ASILO){ if(Sim.coberto(x,z)) return 'pedra'; // asilo: ladrilho e tábua dentro; fora, cascalho nas trilhas e na margem, capim no resto
+    const E=Sim.ESPACOS.find(e=>x>=e.x1&&x<=e.x2&&z>=e.z1&&z<=e.z2); return E&&/^(Trilha|Margem|Pátio|Píer)/.test(E.nome)?'terra':'folhas'; }
+  const zn=Sim.zoneAt(x,z); if(zn==='Catedral'||zn==='Claustro') return 'pedra';
   if(zn==='Desfiladeiro') return x<-60?'terra':'pedra'; // Ponte Grande e Aqueduto de pedra; o tronco da Ponte Caída abafa
   if(zn==='Planalto') return Math.abs(x)<46&&z>-32?'pedra':'terra'; // o adro é de lajes; o resto do promontório, terra batida
   for(const sg of Sim.SEG_TRILHA){ const dx=sg.bx-sg.ax,dz=sg.bz-sg.az,L=dx*dx+dz*dz; let t=L?((x-sg.ax)*dx+(z-sg.az)*dz)/L:0; t=clamp(t,0,1); if(Math.hypot(x-(sg.ax+dx*t),z-(sg.az+dz*t))<sg.w/2+.4) return 'terra'; }
@@ -1845,8 +1864,8 @@ const AMB_LACOS=['mata_laco','noite_laco','cripta_laco','charco_laco','fogo_laco
 function ambientePorLugar(dt){ if(!AU.ok) return; const jogo=V&&V.phase==='play', c=AU.ctx, P=camera.position;
   for(const n of AMB_LACOS){ if(!AMBL.lacos[n]){ const b=AMOS.buf[n]&&AMOS.buf[n][0]; if(!b) continue; const s=c.createBufferSource(); s.buffer=b; s.loop=true; s.loopStart=0; const g=c.createGain(); g.gain.value=0; s.connect(g); g.connect(AU.master);
       s.start(0,Math.random()*b.duration); AMBL.lacos[n]={s,g}; } }
-  if(!AMBL.fornos) AMBL.fornos=Sim.WALLS.filter(w=>w.kind==='forno').map(w=>({x:(w.x1+w.x2)/2,z:(w.z1+w.z2)/2}));
-  const dentro=Sim.coberto(P.x,P.z), zona=Sim.zoneAt(P.x,P.z), mata=zona==='Floresta', cha=Math.hypot(P.x-46,P.z-40), forno=AMBL.fornos.reduce((m,f)=>Math.min(m,Math.hypot(P.x-f.x,P.z-f.z)),99);
+  if(!AMBL.fornos) AMBL.fornos=Sim.WALLS.filter(w=>w.kind==='forno'||w.kind==='caldeira').map(w=>({x:(w.x1+w.x2)/2,z:(w.z1+w.z2)/2}));
+  const dentro=Sim.coberto(P.x,P.z), zona=Sim.zoneAt(P.x,P.z), mata=zona==='Floresta', cha=ASILO?Math.max(0,P.z+60)+6:Math.hypot(P.x-46,P.z-40), forno=AMBL.fornos.reduce((m,f)=>Math.min(m,Math.hypot(P.x-f.x,P.z-f.z)),99);
   const alvo={mata_laco:jogo?(dentro?0:mata?.5:.18):0,noite_laco:jogo?(dentro?.06:mata?.22:.38):0,cripta_laco:jogo&&dentro?.55:0,charco_laco:jogo&&!dentro?clamp(1-(cha-10)/35,0,1)*.6:0,fogo_laco:jogo&&!dentro?clamp(1-(forno-3)/20,0,1)*.5:0};
   const t=c.currentTime; for(const n in AMBL.lacos) AMBL.lacos[n].g.gain.setTargetAtTime((alvo[n]||0)*(SET.volAmb==null?1:SET.volAmb),t,.8);
   // avulsos da mata: coruja e galho rangendo, longe e de lado
@@ -1876,7 +1895,8 @@ const _branco=new THREE.Color(2.5,2.6,3);
 // Só aparece o que de fato se ouve (mesmo ganho do som espacial, com o abafamento das paredes).
 const LEG_TXT={shot:['Tiro',55,''],sigil:['Sigilo',35,'cult'],step:['Passos',16,''],passoForte:['Passos pesados',24,''],passoLeve:['Passos leves',5,''],collect:['Algo foi coletado',26,''],flare:['Sinalizador aceso',20,''],
   rune:['Runa conjurada',30,'cult'],arrasto:['Arrasto de ritual',45,'rit'],push:['Empurrão',28,'cult'],flash:['Clarão',30,''],purify:['Purificação',30,''],reload:['Recarga',18,''],estouro:['Sigilo estourou',22,'cult'],
-  corvo:['Corvos levantam voo',40,''],whisper:['Sussurros',26,'cult'],evp:['Sussurros num altar',26,'cult'],hab:['Feitiço',34,'']};
+  corvo:['Corvos levantam voo',40,''],whisper:['Sussurros',26,'cult'],evp:['Sussurros num altar',26,'cult'],hab:['Feitiço',34,''],
+  porta_abre:['Porta rangendo',20,''],porta_fecha:['Porta batendo',24,''],estalo:['Quadro de força',50,'']};
 const LEG=new Map();
 function legenda(k,x,z,txt,cor,raio){ if(SET.legendas===false||!V||V.phase!=='play') return;
   const L=LEG_TXT[k]||[k,40,'']; let g=1; if(x!=null){ const s=spatial(x,z,raio||L[1]); g=s.g; if(g<.012) return; }
@@ -2169,9 +2189,10 @@ const RECON={ativo:false,ate:0,tentativas:0,nome:'',timer:null};
 function connect(create,code,name){
   const proto=location.protocol==='https:'?'wss:':'ws:'; const sock=new WebSocket(APP?baseServidor().replace(/^http/,'ws'):proto+'//'+location.host); ws=sock;
   RECON.nome=name||RECON.nome;
-  sock.onopen=()=>sock.send(JSON.stringify({t:'hello',create,code,name:RECON.nome,token:TOKEN,publica:create&&SET.salaPublica!==false,vis:SKINS?SKINS.ESC:null}));
+  sock.onopen=()=>sock.send(JSON.stringify({t:'hello',create,code,mapa:MAPA_BOOT,name:RECON.nome,token:TOKEN,publica:create&&SET.salaPublica!==false,vis:SKINS?SKINS.ESC:null}));
   sock.onmessage=e=>{ const m=JSON.parse(e.data);
     if(m.t==='error'){ if(RECON.ativo){ pararReconexao(m.msg); } else { $('#err')&&($('#err').textContent=m.msg); } sock.close(); return; }
+    if(m.t==='welcome'&&m.mapa&&m.mapa!==MAPA_BOOT){ sock.onclose=null; try{ sock.close(); }catch(e){} $('#loading').style.display=''; $('#loading').textContent=`Montando ${NOME_MAPA[m.mapa]||m.mapa}…`; recarregarNoMapa(m.mapa,{code:m.code,name:RECON.nome}); return; }
     if(m.t==='welcome'){ MODE='online'; meCid=m.cid; NET.code=m.code; try{ sessionStorage.setItem('rr-sala',m.code); }catch(e){}
       if(m.voltou||RECON.ativo){ RECON.ativo=false; clearTimeout(RECON.timer); NET.snaps=[]; NET.pred=null; NET.pending=[]; NET.offset=null; screenKey=''; feed('Conexão restabelecida. Você voltou ao seu personagem.','big'); } }
     if(m.t==='lobby'){ NET.lobby=m; NET.host=m.host; if(!m.inGame){ V=null; NET.snaps=[]; NET.pred=null; screenKey=''; } }
@@ -2340,6 +2361,8 @@ function syncRastros(){
 // continua: é a leitura de "aqui há reagente" para os dois lados. Quem coleta ou queima segura E, e o modelo responde ao
 // progresso que o servidor manda (a raiz sobe do barro, as velas apagam uma a uma, o sal racha...). Só aparência.
 const REAG_TIPOS=['sal','sal','mandragora','mandragora','cinza','cera','flor','flor','corvo','corvo'];
+// asilo: horta e cemitério, lodo da margem, sal da hidroterapia, cinza das caldeiras, éter da enfermaria e do isolamento, refeitório e lavanderia
+const REAG_TIPOS_ASILO=['mandragora','flor','cera','cera','sal','cinza','corvo','corvo','sal','cinza'];
 const REAG_NOMES={sal:'sal negro',mandragora:'raiz de mandrágora',cinza:'cinza de osso',cera:'cera de defunto',flor:'flor-de-sepultura',corvo:'penas de corvo'};
 function modeloReagente(tipo,x,z){ const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=(x*7.3+z*3.1)%6.28; g.userData.dinamico=true; world.add(g);
   const P={tipo,g,x,z,partes:[],k:0,kAlvo:0,cresce:1,tinha:true,acao:''}, add=(m,sombra)=>{ m.castShadow=sombra!==false; m.receiveShadow=true; g.add(m); return m; };
@@ -3012,7 +3035,35 @@ function altarMapStyle(A,i,role){ if(A.state==='fenda') return {fill:'#12071a',s
   if(role==='C') return A.state==='active'?{fill:'#a3203a',stroke:'#fff'}:A.chosen?{fill:A.state==='awake'?'#43285a':'#2a0f18',stroke:'#e0435e'}:A.decoy?{fill:'#333',stroke:'#888'}:null;
   const k=V.know[i]; if(A.state==='active'&&A.localized) return {fill:'#a3203a',stroke:'#fff'}; if(k==='confirmado') return {fill:'#6b3a8a',stroke:'#e0c0ff'}; if(k==='desperto') return {fill:'#43285a',stroke:'#9b6fc0'}; if(k==='chamariz') return {fill:'#333',stroke:'#888'}; if(k==='descartado') return {fill:'#101214',stroke:'#3f4650'}; if(k==='purgado') return {fill:'#2a2312',stroke:'#b08a3e'}; return null; }
 let PLANTA_FIXA=null;
+// portas e energia como chegam no snapshot (1/0 e segundos que faltam); no jogo local, convertidos do estado da simulação
+function estadoMapa(V){ if(!V||MODE!=='local') return V; return {portas:V.portas&&V.portas.map(p=>p.aberta?1:0),energia:V.energia&&Object.fromEntries(Object.entries(V.energia).map(([k,v])=>[k,v>V.t?v-V.t:0]))}; }
+// planta do Asilo Blackwater: terreno, lago, salas cobertas e abertas, paredes, móveis, quadros de força e nomes das salas
+function plantaAsilo(X,Z,S){ const f=v=>v.toFixed(1); let h='';
+  const ret=(x1,x2,z1,z2,cor,extra)=>`<rect x="${f(X(x1))}" y="${f(Z(z1))}" width="${f(Math.max(1,(x2-x1)*S))}" height="${f(Math.max(1,(z2-z1)*S))}" fill="${cor}"${extra||''}/>`;
+  h+=ret(-HALF.x,HALF.x,-HALF.z,HALF.z,'#141a14',' stroke="#3a4a36" stroke-width="2"');
+  h+=ret(-HALF.x,HALF.x,-HALF.z,-66,'#0b1418');                                   // o lago
+  for(const E of Sim.ESPACOS) h+=ret(E.x1,E.x2,E.z1,E.z2,E.int?'#3b3a3c':'#1f2a1e');
+  for(const A of Sim.AGUA||[]) h+=ret(A.x1,A.x2,A.z1,A.z2,'#16303a');
+  const COR={parede:'#0e0e10',muro:'#2a2824',lago:'none',lapide:'#77736a',canteiro:'#2c3a22',coluna_coreto:'#8a8478',caldeira:'#6a3a2a',carvao:'#111'};
+  for(const b of Sim.WALLS){ const c=COR[b.kind]||'#57493a'; if(c==='none') continue; h+=ret(b.x1,b.x2,b.z1,b.z2,c); }
+  for(const q of Sim.QUADROS) h+=`<rect x="${f(X(q.x)-4)}" y="${f(Z(q.z)-4)}" width="8" height="8" rx="1.5" fill="#24282c" stroke="#e8c050" stroke-width="1.2"/>`;
+  if(LAB().economia) NPCS.forEach(n=>h+=`<circle cx="${X(n.x)}" cy="${Z(n.z)}" r="4" fill="#d2ad62"/><text x="${X(n.x)}" y="${Z(n.z)-7}" fill="#d2ad62" font-size="10" text-anchor="middle" font-family="Barlow Condensed, sans-serif">${n.nome.replace(/^(o|a) /,'')}</text>`);
+  const comAltar=new Set(Sim.ALTARS.map(A=>A.name));
+  for(const E of Sim.ESPACOS){ if(/^(Corredor|Trilha|Margem|Píer|Escada)/.test(E.nome)||comAltar.has(E.nome)||(E.x2-E.x1)*S<E.nome.length*4.6+4) continue;
+    const cz={Gramado:32,'Saguão':19,'Pátio Norte':-55,Horta:28,'Cemitério':28,Arquivo:-1.5,'Farmácia':-1.5}[E.nome]; // longe do altar e do mercador
+    h+=`<text x="${f(X((E.x1+E.x2)/2))}" y="${f(Z(cz!=null?cz:(E.z1+E.z2)/2)+3)}" fill="${E.int?'#8a8272':'#6e7a62'}" font-size="9" font-style="italic" text-anchor="middle" font-family="IM Fell English, Georgia, serif">${E.nome}</text>`; }
+  h+=`<text x="${X(SPAWN.H.x)}" y="${Z(SPAWN.H.z)+22}" fill="#d2ad62" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Caçadores</text><text x="${X(SPAWN.C.x)}" y="${Z(SPAWN.C.z)+22}" fill="${corCulto()}" font-size="12" text-anchor="middle" font-family="Barlow Condensed, sans-serif">Culto</text>`;
+  return h; }
+// a camada que muda no asilo: portas fechadas (traço cheio), abertas (tracejado) e as alas sem luz (sombra por cima)
+function plantaAsiloDin(X,Z,S){ const st=estadoMapa(V), f=v=>v.toFixed(1); let h=''; if(!st) return h;
+  const en=st.energia||{}; for(const E of Sim.ESPACOS){ if(!E.int) continue; const cx=(E.x1+E.x2)/2, s=cx<-12.5?'oeste':cx>12.5?'leste':'centro'; if(en[s]>0) h+=`<rect x="${f(X(E.x1))}" y="${f(Z(E.z1))}" width="${f((E.x2-E.x1)*S)}" height="${f((E.z2-E.z1)*S)}" fill="#000" opacity=".45"/>`; }
+  for(const q of Sim.QUADROS) if(en[q.setor]>0) h+=`<rect x="${f(X(q.x)-4)}" y="${f(Z(q.z)-4)}" width="8" height="8" rx="1.5" fill="#5a1010" stroke="#ff5040" stroke-width="1.2"/>`;
+  for(const P of Sim.PORTAS_DIN){ const ab=!st.portas||st.portas[P.i]!==0, ax=P.eixo==='x';
+    const x1=X(ax?P.x1:P.x),x2=X(ax?P.x2:P.x),z1=Z(ax?P.z:P.z1),z2=Z(ax?P.z:P.z2);
+    h+=`<line x1="${f(x1)}" y1="${f(z1)}" x2="${f(x2)}" y2="${f(z2)}" stroke="${ab?'#8a7650':'#e0b86a'}" stroke-width="${ab?1.5:3.5}"${ab?' stroke-dasharray="2 2"':''}/>`; }
+  return h; }
 function plantaFixa(X,Z,S){ if(PLANTA_FIXA) return PLANTA_FIXA;
+  if(ASILO) return PLANTA_FIXA=plantaAsilo(X,Z,S);
   const CT=CATEDRAL, cl=Sim.CLAUSTRO, f=v=>v.toFixed(1); let h='';
   h+=`<rect x="${X(-HALF.x)}" y="${Z(-HALF.z)}" width="${HALF.x*2*S}" height="${HALF.z*2*S}" fill="#0d130f" stroke="#3a4a36" stroke-width="2"/>`;
   Sim.CLAREIRAS.forEach(c=>h+=`<circle cx="${f(X(c.x))}" cy="${f(Z(c.z))}" r="${f(c.r*S)}" fill="#18211a"/>`);
@@ -3035,7 +3086,7 @@ function plantaFixa(X,Z,S){ if(PLANTA_FIXA) return PLANTA_FIXA;
 function mapSvg(svg,opts){
   const S=Math.min(500/(HALF.x*2),350/(HALF.z*2)),ox=270,oz=190,X=x=>ox+x*S,Z=z=>oz+z*S;
   if(!svg._fixa){ svg.innerHTML=`<g>${plantaFixa(X,Z,S)}</g><g class="din"></g>`; svg._fixa=svg.querySelector('.din'); } // a camada fixa (milhares de peças) entra uma vez
-  let h='';
+  let h=ASILO?plantaAsiloDin(X,Z,S):'';
   Sim.ALTARS.forEach((A,i)=>{ const st=opts.state?opts.state(V?V.altars[i]:A,i):null; const fill=st?st.fill:'#1b1f24',stroke=st?st.stroke:'#6d7e8e';
     h+=`<g class="${opts.click?'alt-hit':''}" data-i="${i}"><circle cx="${X(A.x)}" cy="${Z(A.z)}" r="${Math.max(7,CFG.circleR*S+3)}" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/><text x="${X(A.x)}" y="${Z(A.z)+(A.z<0?22:-14)}" fill="#e8e0d0" font-size="13" text-anchor="middle" font-family="IM Fell English, Georgia, serif">${A.name}</text></g>`; });
   if(opts.me&&V&&V.actors){ const eu=me(), time=eu?eu.team:null;
@@ -3067,7 +3118,7 @@ function buscarSalas(){ if(MODE||!ONLINE_OK) return; const agora=performance.now
   fetch((base||'')+'/api/salas',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(l=>{ const k=JSON.stringify(l); if(k!==JSON.stringify(NET.salas)){ NET.salas=l; renderSalas(); } }).catch(()=>{}); }
 let _goSalas=null;
 function renderSalas(go){ if(go) _goSalas=go; const el=$('#salasAbertas'); if(!el) return;
-  el.innerHTML=NET.salas.length?`<h3>Salas abertas</h3>`+NET.salas.map(r=>`<div class="sala"><b>${esc(r.code)}</b><span>${esc(r.anfitriao)} · ${r.jogadores} de 4</span><button class="go ghost" data-sala="${esc(r.code)}">Entrar</button></div>`).join(''):'';
+  el.innerHTML=NET.salas.length?`<h3>Salas abertas</h3>`+NET.salas.map(r=>`<div class="sala"><b>${esc(r.code)}</b><span>${esc(r.anfitriao)} · ${r.jogadores} de 4${r.mapa&&r.mapa!=='catedral'?' · '+esc(NOME_MAPA[r.mapa]||r.mapa):''}</span><button class="go ghost" data-sala="${esc(r.code)}">Entrar</button></div>`).join(''):'';
   el.querySelectorAll('[data-sala]').forEach(b=>b.onclick=()=>{ $('#iCode').value=b.dataset.sala; if(_goSalas) _goSalas(false); }); }
 function renderChat(){ const el=$('#chatLista'); if(!el) return;
   el.innerHTML=NET.chat.map(c=>`<div><b style="color:${c.cid===meCid?'var(--gold-hi)':'var(--bone)'}">${esc(c.de)}</b>${c.para==='equipe'?' <small>(equipe)</small>':''} ${esc(c.msg)}</div>`).join('')||'<div class="vazio">Ninguém falou ainda.</div>'; el.scrollTop=el.scrollHeight; }
@@ -3077,6 +3128,7 @@ function titleScreen(){
   let savedName=''; try{ savedName=localStorage.getItem('rr-name')||''; }catch(e){}
   setScreen('title'+titleMsg+ONLINE_OK+SONDANDO+JSON.stringify(SET.binds)+salaSalva()+(SET.dificuldade||'')+(SET.papelSolo||'')+JSON.stringify(SET.lab||{}),`${SIGIL}<h1 class="tituloJogo">Ritual Reversal</h1>
     <p class="lede">${UMA_NOITE()?'Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence.':'Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.'}</p>
+    <div class="dif mapaSel" role="group" aria-label="Mapa"><span>Mapa</span>${Sim.IDS_MAPAS.map(k=>`<button data-mapa="${k}" class="${MAPA_BOOT===k?'sel':''}">${NOME_MAPA[k]}</button>`).join('')}</div>
     <div class="acoes"><button class="go" id="bSolo">Jogar sozinho, com bots</button>
       <div class="dif" role="group" aria-label="Seu papel"><span>Você</span>${[['H','Caça'],['C','Celebra'],['?','Sorteia']].map(([k,n])=>`<button data-papel="${k}" class="${(SET.papelSolo||'H')===k?'sel':''}">${n}</button>`).join('')}</div>
       <div class="dif" role="group" aria-label="Dificuldade dos bots"><span>Bots inimigos</span>${[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([k,n])=>`<button data-dif="${k}" class="${(SET.dificuldade||'normal')===k?'sel':''}">${n}</button>`).join('')}</div>
@@ -3094,7 +3146,8 @@ function titleScreen(){
     <p class="fine">${ONLINE_OK?'Use fones: o som diz onde e em que fase está cada ritual.':APP?'Para jogar online, alguém roda o servidor do projeto; digite aqui o endereço que ele mostra.':'Para jogar online com amigos, rode o servidor do projeto e abra o link dele.'}</p>`,
   ()=>{ $('#bSolo').onclick=()=>{ audioInit(); startLocal(); };
     ligarLab(v=>{ SET.lab=v; saveSet(); screenKey=''; });
-    scrBody.querySelectorAll('.dif button:not([data-lab])').forEach(b=>b.onclick=()=>{ if(b.dataset.papel) SET.papelSolo=b.dataset.papel; else SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
+    scrBody.querySelectorAll('.mapaSel button').forEach(b=>b.onclick=()=>{ const k=b.dataset.mapa; if(k===MAPA_BOOT) return; SET.mapa=k; saveSet(); SFX.click(); $('#loading').style.display=''; $('#loading').textContent=`Montando ${NOME_MAPA[k]}…`; setTimeout(()=>recarregarNoMapa(k),30); });
+    scrBody.querySelectorAll('.dif:not(.mapaSel) button:not([data-lab])').forEach(b=>b.onclick=()=>{ if(b.dataset.papel) SET.papelSolo=b.dataset.papel; else SET.dificuldade=b.dataset.dif; saveSet(); screenKey=''; SFX.click(); });
     $('#bAprender').onclick=()=>{ aprenderAberto=true; screenKey=''; };
     $('#bDesafio').onclick=()=>{ audioInit(); startDesafio(); };
     const bs=$('#bServ'); if(bs) bs.onclick=()=>{ SET.servidor=$('#iServ').value.trim(); saveSet(); ONLINE_OK=false; titleMsg=''; screenKey=''; sondarServidor(1); }; $('#bSet').onclick=openSettings; $('#bComo').onclick=()=>{ comoJogarAberto=true; screenKey=''; }; $('#bPerfil').onclick=()=>{ perfilAberto=true; screenKey=''; }; $('#bArsenal').onclick=startArsenal; $('#bNovo').onclick=()=>{ novidadesAberto=true; screenKey=''; };
@@ -3108,7 +3161,7 @@ function lobbyScreen(){
   const L=NET.lobby, isHost=L.host===meCid;
   const slotBtn=(s,i)=>`<button class="slot ${s.cid?'':'bot'} ${s.cid===meCid?'me':''}" data-i="${i}" ${s.cid?'disabled':''}>${esc(s.name)}${s.cid?(s.cid===L.host?' (anfitrião)':''):' (bot)'}${s.cid===meCid?' (você)':''}</button>`;
   const key='lobby'+JSON.stringify(L.slots)+L.host+L.dif+JSON.stringify(L.lab||{})+(SET.labAberto?1:0); const DN={facil:'Fáceis',normal:'Normais',dificil:'Difíceis'};
-  setScreen(key,`<h2 style="text-align:center">Sala</h2><p class="bigcode">${L.code}</p><p class="lede">Mande este código para seus amigos. Vagas sem jogador ficam com bots.</p>
+  setScreen(key,`<h2 style="text-align:center">Sala</h2><p class="bigcode">${L.code}</p><p class="fine" style="text-align:center;margin-top:-6px">${esc(NOME_MAPA[L.mapa||'catedral']||L.mapa)}</p><p class="lede">Mande este código para seus amigos. Vagas sem jogador ficam com bots.</p>
     <div class="slots"><div class="slotcol a"><h3>Equipe A</h3>${L.slots.slice(0,2).map((s,i)=>slotBtn(s,i)).join('')}</div><div class="slotcol b"><h3>Equipe B</h3>${L.slots.slice(2).map((s,i)=>slotBtn(s,i+2)).join('')}</div></div>
     <p class="fine">${UMA_NOITE()?'A Equipe A caça e a Equipe B celebra.':'A Equipe A caça na rodada 1 e celebra na rodada 2.'} Clique numa vaga de bot para trocar de lugar.${L.publica?' Esta sala aparece na lista de salas abertas.':''}</p>
     ${L.slots.some(s=>!s.cid)?`<div class="dif difOnline" role="group" aria-label="Dificuldade dos bots"><span>Bots</span>${isHost?['facil','normal','dificil'].map(k=>`<button class="${(L.dif||'normal')===k?'sel':''}" data-dif="${k}">${DN[k]}</button>`).join(''):`<b>${DN[L.dif||'normal']}</b>`}<small>valem para os bots do lado sem jogadores</small></div>`:''}
@@ -3444,7 +3497,8 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Culto que se defende (v6.1)','Do primeiro playtest com duas pessoas: os Cultistas controlados pelo jogo, canalizando, só reagiam a quem chegava a 8 m, e uma dupla de Caçadores derrubava o culto de longe sem levar um tiro. Agora quem canaliza revida quem o acertou e quem chega a 20 m (atacar ainda pausa a canalização).'],
+const NOVIDADES=[['Asilo Blackwater (v6.2)','Mapa novo: um sanatório na margem de um lago, com duas alas, seis altares e o coreto no gramado. Portas que se abrem e fecham (segure E): fechadas, bloqueiam passagem, tiros e visão e abafam o som. Um quadro de força por ala: o culto corta a luz, a caça religa, e sem ninguém ela volta em 90 s. Escolha o mapa no título.'],
+  ['Culto que se defende (v6.1)','Do primeiro playtest com duas pessoas: os Cultistas controlados pelo jogo, canalizando, só reagiam a quem chegava a 8 m, e uma dupla de Caçadores derrubava o culto de longe sem levar um tiro. Agora quem canaliza revida quem o acertou e quem chega a 20 m (atacar ainda pausa a canalização).'],
   ['Catedral e desfiladeiro (v6)','O mapa foi refeito em duas regiões: a catedral em cruz no alto do promontório e a mata ao sul, separadas por um desfiladeiro com três travessias (a Ponte Grande, a árvore caída e o aqueduto). Cada parte da mata tem o seu reagente.'],
   ['Cobertura e agachar (v6)','Túmulos, muretas e pedras baixas agora param tiros e sigilos abaixo da altura deles. Agachado (C, ou o botão B do controle) você anda na metade da velocidade, com passos que só se ouvem a 5 m, e fica mais baixo atrás da cobertura.'],
   ['Execução, reagentes e velas (v6)','Executar alguém tem pose, tremor e um fecho que todos por perto veem; quem está sendo executado vê o mundo fechar. Os reagentes têm forma e respondem à coleta. Oito velas em cada altar contam o ritual: vermelho-escuro é progresso que não volta.'],
@@ -3558,7 +3612,7 @@ function syncScreens(){
 function startLocal(opc){ opc=opc||{}; let papel=opc.papel||SET.papelSolo||'H'; if(papel==='?') papel=Math.random()<.5?'H':'C';
   const slots=papel==='C'?[{team:'A',cid:null,name:'Irmã Beatriz'},{team:'A',cid:null,name:'Irmão Tomé'},{team:'B',cid:'local',name:'Você'},{team:'B',cid:null,name:'Madre Vesper'}]
     :[{team:'A',cid:'local',name:'Você'},{team:'A',cid:null,name:'Irmã Beatriz'},{team:'B',cid:null,name:'Irmão Cinza'},{team:'B',cid:null,name:'Madre Vesper'}];
-  MODE='local'; meCid='local'; game=Sim.createGame({timers:false,slots,dificuldade:opc.dificuldade||SET.dificuldade||'normal',lab:opc.tutorial||opc.desafio?null:SET.lab}); V=game; screenKey='';
+  MODE='local'; meCid='local'; game=Sim.createGame({timers:false,slots,mapa:MAPA_BOOT,dificuldade:opc.dificuldade||SET.dificuldade||'normal',lab:opc.tutorial||opc.desafio?null:SET.lab}); V=game; screenKey='';
   TUT.ativo=!!opc.tutorial; TUT.papel=papel; TUT.i=0; TUT.fim=false; DES.ativo=false; DES.feito=null; }
 
 // ================= MAIN LOOP =================
@@ -3605,7 +3659,7 @@ function tick(now){
   if(TQ.ativo){ const tq=$('#toque'), r=(myRole()||'')+(locked&&!lojaAberta?'':' solto'); if(tq.className!==r){ tq.className=r; if(r.includes('solto')) TQ.soltar(); } } // com menu aberto, os controles saem da frente dos botões
   syncScreens(); atualizarReplay(Math.min(.25,raw));
   // cosmetics
-  distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); ambientePorLugar(Math.min(.25,raw)); atualizarMusica(Math.min(.25,raw)); // transições em tempo real, mesmo com poucos quadros
+  if(VIS_ASILO&&V) VIS_ASILO.atualizar(dt,estadoMapa(V),now); distribuirLuzes(dt,now); cortarVegetacao(now); atualizarCorvos(dt,now); atualizarGrande(Math.min(.25,raw),now); atualizarClima(Math.min(.25,raw),now); ambientePorLugar(Math.min(.25,raw)); atualizarMusica(Math.min(.25,raw)); // transições em tempo real, mesmo com poucos quadros
   flames.forEach((f,i)=>{ f.scale.y=.26+Math.sin(now*.02+i)*.03; });
   if(RT.dust){ RT.dust.rotation.y+=dt*.004; RT.dust.position.y=Math.sin(now*.0002)*.3; }
   updateParticles(dt); atualizarEfeitos(dt); atualizarToast(dt);
@@ -3680,17 +3734,19 @@ function show(id,on){ document.getElementById(id).classList.toggle('on',on); }
 
 // ================= BOOT =================
 function boot(){
-  buildTextures(); buildTexturasExtras(); buildWorld(); buildFloresta(); buildCatedralViva(); const fusao=fundirEstaticos(); buildMarcas(); if(AUTOTEST){ window.__fusao=fusao; window.__VEG=VEG; } buildAltars(); buildViewmodels(); buildParticles(); buildStrip(); preaquecerEfeitos();
+  buildTextures(); buildTexturasExtras(); buildWorld(); if(!ASILO){ buildFloresta(); buildCatedralViva(); } const fusao=fundirEstaticos(); if(!ASILO) buildMarcas(); if(AUTOTEST){ window.__fusao=fusao; window.__VEG=VEG; } buildAltars(); buildViewmodels(); buildParticles(); buildStrip(); preaquecerEfeitos();
   if(PERF.leve){ const vistos=new Set(); scene.traverse(o=>{ const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[]; for(const m of ms){ if(vistos.has(m)) continue; vistos.add(m);
       if(m.normalMap){ m.normalMap=null; m.needsUpdate=true; } } }); } // relevo por normal map pesa em GPU fraca e quase não aparece na névoa
   applySet(); $('#loading').style.display='none';
   requestAnimationFrame(tick);
   if(!APP||SET.servidor) sondarServidor(APP?0:2);
+  // a página recarregou no mapa de uma sala: entra nela de novo
+  { let S=null; try{ S=JSON.parse(sessionStorage.getItem('rr-entrar-sala')||'null'); sessionStorage.removeItem('rr-entrar-sala'); }catch(e){} if(S&&S.code) setTimeout(()=>connect(false,S.code,S.name),300); }
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,get SKINS(){ return SKINS; },get REAGM(){ return reagentMeshes; },TEX,RT,PERFIL_ARMA,fxExecucoes:()=>FX_EXE_N,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;}}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,get SKINS(){ return SKINS; },get REAGM(){ return reagentMeshes; },TEX,RT,PERFIL_ARMA,fxExecucoes:()=>FX_EXE_N,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;},get VIS_ASILO(){ return VIS_ASILO; },MAPA:MAPA_BOOT,mapSvg}; }
 }
-{ const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">Esculpindo a catedral…<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
+{ const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">${ASILO?'Abrindo o asilo…':'Esculpindo a catedral…'}<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);
 // ================= ARSENAL =================
 // As armas de perto, as skins da coleção e a inspeção de cada uma. Abre do menu: uma partida local parada no meio da nave,
