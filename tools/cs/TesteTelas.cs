@@ -75,8 +75,8 @@ namespace RitualReversal
             TQuadros(20); Foto("titulo");
             foreach (var m in new[] { "aprender", "como", "perfil", "novidades", "ajustes" }) { telaMenu = m; TQuadros(6); Foto("menu-" + m); }
             telaMenu = null; TQuadros(3); labAberto = true; TQuadros(3); Foto("titulo-laboratorio"); labAberto = false;
-            // menus pelo controle: foco no primeiro botão do título (Jogar sozinho) e A
-            padNav = true; padFoco = 0; padConfirmar = true; padConfirmarQuadro = Time.frameCount + 1; TQuadro(); if (g == null) falhas.Add("controle: o A no foco não apertou o botão"); g = null; LimparVisual(); padNav = false; TQuadros(2);
+            // menus pelo controle: foco no Jogar sozinho (depois dos dois botões do mapa, como no navegador) e A
+            padNav = true; padFoco = 2; padConfirmar = true; padConfirmarQuadro = Time.frameCount + 1; TQuadro(); if (g == null) falhas.Add("controle: o A no foco não apertou o botão"); g = null; LimparVisual(); padNav = false; TQuadros(2);
             // trocar a tecla do Sensor nos Ajustes: clique na linha, aperte X; depois F, que é da Lanterna: as duas trocam
             telaMenu = "ajustes"; TQuadros(2); capturando = "sensor"; capturaQuadro = Time.frameCount; TQuadros(2); Input.apertadas.Add(KeyCode.X); TQuadro();
             if (EntradaUnity.Nome("sensor") != "X") falhas.Add("teclas: o Sensor não ficou no X (" + EntradaUnity.Nome("sensor") + ")");
@@ -116,6 +116,22 @@ namespace RitualReversal
             papelSolo = "C"; Apertar("Jogar sozinho, com bots", 2); TQuadros(5); Foto("escolha"); AteFase("intro", 200); AteFase("play", 200); TQuadros(200, .05f, 9); Foto("hud-culto", .05f); g = null; LimparVisual(); TQuadros(3);
             // o tutorial (o relógio adianta sozinho) e um passo pulado pela tecla N
             IniciarSolo("H", "treino", true, false); AteFase("play", 300); TQuadros(100, .05f, 3); Foto("tutorial", .05f); Input.apertadas.Add(KeyCode.N); TQuadro(.05f); TQuadros(200, .05f, 9); g = null; LimparVisual(); TQuadros(3);
+            // v6.2: o Asilo Blackwater. O título troca o mundo; uma noite com a porta do Arquivo (segurar E), um apagão na ala
+            // oeste, a planta do Tab; e a volta para a catedral
+            Apertar("Asilo Blackwater", 3); if (MapaMundo != "asilo" || mundo == null || !mundo.Asilo) falhas.Add("asilo: o título não trocou o mundo (" + MapaMundo + ")");
+            Foto("titulo-asilo");
+            IniciarSolo("H", "facil", false, false); AteFase("play", 300); TQuadros(20, .05f);
+            if (g == null || g.mapa != "asilo" || g.portas == null) falhas.Add("asilo: a partida solo não está no asilo");
+            else
+            {
+                var m = Eu(); m.x = -1.6; m.z = -6.5; m.invuln = 999; lookYaw = -System.Math.PI / 2; foreach (var b in g.actors) if (b != m) { b.x = b.team == "H" ? -90 : 90; b.z = 50; b.stunT = 999; }
+                Input.seguradas.Add(KeyCode.E); TQuadros(20, .05f); Input.seguradas.Clear(); TQuadros(30, .05f);
+                if (g.portas[1]) { var cx = Sim.Contexts(g, Eu()); falhas.Add("asilo: segurar E perto da porta do Arquivo não fechou (ctx " + (cx.e != null ? cx.e.type + cx.e.P : "nenhum") + ", hold " + Eu().hold.key + ", travado " + Travado() + ", pos " + Eu().x.ToString("0.0") + "," + Eu().z.ToString("0.0") + ")"); } Foto("asilo-porta", .05f);
+                g.energia["oeste"] = g.t + 60; m.x = -30; m.z = 10; TQuadros(30, .05f); Foto("asilo-apagao", .05f);
+                Input.seguradas.Add(KeyCode.Tab); TQuadros(10, .05f); Foto("asilo-planta", .05f); Input.seguradas.Clear();
+                TQuadros(200, .05f, 9);
+            }
+            g = null; LimparVisual(); TQuadros(3); Apertar("Catedral da Dor", 3); if (MapaMundo != "catedral" || mundo.Asilo) falhas.Add("asilo: não voltou para a catedral");
             // o desafio da noite, até o fim
             Apertar("Desafio da noite", 2); AteFase("play", 300); AteFase("final", 3000); TQuadros(10); g = null; LimparVisual(); TQuadros(3);
             RoteiroCelular();

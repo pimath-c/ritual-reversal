@@ -21,7 +21,9 @@ public static class ExportarMundo
     {
         string res = a[0], saida = a[1]; Directory.CreateDirectory(saida); Resources.pasta = res;
         Mapa.Carregar(File.ReadAllText(Path.Combine(res, "simulacao.json")));
-        var t0 = DateTime.Now; var mundo = Mundo.Construir(); Console.Error.WriteLine("mundo montado em " + (DateTime.Now - t0).TotalSeconds.ToString("0.0", C) + " s");
+        foreach (var f in Directory.GetFiles(res, "simulacao-*.json")) Mapa.Carregar(File.ReadAllText(f));
+        mapa = Environment.GetEnvironmentVariable("MAPA") ?? "catedral"; Mapa.Usar(mapa);   // MAPA=asilo monta o Asilo Blackwater
+        var t0 = DateTime.Now; var mundo = Mundo.Construir(mapa); Console.Error.WriteLine("mundo montado em " + (DateTime.Now - t0).TotalSeconds.ToString("0.0", C) + " s");
         if (a.Length > 2 && a[2] == "partida") { Partida(mundo); return; }
         var raiz = mundo.raiz;
         var bin = new BinaryWriter(File.Create(Path.Combine(saida, "mundo.bin"))); long pos = 0;
@@ -87,10 +89,11 @@ public static class ExportarMundo
     // Uma partida de bots passando pelo visual do Unity quadro a quadro, como a PartidaVisual faz, com os estados que o
     // mundo da v6 desenha forçados no meio: ritual ativo com selo, alguém coletando e queimando reagentes, uma execução.
     // Qualquer exceção sai com o quadro e a pilha (no Unity seria um erro vermelho por quadro no Console).
+    static string mapa = "catedral";
     static void Partida(Mundo mundo)
     {
         var slots = new List<Slot> { new Slot("A", "local", "Você"), new Slot("A", null, "Irmã Beatriz"), new Slot("B", null, "Irmão Cinza"), new Slot("B", null, "Madre Vesper") };
-        var g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = "teste-unity-5" });   // este código sorteia tempestade: chuva e relâmpagos
+        var g = Sim.CreateGame(new OpcoesJogo { timers = false, slots = slots, matchId = "teste-unity-5", mapa = mapa });   // este código sorteia tempestade: chuva e relâmpagos
         int trovoes = 0; mundo.AoTrovao = d => trovoes++;
         Sim.Act(g, "local", new Acao { type = "ready" }); const double dt = 1 / 30.0; int q = 0;
         try
@@ -104,6 +107,9 @@ public static class ExportarMundo
                 if (q > 300 && q < 900 && g.reagents.Count > 1) { var b = g.actors[1]; b.hold = new Hold(q < 600 ? "col0" : "burn1", (q % 300) / 60.0, 5); if (q == 599) g.reagents[0].has = false; }
                 if (q > 900 && q < 1100) { var v = g.actors[2]; v.st = "down"; g.actors[1].hold = new Hold("exe" + v.id, (q - 900) / 40.0, 4.5); if (q == 1099) v.st = "dead"; }
                 if (q == 1200) { var A = g.altars[1]; A.state = "farol"; } if (q == 1500) g.altars[2].state = "fenda";
+                // asilo: fecha e abre portas e corta a luz de uma ala no meio da noite (o visual anda junto)
+                if (g.portas != null && q % 200 == 100) { g.portas[(q / 200) % g.portas.Count] ^= true; }
+                if (g.energia != null && q == 700) g.energia["oeste"] = g.t + 30;
                 var cam = new Vector3((float)(eu != null ? eu.x : 0), 1.67f, (float)(eu != null ? eu.z : 0)); string papel = Sim.RoleOf(g, "A");
                 mundo.Atualizar(g, papel, eu, cam, (float)(eu != null ? eu.yaw : 0), (float)dt);
                 mundo.AtualizarClima(g, cam, (float)dt);

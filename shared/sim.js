@@ -1159,7 +1159,7 @@ function doAction(g,a,ctx){
   switch(ctx.type){
     case 'porta': { const P=PORTAS_DIN[ctx.P], st=g.portas[P.i]; st.aberta=!st.aberta; recalcularPortas(g);
       ev(g,{type:'porta',i:P.i,aberta:st.aberta,a:a.id}); ev(g,{type:'sfx',k:st.aberta?'porta_abre':'porta_fecha',x:P.x,z:P.z,a:a.id});
-      if(a.human) logE(g,'porta',{who:a.name,aberta:st.aberta}); break; }
+      if(a.human){ a.portaPresa=true; logE(g,'porta',{who:a.name,aberta:st.aberta}); } break; }
     case 'quadro': { const corta=a.team==='C', nome=NOME_SETOR[ctx.setor]; g.energia[ctx.setor]=corta?g.t+CFG.apagao:0;
       const q=QUADROS.find(q=>q.setor===ctx.setor);
       ev(g,{type:'energia',setor:ctx.setor,ligada:!corta}); ev(g,{type:'sfx',k:'estalo',x:q.x,z:q.z,a:a.id});
@@ -1226,9 +1226,10 @@ function humanActions(g,a,dt){
   if(a.team==='H'){ if(eq) useSensor(g,a); if(ef){ a.lantern=!a.lantern&&a.carga>0; } if(eg) throwFlare(g,a); }
   if(eab) useAbility(g,a);
   const ctx=contexts(g,a); a.sealing=-1;
+  if(!a.inp.use) a.portaPresa=false;   // asilo: depois de mexer numa porta, só de novo soltando o E (senão ela abre e fecha a cada 0,35 s)
   if(ctx.e&&ctx.e.type==='loja'){ a.hold={key:'',t:0,max:0}; }
   else if(ctx.e&&ctx.e.type==='seal'&&a.inp.use){ a.sealing=ctx.e.A; a.hold={key:ctx.e.key,t:0,max:0}; }
-  else if(ctx.e&&a.inp.use) holdStep(g,a,ctx.e,dt);
+  else if(ctx.e&&a.inp.use&&!(ctx.e.type==='porta'&&a.portaPresa)) holdStep(g,a,ctx.e,dt);
   else if(ctx.t&&a.inp.use2) holdStep(g,a,ctx.t,dt);
   else a.hold={key:'',t:0,max:0};
   if(a.team==='H'){

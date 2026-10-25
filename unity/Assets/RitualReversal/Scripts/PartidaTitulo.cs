@@ -28,6 +28,8 @@ namespace RitualReversal
                 ComTransformacao(x + w / 2, 16, x + w / 2, 16, k, () => ColunaTitulo(x, 16, w)); FimRolagem();
             }
         }
+        static readonly Dictionary<string, string> NOME_MAPA = new Dictionary<string, string> { { "catedral", "Catedral da Dor" }, { "asilo", "Asilo Blackwater" } };
+        static string NomeMapa(string id) { string n; return id != null && NOME_MAPA.TryGetValue(id, out n) ? n : NOME_MAPA["catedral"]; }
         float ColunaTitulo(float x, float y0, float w)
         {
             float y = y0;
@@ -38,6 +40,8 @@ namespace RitualReversal
             y += lhT + 4;
             var stL = Css("serifIt", 19, Hx("#bfb6a6")); float wl = Mathf.Min(w, Larg("0", stL) * 40);
             y += Ps(x, y, wl, UmaNoite ? "Dois cultistas celebram rituais em segredo. Dois caçadores investigam e selam. Uma noite, três rituais: quem levar dois vence." : "Dois cultistas celebram um ritual em segredo. Dois caçadores tentam descobrir onde. Na segunda rodada, os papéis se invertem.", stL, 19 * 1.45f) + 22;
+            // v6.2: o mapa (no navegador a página recarrega; aqui o mundo é desmontado e montado de novo)
+            y += LinhaOpcoes(x, y, "Mapa", new[] { new[] { "catedral", NOME_MAPA["catedral"] }, new[] { "asilo", NOME_MAPA["asilo"] } }, MapaMundo, k => { PlayerPrefs.SetString("rr-mapa", k); TrocarMundo(k); }) + 12;
             // .acoes: coluna com 12 px entre as peças
             string bs = "Jogar sozinho, com bots"; float hb = AlturaBotao("go");
             if (BotaoCss(new Rect(x, y, LarguraBotao(bs, "go"), hb), bs, "go")) IniciarSolo(PapelSolo, null, false, false); y += hb + 12;
@@ -149,7 +153,7 @@ namespace RitualReversal
                 foreach (var s in salas.ToList())
                 {
                     float hs = AlturaBotao("ghostP"); var stC = Css("400", 20, GOLD_HI); string b = "Entrar"; float wb = LarguraBotao(b, "ghostP");
-                    if (!medindo) { Linha(x, y + 4, 80, hs, s.code, stC); Linha(x + 76, y + 4, w - 76 - wb - 12, hs, s.anfitriao + " · " + s.jogadores + " de 4", Css("400", 15, Hx("#cfc6b6"))); }
+                    if (!medindo) { Linha(x, y + 4, 80, hs, s.code, stC); Linha(x + 76, y + 4, w - 76 - wb - 12, hs, s.anfitriao + " · " + s.jogadores + " de 4" + (s.mapa != null && s.mapa != "catedral" ? " · " + NomeMapa(s.mapa) : ""), Css("400", 15, Hx("#cfc6b6"))); }
                     if (BotaoCss(new Rect(x + w - wb, y + 4, wb, hs), b, "ghostP")) { codigoDigitado = s.code; Conectar(false, s.code); }
                     y += hs + 8;
                 }

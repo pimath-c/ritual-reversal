@@ -81,11 +81,12 @@ namespace RitualReversal.Visual
         static readonly string[] AMB_LACOS = { "mata_laco", "noite_laco", "cripta_laco", "charco_laco", "fogo_laco" };
         readonly Gravacao[] lacoAmb = new Gravacao[5]; readonly double[] pAmb = new double[5]; readonly float[] gAmb = new float[5], alvoAmb = new float[5];
         List<Vector2> fornos; float ambProx = 20;
+        public void TrocouMapa() { fornos = null; }   // outro mapa: fornos e caldeiras de novo
         public void Ambiente(bool jogo, Vector3 P, float dt)
         {
-            if (fornos == null && MapaVisual.Carregado) { fornos = new List<Vector2>(); foreach (var w in MapaVisual.WALLS) if (w.kind == "forno") fornos.Add(new Vector2((w.x1 + w.x2) / 2, (w.z1 + w.z2) / 2)); }
+            if (fornos == null && MapaVisual.Carregado) { fornos = new List<Vector2>(); foreach (var w in MapaVisual.WALLS) if (w.kind == "forno" || w.kind == "caldeira") fornos.Add(new Vector2((w.x1 + w.x2) / 2, (w.z1 + w.z2) / 2)); }
             bool dentro = Mapa.Carregado && Mapa.Coberto(P.x, P.z), mata = Mapa.Carregado && Mapa.ZoneAt(P.x, P.z) == "Floresta";
-            float cha = Mathf.Sqrt((P.x - 46) * (P.x - 46) + (P.z - 40) * (P.z - 40)), forno = 99; if (fornos != null) foreach (var f in fornos) forno = Mathf.Min(forno, Vector2.Distance(f, new Vector2(P.x, P.z)));
+            float cha = MapaVisual.Asilo ? Mathf.Max(0, P.z + 60) + 6 : Mathf.Sqrt((P.x - 46) * (P.x - 46) + (P.z - 40) * (P.z - 40)), forno = 99;   // no asilo, o charco é a margem do lago if (fornos != null) foreach (var f in fornos) forno = Mathf.Min(forno, Vector2.Distance(f, new Vector2(P.x, P.z)));
             alvoAmb[0] = jogo ? (dentro ? 0 : mata ? .5f : .18f) : 0; alvoAmb[1] = jogo ? (dentro ? .06f : mata ? .22f : .38f) : 0; alvoAmb[2] = jogo && dentro ? .55f : 0;
             alvoAmb[3] = jogo && !dentro ? Mathf.Clamp01(1 - (cha - 10) / 35) * .6f : 0; alvoAmb[4] = jogo && !dentro ? Mathf.Clamp01(1 - (forno - 3) / 20) * .5f : 0;
             if (jogo && mata && !dentro) { ambProx -= dt; if (ambProx <= 0) { ambProx = Random.Range(18f, 42f); float a = Random.Range(0, Mathf.PI * 2), d = Random.Range(18f, 34f); Amostra(Random.value < .55f ? "coruja" : "rangido", P.x + Mathf.Cos(a) * d, P.z + Mathf.Sin(a) * d, 60, .45f); } }
@@ -114,6 +115,13 @@ namespace RitualReversal.Visual
         public float chuva;
         public static string Superficie(double x, double z)
         {
+            // asilo: ladrilho e tábua dentro; fora, cascalho nas trilhas, na margem, no pátio e no píer, capim no resto
+            if (MapaVisual.Asilo)
+            {
+                if (Mapa.Coberto(x, z)) return "pedra";
+                foreach (var e in MapaVisual.ESPACOS) if (x >= e.x1 && x <= e.x2 && z >= e.z1 && z <= e.z2) return System.Text.RegularExpressions.Regex.IsMatch(e.nome, "^(Trilha|Margem|Pátio|Píer)") ? "terra" : "folhas";
+                return "folhas";
+            }
             if (Mapa.NaCatedral(x, z)) return "pedra";
             foreach (var sg in Mapa.SEG_TRILHA) { double dx = sg.bx - sg.ax, dz = sg.bz - sg.az, L = dx * dx + dz * dz, t = L > 0 ? ((x - sg.ax) * dx + (z - sg.az) * dz) / L : 0; t = Math.Max(0, Math.Min(1, t)); if (JS.Hypot(x - (sg.ax + dx * t), z - (sg.az + dz * t)) < sg.w / 2 + .4) return "terra"; }
             return "folhas";
@@ -155,6 +163,10 @@ namespace RitualReversal.Visual
                 case "arrasto": return Amostra("transferencia", x, z, 45, .8f, 1, .04f, 2);
                 case "push": return Amostra("empurrao", x, z, 28, .9f);
                 case "estouro": return Amostra("estouro", x, z, 24, .85f, 1, .04f, 5);
+                // asilo: a porta range ao abrir e bate ao fechar; o quadro de força estala e a luz morre
+                case "porta_abre": return Amostra("rangido", x, z, 20, .9f, 1, .08f, 4);
+                case "porta_fecha": Amostra("impacto_madeira", x, z, 24, 1, 1, .04f, 4); Ruido(x, z, 24, .18f, Tipo.PassaBaixa, 260, 1, .8f); Tom(x, z, 24, 70, 40, .2f, Onda.Seno, .5f); return true;
+                case "estalo": Amostra("alavanca", x, z, 30, 1, 1, .04f, 3); Ruido(x, z, 50, .08f, Tipo.PassaAlta, 2400, 1, .6f); Tom(x, z, 50, 120, 30, .9f, Onda.Serra, .18f); return true;
                 case "selando": return Amostra("selando", x, z, 400, .9f, 1, .04f, 1);
                 case "selando_perto": return Amostra("selando", x, z, 50, .45f, 1, .04f, 1);
                 case "evp": return Amostra("evp", x, z, 30, .8f);
@@ -290,6 +302,7 @@ namespace RitualReversal.Visual
                 case "batida": Tom(N, N, 1, 70, 32, .35f, Onda.Seno, .35f + v * .3f); Ruido(N, N, 1, .12f, Tipo.PassaBaixa, 180, 1, .25f); break;
                 case "click": Tom(N, N, 1, 900, 700, .05f, Onda.Quadrada, .08f); break;
                 case "collect": Ruido(x, z, 26, .5f, Tipo.PassaFaixa, 700, 2, .5f); break;
+                case "porta_abre": Tom(x, z, 20, 180, 120, .6f, Onda.Serra, .12f); Ruido(x, z, 20, .5f, Tipo.PassaFaixa, 900, 6, .25f); break;
                 case "flare": Ruido(x, z, 20, .6f, Tipo.PassaAlta, 2000, 1, .3f); break;
                 case "rune": Tom(x, z, 30, 300, 900, .6f, Onda.Triangulo, .3f); break;
                 case "arrasto": Tom(x, z, 45, 70, 40, 1.8f, Onda.Serra, .25f); Tom(x, z, 45, 520, 180, 1.2f, Onda.Triangulo, .12f, .3f); break;

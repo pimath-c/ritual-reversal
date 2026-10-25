@@ -13,7 +13,7 @@ namespace RitualReversal
         int chatVisto = -1;
         void TelaLobbyCss()
         {
-            bool anfitriao = hostCid == EU; string chave = "lobby" + string.Join(",", lobbySlots.Select(s => s.name + "|" + s.cid)) + hostCid + lobbyDif;
+            bool anfitriao = hostCid == EU; string chave = "lobby" + string.Join(",", lobbySlots.Select(s => s.name + "|" + s.cid)) + hostCid + lobbyDif + lobbyMapa;
             PainelTela(chave, 800, (x, y, w) =>
             {
                 float y0 = y; y += H2(x, y, w, "Sala", TextAnchor.UpperCenter);
@@ -21,6 +21,8 @@ namespace RitualReversal
                 var stC = Css("700", 54, GOLD_HI); float esp = 54 * .12f, lhC = 54 * 1.45f;
                 if (!medindo) { float wc = 0; foreach (var ch in salaCodigo ?? "") wc += Larg(ch.ToString(), stC) + esp; Espacada(x + (w - wc) / 2, y, lhC, salaCodigo ?? "", stC, esp); }
                 y += lhC;
+                // v6.2: p.fine com o nome do mapa da sala, no meio, 6 px mais acima
+                { var stM = Css("400", 14, MUDO); string nm = NomeMapa(lobbyMapa); float lhM = 14 * 1.45f; y -= 6; if (!medindo) Linha(x + (w - Larg(nm, stM)) / 2, y, w, lhM, nm, stM); y += lhM; }
                 y += Lede(x, y, w, "Mande este código para seus amigos. Vagas sem jogador ficam com bots.");
                 // .slots: duas colunas com 14 px entre elas; o h3 da equipe (margem 0 0 6) e as vagas (.slot, 8 px embaixo)
                 float cw = (w - 14) / 2, hs = AlturaBotao("slot"), hh = AlturaNormal(Css("serif", 21, BONE));

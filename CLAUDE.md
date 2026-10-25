@@ -161,7 +161,12 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   salas, portas de correr, lâmpadas por ala, quadros, móveis, lago) com `atualizar(dt, estadoMapa(V), agora)`; planta do Tab
   `plantaAsilo`/`plantaAsiloDin`. Servidor: o mapa é escolhido ao criar a sala (`r.mapa`), vai no welcome/lobby/salas/registro.
   Teste: `node tools/navegador-asilo.js` (porta, folha, luz, planta, fotos em dist/asilo). Bots, 200 noites: culto 45% no asilo.
-  Falta: o asilo no Unity (sim em C#, visual, escolha do mapa).
+  Segurar E mexe na porta uma vez (`a.portaPresa` até soltar). Unity: `Mapa.cs` guarda os campos de cada mapa (`DadosMapa`,
+  `Usar(id)`, `Ativar(jogo)` como o ativar(g)); `exportar-mapa.js` grava `simulacao-asilo.json`/`mapa-asilo.json`; `comparar-cs.js`
+  e `unity-ver.js` aceitam `MAPA=asilo`. `Visual/MundoAsilo.cs` é o `client/asilo.js` (`ConstruirAsilo`, `AtualizarAsilo`); o
+  `Mundo.Construir(mapa)` pula mata e catedral viva no asilo; `PartidaVisual.TrocarMundo(id)` desmonta e monta (título: linha
+  "Mapa", PlayerPrefs "rr-mapa"; online: welcome/lobby com o mapa da sala; `Rede.Ler` lê mapa, portas e energia). Planta:
+  `PlantaFixa.TexturaAsilo` e `PlantaAsiloBase`. O `TesteTelas` joga uma noite no asilo (porta, apagão, planta).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

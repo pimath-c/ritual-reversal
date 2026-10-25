@@ -34,7 +34,13 @@ const VISTAS=[
   {nome:'altar-abside',x:0,z:-80,yaw:0,pitch:-.25},
   {nome:'mata-catedral',x:-60,z:20,yaw:-.6,pitch:.18},
   {nome:'altar-encapuzados',x:82,z:59.5,yaw:Math.PI,pitch:-.12},   // modelos gerados (ModeloGLB.cs): o altar e as estátuas de perto
-  {nome:'estatua',x:-35.5,z:-27.5,yaw:Math.atan2(2.5,2.5),pitch:.05}].filter(v=>FILTRO.test(v.nome));
+  {nome:'estatua',x:-35.5,z:-27.5,yaw:Math.atan2(2.5,2.5),pitch:.05}];
+// MAPA=asilo: as vistas do Asilo Blackwater (as mesmas do tools/navegador-asilo.js e mais algumas)
+const MAPA=process.env.MAPA||'catedral';
+const VISTAS_ASILO=[{nome:'saguao',x:0,z:18,yaw:0,pitch:0},{nome:'corredor-oeste',x:-30,z:10,yaw:-Math.PI/2,pitch:0},{nome:'capela',x:0,z:-20,yaw:0,pitch:.1},
+  {nome:'caldeiras',x:62,z:-42,yaw:0,pitch:.05},{nome:'gramado',x:0,z:40,yaw:0,pitch:.05},{nome:'enfermaria',x:-92,z:0,yaw:0,pitch:.05},
+  {nome:'hidroterapia',x:-62,z:-42,yaw:0,pitch:.05},{nome:'coreto',x:0,z:56,yaw:0,pitch:.1},{nome:'cemiterio',x:80,z:40,yaw:-Math.PI/2,pitch:.05},{nome:'lago',x:0,z:-62,yaw:Math.PI,pitch:.05}];
+const VISTAS_SEL=(MAPA==='asilo'?VISTAS_ASILO:VISTAS).filter(v=>FILTRO.test(v.nome));
 
 // 1) exporta o mundo do Unity
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'unity-ver-')), EXE=path.join(tmp,'exportar.exe'), EXP=path.join(OUT,'exportado');
@@ -44,9 +50,9 @@ const sim=fs.readdirSync(path.join(UN,'Scripts','Simulacao')).filter(f=>f.endsWi
 try{ execFileSync('mcs',['-nowarn:414,618,169,649,219,162,168,1717','-out:'+EXE,path.join(CS,'UnityFalso.cs'),path.join(CS,'SomFalso.cs'),path.join(CS,'ExportarMundo.cs'),...scripts,...sim],{stdio:['ignore','pipe','pipe']}); }
 catch(e){ console.error('o visual do Unity não compilou contra o UnityEngine de mentira:\n'+String(e.stdout||'')+String(e.stderr||'')); process.exit(2); }
 fs.rmSync(EXP,{recursive:true,force:true});
-console.log(execFileSync('mono',[EXE,path.join(UN,'Resources'),EXP],{encoding:'utf8'}).trim());
+console.log(execFileSync('mono',[EXE,path.join(UN,'Resources'),EXP],{encoding:'utf8',env:{...process.env,MAPA}}).trim());
 // e uma partida de bots passando pelo visual do Unity (ritual, coleta, execução): exceções aparecem aqui
-try{ console.log(execFileSync('mono',[EXE,path.join(UN,'Resources'),EXP,'partida'],{encoding:'utf8'}).trim()); }
+try{ console.log(execFileSync('mono',[EXE,path.join(UN,'Resources'),EXP,'partida'],{encoding:'utf8',env:{...process.env,MAPA}}).trim()); }
 catch(e){ console.error(String(e.stdout||'')+String(e.stderr||'')); process.exit(1); }
 
 // 2) a página que desenha a exportação (three r128, os mesmos ajustes do renderizador do jogo)
@@ -104,13 +110,14 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
   // jogo oficial
   const of=await browser.newPage({viewport:VP}); const erros=[]; of.on('pageerror',e=>erros.push('oficial: '+e.message));
   await of.route('**/*',r=>{ const u=r.request().url(); if(THREE_DIR&&u.includes('cdn.jsdelivr.net/npm/three@0.128.0/')) return r.fulfill({path:path.join(THREE_DIR,u.split('three@0.128.0/')[1]),contentType:'application/javascript'}); if(u.includes('fonts.g')) return r.abort(); return r.continue(); });
+  if(MAPA!=='catedral') await of.addInitScript(m=>{ try{ sessionStorage.setItem('rr-mapa-boot',m); }catch(e){} },MAPA);
   await of.goto('file://'+(process.env.HTML||path.join(ROOT,'dist','ritual-reversal.html'))+'#autotest'); await of.waitForFunction(()=>window.__T,null,{timeout:180000});
   await of.addStyleTag({content:'#scr{display:none!important}'});
   await of.evaluate(()=>{ __T.startLocal(); }); await of.waitForFunction(()=>__T.game&&__T.game.phase==='intro',null,{timeout:30000});
   await of.evaluate(()=>{ __T.sendAct({type:'ready'}); }); await of.waitForFunction(()=>__T.game.phase==='play',null,{timeout:30000}); await of.waitForTimeout(800);
   // primeiro todas as fotos do oficial (as duas páginas juntas disputam a GPU emulada)
   const fotos=[];
-  for(const v of VISTAS){
+  for(const v of VISTAS_SEL){
     await of.evaluate(v=>{ const m=__T.game.actors.find(a=>a.cid==='local'); m.x=v.x; m.z=v.z; m.invuln=999; m.hp=m.maxHp; __T.LOOK.yaw=v.yaw; __T.LOOK.pitch=v.pitch; m.inp.yaw=v.yaw; m.inp.pitch=v.pitch;
       for(const a of __T.game.actors) if(a!==m){ a.x=a.team==='H'?-125:125; a.z=a.team==='H'?-8:8; } },v);
     await of.waitForTimeout(1500);

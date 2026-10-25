@@ -89,10 +89,13 @@ namespace RitualReversal
             {"parapeito","#4a4438"},{"penhasco","#4e4a40"},{"ruina","#4e4e46"},{"pilar_ruina","#5e5e55"},{"estatua","#8a8a80"},{"sebe","#3a5a3c"},{"ossos","#8a7f68"},{"menir","#77746a"},
             {"carvalho","#4a3a2e"},{"tenda","#5a4c34"},{"madeira","#6a5040"},{"mausoleu","#58524a"},{"torre","#6a645a"},{"limite","#2b3328"} };
 
+        static string texMapa;
         public static Texture2D Textura()
         {
-            if (tex != null) return tex;
             if (!MapaVisual.Carregado) { var ta = Resources.Load<TextAsset>("mapa"); if (ta != null) MapaVisual.Carregar(ta.text); }
+            if (tex != null && texMapa == MapaVisual.ID) return tex;
+            Mapa.Usar(MapaVisual.ID); texMapa = MapaVisual.ID;   // a escala (S) e os limites vêm do mapa da simulação
+            if (MapaVisual.Asilo) return tex = TexturaAsilo();
             float S = PlantaFixa.S; var D = new Desenho(L, A, 2, new Color(0, 0, 0, 0)); System.Func<string, Color> H = h => Desenho.Hex(h);
             D.Ret(X(-Mapa.HX), Z(-Mapa.HZ), (float)Mapa.HX * 2 * S, (float)Mapa.HZ * 2 * S, H("#0d130f")); D.RetBorda(X(-Mapa.HX), Z(-Mapa.HZ), (float)Mapa.HX * 2 * S, (float)Mapa.HZ * 2 * S, 2, H("#3a4a36"));
             foreach (var c in MapaVisual.CLAREIRAS) D.Circulo(X(c.x), Z(c.y), c.z * S, H("#18211a"));
@@ -119,6 +122,23 @@ namespace RitualReversal
                 if (!tem) D.Ret(X(b.x1), Z(b.z1), Mathf.Max(1.5f, (float)(b.x2 - b.x1) * S), Mathf.Max(1.5f, (float)(b.z2 - b.z1) * S), H("#58524a"));
             }
             return tex = D.Textura();
+        }
+        // a planta do Asilo Blackwater (plantaAsilo do navegador): terreno, lago, salas cobertas e abertas, água, paredes,
+        // móveis e os quadros de força; os nomes das salas vão por cima no IMGUI (PartidaPlanta)
+        static readonly Dictionary<string, string> COR_ASILO = new Dictionary<string, string> {
+            {"parede","#0e0e10"},{"muro","#2a2824"},{"lapide","#77736a"},{"canteiro","#2c3a22"},{"coluna_coreto","#8a8478"},{"caldeira","#6a3a2a"},{"carvao","#111"} };
+        static Texture2D TexturaAsilo()
+        {
+            float S = PlantaFixa.S; var D = new Desenho(L, A, 2, new Color(0, 0, 0, 0)); System.Func<string, Color> H = h => Desenho.Hex(h);
+            System.Action<float, float, float, float, string> ret = (x1, x2, z1, z2, c) => D.Ret(X(x1), Z(z1), Mathf.Max(1, (x2 - x1) * S), Mathf.Max(1, (z2 - z1) * S), H(c));
+            float hx = (float)Mapa.HX, hz = (float)Mapa.HZ;
+            ret(-hx, hx, -hz, hz, "#141a14"); D.RetBorda(X(-hx), Z(-hz), hx * 2 * S, hz * 2 * S, 2, H("#3a4a36"));
+            ret(-hx, hx, -hz, -66, "#0b1418");   // o lago
+            foreach (var E in MapaVisual.ESPACOS) ret(E.x1, E.x2, E.z1, E.z2, E.interno ? "#3b3a3c" : "#1f2a1e");
+            foreach (var q in MapaVisual.AGUA) ret(q.x1, q.x2, q.z1, q.z2, "#16303a");
+            foreach (var b in MapaVisual.WALLS) { if (b.kind == "lago") continue; string c; if (!COR_ASILO.TryGetValue(b.kind, out c)) c = "#57493a"; ret(b.x1, b.x2, b.z1, b.z2, c); }
+            foreach (var q in MapaVisual.QUADROS) { D.Ret(X(q.x) - 4, Z(q.z) - 4, 8, 8, H("#24282c")); D.RetBorda(X(q.x) - 4, Z(q.z) - 4, 8, 8, 1.2f, H("#e8c050")); }
+            return D.Textura();
         }
 
     }

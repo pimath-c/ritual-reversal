@@ -21,16 +21,18 @@ namespace RitualReversal.Visual
         {
             // céu: cúpula presa à câmera, degradê noturno; céu de sangue do Grande Ritual por cima; estrelas
             cupula = Grupo(raiz, "Céu");
-            mCeu = Mat.Brilho(Color.white, Tex.Gradiente("ceu", 0f, "#010205", .55f, "#060a14", 1f, "#101a2c"), Mat.Mistura.Alfa, false, false, 0, false, 1000);
+            bool asilo = MapaVisual.Asilo;   // o céu do asilo (asilo.js): mais escuro no horizonte, menos estrelas, sem o luar do Claustro
+            mCeu = Mat.Brilho(Color.white, asilo ? Tex.Gradiente("ceuAsilo", 0f, "#010205", .55f, "#05090f", 1f, "#0c1418") : Tex.Gradiente("ceu", 0f, "#010205", .55f, "#060a14", 1f, "#101a2c"), Mat.Mistura.Alfa, false, false, 0, false, 1000);
             Malha(Geo.Esfera(190, 24, 14), mCeu, cupula, "cúpula", false);
             mSangue = Mat.Brilho(new Color(1, 1, 1, 0), Tex.Gradiente("ceuSangue", 0f, "rgba(90,0,10,0)", .35f, "rgba(150,10,24,.55)", .52f, "rgba(230,40,50,1)", .62f, "rgba(120,6,16,.6)", 1f, "rgba(40,0,4,0)"), Mat.Mistura.Aditiva, false, false, 0, false, 1001);
             sangue = Malha(Geo.Esfera(186, 24, 14), mSangue, cupula, "céu de sangue", false); sangue.SetActive(false);
             mEstrelas = Mat.Brilho(Mat.Hex(0xdfe6ff, .8f), Tex.Brilho(), Mat.Mistura.Aditiva, true, false, 0, false, 1002);
-            { var g = new Geo(); var rnd = new System.Random(4); for (int i = 0; i < 1800; i++) { float a = (float)rnd.NextDouble() * 6.283f, el = Mathf.Asin(.12f + (float)rnd.NextDouble() * .88f), r = 180; g.Juntar(Geo.Sprite(new Vector3(Mathf.Cos(a) * Mathf.Cos(el) * r, Mathf.Sin(el) * r, Mathf.Sin(a) * Mathf.Cos(el) * r), .9f, .9f)); } Malha(g, mEstrelas, cupula, "estrelas", false); }
+            { var g = new Geo(); var rnd = new System.Random(4); for (int i = 0, nEst = asilo ? 1400 : 1800; i < nEst; i++) { float a = (float)rnd.NextDouble() * 6.283f, el = Mathf.Asin(.12f + (float)rnd.NextDouble() * .88f), r = 180; g.Juntar(Geo.Sprite(new Vector3(Mathf.Cos(a) * Mathf.Cos(el) * r, Mathf.Sin(el) * r, Mathf.Sin(a) * Mathf.Cos(el) * r), .9f, .9f)); } Malha(g, mEstrelas, cupula, "estrelas", false); }
             mLua = Mat.Brilho(Mat.Hex(0xdfe8ff), Tex.Brilho(), Mat.Mistura.Alfa, true, false, 0, false, 1003); lua = Sprite(raiz, mLua, 22, 22, "lua").transform;
             mLua2 = Mat.Brilho(Mat.Hex(0x6f88c8, .35f), Tex.Brilho(), Mat.Mistura.Aditiva, true, false, 0, false, 1004); lua2 = Sprite(raiz, mLua2, 64, 64, "halo da lua").transform;
             // luzes
             luar = LuzPonto(raiz, 0x8fa8e0, .9f, 70, 1.5f, "luar"); luar.transform.localPosition = new Vector3(-30, 26, -54); // sobre o jardim do Claustro, a céu aberto
+            if (asilo) luar.enabled = false;
 #if UNITY_2023_1_OR_NEWER
             foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) if
 #else
@@ -77,6 +79,7 @@ namespace RitualReversal.Visual
                 float I = (f.i + Mathf.Sin(agora * 11 + i * 3) * .12f + Random.value * (.12f + GRk * .5f)) * velaK * (1 + GRk * .35f);
                 velas[i].enabled = true; velas[i].intensity = IntensidadeUnity(I, f.alc, 2);
             }
+            AtualizarAsilo(g, dt, agora);   // portas, lâmpadas e quadros do asilo (nada na catedral)
             if (g == null) return;
             // névoa e cor da noite
             int mi = Mathf.Clamp(g.momento, 0, 2); bool mata = Mapa.ZoneAt(cam.x, cam.z) == "Floresta"; float k2 = Mathf.Min(1, dt * .6f);

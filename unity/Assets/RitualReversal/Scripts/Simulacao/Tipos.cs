@@ -123,6 +123,7 @@ namespace RitualReversal.Simulacao
 
     public class Ator : Ponto
     {
+        public bool portaPresa;   // asilo: mexeu numa porta e ainda não soltou o E
         public int id, slot; public string cid; public bool human; public string name, team, cls; public double maxHp, hp, speed;
         public double yaw, pitch; public string st = "alive"; public double downT, respawnT; public int deaths, dc; public bool revUsed; public int reag;
         public double hitT = -9; public Dictionary<int, double> att = new Dictionary<int, double>(); public double fireCd; public int ammo = 8, reserve = 48; public double reloadT;

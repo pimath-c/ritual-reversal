@@ -655,7 +655,7 @@ namespace RitualReversal.Simulacao
                     {
                         var P = Mapa.PORTAS_DIN[ctx.P.Value]; bool ab = !g.portas[P.i]; g.portas[P.i] = ab; RecalcularPortas(g);
                         Ev(g, "porta", "i", P.i, "aberta", ab, "a", a.id); Ev(g, "sfx", "k", ab ? "porta_abre" : "porta_fecha", "x", P.x, "z", P.z, "a", a.id);
-                        if (a.human) LogE(g, "porta", "who", a.name, "aberta", ab); break;
+                        if (a.human) { a.portaPresa = true; LogE(g, "porta", "who", a.name, "aberta", ab); } break;
                     }
                 case "quadro":
                     {
@@ -743,9 +743,10 @@ namespace RitualReversal.Simulacao
             if (a.team == "H") { if (eq) UseSensor(g, a); if (ef) a.lantern = !a.lantern && a.carga > 0; if (eg) ThrowFlare(g, a); }
             if (eab) UseAbility(g, a);
             var ctx = Contexts(g, a); a.sealing = -1;
+            if (!a.inp.use) a.portaPresa = false;   // asilo: depois de mexer numa porta, só de novo soltando o E
             if (ctx.e != null && ctx.e.type == "loja") a.hold = new Hold();
             else if (ctx.e != null && ctx.e.type == "seal" && a.inp.use) { a.sealing = ctx.e.A.Value; a.hold = new Hold(ctx.e.key, 0, 0); }
-            else if (ctx.e != null && a.inp.use) HoldStep(g, a, ctx.e, dt);
+            else if (ctx.e != null && a.inp.use && !(ctx.e.type == "porta" && a.portaPresa)) HoldStep(g, a, ctx.e, dt);
             else if (ctx.t != null && a.inp.use2) HoldStep(g, a, ctx.t, dt);
             else a.hold = new Hold();
             if (a.team == "H")

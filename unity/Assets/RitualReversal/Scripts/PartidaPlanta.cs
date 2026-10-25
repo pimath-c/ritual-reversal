@@ -31,11 +31,47 @@ namespace RitualReversal
         {
             GUI.DrawTexture(r, PlantaFixa.Textura()); float s = r.width / VB_L;
             if (g == null || g.lab.economia) foreach (var n in Mapa.NPCS) { var p = PontoSvg(r, n.x, n.z); Tracos.Disco(p.x, p.y, 4 * s, Desenho.Hex("#d2ad62")); TextoSvg(r, PX(n.x), PZ(n.z) - 7, System.Text.RegularExpressions.Regex.Replace(n.nome, "^(o|a) ", ""), 10, Desenho.Hex("#d2ad62")); }
+            if (MapaVisual.Asilo) { PlantaAsiloBase(r); return; }
             foreach (var L in MapaVisual.LUGARES) TextoSvg(r, PX(L.x), PZ(L.z), L.nome, 10, Desenho.Hex("#8a8272"), true);
             SpawnDef sh, sc;
             if (Mapa.SPAWN.TryGetValue("H", out sh)) TextoSvg(r, PX(sh.x), PZ(sh.z) + 34, "Caçadores", 12, Desenho.Hex("#d2ad62"));
             if (Mapa.SPAWN.TryGetValue("C", out sc)) TextoSvg(r, PX(sc.x), PZ(sc.z) + 34, "Cultistas", 12, CorCulto());
         }
+        // asilo (plantaAsilo/plantaAsiloDin do navegador): nomes das salas longe dos altares e mercadores, os nascimentos, e por
+        // cima o que muda: as alas sem luz (sombra), os quadros cortados (vermelhos) e as portas (cheias fechadas, tracejadas abertas)
+        static readonly Dictionary<string, float> NOME_SALA_Z = new Dictionary<string, float> { { "Gramado", 32 }, { "Saguão", 19 }, { "Pátio Norte", -55 }, { "Horta", 28 }, { "Cemitério", 28 }, { "Arquivo", -1.5f }, { "Farmácia", -1.5f } };
+        void PlantaAsiloBase(Rect r)
+        {
+            float s = r.width / VB_L; var comAltar = new HashSet<string>(); foreach (var A in Mapa.ALTARS) comAltar.Add(A.name);
+            // a sombra das alas sem luz fica embaixo dos nomes
+            if (g != null && g.energia != null)
+                foreach (var E in MapaVisual.ESPACOS)
+                {
+                    if (!E.interno) continue; float cx = (E.x1 + E.x2) / 2; string st = cx < -12.5f ? "oeste" : cx > 12.5f ? "leste" : "centro"; double fim;   // a divisão das lâmpadas do mapaAsilo
+                    if (g.energia.TryGetValue(st, out fim) && fim > g.t) RetSvg(r, E.x1, E.x2, E.z1, E.z2, new Color(0, 0, 0, .45f));
+                }
+            foreach (var E in MapaVisual.ESPACOS)
+            {
+                if (System.Text.RegularExpressions.Regex.IsMatch(E.nome, "^(Corredor|Trilha|Margem|Píer|Escada)") || comAltar.Contains(E.nome) || (E.x2 - E.x1) * PS < E.nome.Length * 4.6f + 4) continue;
+                float cz; if (!NOME_SALA_Z.TryGetValue(E.nome, out cz)) cz = (E.z1 + E.z2) / 2;
+                TextoSvg(r, PX((E.x1 + E.x2) / 2), PZ(cz) + 3, E.nome, 9, Desenho.Hex(E.interno ? "#8a8272" : "#6e7a62"), true);
+            }
+            SpawnDef sh, sc;
+            if (Mapa.SPAWN.TryGetValue("H", out sh)) TextoSvg(r, PX(sh.x), PZ(sh.z) + 22, "Caçadores", 12, Desenho.Hex("#d2ad62"));
+            if (Mapa.SPAWN.TryGetValue("C", out sc)) TextoSvg(r, PX(sc.x), PZ(sc.z) + 22, "Culto", 12, CorCulto());
+            if (g == null) return;
+            if (g.energia != null) foreach (var q in MapaVisual.QUADROS) { double fim; if (g.energia.TryGetValue(q.setor, out fim) && fim > g.t) { RetPx(r, PX(q.x) - 4, PZ(q.z) - 4, 8, 8, Desenho.Hex("#ff5040")); RetPx(r, PX(q.x) - 2.8f, PZ(q.z) - 2.8f, 5.6f, 5.6f, Desenho.Hex("#5a1010")); } }
+            if (g.portas != null)
+                foreach (var P in MapaVisual.PORTAS_DIN)
+                {
+                    bool ab = P.i >= g.portas.Count || g.portas[P.i], ax = P.eixo == "x";
+                    Vector2 a = PontoSvg(r, ax ? P.x1 : P.x, ax ? P.z : P.z1), b = PontoSvg(r, ax ? P.x2 : P.x, ax ? P.z : P.z2);
+                    if (!ab) Tracos.Seg(a, b, 3.5f * s, Desenho.Hex("#e0b86a"));
+                    else { float L = Vector2.Distance(a, b), passo = 4 * s; for (float t = 0; t < L; t += passo) Tracos.Seg(Vector2.Lerp(a, b, t / L), Vector2.Lerp(a, b, Mathf.Min(L, t + 2 * s) / L), 1.5f * s, Desenho.Hex("#8a7650")); }
+                }
+        }
+        void RetSvg(Rect r, float x1, float x2, float z1, float z2, Color c) { RetPx(r, PX(x1), PZ(z1), (x2 - x1) * PS, (z2 - z1) * PS, c); }
+        void RetPx(Rect r, float x, float y, float w, float h, Color c) { float s = r.width / VB_L; var c0 = GUI.color; GUI.color = c; GUI.DrawTexture(new Rect(r.x + x * s, r.y + y * s, w * s, h * s), Texture2D.whiteTexture); GUI.color = c0; }
         static Color CorCulto() { return Desenho.Hex(PlayerPrefs.GetInt("rr-dalt", 0) == 1 ? "#6ea8ff" : "#e0435e"); }
 
         // estilo do altar na planta (altarMapStyle): preenchimento e contorno, ou null para o neutro

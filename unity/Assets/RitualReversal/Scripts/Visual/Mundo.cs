@@ -20,16 +20,19 @@ namespace RitualReversal.Visual
         readonly Dictionary<string, Balde> baldes = new Dictionary<string, Balde>();
         const float PI = (float)Math.PI;
 
-        public static Mundo Construir()
+        public static Mundo Construir(string mapa = null)
         {
-            if (!MapaVisual.Carregado) { var t = Resources.Load<TextAsset>("mapa"); if (t != null) MapaVisual.Carregar(t.text); }
+            // a planta visual do mapa pedido (sem pedido, a que estiver carregada; a catedral de saída)
+            if (mapa != null) MapaVisual.Usar(mapa); else if (!MapaVisual.Carregado) MapaVisual.Usar("catedral");
             var go = new GameObject("Mundo (visual do protótipo)"); var m = go.AddComponent<Mundo>(); m.raiz = go.transform; go.transform.localScale = new Vector3(1, 1, -1);
             Atual = m; m.Montar(); return m;
         }
 
         void Montar()
         {
-            Tex.Construir(); CriarMateriais(); BuildWorld(); BuildFloresta(); BuildCatedralViva(); BuildAltars(); BuildEfeitos(); Fundir();
+            // o asilo (MundoAsilo.cs) não tem a mata nem a catedral viva, como no boot() do navegador
+            bool asilo = MapaVisual.Asilo;
+            Tex.Construir(); CriarMateriais(); BuildWorld(); if (!asilo) { BuildFloresta(); BuildCatedralViva(); } BuildAltars(); BuildEfeitos(); Fundir();
         }
 
         // ---------- ajudantes ----------
@@ -345,8 +348,9 @@ namespace RitualReversal.Visual
 
         void BuildWorld()
         {
-            // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de MundoV6.cs (client/mundo.js)
-            foreach (var w in MapaVisual.WALLS) Peca(w);
+            // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de MundoV6.cs (client/mundo.js); o asilo, de MundoAsilo.cs
+            if (MapaVisual.Asilo) ConstruirAsilo();
+            else { foreach (var w in MapaVisual.WALLS) Peca(w);
             foreach (var P in MapaVisual.PEWS)
                 for (float x = P.x + .3f; x < P.y - .5f; x += 3.1f) foreach (float zz in new[] { P.z + .4f, P.z + 2.1f })
                     {
@@ -354,14 +358,15 @@ namespace RitualReversal.Visual
                         Caixa(x, x + 2.7f, .42f, .52f, zz, zz + .55f, M("wood"), 2); Caixa(x, x + 2.7f, .52f, 1, zz + .5f, zz + .62f, M("wood"), 2);
                         Caixa(x, x + .1f, 0, .95f, zz, zz + .6f, M("wood"), 2); Caixa(x + 2.6f, x + 2.7f, 0, .95f, zz, zz + .6f, M("wood"), 2);
                     }
-            ConstruirV6();
-            // velas, fogueira, braseiros e lanternas
+            ConstruirV6(); }
+            // velas, fogueira, braseiros e lanternas (as lâmpadas do asilo são do MundoAsilo)
             var chama = Mat.Brilho(Mat.Hex(0xffc070), Tex.Chama(), Mat.Mistura.Aditiva, true); chama.name = "chama";
             var chamaVerm = Mat.Brilho(Mat.Hex(0xff5a4a), Tex.Chama(), Mat.Mistura.Aditiva, true); chamaVerm.name = "chamaVermelha";
             var vidro = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xffc070), rugosidade = .4f, emissao = Mat.Hex(0xff9030), emissaoK = 1.6f }); vidro.name = "lanternaVidro";
             var metalDupla = M("metalDupla");
             foreach (var cd in MapaVisual.CANDLES)
             {
+                if (cd.tipo == "lampada") continue;
                 float x = cd.x, z = cd.z; var fonte = new Fonte { x = x, z = z, y = 2.1f, cor = 0xff8a36, i = 1.6f, alc = 14 };
                 if (cd.tipo == "fogueira")
                 {
@@ -391,7 +396,7 @@ namespace RitualReversal.Visual
                 FONTES.Add(fonte);
             }
             // v6: reagentes com forma própria por subárea da mata (MundoReagentes.cs)
-            for (int i = 0; i < Mapa.REAG.Count; i++) reagentes.Add(ModeloReagente(i < REAG_TIPOS.Length ? REAG_TIPOS[i] : "sal", (float)Mapa.REAG[i].x, (float)Mapa.REAG[i].z));
+            for (int i = 0; i < Mapa.REAG.Count; i++) reagentes.Add(ModeloReagente(i < (MapaVisual.Asilo ? REAG_TIPOS_ASILO : REAG_TIPOS).Length ? (MapaVisual.Asilo ? REAG_TIPOS_ASILO : REAG_TIPOS)[i] : "sal", (float)Mapa.REAG[i].x, (float)Mapa.REAG[i].z));
             // poeira no ar
             { int N = Qualidade.nivel == 0 ? 500 : Qualidade.nivel <= 1 ? 1200 : 2400; var dust = Mat.Brilho(Mat.Hex(0xcdbb96, .5f), Tex.Brilho(), Mat.Mistura.Aditiva, true); dust.name = "poeira"; var rnd = new System.Random(9);
                 for (int i = 0; i < N; i++) SpriteEst((float)(rnd.NextDouble() * 2 - 1) * MapaVisual.HX, .3f + (float)rnd.NextDouble() * 11.7f, (float)(rnd.NextDouble() * 2 - 1) * MapaVisual.HZ, .05f, .05f, dust); }

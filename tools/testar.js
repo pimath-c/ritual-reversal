@@ -253,6 +253,12 @@ console.log('9b. Asilo: portas, quadros de força e água');
     viva(h2,Q.x,Q.z+.8); Sim._doAction(g2,h2,{type:'quadro',setor:'oeste'}); if(Math.abs(Sim.lightAt(g2,-41,10)-L0)>.01) falha('religar não devolveu a luz');
     Sim._doAction(g2,c2,{type:'quadro',setor:'oeste'}); for(let i=0;i<30*(Sim.CFG.apagao+1);i++) Sim.step(g2,1/30);
     if(Math.abs(Sim.lightAt(g2,-41,10)-L0)>.01) falha('a luz não voltou sozinha depois do apagão'); }
+  // segurar E por 1 s junto da porta: ela fecha uma vez só; abre de novo só depois de soltar e segurar outra vez
+  { const g4=nova(), a=g4.actors.find(x=>x.cid==='eu'); a.human=true; const P=Sim.PORTAS_DIN.find(p=>p.x===0&&p.z===25);
+    const passo=use=>{ Sim.moveHuman(g4,a,{mx:0,mz:0,sp:false,ag:false,yaw:0,pitch:0,fire:false,use,use2:false,c:{q:0,f:0,g:0,r:0,ab:0}},1/30); Sim.step(g4,1/30); };
+    viva(a,0,22.6);
+    for(let i=0;i<30;i++) passo(true); if(g4.portas[P.i].aberta) falha('segurar E 1 s junto da porta deveria fechá-la');
+    passo(false); for(let i=0;i<15;i++) passo(true); if(!g4.portas[P.i].aberta) falha('soltar e segurar E de novo deveria abrir a porta'); }
   // água rasa: anda-se a 70%
   { const g3=nova(), a=g3.actors.find(x=>x.cid==='eu'); a.human=true;
     const anda=(x,z)=>{ viva(a,x,z); for(let i=0;i<30;i++){ Sim.moveHuman(g3,a,{mx:1,mz:0,sp:false,ag:false,yaw:0,pitch:0,fire:false,use:false,use2:false,c:{q:0,f:0,g:0,r:0,ab:0}},1/30); Sim.step(g3,1/30); } return Math.abs(a.x-x); };

@@ -25,7 +25,8 @@ namespace RitualReversal
             { "passoForte", new object[] { "Passos pesados", 24f, "" } }, { "passoLeve", new object[] { "Passos leves", 5f, "" } }, { "collect", new object[] { "Algo foi coletado", 26f, "" } },
             { "flare", new object[] { "Sinalizador aceso", 20f, "" } }, { "rune", new object[] { "Runa conjurada", 30f, "cult" } }, { "arrasto", new object[] { "Arrasto de ritual", 45f, "rit" } },
             { "push", new object[] { "Empurrão", 28f, "cult" } }, { "flash", new object[] { "Clarão", 30f, "" } }, { "purify", new object[] { "Purificação", 30f, "" } },
-            { "reload", new object[] { "Recarga", 18f, "" } }, { "estouro", new object[] { "Sigilo estourou", 22f, "cult" } }, { "corvo", new object[] { "Corvos levantam voo", 40f, "" } },
+            { "reload", new object[] { "Recarga", 18f, "" } }, { "estouro", new object[] { "Sigilo estourou", 22f, "cult" } },
+            { "porta_abre", new object[] { "Porta rangendo", 20f, "" } }, { "porta_fecha", new object[] { "Porta batendo", 24f, "" } }, { "estalo", new object[] { "Quadro de força", 50f, "" } }, { "corvo", new object[] { "Corvos levantam voo", 40f, "" } },
             { "whisper", new object[] { "Sussurros", 26f, "cult" } }, { "evp", new object[] { "Sussurros num altar", 26f, "cult" } }, { "hab", new object[] { "Feitiço", 34f, "" } }
         };
         static readonly string[] LADOS = { "à frente", "à frente, à direita", "à direita", "atrás, à direita", "atrás", "atrás, à esquerda", "à esquerda", "à frente, à esquerda" };

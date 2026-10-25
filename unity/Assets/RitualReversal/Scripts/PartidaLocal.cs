@@ -28,6 +28,9 @@ namespace RitualReversal
                 var dados = Resources.Load<TextAsset>("simulacao");
                 if (dados == null) { Debug.LogError("Ritual Reversal: falta Resources/simulacao.json (rode node tools/exportar-mapa.js)."); enabled = false; return; }
                 Sim.Iniciar(dados.text);
+                // os outros mapas (simulacao-asilo.json...): a partida ativa o seu no Mapa.Ativar
+                foreach (var id in new[] { "asilo" }) { var d = Resources.Load<TextAsset>("simulacao-" + id); if (d != null) Mapa.Carregar(d.text); }
+                Mapa.Usar("catedral");
             }
             // no Awake, antes de qualquer Start: o jogador livre do blockout não chega a travar o mouse nem a se mover.
             // Na partida quem manda na posição é a simulação.

@@ -26,16 +26,32 @@ namespace RitualReversal
             cam.transform.SetParent(null, true);
             var raizBlockout = transform.parent;
             if (raizBlockout != null) foreach (Transform c in raizBlockout) if (c != transform) c.gameObject.SetActive(false);
-            mundo = Mundo.Construir(); fp = new PrimeiraPessoa(cam);
+            mapaMundo = PlayerPrefs.GetString("rr-mapa", "catedral"); if (!Mapa.Tem(mapaMundo)) mapaMundo = "catedral";
+            mundo = Mundo.Construir(mapaMundo); fp = new PrimeiraPessoa(cam);
             try { pos = new Pos(cam); } catch (System.Exception e) { Debug.LogWarning("Ritual Reversal: sem pós-processamento (" + e.Message + ")"); }
             if (pos != null) pos.brilho = PlayerPrefs.GetFloat("rr-brilho", 1);   // o brilho dos Ajustes
             autoRes = PlayerPrefs.GetInt("rr-autores", 1) == 1; Resolucao.k = 1; Resolucao.Aplicar();   // a base da qualidade (o Mínimo fica abaixo da tela)
-            som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72); mundo.AoGritarCorvo = (x, z) => { som.Tocar("corvo", x, z); Legenda("corvo", x, z); };
-            // v5.8: impactos e momentos do ritual tocam pelo Som; a arma avisa o meio do ciclo (alavanca, cão) e o passo
-            mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
+            som = Som.Criar(cam.gameObject); som.volume = PlayerPrefs.GetFloat("rr-vol", .8f); fp.fovBase = PlayerPrefs.GetFloat("rr-fov", 72);
             fp.AoPasso = () => som.Tocar("mystep"); fp.camFx = PlayerPrefs.GetFloat("rr-camfx", 1);
             // primeira pessoa (ArmaFP): os sons dos clipes são gravações; sem a gravação, a síntese do Som
             fp.arma.AoTocar = (k, vol, max, varia) => { if (!som.Amostra(k, vol: vol, max: max, varia: varia)) som.Tocar(k); return true; };
+            LigarMundo();
+        }
+        // o mapa do mundo montado (PlayerPrefs "rr-mapa" no título; online, o da sala)
+        string mapaMundo = "catedral";
+        public string MapaMundo { get { return mapaMundo; } }
+        // troca o mapa: desmonta o mundo e monta o outro (no navegador, a página recarrega)
+        void TrocarMundo(string id)
+        {
+            if (!Mapa.Tem(id) || id == mapaMundo || mundo == null) return;
+            LimparVisual(); mundo.Destruir(); mapaMundo = id; mundo = Mundo.Construir(id); LigarMundo(); if (som != null) som.TrocouMapa();
+        }
+        // os avisos do mundo para o som, a primeira pessoa e as legendas
+        void LigarMundo()
+        {
+            mundo.AoGritarCorvo = (x, z) => { som.Tocar("corvo", x, z); Legenda("corvo", x, z); };
+            // v5.8: impactos e momentos do ritual tocam pelo Som; a arma avisa o meio do ciclo (alavanca, cão) e o passo
+            mundo.AoSom = (k, x, z) => som.Tocar(k, x, z); mundo.AoTremor = f => fp.Tranco(.01f * f, f);
             fp.arma.raizMundo = mundo.raiz; mundo.AoExecutar = E => fp.Executou();
             // trovão: ruído grave e um tom que cai, mais tarde quanto mais longe o relâmpago (o atraso já passou)
             mundo.AoTrovao = d => { som.Ruido(float.NaN, float.NaN, 1, 2.8f + d, Som.Tipo.PassaBaixa, 150, .8f, .9f); som.Tom(float.NaN, float.NaN, 1, 48, 26, 2.4f, Som.Onda.Seno, .5f); Legenda("trovao", float.NaN, float.NaN, "Trovão"); };

@@ -20,14 +20,15 @@ namespace RitualReversal
         // o que o hello leva além do nome: se a sala nova aparece na lista e as skins escolhidas (o "vis" do navegador)
         JsonEscrita HelloExtra(JsonEscrita j, bool criar)
         {
-            j.Bool("publica", criar && SalaPublica);
+            j.Bool("publica", criar && SalaPublica); j.Txt("mapa", MapaMundo);   // o mapa vale para a sala que se cria
             var vis = new JsonEscrita(); string sk = PlayerPrefs.GetString("rr-skins", ""); var s = sk.Length > 0 ? Json.Ler(sk) as Dictionary<string, object> : null; bool tem = false;   // sem skin escolhida, a chave nem existe
             if (s != null) foreach (var k in new[] { "carabina", "revolver", "cetro" }) { object v; if (s.TryGetValue(k, out v) && v is string) { vis.Txt(k, (string)v); tem = true; } }
             if (tem) j.Obj("vis", vis); return j;
         }
         void LerLobbyExtra(Dictionary<string, object> m)
         {
-            object v; lobbyDif = m.TryGetValue("dif", out v) && v is string ? (string)v : "normal"; lobbyPublica = m.TryGetValue("publica", out v) && v is bool && (bool)v;
+            object v; lobbyDif = m.TryGetValue("dif", out v) && v is string ? (string)v : "normal";
+            lobbyMapa = m.TryGetValue("mapa", out v) && v is string ? (string)v : "catedral"; if (lobbyMapa != MapaMundo) TrocarMundo(lobbyMapa);   // o mundo da sala lobbyPublica = m.TryGetValue("publica", out v) && v is bool && (bool)v;
             var d = m.TryGetValue("lab", out v) ? v as Dictionary<string, object> : null; lobbyLab = d != null ? LabDoJson(Noite.ParaJson(d)) : Lab.De(null);
         }
         void ReceberChat(Dictionary<string, object> m)
@@ -41,7 +42,8 @@ namespace RitualReversal
         }
 
         // ---------- salas abertas (tela inicial) ----------
-        class SalaAberta { public string code, anfitriao; public int jogadores; }
+        class SalaAberta { public string code, anfitriao, mapa; public int jogadores; }
+        string lobbyMapa = "catedral";
         List<SalaAberta> salas = new List<SalaAberta>(); float salasT = -99; UnityEngine.Networking.UnityWebRequest pedidoSalas;
         void BuscarSalas()
         {
@@ -49,7 +51,7 @@ namespace RitualReversal
             if (pedidoSalas != null && pedidoSalas.isDone)
             {
                 var nova = new List<SalaAberta>();
-                try { if (pedidoSalas.result == UnityEngine.Networking.UnityWebRequest.Result.Success) foreach (var o in (Json.Ler(pedidoSalas.downloadHandler.text) as List<object>) ?? new List<object>()) { var d = o as Dictionary<string, object>; if (d == null) continue; object v; nova.Add(new SalaAberta { code = d.TryGetValue("code", out v) ? v as string : "", anfitriao = d.TryGetValue("anfitriao", out v) ? v as string : "", jogadores = d.TryGetValue("jogadores", out v) && v != null ? System.Convert.ToInt32(v) : 0 }); } }
+                try { if (pedidoSalas.result == UnityEngine.Networking.UnityWebRequest.Result.Success) foreach (var o in (Json.Ler(pedidoSalas.downloadHandler.text) as List<object>) ?? new List<object>()) { var d = o as Dictionary<string, object>; if (d == null) continue; object v; nova.Add(new SalaAberta { code = d.TryGetValue("code", out v) ? v as string : "", anfitriao = d.TryGetValue("anfitriao", out v) ? v as string : "", mapa = d.TryGetValue("mapa", out v) ? v as string : null, jogadores = d.TryGetValue("jogadores", out v) && v != null ? System.Convert.ToInt32(v) : 0 }); } }
                 catch { }
                 salas = nova; pedidoSalas.Dispose(); pedidoSalas = null;
             }

@@ -20,6 +20,8 @@ namespace RitualReversal.Visual
         void GarantirAtores() { if (atoresRaiz == null) { atoresRaiz = Grupo(raiz, "Partida"); ConstruirParticulas(); } }
 
         // limpa bonecos, sigilos e efeitos (nova partida)
+        // troca de mapa: some com o mundo inteiro (a luz da lua fica fora da raiz)
+        public void Destruir() { if (sol != null) Destroy(sol.gameObject); Destroy(gameObject); if (Atual == this) Atual = null; }
         public void Limpar()
         {
             foreach (var b in bonecos.Values) b.Destruir(); bonecos.Clear();
@@ -67,7 +69,7 @@ namespace RitualReversal.Visual
         public Action<string, float, float> AoSom;   // a partida liga ao Som (impactos, ritual)
         [System.NonSerialized] public Jogo ultimoJogo;                       // último estado visto (para saber se o alvo tinha escudo)
         // onde a bala bateu: chão de pedra ou de terra, paredes da catedral, troncos e madeira lá fora
-        public static string SuperficieImpacto(float x, float y, float z) { if (y < .1f) return Som.Superficie(x, z) == "pedra" ? "pedra" : "terra"; return Mapa.NaCatedral(x, z) ? "pedra" : "madeira"; }
+        public static string SuperficieImpacto(float x, float y, float z) { if (y < .1f) return Som.Superficie(x, z) == "pedra" ? "pedra" : "terra"; return MapaVisual.Asilo || Mapa.NaCatedral(x, z) ? "pedra" : "madeira"; }
         void ImpactoMundo(Vector3 p, Vector3 u)
         {
             string sup = SuperficieImpacto(p.x, p.y, p.z); int c0 = sup == "pedra" ? 0x8a8478 : sup == "madeira" ? 0x6a4628 : 0x4a3a28, c1 = sup == "pedra" ? 0xffc070 : sup == "madeira" ? 0xb08050 : 0x7a6040;

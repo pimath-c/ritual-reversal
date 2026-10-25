@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
@@ -156,6 +157,15 @@ namespace RitualReversal
             // o snapshot manda quanto falta; o HUD compara com g.t
             var bf = O(G(s, "buff")); if (bf != null) { double ess = D(G(bf, "ess")), selo = D(G(bf, "selo")); g.buff.ess = ess > 0 ? g.t + ess : 0; g.buff.selo = selo > 0 ? g.t + selo : 0; }
             g.lastResolveT = D(G(s, "lastResolveT"));
+            // v6.2: o mapa da sala; no asilo, portas (1 aberta, 0 fechada) e o que falta de cada apagão
+            g.mapa = S(G(s, "mapa")) ?? "catedral";
+            var pt = G(s, "portas") as List<object>;
+            if (pt != null)
+            {
+                g.portas = pt.Select(x => D(x) != 0).ToList(); Mapa.Usar(g.mapa);
+                g.fechadas = Mapa.PORTAS_DIN.Where(p => p.i < g.portas.Count && !g.portas[p.i]).Select(p => new Caixa { x1 = p.x1, x2 = p.x2, z1 = p.z1, z2 = p.z2, h = 4.5, tall = true, porta = p.i }).ToList();
+            }
+            var en = O(G(s, "energia")); if (en != null) { g.energia = new Dictionary<string, double>(); foreach (var kv in en) { double r = D(kv.Value); g.energia[kv.Key] = r > 0 ? g.t + r : 0; } }
             // regras do laboratório de playtest escolhidas pelo anfitrião (relógio do Crepúsculo, mercadores)
             var lb = O(G(s, "lab")); if (lb != null) g.lab = Lab.De(new Lab { crepusculo = D(G(lb, "crepusculo")), fogo = S(G(lb, "fogo")), execucao = D(G(lb, "execucao")), economia = !(G(lb, "economia") is bool) || B(G(lb, "economia")), formato = S(G(lb, "formato")) });
             return g;

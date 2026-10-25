@@ -10,7 +10,12 @@ namespace RitualReversal.Visual
     public class ArvoreV { public float x, z, r, s, rot, inc; public int tipo; }
     public class ArbustoV { public float x, z, s, rot; public int tipo; }
     public class TrilhaV { public float w; public bool estreita; public List<Vector2> pts = new List<Vector2>(); }
-    public class LuzV { public float x, z; public string tipo; }
+    public class LuzV { public float x, z; public string tipo, setor; }
+    // asilo: sala/corredor/pátio (int = coberto), vão entre espaços (porta = abre e fecha), porta, quadro de força, água rasa
+    public class EspacoV { public string nome; public float x1, x2, z1, z2; public bool interno; }
+    public class VaoV { public float x1, x2, z1, z2; public bool porta; }
+    public class PortaV { public int i; public float x1, x2, z1, z2, x, z; public string eixo; }
+    public class QuadroV { public string setor; public float x, z; }
     public class PortalV { public string nome, eixo; public float fixo, a, b; public bool brecha; }
     // v6: tabuleiro de uma travessia do desfiladeiro: ao longo (de..ate) e largura (a..b)
     public class TravessiaV { public string nome, eixo; public float a, b, de, ate; }
@@ -36,11 +41,30 @@ namespace RitualReversal.Visual
         public static List<PecaV> ABISMO = new List<PecaV>();
         public static List<LugarV> LUGARES = new List<LugarV>(); // nomes dos lugares na planta
         public static bool Carregado;
+        public static string ID = "catedral", NOME = "Catedral";
+        public static List<EspacoV> ESPACOS = new List<EspacoV>(); public static List<VaoV> VAOS = new List<VaoV>();
+        public static List<PortaV> PORTAS_DIN = new List<PortaV>(); public static List<QuadroV> QUADROS = new List<QuadroV>(); public static List<Caixa2> AGUA = new List<Caixa2>();
+        public static bool Asilo { get { return ID == "asilo"; } }
+        // nome do arquivo de cada mapa em Resources (o exportador grava mapa.json e mapa-<id>.json)
+        public static string Recurso(string id) { return id == null || id == "catedral" ? "mapa" : "mapa-" + id; }
+        // deixa carregada a planta visual do mapa (lê de Resources quando é outro)
+        public static bool Usar(string id)
+        {
+            if (Carregado && ID == (id ?? "catedral")) return true;
+            var t = Resources.Load<TextAsset>(Recurso(id)); if (t == null) return false; Carregar(t.text); return true;
+        }
 
         static float F(object v) { return (float)(double)v; }
         public static void Carregar(string json)
         {
-            var R = Json.O(Json.Ler(json)); var lim = Json.O(R["limites"]);
+            var R = Json.O(Json.Ler(json)); var lim = Json.O(R["limites"]); object v0;
+            ID = R.TryGetValue("id", out v0) && v0 is string ? (string)v0 : "catedral"; NOME = R.TryGetValue("nome", out v0) && v0 is string ? (string)v0 : "Catedral";
+            ESPACOS.Clear(); VAOS.Clear(); PORTAS_DIN.Clear(); QUADROS.Clear(); AGUA.Clear();
+            if (R.TryGetValue("espacos", out v0)) foreach (var o in Json.L(v0)) { var p = Json.O(o); ESPACOS.Add(new EspacoV { nome = Json.S(p["nome"]), x1 = F(p["x1"]), x2 = F(p["x2"]), z1 = F(p["z1"]), z2 = F(p["z2"]), interno = (bool)p["int"] }); }
+            if (R.TryGetValue("vaos", out v0)) foreach (var o in Json.L(v0)) { var p = Json.O(o); VAOS.Add(new VaoV { x1 = F(p["x1"]), x2 = F(p["x2"]), z1 = F(p["z1"]), z2 = F(p["z2"]), porta = (bool)p["porta"] }); }
+            if (R.TryGetValue("portasDin", out v0)) foreach (var o in Json.L(v0)) { var p = Json.O(o); PORTAS_DIN.Add(new PortaV { i = (int)F(p["i"]), x1 = F(p["x1"]), x2 = F(p["x2"]), z1 = F(p["z1"]), z2 = F(p["z2"]), x = F(p["x"]), z = F(p["z"]), eixo = Json.S(p["eixo"]) }); }
+            if (R.TryGetValue("quadros", out v0)) foreach (var o in Json.L(v0)) { var p = Json.O(o); QUADROS.Add(new QuadroV { setor = Json.S(p["setor"]), x = F(p["x"]), z = F(p["z"]) }); }
+            if (R.TryGetValue("agua", out v0)) foreach (var o in Json.L(v0)) { var p = Json.O(o); AGUA.Add(new Caixa2 { x1 = F(p["x1"]), x2 = F(p["x2"]), z1 = F(p["z1"]), z2 = F(p["z2"]) }); }
             var mw = Json.O(lim["meiaLargura"]); HX = F(mw["x"]); HZ = F(mw["z"]); // (a v6 tirou o planoOriginal4v4 do mapa.json)
             System.Func<string, Rect> ret = k => { var o = Json.O(lim[k]); float x1 = F(o["x1"]), x2 = F(o["x2"]), z1 = F(o["z1"]), z2 = F(o["z2"]); return new Rect(x1, z1, x2 - x1, z2 - z1); };
             CATEDRAL = ret("catedral"); CLAUSTRO = ret("claustro");
@@ -71,7 +95,7 @@ namespace RitualReversal.Visual
             ARCOS.Clear(); foreach (var o in Json.L(R["arcos"])) { var p = Json.O(o); ARCOS.Add(new Vector4(F(p["x1"]), F(p["z1"]), F(p["x2"]), F(p["z2"]))); }
             PILLARS.Clear(); foreach (var o in Json.L(R["pilares"])) { var p = Json.O(o); PILLARS.Add(new Vector2(F(p["x"]), F(p["z"]))); }
             PEWS.Clear(); foreach (var o in Json.L(R["bancos"])) { var p = Json.O(o); PEWS.Add(new Vector4(F(p["x1"]), F(p["x2"]), F(p["z1"]), F(p["z2"]))); }
-            CANDLES.Clear(); foreach (var o in Json.L(R["luzes"])) { var p = Json.O(o); string t = Json.S(p["tipo"]); CANDLES.Add(new LuzV { x = F(p["x"]), z = F(p["z"]), tipo = t == "vela" ? null : t }); }
+            CANDLES.Clear(); foreach (var o in Json.L(R["luzes"])) { var p = Json.O(o); string t = Json.S(p["tipo"]); object st; CANDLES.Add(new LuzV { x = F(p["x"]), z = F(p["z"]), tipo = t == "vela" ? null : t, setor = p.TryGetValue("setor", out st) ? st as string : null }); }
             PORTAIS.Clear();
             foreach (var o in Json.L(R["portais"])) { var p = Json.O(o); object b; PORTAIS.Add(new PortalV { nome = Json.S(p["nome"]), eixo = Json.S(p["eixo"]), fixo = F(p["fixo"]), a = F(p["a"]), b = F(p["b"]), brecha = p.TryGetValue("brecha", out b) && b is bool && (bool)b }); }
             LUGARES.Clear(); foreach (var o in Json.L(R["lugares"])) { var p = Json.O(o); LUGARES.Add(new LugarV { nome = Json.S(p["nome"]), x = F(p["x"]), z = F(p["z"]) }); }

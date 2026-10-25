@@ -15,6 +15,7 @@ namespace RitualReversal.Visual
         // Cada subárea da mata tem o seu reagente. O brilho vermelho continua: é a leitura de "aqui há reagente" para os dois
         // lados. Quem coleta ou queima segura E, e o modelo responde ao progresso (a raiz sobe do barro, as velas apagam...).
         public static readonly string[] REAG_TIPOS = { "sal", "sal", "mandragora", "mandragora", "cinza", "cera", "flor", "flor", "corvo", "corvo" };
+        public static readonly string[] REAG_TIPOS_ASILO = { "mandragora", "flor", "cera", "cera", "sal", "cinza", "corvo", "corvo", "sal", "cinza" };   // o REAG_TIPOS_ASILO do navegador
         public class Parte { public Transform m; public Vector3 r, p; public float h; }
         public class Reag
         {
