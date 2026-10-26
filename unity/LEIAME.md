@@ -12,7 +12,19 @@ montado por código no Play, a partir de `Resources/mapa.json` e dos dados expor
 A simulação (`Scripts/Simulacao`) é um porte linha a linha de `shared/sim.js`, conferido contra o protótipo passo a
 passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a bit (`node tools/comparar-cs.js`).
 
-## Novidades desta versão (24/10)
+## Novidades desta versão (26/10)
+
+- **Interface nova (direção Nanquim)**: preto, osso e um único vermelho; títulos e números em Big Shoulders Display, texto
+  em IBM Plex Sans Condensed, rótulos em IBM Plex Mono (as fontes vêm em `Resources/Fontes`). Título com o nome enorme e a
+  pincelada; botões em texto com um traço por baixo no mouse e no foco do controle; fim da noite com a faixa cor de osso e a
+  palavra carimbada. Movimento só quando algo acontece (munição com tranco, vida que treme, feed letra a letra, altar riscado,
+  eco piscando, anúncio carimbado); **Ajustes > Clarões e tremor: Reduzidos** desliga.
+- **Só sons gravados**: os bipes, o vento de ruído, a música do menu, a tensão e as pulsações dos rituais, que eram
+  sintetizados, agora são gravações reais (CC0). Nenhum som do jogo é feito por IA.
+- **Asilo Blackwater** (v6.2): o segundo mapa, com portas (segure E), quadros de força e apagão. Escolha na linha **Mapa** da
+  tela inicial.
+
+## Novidades da versão de 24/10
 
 - **Fotos de referência: F10** numa partida contra bots. O jogo passa sozinho pelos mesmos 17 pontos do mapa que o
   Claude fotografa no navegador (noite limpa, sem HUD, uns 45 s) e grava um PNG de cada um. No fim aparece a pasta
@@ -107,7 +119,7 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
   `Mundo.cs` + `MundoFloresta/MundoCatedral/MundoAltares/MundoVida/MundoAtores.cs` (cenário, luzes, névoa, altares,
   bonecos, partículas e efeitos), `Personagens.cs` (Cultistas, Caçadores, armas, cetro), `PrimeiraPessoa.cs`
   (armas na mão com o perfil de cada uma, lanterna, câmera), `Pos.cs` (pós-processamento) e `Som.cs` (sons gravados
-  de `Resources/Sons`, com o som sintetizado de reserva).
+  de `Resources/Sons`; sem a gravação, o som não toca).
 - `Resources/Sons/` — os 67 MP3 do jogo (licenças em `docs/AUDIO.md`), copiados por `python3 tools/montar-sons.py`.
 - `Scripts/Rede.cs`, `PartidaOnline.cs` — o online: conexão, leitura do snapshot, lobby, previsão e interpolação.
 - `Scripts/EntradaUnity.cs` — teclado e mouse (Input System novo ou antigo).
@@ -136,7 +148,7 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
   aberta o mouse fica solto de propósito: F9 de novo fecha.
 - **Duas cópias de um script ("already contains a definition")**: sobrou uma pasta antiga fora de
   `Assets/RitualReversal`; apague a cópia velha.
-- **Sem som gravado** (só bipes sintetizados): confira se `Resources/Sons` tem os MP3; no Inspector de cada um,
+- **Sem som** (o jogo não sintetiza mais nada): confira se `Resources/Sons` tem os MP3; no Inspector de cada um,
   Load Type tem de ser Decompress On Load (o padrão).
 - **Lento**: baixe a qualidade nos ajustes (Esc) e aperte Play de novo.
 - **Online não conecta**: confira se o servidor está rodando (abra o endereço no navegador: o protótipo deve abrir) e
