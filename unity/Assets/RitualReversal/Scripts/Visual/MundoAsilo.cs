@@ -112,12 +112,14 @@ namespace RitualReversal.Visual
                     PisoA(e.x1, e.x2, e.z1, e.z2, pier ? A("tabua") : mat, pier ? 2 : 6, .005f);
                 }
             }
-            // vãos: chão do vão e, nas passagens internas, verga por cima da abertura
+            // vãos: chão do vão e, nas passagens internas e nas portas, verga por cima da abertura; com porta, a verga desce
+            // até o topo da folha (sem isso as portas largas ficavam com uma fresta para o céu)
+            float altFolha = Mathf.Min(2.7f, ALT_ASILO - .3f);
             foreach (var v in MapaVisual.VAOS)
             {
                 bool dentro = E.Exists(e => e.interno && v.x1 < e.x2 + .7f && v.x2 > e.x1 - .7f && v.z1 < e.z2 + .7f && v.z2 > e.z1 - .7f);
                 PisoA(v.x1, v.x2, v.z1, v.z2, dentro ? A("ladrilho") : A("cascalho"), 4, .012f);
-                if (dentro) { float largo = Mathf.Max(v.x2 - v.x1, v.z2 - v.z1); CxA(v.x1, v.x2, largo > 3.5f ? 3.2f : 2.75f, 4.5f, v.z1, v.z2, A("reboco"), 2); }
+                if (dentro || v.porta) { float largo = Mathf.Max(v.x2 - v.x1, v.z2 - v.z1); CxA(v.x1, v.x2, v.porta ? altFolha : largo > 3.5f ? 3.2f : 2.75f, 4.5f, v.z1, v.z2, A("reboco"), 2); }
             }
             // paredes
             foreach (var w in W)

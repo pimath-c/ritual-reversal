@@ -83,6 +83,10 @@ function cliente(nome){ const ws=new WebSocket(`ws://localhost:${PORT}`), c={ws,
   const As=cliente('Asilo'), Bs=cliente('Visita'); await As.pronto; await Bs.pronto; As.envia({t:'hello',create:true,name:'Asilo',mapa:'asilo'});
   const wa=await As.ate(m=>m.t==='welcome'); if(!wa||wa.mapa!=='asilo') falha('sala do asilo sem o mapa no welcome: '+JSON.stringify(wa));
   else { Bs.envia({t:'hello',code:wa.code,name:'Visita',mapa:'catedral'}); const wb=await Bs.ate(m=>m.t==='welcome'); if(!wb||wb.mapa!=='asilo') falha('quem entra não recebe o mapa da sala');
+    if(!wb||wb.versao!==require('../shared/sim.js').VERSAO) falha('welcome sem a versão do servidor');
+    // jogo anterior à v6.2 (hello sem mapa) não entra numa sala que não é na catedral
+    const Velho=cliente('Velho'); await Velho.pronto; Velho.envia({t:'hello',code:wa.code,name:'Velho'}); const ev=await Velho.ate(m=>m.t==='error'||m.t==='welcome');
+    if(!ev||ev.t!=='error') falha('jogo sem mapa entrou na sala do asilo: '+JSON.stringify(ev)); else console.log('  jogo antigo (sem mapa) recusado na sala do asilo');
     As.envia({t:'start'}); const sa=await As.ate(m=>m.t==='snap'&&m.s&&m.s.mapa,12000)||await As.ate(m=>m.t==='snap',4000); const mp=sa&&(sa.s?sa.s.mapa:sa.mapa);
     if(mp!=='asilo') falha('a partida da sala do asilo não está no asilo: '+mp);
     else { const st=sa.s||sa; if(!Array.isArray(st.portas)||st.portas.length!==18||!st.energia) falha('snapshot do asilo sem portas/energia'); else console.log('  asilo: welcome, lobby e partida no mapa da sala; 18 portas e energia no snapshot'); } }

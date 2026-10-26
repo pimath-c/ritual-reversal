@@ -47,7 +47,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.3)
+## Estado atual (v6.3b)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -189,6 +189,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `TextoHab(f,n,canal)`) e o laboratório `dupla` ('atual' 34 s/50%, 'longo' 42 s, 'cedo' localiza aos 40%; `ritDur`/`ritLoc`
   com `g.lab.dupDur/dupLoc`; C# `RitDur`/`RitLoc`, `Lab.dupla`; comparar-cs bit a bit com `LAB=dupla=...`). Bots, sementes
   1000–1199: culto 37% (atual), 33% (cedo), 23% (longo).
+- v6.3b (notas em `notas/v6.3b.md`): portas do Asilo com a verga até o topo da folha (`ALT_FOLHA`; antes 3,2 m nas largas, fresta
+  para o céu), no `asilo.js` e no `MundoAsilo.cs`. Online: welcome sem `mapa` = catedral (servidor anterior à v6.2), hello e welcome
+  levam `versao` (aviso no chat da sala se diferir), servidor recusa hello sem `mapa` numa sala que não é catedral (teste em
+  protocolo.js). `VERSAO` 6.3. Faixa dos altares com `width:min-content; min-width:62px` (Unity: largura pela palavra mais longa).
+  Rituais em altar não escolhido = Transferência (dos bots), não defeito.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

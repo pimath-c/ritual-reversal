@@ -457,6 +457,7 @@ details.lab summary{ font-family:var(--mono); font-size:13px; } details.lab summ
 #clock{ font-family:var(--serif); font-weight:800; font-size:40px; letter-spacing:.01em; }
 #roundName{ font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.06em; text-transform:lowercase; } #regra{ font-family:var(--mono); }
 .pip{ font-family:var(--mono); font-size:10.5px; color:var(--bone); text-transform:lowercase; }
+.pip{ width:min-content; min-width:62px; }   /* a palavra mais longa cabe inteira ("hidroterapia" passava dos 62 px e invadia o vizinho) */
 .pip>div:nth-child(2){ position:relative; display:inline-block; }
 .pip .gem{ width:14px; height:14px; border:1px solid var(--dim); background:rgba(10,10,10,.6); }
 .pip .gem i{ font-size:9px; font-weight:500; font-family:var(--mono); color:var(--muted); }
@@ -2308,11 +2309,14 @@ const RECON={ativo:false,ate:0,tentativas:0,nome:'',timer:null};
 function connect(create,code,name){
   const proto=location.protocol==='https:'?'wss:':'ws:'; const sock=new WebSocket(APP?baseServidor().replace(/^http/,'ws'):proto+'//'+location.host); ws=sock;
   RECON.nome=name||RECON.nome;
-  sock.onopen=()=>sock.send(JSON.stringify({t:'hello',create,code,mapa:MAPA_BOOT,name:RECON.nome,token:TOKEN,publica:create&&SET.salaPublica!==false,vis:SKINS?SKINS.ESC:null}));
+  sock.onopen=()=>sock.send(JSON.stringify({t:'hello',create,code,mapa:MAPA_BOOT,versao:Sim.VERSAO,name:RECON.nome,token:TOKEN,publica:create&&SET.salaPublica!==false,vis:SKINS?SKINS.ESC:null}));
   sock.onmessage=e=>{ const m=JSON.parse(e.data);
     if(m.t==='error'){ if(RECON.ativo){ pararReconexao(m.msg); } else { $('#err')&&($('#err').textContent=m.msg); } sock.close(); return; }
-    if(m.t==='welcome'&&m.mapa&&m.mapa!==MAPA_BOOT){ sock.onclose=null; try{ sock.close(); }catch(e){} $('#loading').style.display=''; $('#loading').textContent=`Montando ${NOME_MAPA[m.mapa]||m.mapa}…`; recarregarNoMapa(m.mapa,{code:m.code,name:RECON.nome}); return; }
+    // o mapa da sala manda: um servidor anterior à v6.2 não diz o mapa e só tem a catedral (sem isso, quem estava no Asilo
+    // via os rituais da catedral caindo em lugares do Asilo)
+    if(m.t==='welcome'&&(m.mapa||'catedral')!==MAPA_BOOT){ m.mapa=m.mapa||'catedral'; sock.onclose=null; try{ sock.close(); }catch(e){} $('#loading').style.display=''; $('#loading').textContent=`Montando ${NOME_MAPA[m.mapa]||m.mapa}…`; recarregarNoMapa(m.mapa,{code:m.code,name:RECON.nome}); return; }
     if(m.t==='welcome'){ MODE='online'; meCid=m.cid; NET.code=m.code; try{ sessionStorage.setItem('rr-sala',m.code); }catch(e){}
+      if(m.versao!==Sim.VERSAO&&!NET.chat.some(c=>c.aviso)){ NET.chat.push({de:'Aviso',aviso:true,msg:`o servidor está na versão ${m.versao||'anterior à 6.3'} e este jogo na ${Sim.VERSAO}. Com versões diferentes as regras e o mapa podem não bater: atualize o servidor ou o jogo.`}); renderChat(); }
       if(m.voltou||RECON.ativo){ RECON.ativo=false; clearTimeout(RECON.timer); NET.snaps=[]; NET.pred=null; NET.pending=[]; NET.offset=null; screenKey=''; feed('Conexão restabelecida. Você voltou ao seu personagem.','big'); } }
     if(m.t==='lobby'){ NET.lobby=m; NET.host=m.host; if(!m.inGame){ V=null; NET.snaps=[]; NET.pred=null; screenKey=''; } }
     if(m.t==='snap') onSnap(m);
@@ -3258,7 +3262,7 @@ function renderSalas(go){ if(go) _goSalas=go; const el=$('#salasAbertas'); if(!e
   el.innerHTML=NET.salas.length?`<h3>Salas abertas</h3>`+NET.salas.map(r=>`<div class="sala"><b>${esc(r.code)}</b><span>${esc(r.anfitriao)} · ${r.jogadores} de 4${r.mapa&&r.mapa!=='catedral'?' · '+esc(NOME_MAPA[r.mapa]||r.mapa):''}</span><button class="go ghost" data-sala="${esc(r.code)}">Entrar</button></div>`).join(''):'';
   el.querySelectorAll('[data-sala]').forEach(b=>b.onclick=()=>{ $('#iCode').value=b.dataset.sala; if(_goSalas) _goSalas(false); }); }
 function renderChat(){ const el=$('#chatLista'); if(!el) return;
-  el.innerHTML=NET.chat.map(c=>`<div><b style="color:${c.cid===meCid?'var(--gold-hi)':'var(--bone)'}">${esc(c.de)}</b>${c.para==='equipe'?' <small>(equipe)</small>':''} ${esc(c.msg)}</div>`).join('')||'<div class="vazio">Ninguém falou ainda.</div>'; el.scrollTop=el.scrollHeight; }
+  el.innerHTML=NET.chat.map(c=>`<div><b style="color:${c.aviso?'var(--crimson-hi)':c.cid===meCid?'var(--gold-hi)':'var(--bone)'}">${esc(c.de)}</b>${c.para==='equipe'?' <small>(equipe)</small>':''} ${esc(c.msg)}</div>`).join('')||'<div class="vazio">Ninguém falou ainda.</div>'; el.scrollTop=el.scrollHeight; }
 function showTitle(msg){ titleMsg=msg||''; screenKey=''; }
 function salaSalva(){ try{ return sessionStorage.getItem('rr-sala')||''; }catch(e){ return ''; } }
 function titleScreen(){
@@ -3637,7 +3641,8 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Só sons gravados (v6.2b)','Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA.'],
+const NOVIDADES=[['Correções (v6.3b)','As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais.'],
+  ['Só sons gravados (v6.2b)','Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA.'],
   ['Asilo Blackwater (v6.2)','Mapa novo: um sanatório na margem de um lago, com duas alas, seis altares e o coreto no gramado. Portas que se abrem e fecham (segure E): fechadas, bloqueiam passagem, tiros e visão e abafam o som. Um quadro de força por ala: o culto corta a luz, a caça religa, e sem ninguém ela volta em 90 s. Escolha o mapa no título.'],
   ['Culto que se defende (v6.1)','Do primeiro playtest com duas pessoas: os Cultistas controlados pelo jogo, canalizando, só reagiam a quem chegava a 8 m, e uma dupla de Caçadores derrubava o culto de longe sem levar um tiro. Agora quem canaliza revida quem o acertou e quem chega a 20 m (atacar ainda pausa a canalização).'],
   ['Catedral e desfiladeiro (v6)','O mapa foi refeito em duas regiões: a catedral em cruz no alto do promontório e a mata ao sul, separadas por um desfiladeiro com três travessias (a Ponte Grande, a árvore caída e o aqueduto). Cada parte da mata tem o seu reagente.'],

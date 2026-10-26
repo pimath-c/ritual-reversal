@@ -81,8 +81,12 @@ namespace RitualReversal
         }
         void Faixa(string papel)
         {
-            int n = g.altars.Count; float pw = 62, gap = 6, x0 = W / 2 - (n * pw + (n - 1) * gap) / 2, top = 88;
+            int n = g.altars.Count; float gap = 6, top = 88;
             float lhNome = 11.5f * 1.15f;
+            // largura de cada pip: 62, ou a palavra mais longa do nome (o width: min-content; min-width: 62px do navegador)
+            var stMede = Css("mono", 11, BONE); var larguras = new float[n]; float total = (n - 1) * gap;
+            for (int i = 0; i < n; i++) { float lm = 62; foreach (var pal in g.altars[i].name.ToLowerInvariant().Split(' ')) lm = Mathf.Max(lm, Mathf.Ceil(Larg(pal, stMede))); larguras[i] = lm; total += lm; }
+            float px = W / 2 - total / 2;
             // @keyframes ecoPisca (1,6 s): some duas vezes no começo de cada volta
             float fe = (Time.unscaledTime % 1.6f) / 1.6f, ecoOp = SuaveUI() ? 1 : (fe > .03f && fe < .09f) || (fe > .15f && fe < .21f) ? .25f : 1;
             for (int i = 0; i < n; i++)
@@ -92,7 +96,8 @@ namespace RitualReversal
                 else if (papel == "H") { string k = g.know[i]; if (A.state == "active" && A.localized) { st = "active"; ch = "!"; } else if (k == "desperto") { st = "awake"; ch = "◆"; } else if (k == "confirmado") { st = "confirmed"; ch = "◆"; } else if (k == "chamariz") { st = "decoy"; ch = "◆"; } else if (k == "descartado") { st = "clean"; ch = "✕"; } else if (k == "purgado") { st = "purged"; ch = "○"; } else if (k == "visto") { st = "seen"; ch = "·"; } }
                 else { if (A.state == "active") { st = "active"; ch = "!"; } else if (A.state == "awake") { st = A.decoy ? "decoy" : "awake"; ch = "◆"; } else ch = A.chosen ? "○" : "·"; }
                 bool eco = papel == "H" && g.eco != null && Sim.SETORES.Any(S => S.id == g.eco.setor && S.altares.Contains(i)), escolhido = papel == "C" && A.chosen;
-                var P = PIP[st]; float px = x0 + i * (pw + gap), cx = px + pw / 2, cy = top + 7;
+                if (i > 0) px += larguras[i - 1] + gap; float pw = larguras[i];
+                var P = PIP[st]; float cx = px + pw / 2, cy = top + 7;
                 // o risco do altar descartado atravessa o nome quando o estado muda (@keyframes riscar, ,35 s)
                 bool riscado = st == "clean" || st == "decoy" || st == "purged"; string ant; estadoPip.TryGetValue(i, out ant);
                 if (ant != st) { estadoPip[i] = st; if (riscado && ant != null) Marcar("pip" + i); }

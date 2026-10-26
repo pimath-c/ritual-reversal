@@ -51,18 +51,20 @@ wss.on('connection',ws=>{
       c.token=typeof m.token==='string'?m.token.slice(0,40):null; c.vis=limparVis(m.vis);
       let r;
       if(m.create){ r=newRoom(); r.listada=m.publica===true; r.mapa=Sim.IDS_MAPAS.includes(m.mapa)?m.mapa:'catedral'; } /* o mapa é escolhido ao criar a sala */ else { r=rooms.get(String(m.code||'').toUpperCase()); if(!r) return send(ws,{t:'error',msg:'Sala não encontrada. Confira o código.'}); }
+      // jogo anterior à v6.2 (não manda o mapa): só conhece a catedral; numa sala de outro mapa veria os rituais fora do lugar
+      if(typeof m.mapa!=='string'&&r.mapa!=='catedral') return send(ws,{t:'error',msg:'Esta sala é em outro mapa e o seu jogo é de uma versão antiga, que só tem a catedral. Atualize o jogo para entrar.'});
       if(r.game){
         const res=c.token&&r.reservas.get(c.token);
         if(!res||res.ate<Date.now()) return send(ws,{t:'error',msg:'Essa partida já começou. Peça para o anfitrião voltar ao lobby.'});
         if(!Sim.reclaimHuman(r.game,res.i,c.cid,res.name)) return send(ws,{t:'error',msg:'Sua vaga já foi ocupada.'});
         r.reservas.delete(c.token); r.slots[res.i].cid=c.cid; r.slots[res.i].name=res.name; c.name=res.name;
         c.room=r; r.clients.set(c.cid,c); if(!r.host) r.host=c.cid;
-        send(ws,{t:'welcome',cid:c.cid,code:r.code,mapa:r.mapa,voltou:true}); broadcastLobby(r);
+        send(ws,{t:'welcome',cid:c.cid,code:r.code,mapa:r.mapa,versao:Sim.VERSAO,voltou:true}); broadcastLobby(r);
         console.log(`[${r.code}] ${res.name} reconectou`); return;
       }
       if(!seat(r,c)) return send(ws,{t:'error',msg:'A sala está cheia (4 jogadores).'});
       c.room=r; r.clients.set(c.cid,c); if(!r.host) r.host=c.cid;
-      send(ws,{t:'welcome',cid:c.cid,code:r.code,mapa:r.mapa}); broadcastLobby(r); return;
+      send(ws,{t:'welcome',cid:c.cid,code:r.code,mapa:r.mapa,versao:Sim.VERSAO}); broadcastLobby(r); return;
     }
     const r=c.room; if(!r) return;
     if(m.t==='chat'){ // conversa da sala: no máximo 140 caracteres, uma mensagem a cada 0,6 s

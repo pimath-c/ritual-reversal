@@ -64,10 +64,12 @@ for(const e of E){
     caixa(e.x1-.6,e.x2+.6,ALT+.02,ALT+.45,e.z1-.6,e.z2+.6,M.telhado,4); }   // telhado por cima, cobre o topo das paredes
   else { const mat=/Horta/.test(e.nome)?M.terra:/Margem|Trilha|Píer/.test(e.nome)?M.cascalho:M.grama; piso(e,/Píer/.test(e.nome)?M.tabua:mat,/Píer/.test(e.nome)?2:6,.005); }
 }
-// vãos: chão do vão e, nas passagens internas, verga por cima da abertura (o vão da simulação vai até o céu)
+// vãos: chão do vão e, nas passagens internas e nas portas, verga por cima da abertura (o vão da simulação vai até o céu).
+// Com porta, a verga desce até o topo da folha (ALT_FOLHA): sem isso as portas largas ficavam com uma fresta para o céu.
+const ALT_FOLHA=Math.min(2.7,ALT-.3);
 for(const v of Sim.VAOS){ const dentro=E.some(e=>e.int&&v.x1<e.x2+.7&&v.x2>e.x1-.7&&v.z1<e.z2+.7&&v.z2>e.z1-.7);
   piso({x1:v.x1,x2:v.x2,z1:v.z1,z2:v.z2},dentro?M.ladrilho:M.cascalho,4,.012);
-  if(dentro){ const largo=Math.max(v.x2-v.x1,v.z2-v.z1); caixa(v.x1,v.x2,largo>3.5?3.2:2.75,4.5,v.z1,v.z2,M.reboco,2); } }
+  if(dentro||v.porta){ const largo=Math.max(v.x2-v.x1,v.z2-v.z1); caixa(v.x1,v.x2,v.porta?ALT_FOLHA:largo>3.5?3.2:2.75,4.5,v.z1,v.z2,M.reboco,2); } }
 
 // ---------- paredes ----------
 for(const w of W){
@@ -89,7 +91,7 @@ for(let z=-71.5;z<=-66.5;z+=1){ for(const x of [-2.2,2.2]){ const p=new THREE.Me
 // aberta; sem nenhuma, a folha entra na parede. Todo vão com porta tem batente nas duas faces e o trilho por cima.
 const PORTAS=[];
 const livreA=(x,z)=>Sim.livre({x,z},.1);
-for(const P of Sim.PORTAS_DIN){ const ax=P.eixo==='x', larg=ax?P.x2-P.x1:P.z2-P.z1, folhas=larg>3.2?2:1, lf=larg/folhas, esp=.1, alt=Math.min(2.7,ALT-.3);
+for(const P of Sim.PORTAS_DIN){ const ax=P.eixo==='x', larg=ax?P.x2-P.x1:P.z2-P.z1, folhas=larg>3.2?2:1, lf=larg/folhas, esp=.1, alt=ALT_FOLHA;
   const a1=ax?P.x1:P.z1, a2=ax?P.x2:P.z2, f1=ax?P.z1:P.x1, f2=ax?P.z2:P.x2;   // ao longo do vão (a) e através da parede (f)
   const pt=(a,f)=>ax?[a,f]:[f,a];
   const faceLivre=(face,n)=>{ for(let k=0;k<folhas;k++){ const s=k===0?1:-1; for(let t=.3;t<lf-.2;t+=.5){ const a=k===0?a1-t:a2+t; if(!livreA(...pt(a,face+n*.3))) return false; } } return true; };

@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Correções (v6.3b)","As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais."},
             new[]{"Só sons gravados (v6.2b)","Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA."},
             new[]{"Culto que se defende (v6.1)","Do primeiro playtest com duas pessoas: os Cultistas controlados pelo jogo, canalizando, só reagiam a quem chegava a 8 m, e uma dupla de Caçadores derrubava o culto de longe sem levar um tiro. Agora quem canaliza revida quem o acertou e quem chega a 20 m (atacar ainda pausa a canalização)."},
             new[]{"Catedral e desfiladeiro (v6)","O mapa foi refeito em duas regiões: a catedral em cruz no alto do promontório e a mata ao sul, separadas por um desfiladeiro com três travessias (a Ponte Grande, a árvore caída e o aqueduto). Cada parte da mata tem o seu reagente."},

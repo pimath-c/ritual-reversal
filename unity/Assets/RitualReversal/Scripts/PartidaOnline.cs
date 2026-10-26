@@ -63,7 +63,7 @@ namespace RitualReversal
                     case "error": SairOnline(m["msg"] as string); return;
                     case "welcome":
                         EU = m["cid"] as string; salaCodigo = m["code"] as string; noLobby = true;
-                        { object mp; if (m.TryGetValue("mapa", out mp) && mp is string) TrocarMundo((string)mp); }   // entrar numa sala de outro mapa troca o mundo
+                        { object mp; m.TryGetValue("mapa", out mp); TrocarMundo(mp as string ?? "catedral"); }   // entrar numa sala de outro mapa troca o mundo (servidor anterior à v6.2: só catedral)
                         if (reconectando || m.ContainsKey("voltou")) { reconectando = false; quadros.Clear(); pred = null; pendentes.Clear(); offset = null; Feed("Conexão restabelecida. Você voltou ao seu personagem.", "big"); }
                         break;
                     case "lobby":
