@@ -194,6 +194,8 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   levam `versao` (aviso no chat da sala se diferir), servidor recusa hello sem `mapa` numa sala que não é catedral (teste em
   protocolo.js). `VERSAO` 6.3. Faixa dos altares com `width:min-content; min-width:62px` (Unity: largura pela palavra mais longa).
   Rituais em altar não escolhido = Transferência (dos bots), não defeito.
+  Unity: `Mundo.Montar` faz `Mapa.Usar(MapaVisual.ID)` antes de montar (altares/reagentes/NPCs saem do `Mapa` da simulação; trocar
+  de mapa no título montava a catedral com os pontos do Asilo).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

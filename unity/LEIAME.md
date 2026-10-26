@@ -14,6 +14,9 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
 
 ## Novidades desta versão (26/10)
 
+- **Correção**: trocar de mapa na tela inicial montava o mundo novo com os altares e os reagentes do mapa anterior (a catedral
+  com os pontos do Asilo, por exemplo). Agora cada mapa nasce com os seus.
+
 - **Ver o mapa sem dar Play**: menu **Ritual Reversal > Montar o visual na cena > Catedral** (ou **Asilo Blackwater**). O mundo
   que o Play monta por código (catedral, pontes, mata, Asilo, altares, céu, luzes e névoa) aparece na cena do editor e fica
   salvo com ela. As malhas, materiais e texturas vão para `Assets/RitualReversal/Previa/<mapa>.asset`. No Play essa prévia some

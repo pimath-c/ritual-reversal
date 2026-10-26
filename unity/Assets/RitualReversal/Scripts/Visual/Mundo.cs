@@ -32,6 +32,9 @@ namespace RitualReversal.Visual
         {
             // o asilo (MundoAsilo.cs) não tem a mata nem a catedral viva, como no boot() do navegador
             bool asilo = MapaVisual.Asilo;
+            // altares, reagentes, mercadores e zonas vêm do mapa da simulação (Mapa): ele passa a ser o mesmo do mundo montado.
+            // Sem isso, voltar do Asilo para a catedral no título montava a catedral com os altares e reagentes do Asilo.
+            Mapa.Usar(MapaVisual.ID);
             Tex.Construir(); CriarMateriais(); BuildWorld(); if (!asilo) { BuildFloresta(); BuildCatedralViva(); } BuildAltars(); BuildEfeitos(); Fundir();
         }
 
