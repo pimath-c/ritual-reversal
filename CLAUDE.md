@@ -184,6 +184,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `ComCarimbo`, `ComEntrada`; `animacaoNaFoto` faz o TesteTelas fotografar o fim das animações), HUD e fim da noite portados.
   O layout do Unity não está mais pixel a pixel com o navegador (as medidas mudaram com as fontes); o mapa (planta) e o Arsenal
   continuam no estilo antigo.
+- v6.3a (notas em `notas/v6.3a.md`, do playtest online de 25/10 em servidor ainda v6.0): avisos dos feitiços do culto
+  (`prontidaoHab` no kit: Runa "fora do ritual", Empurrão "ninguém à frente"; `HAB_TXT(n,canal)`; Unity `ProntidaoHab`,
+  `TextoHab(f,n,canal)`) e o laboratório `dupla` ('atual' 34 s/50%, 'longo' 42 s, 'cedo' localiza aos 40%; `ritDur`/`ritLoc`
+  com `g.lab.dupDur/dupLoc`; C# `RitDur`/`RitLoc`, `Lab.dupla`; comparar-cs bit a bit com `LAB=dupla=...`). Bots, sementes
+  1000–1199: culto 37% (atual), 33% (cedo), 23% (longo).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

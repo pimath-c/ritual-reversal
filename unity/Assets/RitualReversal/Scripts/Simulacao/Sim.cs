@@ -543,6 +543,9 @@ namespace RitualReversal.Simulacao
         }
 
         // ============ CONTEXTOS (E / T) ============
+        // duração e ponto de localização do ritual com n canalizadores (o de dois vem do laboratório)
+        static double RitDur(Jogo g, int n) { return n == 2 ? g.lab.dupDur : CFG.ritDur[n]; }
+        static double RitLoc(Jogo g, int n) { return n == 2 ? g.lab.dupLoc : CFG.ritLoc[n]; }
         public static bool InCircle(Ponto a, Ponto A) { return JS.Hypot(a.x - A.x, a.z - A.z) <= CFG.circleR; }
         public static Contextos Contexts(Jogo g, Ator a)
         {
@@ -862,7 +865,7 @@ namespace RitualReversal.Simulacao
                 if (n > 0)
                 {
                     double f = 0; foreach (var c in ch) { double k = (g.t - c.hitT < 1 || c.blindT > 0 || c.stunT > 0) ? .5 : 1; if (c.runeT > 0) { k *= 1.2; rune = true; } f += k; } f /= n;
-                    A.prog += dt * f * MareFactor(g) * A.selo * (A.tardio ? 1.25 : 1) * (A.grande ? .6 : 1) / CFG.ritDur[n]; A.lastN = n; A.maxN = Math.Max(A.maxN, n);
+                    A.prog += dt * f * MareFactor(g) * A.selo * (A.tardio ? 1.25 : 1) * (A.grande ? .6 : 1) / RitDur(g, n); A.lastN = n; A.maxN = Math.Max(A.maxN, n);
                 }
                 else if (A.prog > A.cp) A.prog = Math.Max(A.cp, A.prog - .02 * dt);
                 foreach (double c in CFG.cps) if (A.prog >= c && A.cp < c)
@@ -873,9 +876,9 @@ namespace RitualReversal.Simulacao
                 A.maxProg = Math.Max(A.maxProg, A.prog);
                 int nn = Math.Max(1, A.lastN); double rad = CFG.ritRad[nn] * (rune ? 1.5 : 1) * (A.tardio ? 1.4 : 1);
                 if (!A.localized && !A.eco && CFG.ecoProg > 0 && A.prog >= CFG.ecoProg) EcoDoCoro(g, A);
-                if (!A.localized) { if (A.prog >= CFG.ritLoc[nn]) Localize(g, A, "coro"); else if (n > 0 && g.actors.Any(h => h.team == "H" && h.st == "alive" && Dist(h, A) < rad)) Localize(g, A, "ouvido");
+                if (!A.localized) { if (A.prog >= RitLoc(g, nn)) Localize(g, A, "coro"); else if (n > 0 && g.actors.Any(h => h.team == "H" && h.st == "alive" && Dist(h, A) < rad)) Localize(g, A, "ouvido");
                     else if (g.actors.Any(h => h.team == "H" && h.st == "alive" && InCircle(h, A))) Localize(g, A, "circulo"); } // quem pisa no círculo vê o ritual
-                if (!A.arrived && g.actors.Any(h => h.team == "H" && h.st == "alive" && InCircle(h, A))) { A.arrived = true; LogE(g, "hunter_arrive", "altar", A.name, "prog", R2(A.prog), "channelers", nn, "remaining", R2((1 - A.prog) * CFG.ritDur[nn])); }
+                if (!A.arrived && g.actors.Any(h => h.team == "H" && h.st == "alive" && InCircle(h, A))) { A.arrived = true; LogE(g, "hunter_arrive", "altar", A.name, "prog", R2(A.prog), "channelers", nn, "remaining", R2((1 - A.prog) * RitDur(g, nn))); }
                 var sealers = g.actors.Where(h => h.team == "H" && h.st == "alive" && h.sealing == A.i && InCircle(h, A)).ToList();
                 if (sealers.Count > 0)
                 {

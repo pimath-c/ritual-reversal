@@ -195,12 +195,13 @@ namespace RitualReversal.Simulacao
 
     public class OpcoesJogo { public bool timers; public List<Slot> slots; public string matchId; public int noites; public string dificuldade; public Lab lab; public string mapa; }
     // Laboratório de playtest: variações que o anfitrião escolhe para comparar noites (o padrão é a regra normal).
-    // crepusculo: segundos até a Vigília; fogo: selo sob fogo de 1 e de 2 inimigos; execucao: segundos para executar; economia: óbolos e mercadores.
+    // crepusculo: segundos até a Vigília; fogo: selo sob fogo de 1 e de 2 inimigos; execucao: segundos para executar; economia: óbolos e mercadores;
+    // dupla (v6.3): o ritual de dois canalizadores mais longo (42 s) ou localizado mais cedo (40%).
     public class Lab
     {
-        public double crepusculo = 180, execucao = 4.5, fire1, fire2; public string fogo = "atual", formato; public bool economia = true;
+        public double crepusculo = 180, execucao = 4.5, fire1, fire2, dupDur, dupLoc; public string fogo = "atual", formato, dupla = "atual"; public bool economia = true;
         public static readonly double[] CREPUSCULO = { 180, 120, 90 }, EXECUCAO = { 4.5, 6, 7.5 };
-        public static readonly string[] FOGO = { "atual", "a", "b" }, FORMATO = { "melhorDeTres", "placar" };
+        public static readonly string[] FOGO = { "atual", "a", "b" }, FORMATO = { "melhorDeTres", "placar" }, DUPLA = { "atual", "longo", "cedo" };
         public static Lab De(Lab o)
         {
             var L = new Lab();
@@ -209,10 +210,11 @@ namespace RitualReversal.Simulacao
                 if (Array.IndexOf(CREPUSCULO, o.crepusculo) >= 0) L.crepusculo = o.crepusculo;
                 if (Array.IndexOf(FOGO, o.fogo) >= 0) L.fogo = o.fogo;
                 if (Array.IndexOf(EXECUCAO, o.execucao) >= 0) L.execucao = o.execucao;
-                L.economia = o.economia; L.formato = o.formato;
+                L.economia = o.economia; L.formato = o.formato; if (Array.IndexOf(DUPLA, o.dupla) >= 0) L.dupla = o.dupla;
             }
             if (Array.IndexOf(FORMATO, L.formato) < 0) L.formato = Array.IndexOf(FORMATO, CFG.formatoNoite) >= 0 ? CFG.formatoNoite : FORMATO[0];
             L.fire1 = L.fogo == "a" ? .8 : L.fogo == "b" ? .9 : CFG.fire1; L.fire2 = L.fogo == "a" ? .6 : L.fogo == "b" ? .7 : CFG.fire2;
+            L.dupDur = L.dupla == "longo" ? 42 : CFG.ritDur[2]; L.dupLoc = L.dupla == "cedo" ? .4 : CFG.ritLoc[2];
             return L;
         }
     }

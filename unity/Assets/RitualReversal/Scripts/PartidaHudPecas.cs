@@ -200,7 +200,7 @@ namespace RitualReversal
             var F = Regras.FEITICOS[m.feitico]; var L = new List<object[]>();
             if (m.team == "H") { L.Add(new object[] { EntradaUnity.Nome("sensor"), "Sensor", null, (float)(m.sensorCd / 15), false }); L.Add(new object[] { EntradaUnity.Nome("lantern"), "Lanterna", null, (float)((100 - m.carga) / 100), m.lantern }); L.Add(new object[] { EntradaUnity.Nome("flare"), "Flare", m.flares.ToString(), 0f, false }); }
             else { L.Add(new object[] { "☉", "Reagentes", m.reag.ToString(), 0f, false }); L.Add(new object[] { EntradaUnity.Nome("use"), "Chamariz", g.decoys.ToString(), 0f, false }); }
-            L.Add(new object[] { EntradaUnity.Nome("abil"), F.nome, null, (float)(m.abilCd / F.cd), false });
+            string pront = m.abilCd > 0 ? "" : ProntidaoHab(m); L.Add(new object[] { EntradaUnity.Nome("abil"), F.nome, null, (float)(m.abilCd / F.cd), false, pront });
             // Nanquim: a ferramenta é texto numa linha ("Q sensor": a tecla em osso, o nome em mono apagado), sem caixa;
             // a munição em Big Shoulders 900 de 88 px (linha de ,85) com o resto em 26 px
             var stK = Css("mono500", 12, BONE); float lhK = 0; foreach (var t in L) lhK = Mathf.Max(lhK, AlturaNormalCom((string)t[0], stK));
@@ -214,8 +214,10 @@ namespace RitualReversal
             float x = xd;
             for (int i = hudToque ? -1 : L.Count - 1; i >= 0; i--)
             {
-                var t = L[i]; bool on = (bool)t[4]; string tecla = (string)t[0], nome = (string)t[1] + (t[2] != null ? " " + t[2] : "");
-                var stTk = on ? Css("mono500", 12, CrimsonHi) : stK; var stN = Css("mono", 12, on ? BONE : MUDO);
+                var t = L[i]; bool on = (bool)t[4]; string tecla = (string)t[0], nome = (string)t[1] + (t[2] != null ? " " + t[2] : ""), pr = t.Length > 5 ? (string)t[5] : "";
+                // .tool.vazio: o feitiço não faria nada agora (apagado, com o motivo em vermelho)
+                if (pr != "") nome += " " + Cor(pr, CrimsonHi);
+                var stTk = on ? Css("mono500", 12, CrimsonHi) : pr != "" ? Css("mono500", 12, Hx("#6e6a62")) : stK; var stN = Css("mono", 12, on ? BONE : pr != "" ? Hx("#6e6a62") : MUDO);
                 float tw = Larg(tecla, stTk) + 5 + Larg(nome, stN) + 8; x -= tw;
                 var r = new Rect(x, yTools, tw, hTool); float lk = AlturaNormalCom(tecla, stTk);
                 Linha(r.x + 4, r.y + 2, tw, lk, tecla, stTk, .9f); Linha(r.x + 4 + Larg(tecla, stTk) + 5, r.y + 2, tw, lk, nome, stN, .9f);
@@ -224,6 +226,23 @@ namespace RitualReversal
             }
         }
         int ultimaMunicao = -1;
+        // o que o feitiço do culto faria agora (os números do UseAbility): a Runa só acelera quem canaliza um ritual em
+        // andamento; o Empurrão pega quem está a 3,8 m, no cone à frente
+        string ProntidaoHab(Ator m)
+        {
+            if (m.feitico == "runa") return g.altars.Any(A => A.state == "active" && Sim.InCircle(m, A)) ? "" : "fora do ritual";
+            if (m.feitico == "empurrao")
+            {
+                double fx = -System.Math.Sin(m.yaw), fz = -System.Math.Cos(m.yaw);
+                foreach (var e in g.actors)
+                {
+                    if (e.team == m.team || e.st != "alive" || e.hidden) continue; double dx = e.x - m.x, dz = e.z - m.z, d = System.Math.Sqrt(dx * dx + dz * dz);
+                    if (d <= 3.8 && d > .01 && (dx * fx + dz * fz) / d >= .34) return "";
+                }
+                return "ninguém à frente";
+            }
+            return "";
+        }
         // #sensor: o sinal do Sensor Áurico em cima do kit (no toque: 190 da direita, 150 de baixo, 170 de largura, sem escala)
         void SensorHud(Ator m)
         {

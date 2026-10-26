@@ -216,7 +216,8 @@ namespace RitualReversal
                 case "hab":
                     {
                         Ator quem = g.actors.Find(a => a.id == e.Int("a")); som.Hab(quem != null ? quem.cls : "", x, z, e.Str("f"));
-                        if (e.Int("a") == eu) { var al = e["alvos"] as System.Collections.ICollection; int n = al != null ? al.Count : 0; string f = e.Str("f"); NotaHab(TextoHab(f, n), n > 0 || f == "runa" || f == "veu" || f == "sal" ? OURO : CINZA * 2); if (f == "empurrao") fp.kickP += .02f; fp.Hab(); }
+                        if (e.Int("a") == eu) { var al = e["alvos"] as System.Collections.ICollection; int n = al != null ? al.Count : 0; string f = e.Str("f"); var mm = g.actors.Find(a => a.id == eu); bool canal = mm != null && g.altars.Any(A => A.state == "active" && Sim.InCircle(mm, A));
+                            NotaHab(TextoHab(f, n, canal), n > 0 || (f == "runa" ? canal : f == "veu" || f == "sal") ? OURO : CINZA * 2); if (f == "empurrao") fp.kickP += .02f; fp.Hab(); }
                         break;
                     }
                 case "ping": if (e.Str("team") == papel) ReceberPing(e); break;
@@ -277,14 +278,16 @@ namespace RitualReversal
         static List<string> Nomes(object v) { var L = new List<string>(); var en = v as System.Collections.IEnumerable; if (en != null && !(v is string)) foreach (var x in en) if (x != null) L.Add(x.ToString()); return L; }
         static string ListaNomes(List<string> L) { return Noite.ListaNomes(L); }
         static System.Collections.IEnumerator Depois(float s, System.Action f) { yield return new WaitForSeconds(s); f(); }
-        static string TextoHab(string f, int n)
+        // v6.3 (do playtest online de 25/10: Runa usada fora do ritual, Empurrão sem ninguém à frente): a nota diz quando o
+        // feitiço foi gasto, e a ferramenta do kit avisa antes (ProntidaoHab)
+        static string TextoHab(string f, int n, bool canal)
         {
             switch (f)
             {
-                case "runa": return "Runa: canalização +20% por 8 s";
+                case "runa": return canal ? "Runa: canalização +20% por 8 s, e o coro se ouve mais longe" : "Runa gasta: ela só acelera quem está canalizando um ritual";
                 case "veu": return "Véu: você é só uma silhueta por 5 s";
                 case "sal": return "Círculo de Sal deixado no chão por 60 s";
-                case "empurrao": return n > 0 ? "Empurrão: " + n + (n > 1 ? " atingidos" : " atingido") : "Empurrão: ninguém no alcance (4 m à frente)";
+                case "empurrao": return n > 0 ? "Empurrão: " + n + (n > 1 ? " atingidos" : " atingido") : canal ? "Empurrão sem ninguém à frente, e a sua canalização parou um instante" : "Empurrão: ninguém no alcance (4 m à frente)";
                 case "flash": return n > 0 ? "Flash: " + n + (n > 1 ? " cegados" : " cegado") + " por 1,5 s" : "Flash: ninguém no cone (14 m à frente)";
                 default: return n > 0 ? "Purificação: " + n + (n > 1 ? " atordoados" : " atordoado") + " por 1 s" : "Purificação: ninguém a 6 m";
             }

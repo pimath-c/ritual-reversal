@@ -167,7 +167,7 @@ namespace RitualReversal
             }
             var en = O(G(s, "energia")); if (en != null) { g.energia = new Dictionary<string, double>(); foreach (var kv in en) { double r = D(kv.Value); g.energia[kv.Key] = r > 0 ? g.t + r : 0; } }
             // regras do laboratório de playtest escolhidas pelo anfitrião (relógio do Crepúsculo, mercadores)
-            var lb = O(G(s, "lab")); if (lb != null) g.lab = Lab.De(new Lab { crepusculo = D(G(lb, "crepusculo")), fogo = S(G(lb, "fogo")), execucao = D(G(lb, "execucao")), economia = !(G(lb, "economia") is bool) || B(G(lb, "economia")), formato = S(G(lb, "formato")) });
+            var lb = O(G(s, "lab")); if (lb != null) g.lab = Lab.De(new Lab { crepusculo = D(G(lb, "crepusculo")), fogo = S(G(lb, "fogo")), execucao = D(G(lb, "execucao")), economia = !(G(lb, "economia") is bool) || B(G(lb, "economia")), formato = S(G(lb, "formato")), dupla = S(G(lb, "dupla")) });
             return g;
         }
 

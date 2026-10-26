@@ -483,7 +483,8 @@ details.lab summary{ font-family:var(--mono); font-size:13px; } details.lab summ
 #ammo.tranco{ animation:tranco .18s ease-out; transform-origin:100% 100%; }
 .tool{ background:none; border:0; font-family:var(--mono); font-size:11.5px; color:var(--muted); padding:2px 4px 4px; min-width:0; }
 .tool kbd{ display:inline; border:0; padding:0; margin-right:5px; font-size:11.5px; color:var(--bone); }
-.tool .cd{ background:rgba(10,10,10,.7); } .tool.on{ color:var(--bone); } .tool.on kbd{ color:var(--crimson-hi); }
+.tool .cd{ background:rgba(10,10,10,.7); }
+.tool small{ margin-left:6px; font-size:11px; color:var(--crimson-hi); } .tool.vazio{ color:var(--dim); } .tool.vazio kbd{ color:var(--dim); } .tool.on{ color:var(--bone); } .tool.on kbd{ color:var(--crimson-hi); }
 #sensor .v{ font-family:var(--mono); font-size:13px; color:var(--bone); } #sensor .trk{ height:2px; } #sensor .trk span{ background:var(--bone); }
 #interact .lbl{ font-family:var(--mono); font-size:14px; background:none; text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.8); } #interact kbd{ border:0; color:var(--crimson-hi); padding:0; margin-right:8px; }
 #ring{ stroke:var(--bone); }
@@ -1804,11 +1805,20 @@ function esferaChoque(x,y,z,cor,raio,dur){ const m=new THREE.Mesh(ESFERA_GEO,new
   m.position.set(x,y,z); efeito(m,dur,(o,k)=>{ const r=.15+raio*(1-Math.pow(1-k,3)); o.scale.setScalar(r); o.material.opacity=(1-k)*(1-k)*.32*perto; }); }
 // queda confirmada: as bordas da tela pulsam uma vez em carmim
 let abateT=0; function flashAbate(){ abateT=SET.suave?.12:.22; }
-const HAB_TXT={runa:()=>'Runa: canalização +20% por 8 s', veu:()=>'Véu: você é só uma silhueta por 5 s', sal:()=>'Círculo de Sal deixado no chão por 60 s',
-  empurrao:n=>n?`Empurrão: ${n} ${n>1?'atingidos':'atingido'}`:'Empurrão: ninguém no alcance (4 m à frente)',
+// v6.3 (do playtest online de 25/10: Runa usada 11 vezes, quase sempre fora do ritual, e Empurrão 5 vezes sem ninguém à
+// frente): a nota diz quando o feitiço foi gasto, e a ferramenta avisa antes (prontidaoHab)
+const HAB_TXT={runa:(n,canal)=>canal?'Runa: canalização +20% por 8 s, e o coro se ouve mais longe':'Runa gasta: ela só acelera quem está canalizando um ritual', veu:()=>'Véu: você é só uma silhueta por 5 s', sal:()=>'Círculo de Sal deixado no chão por 60 s',
+  empurrao:(n,canal)=>n?`Empurrão: ${n} ${n>1?'atingidos':'atingido'}`:canal?'Empurrão sem ninguém à frente, e a sua canalização parou um instante':'Empurrão: ninguém no alcance (4 m à frente)',
   flash:n=>n?`Flash: ${n} ${n>1?'cegados':'cegado'} por 1,5 s`:'Flash: ninguém no cone (14 m à frente)',
   purificacao:n=>n?`Purificação: ${n} ${n>1?'atordoados':'atordoado'} por 1 s`:'Purificação: ninguém a 6 m'};
 let habNotaT=0, gotaT=4;
+// o que o feitiço do culto faria agora: a Runa só acelera quem canaliza um ritual em andamento; o Empurrão pega quem está
+// a 3,8 m, no cone à frente (os números do useAbility)
+function prontidaoHab(m){ const F=m.feitico;
+  if(F==='runa') return V.altars.some(A=>A.state==='active'&&Sim.inCircle(m,A))?'':'fora do ritual';
+  if(F==='empurrao'){ const fx=-Math.sin(LOOK.yaw), fz=-Math.cos(LOOK.yaw);
+    return V.actors.some(e=>{ if(e.team===m.team||e.st!=='alive'||e.hidden) return false; const dx=(e._rx!=null?e._rx:e.x)-m.x, dz=(e._rz!=null?e._rz:e.z)-m.z, d=Math.hypot(dx,dz); return d<=3.8&&d>.01&&(dx*fx+dz*fz)/d>=.34; })?'':'ninguém à frente'; }
+  return ''; }
 function notaHab(txt,cor){ const el=$('#habNota'); el.textContent=txt; el.style.color=cor; el.classList.add('on'); habNotaT=1.8; }
 function clarao(x,y,z,hex,forca){ if(!luzImpacto) return; luzImpacto.position.set(x,y,z); luzImpacto.color.setHex(hex); luzImpacto.intensity=forca; }
 function updateParticles(dt){
@@ -2409,7 +2419,8 @@ function handleEvents(list,online){
       case 'momento': anunciar(e.nome,e.i===1?'Os altares despertam':'Os rituais aceleram e a névoa se fecha'); SFX.bell(); marcoLT('momento',e.nome); legenda('bell',null,null,'O sino da catedral'); break;
       case 'grande': iniciarGrande(e); break;
       case 'hab': efeitoHabilidade(e,e.a===id); if(e.a===id&&ARMA) ARMA.hab(e.f); SFX.hab(e.cls,e.x,e.z,e.f); if(e.a!==id) legenda('hab',e.x,e.z,FEITICOS[e.f]?FEITICOS[e.f].nome:'Feitiço',FEIT_BY_TEAM.C.includes(e.f)?'cult':'');
-        if(e.a===id){ const n=(e.alvos||[]).length; notaHab(HAB_TXT[e.f](n),n||['runa','veu','sal'].includes(e.f)?'var(--gold-hi)':'var(--muted)'); const t=$('#tAb'); if(t){ t.classList.remove('pulso'); void t.offsetWidth; t.classList.add('pulso'); } if(e.f==='empurrao') FX.kickP+=.02; }
+        if(e.a===id){ const n=(e.alvos||[]).length, mm=me(), canal=!!mm&&V.altars.some(A=>A.state==='active'&&Sim.inCircle(mm,A));
+          notaHab(HAB_TXT[e.f](n,canal),n||(e.f==='runa'?canal:['veu','sal'].includes(e.f))?'var(--gold-hi)':'var(--muted)'); const t=$('#tAb'); if(t){ t.classList.remove('pulso'); void t.offsetWidth; t.classList.add('pulso'); } if(e.f==='empurrao') FX.kickP+=.02; }
         break;
       case 'doom': { SFX.doom(); ritualFenda(e.altar); const A=V.altars[e.altar], por=e.por||[], eu=m&&por.includes(m.name);
         anunciar(eu?'Você abriu uma Fenda':'Uma Fenda se abriu',por.length?`${listaNomes(por)} ${por.length>1?'completaram':'completou'} o ritual${A?' em '+A.name:''}`:(A?A.name:'')); if(A) piscarMostrador(e.altar,'#ff3a5a'); break; }
@@ -2932,7 +2943,7 @@ function buildStrip(){ const s=$('#strip'); s.innerHTML=''; AV.forEach((O,i)=>{ 
 let toolsKey='';
 function buildTools(m){ const k=m.team+m.cls+m.feitico+JSON.stringify(SET.binds); if(k===toolsKey) return; toolsKey=k; const ab=CLASSES[m.cls].abil;
   $('#tools').innerHTML=(m.team==='H'?`<div class="tool" id="tQ"><kbd>${kb('sensor')}</kbd>Sensor<div class="cd"></div></div><div class="tool" id="tF"><kbd>${kb('lantern')}</kbd>Lanterna<div class="cd"></div></div><div class="tool" id="tG"><kbd>${kb('flare')}</kbd>Flare <b id="flN">2</b></div>`
-    :`<div class="tool"><kbd>☉</kbd>Reagentes <b id="rgN">0</b></div><div class="tool"><kbd>${kb('use')}</kbd>Chamariz <b id="dcN">2</b></div>`)+`<div class="tool" id="tAb"><kbd>${kb('abil')}</kbd>${FEITICOS[m.feitico].nome}<div class="cd"></div></div>`;
+    :`<div class="tool"><kbd>☉</kbd>Reagentes <b id="rgN">0</b></div><div class="tool"><kbd>${kb('use')}</kbd>Chamariz <b id="dcN">2</b></div>`)+`<div class="tool" id="tAb"><kbd>${kb('abil')}</kbd>${FEITICOS[m.feitico].nome}<small></small><div class="cd"></div></div>`;
   $('#sensor').style.display=m.team==='H'?'block':'none'; }
 function atualizarTarefas(role){ const el=$('#tarefas'); const T=(V.tarefas&&V.tarefas[role])||[];
   const html=T.length?`<b>Tarefas da equipe</b>`+T.map(t=>`<div class="${t.feita?'feita':''}">${t.feita?'✓':'○'} ${esc(t.nome)}${t.meta?` <span>${t.prog}/${t.meta}</span>`:''}</div>`).join(''):'';
@@ -3094,7 +3105,8 @@ function updateHUD(dt,m){
     const n=$('#flN'); if(n) n.textContent=m.flares;
     sensorShowT=Math.max(0,sensorShowT-dt); $('#sensor').style.opacity=sensorShowT>0?1:.45; $('#sensorV').textContent=sensorV>.6?'Sinal forte':sensorV>.3?'Sinal médio':sensorV>.02?'Sinal fraco':'Nenhum sinal'; $('#sensorFill').style.width=(sensorV*100)+'%';
   } else { $('#ammo').innerHTML=`${Math.floor(m.fervor)} <small>Fervor</small>`; const r=$('#rgN'); if(r) r.textContent=m.reag; const d=$('#dcN'); if(d) d.textContent=V.decoys; }
-  const ab=$('#tAb'); if(ab) ab.querySelector('.cd').style.height=(m.abilCd/FEITICOS[m.feitico].cd*100)+'%';
+  const ab=$('#tAb'); if(ab){ ab.querySelector('.cd').style.height=(m.abilCd/FEITICOS[m.feitico].cd*100)+'%';
+    const p=m.abilCd>0?'':prontidaoHab(m), sm=ab.querySelector('small'); ab.classList.toggle('vazio',!!p); if(sm&&sm.textContent!==p) sm.textContent=p; }
   const ob=$('#obolos'); if(ob){ ob.textContent=Math.floor(m.obolos||0); ob.parentNode.style.display=LB.economia?'':'none'; }
   let dica=''; if(m.st==='alive'){ if(m.team==='H'){ if(m.reloadT<=0&&m.ammo===0) dica=m.reserve>0?`Sem munição: ${kb('reload')} para recarregar`:'Sem munição: volte ao spawn para repor'; else if(m.reloadT<=0&&m.ammo<=2) dica=`Munição baixa (${m.ammo})`; }
     else if(m.fervor<CFG.sigilCusto) dica='Fervor esgotado: pare de conjurar um instante para recuperar'; }
@@ -3508,7 +3520,8 @@ const LAB_UI=[['crepusculo','Crepúsculo',[[180,'3:00'],[120,'2:00'],[90,'1:30']
   ['fogo','Selo sob fogo (1 / 2 inimigos)',[['atual','70% / 45%'],['a','80% / 60%'],['b','90% / 70%']]],
   ['execucao','Executar um caído',[[4.5,'4,5 s'],[6,'6 s'],[7.5,'7,5 s']]],
   ['economia','Óbolos e mercadores',[[true,'Ligados'],[false,'Desligados']]],
-  ['formato','Fim da noite',[['melhorDeTres','2 rituais encerram'],['placar','Noite inteira']]]];
+  ['formato','Fim da noite',[['melhorDeTres','2 rituais encerram'],['placar','Noite inteira']]],
+  ['dupla','Ritual em dupla',[['atual','34 s, localiza aos 50%'],['longo','42 s'],['cedo','Localiza aos 40%']]]];
 function labMudancas(lab){ const L=Sim.labDe(lab), P=Sim.labDe(); return LAB_UI.filter(([k])=>L[k]!==P[k]).map(([k,nome,ops])=>`${nome}: ${ops.find(o=>o[0]===L[k])[1]}`); }
 function labPainel(lab,editavel){ const L=Sim.labDe(lab), mud=labMudancas(lab);
   return `<details class="lab" ${SET.labAberto?'open':''}><summary>Laboratório de playtest${mud.length?` <b>· ${mud.length} ${mud.length>1?'regras alteradas':'regra alterada'}</b>`:''}</summary>

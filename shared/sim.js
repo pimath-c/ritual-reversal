@@ -50,12 +50,17 @@ const SETORES=[{id:'oeste',nome:'a oeste',altares:[0,3]},{id:'centro',nome:'no c
 const setorDoAltar=i=>SETORES.find(s=>s.altares.includes(i));
 // Laboratório de playtest: variações que o anfitrião escolhe para comparar noites (o padrão é a regra normal).
 // crepusculo: segundos até a Vigília; fogo: quanto o selo anda sob fogo de 1 e de 2 inimigos; execucao: segundos para
-// executar um caído; economia: óbolos, tarefas pagas e mercadores; formato: como a noite termina.
+// executar um caído; economia: óbolos, tarefas pagas e mercadores; formato: como a noite termina; dupla (v6.3, do playtest
+// online de 25/10, em que a caça humana teve uns 15 s entre a localização e a Fenda): o ritual de dois canalizadores mais
+// longo (42 s em vez de 34) ou localizado mais cedo (aos 40% em vez de 50%).
 const FOGO={atual:[CFG.fire1,CFG.fire2],a:[.8,.6],b:[.9,.7]};
-const LAB_OPCOES={crepusculo:[180,120,90],fogo:['atual','a','b'],execucao:[4.5,6,7.5],economia:[true,false],formato:['melhorDeTres','placar']};
+const LAB_OPCOES={crepusculo:[180,120,90],fogo:['atual','a','b'],execucao:[4.5,6,7.5],economia:[true,false],formato:['melhorDeTres','placar'],dupla:['atual','longo','cedo']};
 function labDe(o){ o=o||{}; const L={};
   for(const k in LAB_OPCOES){ const ops=LAB_OPCOES[k]; L[k]=ops.includes(o[k])?o[k]:(k==='formato'&&ops.includes(CFG.formatoNoite)?CFG.formatoNoite:ops[0]); }
-  L.fire1=FOGO[L.fogo][0]; L.fire2=FOGO[L.fogo][1]; return L; }
+  L.fire1=FOGO[L.fogo][0]; L.fire2=FOGO[L.fogo][1];
+  L.dupDur=L.dupla==='longo'?42:CFG.rit[2].dur; L.dupLoc=L.dupla==='cedo'?.4:CFG.rit[2].loc; return L; }
+// duração e ponto de localização do ritual com n canalizadores (o de dois vem do laboratório)
+const ritDur=(g,n)=>n===2?g.lab.dupDur:CFG.rit[n].dur, ritLoc=(g,n)=>n===2?g.lab.dupLoc:CFG.rit[n].loc;
 const CLASSES={
   ritualista:{team:'C',name:'Ritualista',hp:150,speed:4.6,arma:'Cetro de vértebras',
     text:'Cetro de vértebras. Passiva: quem canaliza com você ganha escudo ao atingir 25% e 75% do ritual.'},
@@ -1305,16 +1310,16 @@ function updateAltars(g,dt){
     const ch=g.actors.filter(c=>c.team==='C'&&c.st==='alive'&&inCircle(c,A)&&!(CFG.ataqueCanal>0&&g.t-c.ataqueT<CFG.ataqueCanal)).slice(0,2), n=ch.length;
     let rune=false;
     if(n>0){ let f=0; ch.forEach(c=>{ let k=(g.t-c.hitT<1||c.blindT>0||c.stunT>0)?.5:1; if(c.runeT>0){ k*=1.2; rune=true; } f+=k; }); f/=n;
-      A.prog+=dt*f*mareFactor(g)*A.selo*(A.tardio?1.25:1)*(A.grande?.6:1)/CFG.rit[n].dur; A.lastN=n; A.maxN=Math.max(A.maxN||0,n); }
+      A.prog+=dt*f*mareFactor(g)*A.selo*(A.tardio?1.25:1)*(A.grande?.6:1)/ritDur(g,n); A.lastN=n; A.maxN=Math.max(A.maxN||0,n); }
     else if(A.prog>A.cp) A.prog=Math.max(A.cp,A.prog-.02*dt);
     for(const c of CFG.cps) if(A.prog>=c&&A.cp<c){ A.cp=c; logE(g,'checkpoint',{altar:A.name,cp:c});
       if(ch.some(x=>x.cls==='ritualista')) ch.forEach(x=>{ x.shield=15; x.shieldT=8; }); }
     A.maxProg=Math.max(A.maxProg,A.prog);
     const nn=Math.max(1,A.lastN), rad=CFG.rit[nn].rad*(rune?1.5:1)*(A.tardio?1.4:1);
     if(!A.localized&&!A.eco&&CFG.ecoProg>0&&A.prog>=CFG.ecoProg) ecoDoCoro(g,A);
-    if(!A.localized){ if(A.prog>=CFG.rit[nn].loc) localize(g,A,'coro'); else if(n>0&&g.actors.some(h=>h.team==='H'&&h.st==='alive'&&dist(h,A)<rad)) localize(g,A,'ouvido');
+    if(!A.localized){ if(A.prog>=ritLoc(g,nn)) localize(g,A,'coro'); else if(n>0&&g.actors.some(h=>h.team==='H'&&h.st==='alive'&&dist(h,A)<rad)) localize(g,A,'ouvido');
       else if(g.actors.some(h=>h.team==='H'&&h.st==='alive'&&inCircle(h,A))) localize(g,A,'circulo'); } // quem pisa no círculo vê o ritual, mesmo sem ninguém canalizando
-    if(!A.arrived&&g.actors.some(h=>h.team==='H'&&h.st==='alive'&&inCircle(h,A))){ A.arrived=true; logE(g,'hunter_arrive',{altar:A.name,prog:r2(A.prog),channelers:nn,remaining:r2((1-A.prog)*CFG.rit[nn].dur)}); }
+    if(!A.arrived&&g.actors.some(h=>h.team==='H'&&h.st==='alive'&&inCircle(h,A))){ A.arrived=true; logE(g,'hunter_arrive',{altar:A.name,prog:r2(A.prog),channelers:nn,remaining:r2((1-A.prog)*ritDur(g,nn))}); }
     const sealers=g.actors.filter(h=>h.team==='H'&&h.st==='alive'&&h.sealing===A.i&&inCircle(h,A));
     if(sealers.length){
       if(!A.sealers.length){ tarefaProg(g,'H','selar'); }
