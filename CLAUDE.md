@@ -335,6 +335,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   jogador pelas 17 vistas na noite limpa ("foto<i>"), sem HUD, e grava PNG em `<persistentDataPath>/referencia-<data>`;
   `tools/referencia-navegador.js` tira as mesmas no navegador e `python3 -I tools/comparar-referencia.py <pasta do Unity>`
   junta lado a lado (dist/referencia/lado-a-lado, com `folha.jpg`). O `TesteTelas` passa pelo F10 inteiro.
+  Prévia no editor: menu "Montar o visual na cena" (`Editor/PreviaVisual.cs`) roda o `Mundo.Construir(mapa)` fora do Play, tira os
+  scripts, grava cópias das malhas/materiais/texturas em `Assets/RitualReversal/Previa/<mapa>.asset` (um arquivo, subassets) e põe
+  `PreviaNoEditor` (some no Awake do Play, etiqueta EditorOnly, guarda luzes/névoa de antes para "Tirar o visual da cena").
+  Compilar os scripts aqui com Editor: NuGet `unityengine.modules` 2021.3.33 + `unity3d.sdk` 2021.1.14.1 (UnityEditor.dll) e uma
+  imitação mínima do URP (Volume e os efeitos do `Pos.cs`).
   Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); a linha "Movimento
   bruto do mouse" (o Input System já lê o mouse sem aceleração); letras de tamanho fracionário do CSS (14,5, 11,5) saem no
   inteiro mais perto.

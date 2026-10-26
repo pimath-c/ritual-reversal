@@ -14,6 +14,13 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
 
 ## Novidades desta versão (26/10)
 
+- **Ver o mapa sem dar Play**: menu **Ritual Reversal > Montar o visual na cena > Catedral** (ou **Asilo Blackwater**). O mundo
+  que o Play monta por código (catedral, pontes, mata, Asilo, altares, céu, luzes e névoa) aparece na cena do editor e fica
+  salvo com ela. As malhas, materiais e texturas vão para `Assets/RitualReversal/Previa/<mapa>.asset`. No Play essa prévia some
+  sozinha (a partida monta o mundo dela) e ela não entra no jogo compilado. O contorno a nanquim e o pós-processamento são da
+  câmera do jogo, então só aparecem no Play. **Ritual Reversal > Tirar o visual da cena** apaga a prévia e devolve as luzes e a
+  névoa de antes. O arquivo é grande; apague a pasta `Previa` quando não precisar mais.
+
 - **Interface nova (direção Nanquim)**: preto, osso e um único vermelho; títulos e números em Big Shoulders Display, texto
   em IBM Plex Sans Condensed, rótulos em IBM Plex Mono (as fontes vêm em `Resources/Fontes`). Título com o nome enorme e a
   pincelada; botões em texto com um traço por baixo no mouse e no foco do controle; fim da noite com a faixa cor de osso e a
@@ -105,6 +112,9 @@ as frases; clique no analógico direito marca; Select a planta; Start pausa. Nos
 
 Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar mapa (blockout)**) e desative o objeto **Partida** antes do Play.
 
+**Por que o mapa importado não fica igual ao do Play?** O **Importar mapa (blockout)** monta só as caixas cinzas da colisão. A
+aparência é montada por código no Play e some quando o Play acaba. Para ver a aparência no editor, use **Montar o visual na cena**.
+
 ## O que tem em cada pasta
 
 - `Scripts/Simulacao/` — a simulação, em C# puro (não usa nada do Unity). `Sim.cs` (regras), `Bots.cs`, `Mapa.cs`
@@ -124,6 +134,7 @@ Para só passear pelo blockout, sem partida, importe o mapa (menu **Importar map
 - `Scripts/Rede.cs`, `PartidaOnline.cs` — o online: conexão, leitura do snapshot, lobby, previsão e interpolação.
 - `Scripts/EntradaUnity.cs` — teclado e mouse (Input System novo ou antigo).
 - `Editor/ImportarMapa.cs` — os menus (cena do jogo e importador do blockout); `Resources/mapa.json` é a planta visual.
+- `Editor/PreviaVisual.cs` e `Scripts/Visual/PreviaNoEditor.cs` — **Montar o visual na cena** e **Tirar o visual da cena**.
 - `Scripts/GerarTextura.cs` — texturas geradas por código (pedra, lajota, madeira, casca, terra, grama, folhagem, osso).
   O importador salva em `Texturas/` e aplica com 1 repetição a cada 2 m, sem esticar. Para trocar por texturas de
   verdade, basta arrastar outra imagem para o campo Base Map do material em `Materiais/`.
