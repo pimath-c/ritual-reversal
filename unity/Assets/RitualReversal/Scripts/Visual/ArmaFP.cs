@@ -339,6 +339,7 @@ namespace RitualReversal.Visual
             var cte = Json.O(D_["cte"]);
             PALMA_CENTRO = V3d.De(cte["PALMA_CENTRO"]); MUN_NA_MAO = V3d.De(cte["MUN_NA_MAO"]); qPinca = Qd.De(cte["qPinca"]); qMunMao = Qd.De(cte["qMunMao"]);
             foreach (var kv in Json.O(cte["PADRAO_C"])) PADRAO_C[kv.Key] = Json.D(kv.Value);
+            if (cte.ContainsKey("ZC_REV")) ZC_REV = Json.D(cte["ZC_REV"]);
             foreach (var kv in Json.O(D_["perfil"]))
             {
                 var p = Json.O(kv.Value); var ci = Json.L(p["ciclo"]); object v;
@@ -628,7 +629,8 @@ namespace RitualReversal.Visual
             }
         }
         // municiador no eixo do tambor: s=0 com as pontas encostando atrás das câmaras, s=1 com os aros rentes à face traseira
-        static double ZMun(double s) { return .0375 + (1 - s) * .0365; }
+        static double ZC_REV = .0335;   // a face de trás do tambor (v6.5: a do revólver de verdade, exportada em cte.ZC_REV)
+        static double ZMun(double s) { return ZC_REV + .004 + (1 - s) * .0365; }
         // cópia de uma peça (mesmas malhas e materiais)
         internal static Transform Clonar(Transform o, Transform pai)
         {
