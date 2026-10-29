@@ -22,6 +22,8 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
 - **Mais duas levas (v6.4c)**: samambaias, raízes, bancos da nave e a arca escaneados, rochas em três formas, chão de capim
   ralo no promontório e tábuas gastas; no Asilo, luminárias industriais, quadros de força, canteiros de madeira, bancadas,
   macas e lampiões, e telhados, ferrugem e concreto fotografados.
+- **Pinturas e espelhos (v6.4d)**: pinturas emolduradas e espelhos nas paredes de 29 salas do Asilo; o lampião com o vidro
+  pintado (os modelos de várias texturas agora juntam todas num atlas).
 - **Laboratório "Entre rituais"**: troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.
 
 ## Novidades de 26/10

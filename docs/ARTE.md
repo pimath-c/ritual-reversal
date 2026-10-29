@@ -69,6 +69,9 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `rocha2` | rochas da mata e do promontório, segunda forma (kind rocha) | [boulder_01](https://polyhaven.com/a/boulder_01), CC0 | Rico Cilliers |
 | `rocha3` | rochas da mata e do promontório, terceira forma, com musgo (kind rocha) | [rock_face_02](https://polyhaven.com/a/rock_face_02), CC0 | Dario Barresi, Rico Cilliers |
 | `lampiao` | Asilo: lampiões em cima das mesas e da bancada | [vintage_oil_lamp](https://polyhaven.com/a/vintage_oil_lamp), CC0 | Monsta3D |
+| `pintura1` | Asilo: pinturas nas paredes das salas | [fancy_picture_frame_01](https://polyhaven.com/a/fancy_picture_frame_01), CC0 | Rob Tuytel, Rico Cilliers |
+| `pintura2` | Asilo: pinturas nas paredes das salas | [fancy_picture_frame_02](https://polyhaven.com/a/fancy_picture_frame_02), CC0 | Rob Tuytel, Rico Cilliers |
+| `espelho` | Asilo: espelhos nas paredes das salas | [ornate_mirror_01](https://polyhaven.com/a/ornate_mirror_01), CC0 | James Ray Cock |
 
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em

@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.4c)
+## Estado atual (v6.4d)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -224,6 +224,12 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Floor(v+.5)), `lampiao` (encaixe altura, 0,42 m, em cima das mesas e da bancada, giro `(x1+z1)%PI`). Modelos novos sem
   `"bordas": false` não reduzem (rocha2 ficou com 65 mil triângulos). `alturas.js` ignora `__T.NOITE` (npcs, pontos, sal). `tools/arte.py` refaz as tabelas
   de `docs/ARTE.md` dos dois fontes.json. `build.js` também grava `dist/web/` (página + pedaços `Object.assign(window.X||{},...)`).
+- v6.4d (notas em `notas/v6.4d.md`): `pintura1`/`pintura2`/`espelho` (encaixe altura, frente em +z, `"bordas": true`: sem
+  bordas a redução desmancha as superfícies planas) nas paredes das salas internas do Asilo: no meio da primeira parede (z1, z2,
+  x1, x2) com parede atrás em toda a largura (`livreA` e nenhum `VAOS` a 0,3 m), chão livre a 0,6 m e nenhum quadro de força a
+  2,5 m; a 10 cm da parede (com 4 cm o reboco do lado z2 cobria), y 1,2. 29 peças; `RR_ASILO` devolve `NA_PAREDE`. No Unity,
+  o mesmo bloco antes dos quadros de força. `montar-modelos.py` junta várias texturas de cor num atlas em grade (uv de cada
+  primitiva no seu quadrado): mudou `lampiao` (era preto) e `lanterna`.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

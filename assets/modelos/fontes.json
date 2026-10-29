@@ -309,5 +309,50 @@
     "triangulos": 1200,
     "textura": 256,
     "bordas": false
+  },
+  "pintura1": {
+    "polyhaven": "fancy_picture_frame_01",
+    "autor": "Rob Tuytel, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "Asilo: pinturas nas paredes das salas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.8,
+      0
+    ],
+    "triangulos": 1000,
+    "textura": 512,
+    "bordas": true
+  },
+  "pintura2": {
+    "polyhaven": "fancy_picture_frame_02",
+    "autor": "Rob Tuytel, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "Asilo: pinturas nas paredes das salas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.75,
+      0
+    ],
+    "triangulos": 4000,
+    "textura": 512,
+    "bordas": true
+  },
+  "espelho": {
+    "polyhaven": "ornate_mirror_01",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: espelhos nas paredes das salas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1.1,
+      0
+    ],
+    "triangulos": 4000,
+    "textura": 512,
+    "bordas": true
   }
 }

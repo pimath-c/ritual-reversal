@@ -199,6 +199,32 @@ namespace RitualReversal.Visual
                 var fonte = new Fonte { x = x, z = z, y = ALT_ASILO - 1.7f, cor = 0xffdca0, i = 1.3f, alc = 13 }; FONTES.Add(fonte);   // abaixo da cúpula, longe do teto
                 if (c.setor != null && lampAsilo.ContainsKey(c.setor)) lampAsilo[c.setor].Add(new LampAsilo { lamp = ml, brilho = mb, fonte = fonte, fase = RA() * 10 });
             }
+            // v6.4d: quadros e espelhos nas paredes das salas (modelos escaneados, CC0; só enfeite, encostados na parede). Em cada
+            // sala interna, no meio da primeira parede (z1, z2, x1, x2) com parede atrás em toda a largura (nem vão de porta), chão
+            // livre na frente e nenhum quadro de força perto; pintura, pintura e espelho, um de cada vez (o asilo.js)
+            {
+                var PAREDE = new[] { "pintura1", "pintura2", "espelho" }; int np = 0;
+                Func<float, float, bool> livreA = (x, z) => Mapa.Livre(x, z, .1);
+                foreach (var e in MapaVisual.ESPACOS)
+                {
+                    if (!e.interno || Math.Min(e.x2 - e.x1, e.z2 - e.z1) < 3.5f) continue;
+                    float mx = (e.x1 + e.x2) / 2, mz = (e.z1 + e.z2) / 2;
+                    var lados = new[] { new[] { mx, e.z1, 0, 1, e.x2 - e.x1 }, new[] { mx, e.z2, 0, -1, e.x2 - e.x1 }, new[] { e.x1, mz, 1, 0, e.z2 - e.z1 }, new[] { e.x2, mz, -1, 0, e.z2 - e.z1 } };
+                    foreach (var l in lados)
+                    {
+                        float cx = l[0], cz = l[1], nx = l[2], nz = l[3]; if (l[4] < 4) continue; bool ok = true;
+                        for (float t = -.9f; t <= .91f; t += .3f)
+                        {
+                            float ax = cx + nz * t, az = cz + nx * t, bx = ax - nx * .3f, bz = az - nz * .3f;
+                            if (livreA(bx, bz) || MapaVisual.VAOS.Exists(v => bx > v.x1 - .3f && bx < v.x2 + .3f && bz > v.z1 - .3f && bz < v.z2 + .3f) || !livreA(ax + nx * .6f, az + nz * .6f)) { ok = false; break; }
+                        }
+                        if (!ok || MapaVisual.QUADROS.Exists(q => Mathf.Sqrt((q.x - cx) * (q.x - cx) + (q.z - cz) * (q.z - cz)) < 2.5f)) continue;
+                        var MP = ModeloGLB.Carregar(PAREDE[np % 3]); np++;
+                        if (MP != null) Est(MP.geo, MP.mat, TRS(cx + nx * .1f, 1.2f, cz + nz * .1f, 0, Mathf.Atan2(nx, nz), 0));
+                        break;
+                    }
+                }
+            }
             quadrosAsilo = new List<QuadroAsilo>();
             foreach (var q in MapaVisual.QUADROS)
             {

@@ -59,8 +59,11 @@ def matriz_no(nd):
 
 
 def juntar(J, BIN):
-    """Todas as primitivas de triângulos da cena, já no espaço do mundo; devolve posições, normais, uvs, índices e a imagem."""
+    """Todas as primitivas de triângulos da cena, já no espaço do mundo; devolve posições, normais, uvs, índices e a imagem.
+    Com mais de uma textura de cor (a moldura e a tela de uma pintura), junta as texturas num atlas em grade e leva o uv de
+    cada primitiva para o seu quadrado (os uvs dessas peças ficam entre 0 e 1)."""
     P, N, U, I, img = [], [], [], [], None
+    fontes, qual = {}, []   # imagem de cada textura usada; índice da textura de cada primitiva (ou None)
     def visitar(i, pai):
         nonlocal img
         nd = J['nodes'][i]; M = pai @ matriz_no(nd)
@@ -76,17 +79,26 @@ def juntar(J, BIN):
                     nw = n @ np.linalg.inv(M[:3, :3]); nw /= np.maximum(np.linalg.norm(nw, axis=1, keepdims=True), 1e-12)
                 else:
                     nw = None
-                base = sum(len(q) for q in P); P.append(pw); N.append(nw); U.append(uv); I.append(idx + base)
-                if img is None and 'material' in pr:
+                base = sum(len(q) for q in P); P.append(pw); N.append(nw); U.append(uv); I.append(idx + base); fonte = None
+                if 'material' in pr:
                     m = J['materials'][pr['material']]; bct = m.get('pbrMetallicRoughness', {}).get('baseColorTexture')
                     if bct is not None:
-                        im = J['images'][J['textures'][bct['index']]['source']]
-                        if 'bufferView' in im:
+                        fonte = J['textures'][bct['index']]['source']; im = J['images'][fonte]
+                        if fonte not in fontes and 'bufferView' in im:
                             v = J['bufferViews'][im['bufferView']]; o = v.get('byteOffset', 0)
-                            img = Image.open(io.BytesIO(BIN[o:o + v['byteLength']])).convert('RGBA')
+                            fontes[fonte] = Image.open(io.BytesIO(BIN[o:o + v['byteLength']])).convert('RGBA')
+                        if img is None and fonte in fontes: img = fontes[fonte]
+                qual.append(fonte if fonte in fontes else None)
         for c in nd.get('children', []): visitar(c, M)
     cena = J['scenes'][J.get('scene', 0)]
     for r in cena['nodes']: visitar(r, np.eye(4))
+    if len(fontes) > 1:
+        ordem = sorted(fontes); col = int(np.ceil(np.sqrt(len(ordem)))); lin = int(np.ceil(len(ordem) / col)); L = max(im.size[0] for im in fontes.values())
+        img = Image.new('RGBA', (L * col, L * lin), (128, 128, 128, 255))
+        for k, f in enumerate(ordem): img.paste(fontes[f].resize((L, L), Image.LANCZOS), ((k % col) * L, (k // col) * L))
+        for j, f in enumerate(qual):
+            k = ordem.index(f) if f is not None else 0; u = np.clip(U[j], 0, 1)
+            U[j] = np.c_[((k % col) + u[:, 0]) / col, ((k // col) + u[:, 1]) / lin]
     p = np.concatenate(P); uv = np.concatenate(U); idx = np.concatenate(I).astype(np.int64)
     if any(n is None for n in N):
         n = normais(p, idx)

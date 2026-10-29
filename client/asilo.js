@@ -136,6 +136,20 @@ for(const q of Sim.QUADROS){ // caixa de metal na parede mais próxima, com alav
   const cabo=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,ALT-1.9,5),M.ferro); cabo.position.set(0,1.9+(ALT-1.9)/2,0); g.add(cabo);
   QUADRO.push({q,alav,luz}); }
 
+// ---------- quadros e espelhos nas paredes (v6.4d: modelos escaneados, CC0; só enfeite, encostados na parede) ----------
+// Em cada sala interna, no meio da primeira parede (z1, z2, x1, x2) que tem parede atrás em toda a largura, chão livre na
+// frente e nenhum quadro de força perto. Pintura, pintura e espelho, um de cada vez.
+const NA_PAREDE=[];
+{ const PAREDE=['pintura1','pintura2','espelho']; let np=0;
+  for(const e of E){ if(!e.int||Math.min(e.x2-e.x1,e.z2-e.z1)<3.5) continue;
+    const mx=(e.x1+e.x2)/2, mz=(e.z1+e.z2)/2, lados=[[mx,e.z1,0,1,e.x2-e.x1],[mx,e.z2,0,-1,e.x2-e.x1],[e.x1,mz,1,0,e.z2-e.z1],[e.x2,mz,-1,0,e.z2-e.z1]];
+    for(const [cx,cz,nx,nz,L] of lados){ if(L<4) continue; let ok=true;
+      for(let t=-.9;t<=.91;t+=.3){ const ax=cx+nz*t, az=cz+nx*t, bx=ax-nx*.3, bz=az-nz*.3;   // atrás: parede (nem vão de porta); na frente: chão livre
+        if(livreA(bx,bz)||Sim.VAOS.some(v=>bx>v.x1-.3&&bx<v.x2+.3&&bz>v.z1-.3&&bz<v.z2+.3)||!livreA(ax+nx*.6,az+nz*.6)){ ok=false; break; } }
+      if(!ok||Sim.QUADROS.some(q=>Math.hypot(q.x-cx,q.z-cz)<2.5)) continue;
+      const MP=modelo&&modelo(PAREDE[np%3]); NA_PAREDE.push({nome:PAREDE[np%3],sala:e.nome,x:cx,z:cz}); np++; if(MP){ const m=new THREE.Mesh(MP.geo,MP.mat); m.position.set(cx+nx*.1,1.2,cz+nz*.1); m.rotation.y=Math.atan2(nx,nz); add(m); }
+      break; } } }
+
 // ---------- móveis (a caixa da simulação é a colisão; aqui o que se vê) ----------
 // v6.4: modelos escaneados (CC0, assets/modelos/fontes.json) esticados na caixa da peça; o eixo comprido do modelo é x
 // pedaco: a peça comprida vira uma fileira de modelos de uns tantos metros (um banco de 6,8 m são quatro bancos, não um esticado)
@@ -209,5 +223,5 @@ function atualizar(dt,V,agora){
       L.lamp.material.emissiveIntensity=2.2*k; L.brilho.material.opacity=.4*k; L.fonte.int=1.3*k; } }
   for(const Q of QUADRO){ const ap=(en[Q.q.setor]||0)>0; Q.alav.rotation.z=ap?.9:0; Q.luz.material.color.set(ap?0xff3020:0x30ff60); Q.luz.material.emissive.set(ap?0xff3020:0x30ff60); }
 }
-return {atualizar,PORTAS,LAMP};
+return {atualizar,PORTAS,LAMP,NA_PAREDE};
 };
