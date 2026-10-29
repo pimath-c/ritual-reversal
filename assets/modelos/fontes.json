@@ -129,5 +129,48 @@
     ],
     "triangulos": 1500,
     "textura": 512
+  },
+  "fogueira": {
+    "polyhaven": "stone_fire_pit",
+    "autor": "Sebastian Platen",
+    "licenca": "CC0",
+    "uso": "fogueiras do acampamento (o anel de pedras)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 512
+  },
+  "lanterna": {
+    "polyhaven": "wooden_lantern_01",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "lanternas penduradas nos postes",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 256,
+    "bordas": false
+  },
+  "escombro": {
+    "polyhaven": "rock_moss_set_02",
+    "autor": "Kless Gyzen",
+    "licenca": "CC0",
+    "uso": "escombros: pilhas de pedras com musgo",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512
   }
 }

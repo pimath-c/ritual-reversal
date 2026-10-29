@@ -34,6 +34,10 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `grama` | Asilo: gramado | [grass_path_2](https://polyhaven.com/a/grass_path_2) | Rob Tuytel |
 | `terra` | Asilo: terra da horta | [brown_mud_02](https://polyhaven.com/a/brown_mud_02) | Rob Tuytel |
 | `cascalho` | Asilo: cascalho das trilhas | [gravel_floor](https://polyhaven.com/a/gravel_floor) | Jenelle van Heerden, Matterfield |
+| `casca` | casca das árvores, troncos e raízes | [bark_willow](https://polyhaven.com/a/bark_willow) | Dario Barresi, Dimitrios Savva |
+| `pedraVelha` | pedra velha: ruínas, pilares, menires, muretas, santuários (em cinza, a cor vem do material) | [rough_block_wall](https://polyhaven.com/a/rough_block_wall) | Rob Tuytel |
+| `telha` | telhados de ardósia da catedral | [grey_roof_tiles_02](https://polyhaven.com/a/grey_roof_tiles_02) | Rob Tuytel |
+| `lapide` | lápides e tampas de túmulos | [rock_pitted_mossy](https://polyhaven.com/a/rock_pitted_mossy) | Dimitrios Savva, Rico Cilliers |
 
 ## Modelos
 
@@ -48,6 +52,9 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `leito` | Asilo: camas de ferro da enfermaria e dos quartos (kind leito) | [old_bed_frame](https://polyhaven.com/a/old_bed_frame), CC0 | Luca B |
 | `banco_asilo` | Asilo: bancos (kind banco) | [painted_wooden_bench](https://polyhaven.com/a/painted_wooden_bench), CC0 | Kirill Sannikov |
 | `mesa_asilo` | Asilo: mesas (kind mesa) | [wooden_table_02](https://polyhaven.com/a/wooden_table_02), CC0 | Serhii Khromov |
+| `fogueira` | fogueiras do acampamento (o anel de pedras) | [stone_fire_pit](https://polyhaven.com/a/stone_fire_pit), CC0 | Sebastian Platen |
+| `lanterna` | lanternas penduradas nos postes | [wooden_lantern_01](https://polyhaven.com/a/wooden_lantern_01), CC0 | James Ray Cock |
+| `escombro` | escombros: pilhas de pedras com musgo | [rock_moss_set_02](https://polyhaven.com/a/rock_moss_set_02), CC0 | Kless Gyzen |
 
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em

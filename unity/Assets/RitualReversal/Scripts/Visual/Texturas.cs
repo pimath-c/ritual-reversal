@@ -54,7 +54,13 @@ namespace RitualReversal.Visual
         static byte B(float v) { return (byte)Math.Max(0, Math.Min(255, (int)v)); }
         // v6.4: a textura fotográfica (Resources/Texturas/<nome>_cor/_nor/_rug.bytes, tools/montar-texturas.py; CC0 do Poly Haven),
         // a mesma do navegador (client/texturas.js). Sem ela, null: quem chama gera a textura por código como antes.
+        static readonly Dictionary<string, Pbr> fotos = new Dictionary<string, Pbr>();
         public static Pbr Foto(string nome)
+        {
+            Pbr ja; if (fotos.TryGetValue(nome, out ja)) return ja;   // a mesma foto serve a vários materiais
+            return fotos[nome] = CarregarFoto(nome);
+        }
+        static Pbr CarregarFoto(string nome)
         {
             var c = Resources.Load<TextAsset>("Texturas/" + nome + "_cor"); if (c == null) return null;
             var P = new Pbr { foto = nome, mapa = Imagem(c.bytes, true, nome), rugosidade = .9f }; if (P.mapa == null) return null; P.tam = P.mapa.width;

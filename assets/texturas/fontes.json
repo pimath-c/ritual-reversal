@@ -204,5 +204,54 @@
    68.1,
    63.6
   ]
+ },
+ "casca": {
+  "id": "bark_willow",
+  "pagina": "https://polyhaven.com/a/bark_willow",
+  "licenca": "CC0",
+  "autor": "Dario Barresi, Dimitrios Savva",
+  "uso": "casca das árvores, troncos e raízes",
+  "media": [
+   65.9,
+   38.6,
+   23.8
+  ]
+ },
+ "pedraVelha": {
+  "id": "rough_block_wall",
+  "pagina": "https://polyhaven.com/a/rough_block_wall",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "pedra velha: ruínas, pilares, menires, muretas, santuários (em cinza, a cor vem do material)",
+  "media": [
+   200,
+   200,
+   200
+  ],
+  "cinza": true
+ },
+ "telha": {
+  "id": "grey_roof_tiles_02",
+  "pagina": "https://polyhaven.com/a/grey_roof_tiles_02",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "telhados de ardósia da catedral",
+  "media": [
+   71.2,
+   66.4,
+   61.3
+  ]
+ },
+ "lapide": {
+  "id": "rock_pitted_mossy",
+  "pagina": "https://polyhaven.com/a/rock_pitted_mossy",
+  "licenca": "CC0",
+  "autor": "Dimitrios Savva, Rico Cilliers",
+  "uso": "lápides e tampas de túmulos",
+  "media": [
+   169.4,
+   164.4,
+   157.6
+  ]
  }
 }

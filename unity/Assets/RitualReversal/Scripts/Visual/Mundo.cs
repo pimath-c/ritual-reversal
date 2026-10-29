@@ -110,15 +110,19 @@ namespace RitualReversal.Visual
             MAT["wood"] = Mat.Pbr(Tex.wood); MAT["marble"] = Mat.Pbr(Tex.marble);
             MAT["metal"] = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.metal.mapa, relevo = Tex.metal.relevo, metal = .85f, rugosidade = 1 });
             MAT["wax"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xe8dcc0), rugosidade = .6f, emissao = Mat.Hex(0x3a2a10), emissaoK = .4f });
-            MAT["casca"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6258), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo, repetir = new Vector2(2, 5) });
+            // v6.4b: fotos novas (casca, pedra velha, lápide); sem elas, o que era antes
+            var fCasca = Pbr.Foto("casca"); var fPedra = Pbr.Foto("pedraVelha"); var fLapide = Pbr.Foto("lapide");
+            MAT["casca"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6258), mapa = (fCasca ?? Tex.wood).mapa, relevo = (fCasca ?? Tex.wood).relevo, repetir = fCasca != null ? new Vector2(1, 3) : new Vector2(2, 5) });
             MAT["estatua"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x8e8c84), relevo = Tex.floor.relevo }); facetados.Add(MAT["estatua"]);
             MAT["madeiraCorte"] = Mat.Padrao(0x8a6a48);
             // v6: rocha de verdade (Tex.rocha), sem as juntas das lajes do piso que antes apareciam nas pedras
             MAT["rocha"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5c5e56), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["rocha"]);
-            MAT["pedraVelha"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6a66), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["pedraVelha"]);
+            // a pedra velha com foto (em cinza, média 200): a cor sobe na mesma conta (255/200) para o brilho não mudar
+            MAT["pedraVelha"] = fPedra != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x878782), mapa = fPedra.mapa, relevo = fPedra.relevo })
+                : Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6a66), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["pedraVelha"]);
             MAT["lona"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5a4c34), mapa = Tex.cloth.mapa, relevo = Tex.cloth.relevo, duplaFace = true });
             MAT["tabuas"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a5040), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo });
-            MAT["lapide"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x8a8a86), mapa = Tex.marble.mapa, relevo = Tex.marble.relevo });
+            MAT["lapide"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x8a8a86), mapa = (fLapide ?? Tex.marble).mapa, relevo = (fLapide ?? Tex.marble).relevo });
             MAT["copaCarvalho"] = Mat.Padrao(0x1c241a); facetados.Add(MAT["copaCarvalho"]);
             MAT["preto"] = Mat.Brilho(Mat.Hex(0x020103), null, Mat.Mistura.Alfa, false, true, 0, true, 2000);
             MAT["sebe"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x223020), mapa = Tex.cloth.mapa, relevo = Tex.leather.relevo });
@@ -279,6 +283,12 @@ namespace RitualReversal.Visual
         void Escombro(float x1, float x2, float z1, float z2, float h)
         {
             float L = x2 - x1, D = z2 - z1; int n = Math.Max(3, (int)JS.Round(L * D / 1.1f));
+            var ME = ModeloGLB.Carregar("escombro");
+            if (ME != null)
+            {   // v6.4b: a pilha de pedras escaneada (CC0) na caixa; os mesmos sorteios de antes
+                bool aoX = L >= D; Est(ME.geo, ME.mat, TRS((x1 + x2) / 2, 0, (z1 + z2) / 2, 0, aoX ? 0 : PI / 2, 0, Math.Max(L, D), Math.Max(.5f, h), Math.Min(L, D)));
+                for (int k = 0; k < n * 9; k++) vr(); return;
+            }
             for (int k = 0; k < n; k++)
             {
                 float r = .35f + vr() * .55f; var g = Geo.Dodecaedro(r);
@@ -395,7 +405,9 @@ namespace RitualReversal.Visual
                 if (cd.tipo == "fogueira")
                 {
                     for (int k = 0; k < 6; k++) Est(Geo.Cilindro(.09f, .11f, 1.3f, 6), M("wood"), TRS(x, .2f, z, PI / 2 - .35f, k / 6f * PI * 2, 0));
-                    for (int k = 0; k < 9; k++) { float a = k / 9f * PI * 2; Est(Geo.Dodecaedro(.22f), M("wall"), x + Mathf.Cos(a) * .85f, .1f, z + Mathf.Sin(a) * .85f); }
+                    var MF = ModeloGLB.Carregar("fogueira");   // v6.4b: o anel de pedras escaneado (CC0)
+                    if (MF != null) Est(MF.geo, MF.mat, TRS(x, 0, z, 0, 0, 0, 2.1f, .42f, 2.1f), false);
+                    else for (int k = 0; k < 9; k++) { float a = k / 9f * PI * 2; Est(Geo.Dodecaedro(.22f), M("wall"), x + Mathf.Cos(a) * .85f, .1f, z + Mathf.Sin(a) * .85f); }
                     for (int k = 0; k < 4; k++) SpriteEst(x + rand(-.25f, .25f), .7f + k * .12f, z + rand(-.25f, .25f), .7f, 1.1f, chama);
                     fonte.y = 1.4f; fonte.cor = 0xff7a2a; fonte.i = 2.6f; fonte.alc = 20;
                 }
@@ -409,7 +421,10 @@ namespace RitualReversal.Visual
                 else if (cd.tipo == "lanterna")
                 {
                     Est(Geo.Caixa(.14f, 2.4f, .14f), M("wood"), x, 1.2f, z); Est(Geo.Caixa(.6f, .08f, .08f), M("wood"), x + .25f, 2.35f, z);
-                    Est(Geo.Cilindro(.14f, .18f, .34f, 6), vidro, x + .5f, 2.1f, z); SpriteEst(x + .5f, 2.1f, z, .5f, .5f, chama);
+                    var ML = ModeloGLB.Carregar("lanterna");   // v6.4b: a lanterna de madeira escaneada (CC0), com a chama dentro
+                    if (ML != null) { Est(Geo.Cilindro(.05f, .05f, .12f, 6), vidro, x + .5f, 2.1f, z); Est(ML.geo, ML.mat, TRS(x + .5f, 1.89f, z, 0, 0, 0, .32f, .44f, .32f)); }
+                    else Est(Geo.Cilindro(.14f, .18f, .34f, 6), vidro, x + .5f, 2.1f, z);
+                    SpriteEst(x + .5f, 2.1f, z, .5f, .5f, chama);
                     fonte.x = x + .5f; fonte.y = 2.1f; fonte.cor = 0xffb060; fonte.i = 1.7f; fonte.alc = 13;
                 }
                 else

@@ -17,6 +17,8 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
 - **Texturas e modelos de verdade**: as texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven), as mesmas do
   navegador, em `Resources/Texturas`. Rochas, troncos, caixotes, camas de ferro, bancos e mesas do Asilo são modelos 3D
   escaneados em `Resources/Modelos`. A colisão não mudou. Créditos em `docs/ARTE.md` (no repositório).
+- **Mais arte (v6.4b)**: casca nas árvores, pedra bruta nas ruínas e menires, ardósia nos telhados, lápides de pedra gasta;
+  fogueira com anel de pedras, lanternas de madeira nos postes e escombros de pedras com musgo.
 - **Laboratório "Entre rituais"**: troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.
 
 ## Novidades de 26/10

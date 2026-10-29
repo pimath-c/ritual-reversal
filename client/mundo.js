@@ -17,6 +17,7 @@ const M={};
 { const dup=(base,cor,gasto)=>{ const m=base.clone(); m.color=new THREE.Color(cor); return gasto&&desgastar?desgastar(m,gasto):m; };
   M.pedra=dup(MAT.wall,0x8a8a90,{mancha:.45,base:.45,musgo:.7}); M.pedraEsc=dup(MAT.wall,0x5e5e68,{mancha:.4,base:.35,musgo:.5}); M.pedraClara=dup(MAT.wall,0xa8a49a,{mancha:.35,base:.3,musgo:.3});
   M.telha=MAT.wallDark.clone(); M.telha.color=new THREE.Color(0x2c2a30); M.telha.side=THREE.DoubleSide;
+  if(TEX.telha){ M.telha.map=TEX.telha.map; M.telha.normalMap=TEX.telha.normalMap; M.telha.roughnessMap=TEX.telha.roughnessMap; }   // v6.4b: ardósia fotografada
   M.teto=MAT.wallDark.clone(); M.teto.color=new THREE.Color(0x24242c); M.teto.side=THREE.DoubleSide;
   M.chumbo=new THREE.MeshStandardMaterial({color:0x3a3e48,roughness:.55,metalness:.5,flatShading:true});
   M.rocha=new THREE.MeshStandardMaterial({map:TEX.rocha.map,normalMap:TEX.rocha.normalMap,roughness:1,color:0x6a6862,side:THREE.DoubleSide}); M.rocha.normalScale.set(1.4,1.4);

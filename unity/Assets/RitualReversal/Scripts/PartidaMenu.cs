@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Mais arte de verdade (v6.4b)","As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo."},
             new[]{"Texturas e modelos de verdade (v6.4)","As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, \"Entre rituais\" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual."},
             new[]{"Correções (v6.3b)","As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais."},
             new[]{"Só sons gravados (v6.2b)","Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA."},

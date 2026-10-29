@@ -731,6 +731,8 @@ function pbr(size,fn,normalK){ if(PERF.leve) size=Math.max(128,size>>1);
 }
 // v6.4: texturas fotográficas (client/texturas.js, tools/montar-texturas.py; CC0 do Poly Haven). Com a foto do nome pedido,
 // ela entra no lugar da textura gerada por código (cor, relevo e rugosidade); sem ela, volta o pbr() de sempre.
+// a foto sem textura gerada de reserva (null sem a foto): para materiais que antes não tinham textura própria
+function texFoto(nome){ const R=window.RR_TEXTURAS&&window.RR_TEXTURAS[nome]; return R&&R.cor?pbrReal(nome):null; }
 function pbrReal(nome,size,fn,normalK){ const R=window.RR_TEXTURAS&&window.RR_TEXTURAS[nome]; if(!R||!R.cor) return pbr(size,fn,normalK);
   const tex=(b64,srgb)=>{ const t=new THREE.Texture(); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy()); if(srgb) t.encoding=THREE.sRGBEncoding;
     // a imagem entra já (as cópias com outra repetição feitas antes de ela decodificar dividem a mesma Image); o three só
@@ -970,6 +972,9 @@ const PECAS={
     for(const [sx,sz,ry] of [[0,-1,0],[0,1,Math.PI],[-1,0,Math.PI/2],[1,0,-Math.PI/2]]){ const v=new THREE.Mesh(new THREE.PlaneGeometry(1.6,3.4),new THREE.MeshBasicMaterial({color:0x030204})); v.position.set(x+sx*(L/2+.02),H-3,z+sz*(D/2+.02)); v.rotation.y=ry+Math.PI; world.add(v); }
     const agulha=new THREE.Mesh(new THREE.ConeGeometry(L*.72,12,4),MAT.wallDark); agulha.position.set(x,H+6.6,z); agulha.rotation.y=Math.PI/4; agulha.castShadow=true; world.add(agulha); },
   escombro(w){ const L=w.x2-w.x1, D=w.z2-w.z1, n=Math.max(3,Math.round(L*D/1.1));
+    const ME=modelo('escombro'); if(ME){ // v6.4b: a pilha de pedras escaneada (CC0) na caixa; os mesmos sorteios de antes
+      const e=new THREE.Mesh(ME.geo,ME.mat), aoX=L>=D; e.scale.set(Math.max(L,D),Math.max(.5,w.h),Math.min(L,D)); e.position.set((w.x1+w.x2)/2,0,(w.z1+w.z2)/2); if(!aoX) e.rotation.y=Math.PI/2; e.castShadow=e.receiveShadow=true; world.add(e);
+      for(let k=0;k<n*9;k++) vr(); return; }
     for(let k=0;k<n;k++){ const r=.35+vr()*.55, m=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),MAT.wall);
       m.position.set(w.x1+r*.6+vr()*(L-r*1.2),Math.min(w.h,r*.7+vr()*w.h*.6),w.z1+r*.6+vr()*(D-r*1.2)); m.rotation.set(vr()*3,vr()*3,vr()*3); m.scale.set(1,.55+vr()*.5,1+vr()*.4);
       m.castShadow=m.receiveShadow=true; world.add(m); } },
@@ -1093,7 +1098,9 @@ function buildWorld(){
   for(const k of ['floor','wall','wallDark']) MAT[k].normalScale.set(.55,.55);
   MAT.wood=new THREE.MeshStandardMaterial({...TEX.wood,roughness:1}); MAT.marble=new THREE.MeshStandardMaterial({...TEX.marble,roughness:1});
   MAT.metal=new THREE.MeshStandardMaterial({...TEX.metal,metalness:.85,roughness:1}); MAT.wax=new THREE.MeshStandardMaterial({color:0xe8dcc0,roughness:.6,emissive:0x3a2a10,emissiveIntensity:.4});
-  { const cm=TEX.wood.map.clone(), cn=TEX.wood.normalMap.clone(); for(const t of [cm,cn]){ t.repeat.set(2,5); t.needsUpdate=true; }
+  // v6.4b: fotos novas (casca, pedra velha, lápide e telha); sem elas, o que era antes
+  TEX.casca=texFoto('casca'); TEX.pedraVelha=texFoto('pedraVelha'); TEX.lapide=texFoto('lapide'); TEX.telha=texFoto('telha');
+  { const B=TEX.casca||TEX.wood, cm=B.map.clone(), cn=B.normalMap.clone(); for(const t of [cm,cn]){ if(TEX.casca) t.repeat.set(1,3); else t.repeat.set(2,5); t.needsUpdate=true; }
     MAT.casca=desgastar(new THREE.MeshStandardMaterial({color:0x6a6258,map:cm,normalMap:cn,roughness:1}),{mancha:.55,base:.55,musgo:1}); }
   MAT.estatua=desgastar(new THREE.MeshStandardMaterial({color:0x8e8c84,normalMap:TEX.floor.normalMap,roughness:1,flatShading:true}),{mancha:.5,base:.5,musgo:1});
   MAT.madeiraCorte=new THREE.MeshStandardMaterial({color:0x8a6a48,roughness:1});
@@ -1102,10 +1109,11 @@ function buildWorld(){
       o.h=f*.8+estr*.4; o.r=(70+30*f-25*estr)*k; o.g=(70+28*f-24*estr)*k; o.b=(66+26*f-22*estr)*k; o.ro=.92; },3.4); }
   const nmRocha=TEX.rocha.normalMap.clone(); nmRocha.repeat.set(1.2,1.2); nmRocha.needsUpdate=true;
   MAT.rocha=desgastar(new THREE.MeshStandardMaterial({color:0x5c5e56,normalMap:nmRocha,roughness:1,flatShading:true}),{mancha:.5,base:.1,musgo:1});
-  MAT.pedraVelha=desgastar(new THREE.MeshStandardMaterial({color:0x6a6a66,normalMap:nmRocha,roughness:1,flatShading:true}),{mancha:.5,base:.4,musgo:1});
+  // a pedra velha com foto (em cinza, média 200): a cor sobe na mesma conta (255/200) para o brilho não mudar
+  MAT.pedraVelha=desgastar(new THREE.MeshStandardMaterial(TEX.pedraVelha?{color:0x878782,map:TEX.pedraVelha.map,normalMap:TEX.pedraVelha.normalMap,roughness:1,flatShading:true}:{color:0x6a6a66,normalMap:nmRocha,roughness:1,flatShading:true}),{mancha:.5,base:.4,musgo:1});
   MAT.lona=new THREE.MeshStandardMaterial({color:0x5a4c34,map:TEX.cloth.map,normalMap:TEX.cloth.normalMap,roughness:1});
   MAT.tabuas=new THREE.MeshStandardMaterial({color:0x6a5040,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:1});
-  MAT.lapide=desgastar(new THREE.MeshStandardMaterial({...TEX.marble,color:0x8a8a86,roughness:1}),{mancha:.5,base:.5,musgo:.8});
+  MAT.lapide=desgastar(new THREE.MeshStandardMaterial({...(TEX.lapide||TEX.marble),color:0x8a8a86,roughness:1}),{mancha:.5,base:.5,musgo:.8});
   MAT.copaCarvalho=new THREE.MeshStandardMaterial({color:0x1c241a,roughness:1,flatShading:true});
   RT.rune=runeTexture(); RT.flame=radialTex('rgba(255,240,200,1)','rgba(255,120,20,0)'); RT.glow=radialTex('rgba(255,255,255,1)','rgba(255,255,255,0)'); RT.beam=beamTex(); RT.shaft=shaftTex(); RT.win=stainedTex(false); RT.rose=stainedTex(true);
   // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de client/mundo.js (RR_MUNDO)
@@ -1148,7 +1156,8 @@ function buildWorld(){
   const flameMat=new THREE.SpriteMaterial({map:RT.flame,color:0xffc070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true});
   CANDLES.forEach(([x,z,tipo])=>{ if(tipo==='lampada') return; /* lâmpadas do asilo: client/asilo.js */ const fonte={x,z,y:2.1,cor:0xff8a36,int:1.6,alc:14};
     if(tipo==='fogueira'){ for(let k=0;k<6;k++){ const tr=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,1.3,6),MAT.wood); tr.position.set(x,.2,z); tr.rotation.set(Math.PI/2-.35,k/6*Math.PI*2,0); world.add(tr); }
-      for(let k=0;k<9;k++){ const p=new THREE.Mesh(new THREE.DodecahedronGeometry(.22,0),MAT.wall); const a=k/9*Math.PI*2; p.position.set(x+Math.cos(a)*.85,.1,z+Math.sin(a)*.85); world.add(p); }
+      const MF=modelo('fogueira'); if(MF){ const p=new THREE.Mesh(MF.geo,MF.mat); p.scale.set(2.1,.42,2.1); p.position.set(x,0,z); p.receiveShadow=true; world.add(p); }   // v6.4b: o anel de pedras escaneado (CC0)
+      else for(let k=0;k<9;k++){ const p=new THREE.Mesh(new THREE.DodecahedronGeometry(.22,0),MAT.wall); const a=k/9*Math.PI*2; p.position.set(x+Math.cos(a)*.85,.1,z+Math.sin(a)*.85); world.add(p); }
       for(let k=0;k<4;k++){ const f=new THREE.Sprite(flameMat); f.scale.set(.7,1.1,1); f.position.set(x+rand(-.25,.25),.7+k*.12,z+rand(-.25,.25)); world.add(f); flames.push(f); }
       Object.assign(fonte,{y:1.4,cor:0xff7a2a,int:2.6,alc:20}); }
     else if(tipo==='braseiro'){ for(let k=0;k<3;k++){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.04,.05,1.3,5),MAT.metal); const a=k/3*Math.PI*2; p.position.set(x+Math.cos(a)*.3,.62,z+Math.sin(a)*.3); p.rotation.set(Math.sin(a)*.25,0,-Math.cos(a)*.25); world.add(p); }
@@ -1157,7 +1166,8 @@ function buildWorld(){
       Object.assign(fonte,{y:2,cor:0xff4a3a,int:2.2,alc:16}); }
     else if(tipo==='lanterna'){ const post=new THREE.Mesh(new THREE.BoxGeometry(.14,2.4,.14),MAT.wood); post.position.set(x,1.2,z); post.castShadow=true; world.add(post);
       const br=new THREE.Mesh(new THREE.BoxGeometry(.6,.08,.08),MAT.wood); br.position.set(x+.25,2.35,z); world.add(br);
-      const cx=new THREE.Mesh(new THREE.CylinderGeometry(.14,.18,.34,6),new THREE.MeshStandardMaterial({color:0xffc070,emissive:0xff9030,emissiveIntensity:1.6,roughness:.4})); cx.position.set(x+.5,2.1,z); world.add(cx);
+      const ML=modelo('lanterna'), cx=new THREE.Mesh(ML?new THREE.CylinderGeometry(.05,.05,.12,6):new THREE.CylinderGeometry(.14,.18,.34,6),new THREE.MeshStandardMaterial({color:0xffc070,emissive:0xff9030,emissiveIntensity:1.6,roughness:.4})); cx.position.set(x+.5,2.1,z); world.add(cx);
+      if(ML){ const l=new THREE.Mesh(ML.geo,ML.mat); l.scale.set(.32,.44,.32); l.position.set(x+.5,1.89,z); l.castShadow=true; world.add(l); }   // v6.4b: a lanterna de madeira escaneada (CC0), com a chama dentro
       const f=new THREE.Sprite(flameMat); f.scale.set(.5,.5,1); f.position.set(x+.5,2.1,z); world.add(f); flames.push(f);
       Object.assign(fonte,{x:x+.5,y:2.1,cor:0xffb060,int:1.7,alc:13}); }
     else { const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,1.5,6),MAT.metal); st.position.set(x,.75,z); st.castShadow=true; world.add(st);
@@ -3663,7 +3673,8 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Texturas e modelos de verdade (v6.4)','As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, "Entre rituais" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.'],
+const NOVIDADES=[['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
+  ['Texturas e modelos de verdade (v6.4)','As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, "Entre rituais" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.'],
   ['Correções (v6.3b)','As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais.'],
   ['Só sons gravados (v6.2b)','Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA.'],
   ['Asilo Blackwater (v6.2)','Mapa novo: um sanatório na margem de um lago, com duas alas, seis altares e o coreto no gramado. Portas que se abrem e fecham (segure E): fechadas, bloqueiam passagem, tiros e visão e abafam o som. Um quadro de força por ala: o culto corta a luz, a caça religa, e sem ninguém ela volta em 90 s. Escolha o mapa no título.'],

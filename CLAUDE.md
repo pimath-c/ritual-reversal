@@ -47,7 +47,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.4)
+## Estado atual (v6.4b)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -207,6 +207,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   ([0,45,25]: 0 = horários; senão `bloqueioRitual` deixa o próximo ritual passados `pausa` s de `lastResolveT`; C# `Lab.pausa`).
   'localized' leva `restante` e `distCaca` (portado; comparar-cs bit a bit). `analisar.js`: "O que decide a noite" (primeira queda,
   resgates, entre rituais, chance de selar por restante/distância, classe, altar). Bots 200 noites: pausa 45 → culto 37% → 28%.
+- v6.4b (notas em `notas/v6.4b.md`): texturas `casca` (MAT.casca, repeat 1×3), `pedraVelha` (cinza, média 200; cor 0x878782 = 0x6a6a66×255/200),
+  `telha` (M.telha do mundo.js) e `lapide`; `texFoto(nome)` no navegador (foto sem reserva gerada; null sem ela), `Pbr.Foto` com cache no
+  Unity. Modelos `fogueira` (anel de pedras), `lanterna` (nos postes, chama dentro; `"bordas": false`) e `escombro` (consome os 9 `vr()`
+  de cada pedra antiga). `unity-ver.js` serve a página e a exportação por um servidor local (o `mundo.bin` passou de 70 MB e o
+  `route.fulfill` derrubava a página) e reduz as texturas a 512 px só na comparação, com cópias compartilhadas.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

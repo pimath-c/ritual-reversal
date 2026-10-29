@@ -64,10 +64,13 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
   renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.25; renderer.outputEncoding=THREE.sRGBEncoding; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   const scene=new THREE.Scene(); scene.background=new THREE.Color(0x05070c); scene.fog=new THREE.FogExp2(0x0b0d14,.026);
   const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.05,220); camera.rotation.order='YXZ'; scene.add(camera);
-  const tex=await Promise.all(J.texturas.map(async T=>{ const d=new Uint8Array(await (await fetch('http://ver.local/exp/'+T.arq)).arrayBuffer());
-    const t=new THREE.DataTexture(d,T.w,T.h,THREE.RGBAFormat); t.encoding=T.srgb?THREE.sRGBEncoding:THREE.LinearEncoding; t.flipY=false; t.generateMipmaps=true; t.minFilter=THREE.LinearMipmapLinearFilter; t.magFilter=THREE.LinearFilter;
+  // as fotos de 1024 px viram 512 aqui (só na comparação): com uma cópia por material, o renderizador por software caía por memória
+  const metade=(d,w,h)=>{ const o=new Uint8Array((w>>1)*(h>>1)*4); for(let y=0;y<h>>1;y++) for(let x=0;x<w>>1;x++) for(let c=0;c<4;c++){ const i=((2*y)*w+2*x)*4+c; o[(y*(w>>1)+x)*4+c]=(d[i]+d[i+4]+d[i+w*4]+d[i+w*4+4])>>2; } return o; };
+  const tex=await Promise.all(J.texturas.map(async T=>{ let d=new Uint8Array(await (await fetch('http://ver.local/exp/'+T.arq)).arrayBuffer()), w=T.w, h=T.h;
+    while(w>512&&h>512){ d=metade(d,w,h); w>>=1; h>>=1; }
+    const t=new THREE.DataTexture(d,w,h,THREE.RGBAFormat); t.encoding=T.srgb?THREE.sRGBEncoding:THREE.LinearEncoding; t.flipY=false; t.generateMipmaps=true; t.minFilter=THREE.LinearMipmapLinearFilter; t.magFilter=THREE.LinearFilter;
     t.wrapS=t.wrapT=T.repete?THREE.RepeatWrapping:THREE.ClampToEdgeWrapping; t.anisotropy=4; t.needsUpdate=true; return t; })); console.log('texturas');
-  const texCom=(i,esc,desl)=>{ if(i<0) return null; const t=tex[i].clone(); t.needsUpdate=true; t.repeat.set(esc[0],esc[1]); t.offset.set(desl[0],desl[1]); return t; };
+  const copias={}; const texCom=(i,esc,desl)=>{ if(i<0) return null; const k=i+'|'+esc+'|'+desl; if(copias[k]) return copias[k]; const t=tex[i].clone(); t.needsUpdate=true; t.repeat.set(esc[0],esc[1]); t.offset.set(desl[0],desl[1]); return copias[k]=t; };
   const mats=J.materiais.map(M=>{ const cor=new THREE.Color(M.cor[0],M.cor[1],M.cor[2]), brilho=/Brilho/.test(M.shader), dupla=M.cull===0;
     if(brilho){ const m=new THREE.MeshBasicMaterial({color:cor,map:texCom(M.mapa,M.esc,M.desl),transparent:true,opacity:M.cor[3],depthWrite:M.zwrite===1,side:THREE.DoubleSide,fog:M.nevoa!==0,
         blending:M.dst===1?THREE.AdditiveBlending:THREE.NormalBlending,alphaTest:M.corte||0,vertexColors:true});
@@ -134,12 +137,15 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
   // depois a exportação do Unity
   const un=await browser.newPage({viewport:VP}); un.setDefaultTimeout(240000); un.on('pageerror',e=>{ console.error('a página do Unity falhou: '+e.message); process.exit(2); }); un.on('console',m=>{ if(process.env.DEBUG) console.log('[unity]',m.text()); });
   un.on('crash',()=>{ console.error('a página do Unity caiu (memória?)'); process.exit(2); });
-  await un.route('http://ver.local/**',r=>{ const u=r.request().url(), rel=u.split('ver.local/')[1];
-    if(rel==='pagina') return r.fulfill({body:PAGINA,contentType:'text/html'});
-    if(rel==='three.min.js') return THREE_DIR?r.fulfill({path:path.join(THREE_DIR,'build','three.min.js'),contentType:'application/javascript'}):r.fulfill({status:404,body:''});
-    if(rel.startsWith('exp/')) return r.fulfill({path:path.join(EXP,rel.slice(4)),contentType:'application/octet-stream'});
-    return r.fulfill({status:404,body:''}); });
-  await un.goto('http://ver.local/pagina'); await un.waitForFunction(()=>window.__pronto||window.__erro,null,{timeout:600000});
+  // a página e os arquivos exportados (o mundo.bin passa de 70 MB com os modelos escaneados) vão por um servidor local: o
+  // route.fulfill do Playwright derruba a página com corpos desse tamanho
+  const srvExp=require('http').createServer((q,res)=>{ const rel=decodeURIComponent(q.url.split('?')[0].slice(1));
+    if(rel==='pagina'){ res.writeHead(200,{'Content-Type':'text/html'}); return res.end(PAGINA.split('http://ver.local/').join('/')); }
+    const f=rel==='three.min.js'&&THREE_DIR?path.join(THREE_DIR,'build','three.min.js'):rel.startsWith('exp/')?path.join(EXP,rel.slice(4)):null;
+    if(!f||!f.startsWith(rel==='three.min.js'?THREE_DIR:EXP)||!fs.existsSync(f)){ res.writeHead(404); return res.end(); }
+    res.writeHead(200,{'Content-Type':rel.endsWith('.js')?'application/javascript':'application/octet-stream','Content-Length':fs.statSync(f).size}); fs.createReadStream(f).pipe(res); });
+  await new Promise(ok=>srvExp.listen(0,'127.0.0.1',ok));
+  await un.goto(`http://127.0.0.1:${srvExp.address().port}/pagina`); await un.waitForFunction(()=>window.__pronto||window.__erro,null,{timeout:600000});
   const eu=await un.evaluate(()=>window.__erro); if(eu){ console.error('a página do Unity falhou: '+eu); process.exit(2); }
   const comp=await browser.newPage({viewport:{width:VP.width*2+8,height:VP.height+30}});
   for(const {v,st,a} of fotos){
