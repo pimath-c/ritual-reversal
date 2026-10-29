@@ -14,6 +14,7 @@ const ROOT=path.join(__dirname,'..'), THREE_DIR=process.env.THREE_DIR;
   await page.goto('file://'+(process.env.HTML||path.join(ROOT,'dist','ritual-reversal.html'))+'#autotest'); await page.waitForFunction(()=>window.__T,null,{timeout:180000});
   const res=await page.evaluate(()=>{ const T=window.THREE, Sim=__T.Sim, sc=__T.cena(), alvos=[], atores=new Set();
     for(const m of __T.actorMeshes.values()) m.traverse(o=>atores.add(o)); // os bonecos andam: só o mapa conta
+    for(const k of ['npcs','pontos','sal']) for(const g of __T.NOITE[k].values()) g.traverse(o=>atores.add(o));   // mercadores, pontos e sal da noite também (aparecem e somem)
     sc.traverse(o=>{ if(o.isMesh&&!o.isInstancedMesh&&o.visible&&!atores.has(o)&&!(o.material&&o.material.transparent)) alvos.push(o); });
     const rc=new T.Raycaster(), OLHO=1.62+.9, ruins=[], pula=/arvore_f|espinheiro|abismo|limite|santuario/; let n=0;
     for(const w of Sim.WALLS){ if(w.h<=2.2||pula.test(w.kind)) continue; n++; let topo=-9;

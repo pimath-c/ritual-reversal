@@ -253,5 +253,65 @@
    164.4,
    157.6
   ]
+ },
+ "concreto": {
+  "id": "concrete_floor_worn_001",
+  "pagina": "https://polyhaven.com/a/concrete_floor_worn_001",
+  "licenca": "CC0",
+  "autor": "Dimitrios Savva, Rico Cilliers",
+  "uso": "Asilo: concreto (tanques, base das caldeiras)",
+  "media": [
+   120.7,
+   123.9,
+   107.4
+  ]
+ },
+ "ferrugem": {
+  "id": "rusty_metal_02",
+  "pagina": "https://polyhaven.com/a/rusty_metal_02",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "Asilo: ferro enferrujado (alavancas, caldeiras)",
+  "media": [
+   90,
+   52,
+   36
+  ]
+ },
+ "telhadoAsilo": {
+  "id": "roof_slates_02",
+  "pagina": "https://polyhaven.com/a/roof_slates_02",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "Asilo: telhados de ardósia",
+  "media": [
+   64.4,
+   45.6,
+   31.5
+  ]
+ },
+ "planalto": {
+  "id": "grass_ground",
+  "pagina": "https://polyhaven.com/a/grass_ground",
+  "licenca": "CC0",
+  "autor": "Charlotte Baglioni",
+  "uso": "chão do promontório da catedral (terra e capim ralo)",
+  "media": [
+   50.3,
+   42.4,
+   29.6
+  ]
+ },
+ "tabuas": {
+  "id": "weathered_planks",
+  "pagina": "https://polyhaven.com/a/weathered_planks",
+  "licenca": "CC0",
+  "autor": "Dario Barresi, Dimitrios Savva",
+  "uso": "tábuas gastas: pilhas de madeira, telhado do ermitão",
+  "media": [
+   65.9,
+   38.6,
+   23.8
+  ]
  }
 }

@@ -121,7 +121,8 @@ namespace RitualReversal.Visual
             MAT["pedraVelha"] = fPedra != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x878782), mapa = fPedra.mapa, relevo = fPedra.relevo })
                 : Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6a66), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["pedraVelha"]);
             MAT["lona"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5a4c34), mapa = Tex.cloth.mapa, relevo = Tex.cloth.relevo, duplaFace = true });
-            MAT["tabuas"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a5040), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo });
+            var fTab = Pbr.Foto("tabuas");   // v6.4d: tábuas gastas fotografadas (CC0); sem elas, a madeira de sempre
+            MAT["tabuas"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a5040), mapa = (fTab ?? Tex.wood).mapa, relevo = (fTab ?? Tex.wood).relevo });
             MAT["lapide"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x8a8a86), mapa = (fLapide ?? Tex.marble).mapa, relevo = (fLapide ?? Tex.marble).relevo });
             MAT["copaCarvalho"] = Mat.Padrao(0x1c241a); facetados.Add(MAT["copaCarvalho"]);
             MAT["preto"] = Mat.Brilho(Mat.Hex(0x020103), null, Mat.Mistura.Alfa, false, true, 0, true, 2000);
@@ -149,7 +150,8 @@ namespace RitualReversal.Visual
                 case "rocha":
                     {
                         // v6.4: a rocha e a pedra escaneadas (CC0, Resources/Modelos) esticadas na caixa da peça; sem elas, os dodecaedros
-                        var MR = ModeloGLB.Carregar("rocha"); var MP = ModeloGLB.Carregar("pedra");
+                        // v6.4d: três formas, escolhidas pela posição (sem sorteio), como no navegador
+                        var MR = ModeloGLB.Carregar(new[] { "rocha", "rocha2", "rocha3" }[(int)Math.Abs(Math.Floor((double)x * 7 + (double)z * 13 + .5)) % 3]) ?? ModeloGLB.Carregar("rocha"); var MP = ModeloGLB.Carregar("pedra");
                         float ry = vr() * 3;
                         if (MR != null) Est(MR.geo, MR.mat, TRS(x, -w.h * .08f, z, 0, ry, 0, L * 1.05f, w.h * 1.2f, D * 1.05f));
                         else Est(Geo.Dodecaedro(.5f, 1), M("rocha"), TRS(x, w.h * .42f, z, 0, ry, 0, L * 1.05f, w.h * 1.5f, D * 1.05f));
@@ -161,7 +163,18 @@ namespace RitualReversal.Visual
                         }
                         return;
                     }
-                case "tronco": case "raiz":
+                case "raiz":
+                    {
+                        var MR = ModeloGLB.Carregar("raiz");
+                        if (MR != null)
+                        {   // v6.4c: raízes escaneadas (CC0) na caixa; os sorteios do tronco de antes
+                            Est(MR.geo, MR.mat, TRS(x, -.05f, z, 0, L < D ? PI / 2 : 0, 0, Math.Max(L, D) * 1.1f, Math.Max(.7f, w.h), Math.Min(L, D) * 1.3f));
+                            for (int k = 0; k < 12; k++) vr();
+                            return;
+                        }
+                        goto case "tronco";
+                    }
+                case "tronco":
                     {
                         bool aoX = L >= D; float len = Math.Max(L, D), gr = w.kind == "tronco" ? 1.3f : 1;
                         var MT = ModeloGLB.Carregar("tronco");
@@ -385,10 +398,14 @@ namespace RitualReversal.Visual
             // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de MundoV6.cs (client/mundo.js); o asilo, de MundoAsilo.cs
             if (MapaVisual.Asilo) ConstruirAsilo();
             else { foreach (var w in MapaVisual.WALLS) Peca(w);
+            // v6.4c: os bancos da nave são o banco de madeira escaneado (CC0), num tom de madeira escura
+            var MB0 = ModeloGLB.Carregar("banco_asilo"); Material matBanco = null;
+            if (MB0 != null) { matBanco = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.62f, .5f, .42f)), mapa = MB0.tex, rugosidade = .92f }); matBanco.name = "bancoNave"; }
             foreach (var P in MapaVisual.PEWS)
                 for (float x = P.x + .3f; x < P.y - .5f; x += 3.1f) foreach (float zz in new[] { P.z + .4f, P.z + 2.1f })
                     {
                         if (zz > P.w - .5f) continue;
+                        if (MB0 != null) { Est(MB0.geo, matBanco, TRS(x + 1.35f, 0, zz + .31f, 0, 0, 0, 2.7f, 1, .62f)); continue; }
                         Caixa(x, x + 2.7f, .42f, .52f, zz, zz + .55f, M("wood"), 2); Caixa(x, x + 2.7f, .52f, 1, zz + .5f, zz + .62f, M("wood"), 2);
                         Caixa(x, x + .1f, 0, .95f, zz, zz + .6f, M("wood"), 2); Caixa(x + 2.6f, x + 2.7f, 0, .95f, zz, zz + .6f, M("wood"), 2);
                     }

@@ -848,7 +848,8 @@ function modelo(nome){ if(nome in MODELOS) return MODELOS[nome]; const b64=windo
     geo.setAttribute('uv',new THREE.BufferAttribute(acc(at.TEXCOORD_0),2)); geo.setIndex(new THREE.BufferAttribute(acc(pr.indices),1)); geo.computeBoundingSphere();
     const im=J.images[0], url=URL.createObjectURL(new Blob([vista(im.bufferView)],{type:im.mimeType}));
     const tex=new THREE.TextureLoader().load(url,()=>URL.revokeObjectURL(url)); tex.flipY=false; tex.encoding=THREE.sRGBEncoding; tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-    const mat=desgastar(new THREE.MeshStandardMaterial({map:tex,roughness:.92,metalness:0}),MODELO_DESGASTE[nome]||{});
+    // textura em PNG: folhagem com recorte (a samambaia), dos dois lados
+    const alfa=im.mimeType==='image/png', mat=desgastar(new THREE.MeshStandardMaterial({map:tex,roughness:.92,metalness:0,alphaTest:alfa?.45:0,side:alfa?THREE.DoubleSide:THREE.FrontSide}),MODELO_DESGASTE[nome]||{});
     return MODELOS[nome]={geo,mat};
   }catch(e){ console.warn('modelo '+nome,e); return MODELOS[nome]=null; } }
 function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t; }
@@ -918,9 +919,9 @@ const PECAS={
     else { braco(-1,-2.4,.55); braco(1,-2.4,-.55); cab.rotation.x=.55; g.rotation.z=.1; }                       // mãos no rosto
     }
     for(let k=0;k<3;k++){ const pd=new THREE.Mesh(new THREE.DodecahedronGeometry(.12+vr()*.12,0),M); pd.position.set(x+(vr()-.5)*1.4,.08,z+(vr()-.5)*1.4); world.add(pd); } },
-  rocha(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, L=w.x2-w.x1, D=w.z2-w.z1;
+  rocha(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, L=w.x2-w.x1, D=w.z2-w.z1, ROCHAS=['rocha','rocha2','rocha3'];
     // v6.4: a rocha escaneada (modelo 'rocha', CC0) esticada na caixa da peça, um pouco enterrada; sem o modelo, o dodecaedro
-    const MR=modelo('rocha'), MP=modelo('pedra');
+    const MR=modelo(ROCHAS[Math.abs(Math.round(x*7+z*13))%3])||modelo('rocha'), MP=modelo('pedra');   // v6.4d: três formas, pela posição (sem sorteio)
     const m=MR?new THREE.Mesh(MR.geo,MR.mat):new THREE.Mesh(new THREE.DodecahedronGeometry(.5,1),MAT.rocha);
     if(MR){ m.scale.set(L*1.05,w.h*1.2,D*1.05); m.position.set(x,-w.h*.08,z); } else { m.scale.set(L*1.05,w.h*1.5,D*1.05); m.position.set(x,w.h*.42,z); }
     m.rotation.y=vr()*3; m.castShadow=m.receiveShadow=true; world.add(m);
@@ -936,7 +937,9 @@ const PECAS={
     const c=new THREE.Mesh(new THREE.CylinderGeometry(.42*grosso,.5*grosso,len,10),MAT.casca); c.position.set(x,.45*grosso,z); if(aoX) c.rotation.z=Math.PI/2; else c.rotation.x=Math.PI/2; c.castShadow=c.receiveShadow=true; world.add(c);
     for(let k=0;k<3;k++){ const t=(vr()-.5)*len*.8, gh=new THREE.Mesh(new THREE.CylinderGeometry(.05,.12,1+vr(),5),MAT.casca); gh.position.set(x+(aoX?t:0),.8,z+(aoX?0:t)); gh.rotation.set(vr()-.5,0,vr()-.5); world.add(gh); }
     for(const e of [-1,1]){ const d=new THREE.Mesh(new THREE.CircleGeometry(.44,10),MAT.madeiraCorte); d.scale.setScalar(grosso); d.position.set(x+(aoX?e*len/2:0),.45*grosso,z+(aoX?0:e*len/2)); d.rotation.y=aoX?e*Math.PI/2:(e>0?0:Math.PI); world.add(d); } },
-  raiz(w){ PECAS.tronco(w); },
+  raiz(w){ const MR=modelo('raiz'); if(!MR){ PECAS.tronco(w); return; }   // v6.4c: raízes escaneadas (CC0) na caixa; os sorteios do tronco de antes
+    const L=w.x2-w.x1, D=w.z2-w.z1, r=new THREE.Mesh(MR.geo,MR.mat); r.scale.set(Math.max(L,D)*1.1,Math.max(.7,w.h),Math.min(L,D)*1.3); r.position.set((w.x1+w.x2)/2,-.05,(w.z1+w.z2)/2); if(L<D) r.rotation.y=Math.PI/2;
+    r.castShadow=r.receiveShadow=true; world.add(r); for(let k=0;k<12;k++) vr(); },
   menir(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, r=(w.x2-w.x1)/2;
     const m=new THREE.Mesh(new THREE.CylinderGeometry(r*.75,r*1.25,w.h,5,3),MAT.pedraVelha); m.position.set(x,w.h/2,z); m.rotation.set((vr()-.5)*.12,vr()*6,(vr()-.5)*.12); m.castShadow=m.receiveShadow=true; world.add(m);
     const topo=new THREE.Mesh(new THREE.ConeGeometry(r*.8,.7,5),MAT.pedraVelha); topo.position.set(x,w.h+.3,z); topo.rotation.y=m.rotation.y; world.add(topo); },
@@ -1112,12 +1115,13 @@ function buildWorld(){
   // a pedra velha com foto (em cinza, média 200): a cor sobe na mesma conta (255/200) para o brilho não mudar
   MAT.pedraVelha=desgastar(new THREE.MeshStandardMaterial(TEX.pedraVelha?{color:0x878782,map:TEX.pedraVelha.map,normalMap:TEX.pedraVelha.normalMap,roughness:1,flatShading:true}:{color:0x6a6a66,normalMap:nmRocha,roughness:1,flatShading:true}),{mancha:.5,base:.4,musgo:1});
   MAT.lona=new THREE.MeshStandardMaterial({color:0x5a4c34,map:TEX.cloth.map,normalMap:TEX.cloth.normalMap,roughness:1});
-  MAT.tabuas=new THREE.MeshStandardMaterial({color:0x6a5040,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:1});
+  const FTAB=texFoto('tabuas');   // v6.4d: tábuas gastas fotografadas (CC0); sem elas, a madeira de sempre
+  MAT.tabuas=new THREE.MeshStandardMaterial(FTAB?{color:0x6a5040,map:FTAB.map,normalMap:FTAB.normalMap,roughness:1}:{color:0x6a5040,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:1});
   MAT.lapide=desgastar(new THREE.MeshStandardMaterial({...(TEX.lapide||TEX.marble),color:0x8a8a86,roughness:1}),{mancha:.5,base:.5,musgo:.8});
   MAT.copaCarvalho=new THREE.MeshStandardMaterial({color:0x1c241a,roughness:1,flatShading:true});
   RT.rune=runeTexture(); RT.flame=radialTex('rgba(255,240,200,1)','rgba(255,120,20,0)'); RT.glow=radialTex('rgba(255,255,255,1)','rgba(255,255,255,0)'); RT.beam=beamTex(); RT.shaft=shaftTex(); RT.win=stainedTex(false); RT.rose=stainedTex(true);
   // v6: pisos, paredes, telhados, janelas e portas da catedral vêm de client/mundo.js (RR_MUNDO)
-  CEU.vitrais=[]; if(!ASILO){ MUNDO=window.RR_MUNDO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar}); Object.assign(PECAS,MUNDO.PECAS); }
+  CEU.vitrais=[]; if(!ASILO){ MUNDO=window.RR_MUNDO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar,modelo}); Object.assign(PECAS,MUNDO.PECAS); }
   if(!ASILO){ // o céu do asilo vem de client/asilo.js
   // céu noturno sobre o Claustro: o único lugar do mapa onde se vê a lua
   const ceuTex=canvasTex(8,256,(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#010205'); gr.addColorStop(.55,'#060a14'); gr.addColorStop(1,'#101a2c'); c.fillStyle=gr; c.fillRect(0,0,W,H); });
@@ -1137,7 +1141,7 @@ function buildWorld(){
   CEU.lua=lua; CEU.lua2=lua2; CEU.ceu=ceu; CEU.estrelas=cupula.children.find(o=>o.isPoints)||null;
   const luar=new THREE.PointLight(0x8fa8e0,.9,70,1.5); luar.position.set(-30,26,-54); scene.add(luar); // sobre o jardim do Claustro, a céu aberto
   }
-  if(ASILO) VIS_ASILO=window.RR_ASILO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,makeNoise,smooth,scene,modelo});
+  if(ASILO) VIS_ASILO=window.RR_ASILO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,texFoto,makeNoise,smooth,scene,modelo});
   else {
   // paredes vindas da simulação, com material por tipo
   Sim.WALLS.forEach(w=>{ if(PECAS[w.kind]) return PECAS[w.kind](w);
@@ -1145,7 +1149,10 @@ function buildWorld(){
     meshBox(w.x1,w.x2,0,w.h,w.z1,w.z2,mat,w.kind==='tumba'?2:4);
     if(w.h>2.2&&w.kind!=='biombo') meshBox(w.x1-.1,w.x2+.1,w.h,w.h+.35,w.z1-.1,w.z2+.1,MAT.wallDark).castShadow=false;
   });
+  // v6.4c: os bancos da nave são o banco de madeira escaneado (CC0), num tom de madeira escura
+  const MB0=modelo('banco_asilo'), MBANCO=MB0&&{geo:MB0.geo,mat:(()=>{ const m=MB0.mat.clone(); m.color.setRGB(.62,.5,.42); return m; })()};
   PEWS.forEach(([x1,x2,z1,z2])=>{ for(let x=x1+.3;x<x2-.5;x+=3.1) for(const zz of [z1+.4,z1+2.1]){ if(zz>z2-.5) continue;
+    if(MBANCO){ const b=new THREE.Mesh(MBANCO.geo,MBANCO.mat); b.scale.set(2.7,1,.62); b.position.set(x+1.35,0,zz+.31); b.castShadow=b.receiveShadow=true; world.add(b); continue; }
     meshBox(x,x+2.7,.42,.52,zz,zz+.55,MAT.wood,2); meshBox(x,x+2.7,.52,1,zz+.5,zz+.62,MAT.wood,2); meshBox(x,x+.1,0,.95,zz,zz+.6,MAT.wood,2); meshBox(x+2.6,x+2.7,0,.95,zz,zz+.6,MAT.wood,2); } });
   MUNDO.construir();
   }
@@ -1211,11 +1218,14 @@ function buildFloresta(){
     const adro=clamp(1-Math.max(Math.abs(x)/46,(z+27)/6),0,1); r=lerp(r,.95,adro*.6); g=lerp(g,.92,adro*.6); b=lerp(b,.86,adro*.6); o[0]=r; o[1]=g; o[2]=b; };
   const regiao=(x1,x2,z1,z2,cor)=>{ const g=new THREE.PlaneGeometry(x2-x1,z2-z1,Math.max(1,Math.round((x2-x1)/3)),Math.max(1,Math.round((z2-z1)/3))); g.rotateX(-Math.PI/2); g.translate((x1+x2)/2,0,(z1+z2)/2);
     const pos=g.attributes.position, c=new Float32Array(pos.count*3), o=[0,0,0]; for(let i=0;i<pos.count;i++){ cor(pos.getX(i),pos.getZ(i),o); c[i*3]=o[0]; c[i*3+1]=o[1]; c[i*3+2]=o[2]; } g.setAttribute('color',new THREE.BufferAttribute(c,3)); return g; };
-  const geo=THREE.BufferGeometryUtils.mergeBufferGeometries([regiao(-LX/2,LX/2,D.z2,LZ/2,corMata),regiao(-LX/2,D.x1,-LZ/2,D.z2,corMata),regiao(D.x2,LX/2,-LZ/2,D.z2,corMata),regiao(P.x1,P.x2,P.z1,P.z2,corPlanalto)].map(g=>g.toNonIndexed()),false);
-  const mat=desgastar(new THREE.MeshStandardMaterial({...TEX.chao,vertexColors:true,roughness:1}),{mancha:.5,base:0,poca:.35});
-  ['map','normalMap','roughnessMap'].forEach(k=>{ mat[k]=mat[k].clone(); mat[k].needsUpdate=true; mat[k].repeat.set(1/7,1/7); }); mat.normalScale.set(.8,.8);
-  { const uv=geo.attributes.uv, pos=geo.attributes.position; for(let i=0;i<uv.count;i++) uv.setXY(i,pos.getX(i),-pos.getZ(i)); } // UV em metros: a textura não estica entre as regiões
-  const chao=new THREE.Mesh(geo,mat); chao.position.y=-.04; chao.receiveShadow=true; chao.userData.dinamico=true; world.add(chao);
+  // v6.4d: com a foto do planalto (terra e capim ralo, CC0), o promontório vira uma malha própria; sem ela, uma malha só, como antes
+  const FPLAN=texFoto('planalto'), juntar=gs=>THREE.BufferGeometryUtils.mergeBufferGeometries(gs.map(g=>g.toNonIndexed()),false);
+  const mata=[regiao(-LX/2,LX/2,D.z2,LZ/2,corMata),regiao(-LX/2,D.x1,-LZ/2,D.z2,corMata),regiao(D.x2,LX/2,-LZ/2,D.z2,corMata)], plan=regiao(P.x1,P.x2,P.z1,P.z2,corPlanalto);
+  const chaoDe=(geo,T)=>{ const mat=desgastar(new THREE.MeshStandardMaterial({...T,vertexColors:true,roughness:1}),{mancha:.5,base:0,poca:.35});
+    ['map','normalMap','roughnessMap'].forEach(k=>{ if(!mat[k]) return; mat[k]=mat[k].clone(); mat[k].needsUpdate=true; mat[k].repeat.set(1/7,1/7); }); mat.normalScale.set(.8,.8);
+    { const uv=geo.attributes.uv, pos=geo.attributes.position; for(let i=0;i<uv.count;i++) uv.setXY(i,pos.getX(i),-pos.getZ(i)); } // UV em metros: a textura não estica entre as regiões
+    const chao=new THREE.Mesh(geo,mat); chao.position.y=-.04; chao.receiveShadow=true; chao.userData.dinamico=true; world.add(chao); };
+  if(FPLAN){ chaoDe(juntar(mata),TEX.chao); chaoDe(juntar([plan]),FPLAN); } else chaoDe(juntar([...mata,plan]),TEX.chao);
 
   // ---------- árvores: mata antiga no espírito do Shaded Woods ----------
   // Três formas, todas com tronco de verdade: anciã (tronco enorme, raízes à mostra, galhos grossos), alta (fuste
@@ -1271,11 +1281,12 @@ function buildFloresta(){
 
   // ---------- chão da mata: samambaias e montes de musgo (nada de cone: de longe parecia copa sem tronco) ----------
   const samMat=new THREE.MeshStandardMaterial({map:texSamambaia(),color:0xffffff,alphaTest:.4,side:THREE.DoubleSide,roughness:.9});
-  const samGeo=junta([0,1,2,3,4,5,6].map(k=>{ const g=new THREE.PlaneGeometry(.55,1.6); g.translate(0,.8,0); g.rotateX(.75+(k%3)*.18); g.rotateY(k/7*Math.PI*2); return g; }));
+  // v6.4c: a samambaia escaneada (CC0, folhas recortadas); sem ela, as frondes desenhadas de antes
+  const MSAM=modelo('samambaia'), samGeo=MSAM?MSAM.geo.clone().scale(1.4,.9,1.4):junta([0,1,2,3,4,5,6].map(k=>{ const g=new THREE.PlaneGeometry(.55,1.6); g.translate(0,.8,0); g.rotateX(.75+(k%3)*.18); g.rotateY(k/7*Math.PI*2); return g; }));
   const moitaGeo=junta([tufo([0,.18,0],.75,.38),tufo([.55,.12,.3],.5,.4),tufo([-.45,.1,-.35],.45,.4)]);
-  [[samGeo,samMat,0],[moitaGeo,folha,1]].forEach(([G,M,ti])=>{ const qs=Sim.ARBUSTOS.filter(q=>q.tipo===ti); const im=new THREE.InstancedMesh(G,M,qs.length);
+  [[samGeo,MSAM?MSAM.mat:samMat,0],[moitaGeo,folha,1]].forEach(([G,M,ti])=>{ const qs=Sim.ARBUSTOS.filter(q=>q.tipo===ti); const im=new THREE.InstancedMesh(G,M,qs.length);
     qs.forEach((q,i)=>{ eu.set(0,q.rot,0); qt.setFromEuler(eu); v.set(q.x,0,q.z); esc.set(q.s,q.s*(ti?1:.9),q.s); m4.compose(v,qt,esc); im.setMatrixAt(i,m4);
-      if(ti) c.setRGB(.11,.15*(.85+((i*11)%10)/30),.08); else c.setRGB(.42+((i*7)%10)/60,.55+((i*3)%10)/50,.36); im.setColorAt(i,c); });
+      if(ti) c.setRGB(.11,.15*(.85+((i*11)%10)/30),.08); else if(MSAM) c.setRGB(.62+((i*7)%10)/40,.7+((i*3)%10)/40,.6); else c.setRGB(.42+((i*7)%10)/60,.55+((i*3)%10)/50,.36); im.setColorAt(i,c); });
     im.receiveShadow=true; im.frustumCulled=false; im.userData.dinamico=true; world.add(im); VEG.push(cortavel(im,qs,55)); });
 
   // ---------- espinheiros: moitas fechadas de galhos e espinhos que fazem as paredes da mata ----------
@@ -3673,7 +3684,7 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
+const NOVIDADES=[['Mais duas levas de arte (v6.4c)','As samambaias da mata, as raízes do carvalho, os bancos da nave e a arca agora são modelos escaneados, e as rochas têm três formas. O promontório ganhou chão de terra e capim ralo, e as pilhas de madeira, tábuas gastas. No Asilo, luminárias industriais, quadros de força, canteiros de madeira na horta, bancadas e macas de verdade, lampiões nas mesas, e telhados de ardósia, ferro enferrujado e concreto fotografados.'],['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
   ['Texturas e modelos de verdade (v6.4)','As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, "Entre rituais" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.'],
   ['Correções (v6.3b)','As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais.'],
   ['Só sons gravados (v6.2b)','Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA.'],
@@ -3924,7 +3935,7 @@ function boot(){
   { let S=null; try{ S=JSON.parse(sessionStorage.getItem('rr-entrar-sala')||'null'); sessionStorage.removeItem('rr-entrar-sala'); }catch(e){} if(S&&S.code) setTimeout(()=>connect(false,S.code,S.name),300); }
   // botão voltar do Android: pausa a partida em vez de fechar o app
   if(APP){ try{ const A=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(A) A.addListener('backButton',()=>{ if(V&&V.phase==='play'&&locked) unlock(); else if(settingsOpen){ settingsOpen=false; screenKey=''; } }); }catch(e){} }
-  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,get SKINS(){ return SKINS; },get REAGM(){ return reagentMeshes; },TEX,RT,PERFIL_ARMA,fxExecucoes:()=>FX_EXE_N,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;},get VIS_ASILO(){ return VIS_ASILO; },MAPA:MAPA_BOOT,mapSvg,FONTES,DC}; }
+  if(AUTOTEST){ window.__T={perfil:()=>{ let luzes=0; scene.traverseVisible(o=>{ if(o.isPointLight||o.isSpotLight) luzes++; }); return {fps:Math.round(fpsEMA),qual:SET.qual,toque:TQ.ativo,luzes,res:RES.aplicada,pos:USAR_POS,sombras:renderer.shadowMap.enabled}; },grade:()=>GRADE,Sim,get AV(){ return AV; },AMOS,VM,FX,get actorMeshes(){ return actorMeshes; },tocar,ARMA,get cpuMs(){ return cpuMs; },quadros:estatQuadros,zerarQuadros:()=>{ QUADROS.log.length=0; QUADROS.ren.length=0; },get efeitos(){ return EFEITOS.length; },get tracers(){ return tracers.length; },textoRelatorio:()=>textoRelatorio(dadosRelatorio()),get game(){return game;},get V(){return V;},startLocal,sendAct,cena:()=>scene,get SKINS(){ return SKINS; },get REAGM(){ return reagentMeshes; },TEX,RT,PERFIL_ARMA,fxExecucoes:()=>FX_EXE_N,rend:()=>renderer,malhas:()=>actorMeshes,info:()=>({geometrias:renderer.info.memory.geometries,texturas:renderer.info.memory.textures,chamadas:INFO_QUADRO.chamadas,triangulos:INFO_QUADRO.triangulos,objetos:(()=>{let n=0;scene.traverse(()=>n++);return n;})()}),derrubar:()=>{ if(ws) ws.close(); },get recon(){return RECON.ativo;},get down(){return down;},setBind,SET,C,LOOK,ESP,CL,climaDe,LT,amostrarNoite,perfilJogador:perfil,PF,fazerPing,PINGS,TN,travar:()=>lock(),MUS,AU,connect,NET,setMouse:v=>mouseL=v,get meCid(){return meCid;},get VIS_ASILO(){ return VIS_ASILO; },NOITE,MAPA:MAPA_BOOT,mapSvg,FONTES,DC}; }
 }
 { const L=$('#loading'), d=Object.values(DICAS); L.innerHTML=`<div style="text-align:center">${ASILO?'Abrindo o asilo…':'Esculpindo a catedral…'}<p style="font-family:var(--sans,sans-serif);font-size:15px;max-width:440px;margin:18px auto 0;color:#8f877b">Dica: ${esc(d[Math.floor(Math.random()*d.length)])}</p></div>`; }
 setTimeout(()=>{ try{ boot(); }catch(e){ $('#loading').textContent='Não foi possível iniciar o WebGL neste navegador.'; console.error(e); } },30);

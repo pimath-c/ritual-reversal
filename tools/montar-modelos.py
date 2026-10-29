@@ -83,7 +83,7 @@ def juntar(J, BIN):
                         im = J['images'][J['textures'][bct['index']]['source']]
                         if 'bufferView' in im:
                             v = J['bufferViews'][im['bufferView']]; o = v.get('byteOffset', 0)
-                            img = Image.open(io.BytesIO(BIN[o:o + v['byteLength']])).convert('RGB')
+                            img = Image.open(io.BytesIO(BIN[o:o + v['byteLength']])).convert('RGBA')
         for c in nd.get('children', []): visitar(c, M)
     cena = J['scenes'][J.get('scene', 0)]
     for r in cena['nodes']: visitar(r, np.eye(4))
@@ -156,7 +156,7 @@ def encaixar(p, n, cfg):
     return p, n
 
 
-def gravar_glb(p, n, uv, idx, jpeg):
+def gravar_glb(p, n, uv, idx, jpeg, mime='image/jpeg'):
     pos = p.astype(np.float32).tobytes(); nor = n.astype(np.float32).tobytes(); tex = uv.astype(np.float32).tobytes()
     grande = len(p) > 65535; ind = idx.astype(np.uint32 if grande else np.uint16).tobytes()
     def alinhar(b): return b + b'\0' * ((4 - len(b) % 4) % 4)
@@ -171,7 +171,7 @@ def gravar_glb(p, n, uv, idx, jpeg):
          'meshes': [{'primitives': [{'attributes': {'POSITION': 0, 'NORMAL': 1, 'TEXCOORD_0': 2}, 'indices': 3, 'material': 0}]}],
          'materials': [{'pbrMetallicRoughness': {'baseColorTexture': {'index': 0}, 'metallicFactor': 0, 'roughnessFactor': 1}}],
          'textures': [{'source': 0, 'sampler': 0}], 'samplers': [{'magFilter': 9729, 'minFilter': 9987}],
-         'images': [{'bufferView': 4, 'mimeType': 'image/jpeg'}],
+         'images': [{'bufferView': 4, 'mimeType': mime}],
          'accessors': [{'bufferView': 0, 'componentType': 5126, 'count': len(p), 'type': 'VEC3', 'min': p.min(0).tolist(), 'max': p.max(0).tolist()},
                        {'bufferView': 1, 'componentType': 5126, 'count': len(p), 'type': 'VEC3'},
                        {'bufferView': 2, 'componentType': 5126, 'count': len(p), 'type': 'VEC2'},
@@ -202,10 +202,22 @@ def main():
         p, n = encaixar(p, n, cfg)
         if img is None:
             img = Image.new('RGB', (4, 4), (150, 148, 140))
+        if cfg.get('alfa') and cfg.get('polyhaven'):
+            # o Poly Haven guarda o recorte das folhas num mapa à parte (Alpha): vira o canal de transparência da cor
+            alfa = os.path.join(origens, nome + '_alfa.img')
+            if not os.path.exists(alfa):
+                with urllib.request.urlopen(pedido(f"https://api.polyhaven.com/files/{cfg['polyhaven']}"), timeout=60) as r:
+                    A = json.load(r)['Alpha']['1k']
+                with urllib.request.urlopen(pedido((A.get('png') or A['jpg'])['url']), timeout=180) as r, open(alfa, 'wb') as f:
+                    f.write(r.read())
+            img = img.convert('RGB'); img.putalpha(Image.open(alfa).convert('L').resize(img.size, Image.LANCZOS))
         t = cfg.get('textura', 512); img = img.resize((t, t), Image.LANCZOS)
-        if cfg.get('brilho'): img = img.point(lambda v, b=cfg['brilho']: min(255, round(v * b)))   # o bronze escuro do gerador vira a pedra clara das estátuas
-        buf = io.BytesIO(); img.save(buf, 'JPEG', quality=86, optimize=True)
-        glb = gravar_glb(p, n, uv, idx, buf.getvalue())
+        if cfg.get('brilho'): img = img.convert('RGB').point(lambda v, b=cfg['brilho']: min(255, round(v * b)))   # o bronze escuro do gerador vira a pedra clara das estátuas
+        # "alfa": folhagem com recorte (samambaia): PNG com transparência; os leitores recortam o que tiver alfa abaixo de metade
+        buf = io.BytesIO(); mime = 'image/png' if cfg.get('alfa') else 'image/jpeg'
+        if cfg.get('alfa'): img.convert('RGBA').save(buf, 'PNG', optimize=True)
+        else: img.convert('RGB').save(buf, 'JPEG', quality=86, optimize=True)
+        glb = gravar_glb(p, n, uv, idx, buf.getvalue(), mime)
         open(os.path.join(unity, nome + '.bytes'), 'wb').write(glb)
         saida[nome] = base64.b64encode(glb).decode()
         print('%-8s %6d vértices %6d triângulos  %4.2f × %4.2f × %4.2f m  textura %d  GLB %d KB' % (nome, len(p), len(idx) // 3, *(p.max(0) - p.min(0)), t, len(glb) // 1024))

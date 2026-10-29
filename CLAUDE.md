@@ -6,7 +6,9 @@ commits em português.
 
 ## Links
 - Protótipo publicado (claude.ai, mesmo link a cada versão): https://claude.ai/artifact/8C4MNiGeURccg8E2ZzoNLY
-  Publique `dist/ritual-reversal.html` nesse link depois de `node tools/build.js`.
+  Publique depois de `node tools/build.js`: a página `dist/web/ritual-reversal.html` com `files` = os outros arquivos de `dist/web/`
+  (`sons.js`, `texturas-N.js`, `modelos-N.js`, até 12 MB cada) e `url` desse link. Passou dos 16 MB de uma página só; o
+  `dist/ritual-reversal.html` de um arquivo continua sendo gerado (testes, uso local).
 - Documento de design: https://claude.ai/artifact/9tDbnxCM1xtjJZToVaQYXB
 - Branch de trabalho: `claude/youthful-feynman-tott4g` (PR aberto para `main`).
 
@@ -47,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.4b)
+## Estado atual (v6.4c)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -212,6 +214,16 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Unity. Modelos `fogueira` (anel de pedras), `lanterna` (nos postes, chama dentro; `"bordas": false`) e `escombro` (consome os 9 `vr()`
   de cada pedra antiga). `unity-ver.js` serve a página e a exportação por um servidor local (o `mundo.bin` passou de 70 MB e o
   `route.fulfill` derrubava a página) e reduz as texturas a 512 px só na comparação, com cópias compartilhadas.
+- v6.4c (notas em `notas/v6.4c.md`): terceira leva. Texturas `concreto`, `ferrugem`, `telhadoAsilo` (asilo.js `F_CONC/F_FERR/F_TELH`
+  com `texFoto` nas dependências do `RR_ASILO`; Unity `Pbr.Foto` no MundoAsilo). Modelos `samambaia` (PNG com alfa: `"alfa": true`
+  junta o mapa Alpha do Poly Haven; `modelo()` faz alphaTest .45 e DoubleSide, `ModeloGLB.alfa`/`tex` com recorte e duas faces),
+  `raiz` (kind raiz separado do tronco, consome os mesmos 12 `vr()`; `"brilho"` .5), bancos da nave com `banco_asilo` tingido,
+  `luminaria`, `quadro`, `canteiro` (M3 com pedaço 1,4), bancada = `mesa_asilo`, maca = `leito`. Quarta leva na mesma versão: `planalto`
+  (o promontório vira malha própria com a foto; Unity: `Chão do promontório` com o detalhe trocado), `tabuas` (MAT.tabuas), `arca`
+  (mundo.js recebe `modelo` nas dependências), `rocha2`/`rocha3` (forma por `Math.abs(Math.round(x*7+z*13))%3`, sem sorteio; C# com
+  Floor(v+.5)), `lampiao` (encaixe altura, 0,42 m, em cima das mesas e da bancada, giro `(x1+z1)%PI`). Modelos novos sem
+  `"bordas": false` não reduzem (rocha2 ficou com 65 mil triângulos). `alturas.js` ignora `__T.NOITE` (npcs, pontos, sal). `tools/arte.py` refaz as tabelas
+  de `docs/ARTE.md` dos dois fontes.json. `build.js` também grava `dist/web/` (página + pedaços `Object.assign(window.X||{},...)`).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

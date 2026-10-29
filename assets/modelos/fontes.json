@@ -61,7 +61,7 @@
     "polyhaven": "dead_tree_trunk",
     "autor": "Rob Tuytel",
     "licenca": "CC0",
-    "uso": "troncos caídos e raízes (kind tronco/raiz)",
+    "uso": "troncos caídos (kind tronco)",
     "encaixe": "caixa",
     "tamanho": [
       1,
@@ -172,5 +172,142 @@
     ],
     "triangulos": 3000,
     "textura": 512
+  },
+  "raiz": {
+    "polyhaven": "root_cluster_01",
+    "autor": "Jenelle van Heerden, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "raízes expostas na mata (kind raiz)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": false,
+    "brilho": 0.5
+  },
+  "canteiro": {
+    "polyhaven": "planter_box_01",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: canteiros de madeira da horta (kind canteiro)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1200,
+    "textura": 512,
+    "bordas": false
+  },
+  "luminaria": {
+    "polyhaven": "hanging_industrial_lamp",
+    "autor": "Kuutti Siitonen",
+    "licenca": "CC0",
+    "uso": "Asilo: luminárias penduradas no teto",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1200,
+    "textura": 256,
+    "bordas": false
+  },
+  "quadro": {
+    "polyhaven": "power_box_01",
+    "autor": "Rico Cilliers, Yann Kervran",
+    "licenca": "CC0",
+    "uso": "Asilo: quadros de força das alas",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 512,
+    "bordas": false
+  },
+  "samambaia": {
+    "polyhaven": "fern_02",
+    "autor": "Rob Tuytel, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "samambaias do chão da mata (811 por noite)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 500,
+    "textura": 512,
+    "bordas": false,
+    "alfa": true
+  },
+  "arca": {
+    "polyhaven": "treasure_chest",
+    "autor": "Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "arca da catedral (kind arca)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2500,
+    "textura": 512,
+    "bordas": false
+  },
+  "rocha2": {
+    "polyhaven": "boulder_01",
+    "autor": "Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "rochas da mata e do promontório, segunda forma (kind rocha)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2400,
+    "textura": 512,
+    "bordas": false
+  },
+  "rocha3": {
+    "polyhaven": "rock_face_02",
+    "autor": "Dario Barresi, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "rochas da mata e do promontório, terceira forma, com musgo (kind rocha)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2400,
+    "textura": 512,
+    "bordas": false
+  },
+  "lampiao": {
+    "polyhaven": "vintage_oil_lamp",
+    "autor": "Monsta3D",
+    "licenca": "CC0",
+    "uso": "Asilo: lampiões em cima das mesas e da bancada",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.42,
+      0
+    ],
+    "triangulos": 1200,
+    "textura": 256,
+    "bordas": false
   }
 }

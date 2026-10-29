@@ -599,7 +599,12 @@ namespace RitualReversal.Visual
                         Est(Geo.Dodecaedro(.9f), mRocha, TRS(cx, .15f, cz, 0, 0, 0, 1, .45f, 1)); return true;
                     }
                 case "banco": B(w.x1, w.x2, 0, w.h, w.z1, w.z2, mPedraClara, 2); return true;
-                case "arca": B(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 1); B(w.x1 - .05f, w.x2 + .05f, w.h - .12f, w.h, w.z1 - .05f, w.z2 + .05f, M("metal"), 1); return true;
+                case "arca":
+                    {
+                        var MA = ModeloGLB.Carregar("arca");   // v6.4d: o baú de madeira e ferro escaneado (CC0), na caixa da peça
+                        if (MA != null) { float La = w.x2 - w.x1, Da = w.z2 - w.z1; Est(MA.geo, MA.mat, TRS((w.x1 + w.x2) / 2, 0, (w.z1 + w.z2) / 2, 0, La < Da ? PI / 2 : 0, 0, Math.Max(La, Da), w.h, Math.Min(La, Da))); return true; }
+                    }
+                    B(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 1); B(w.x1 - .05f, w.x2 + .05f, w.h - .12f, w.h, w.z1 - .05f, w.z2 + .05f, M("metal"), 1); return true;
                 case "torre_portaria":
                     {
                         B(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("pedraVelha"), 3);

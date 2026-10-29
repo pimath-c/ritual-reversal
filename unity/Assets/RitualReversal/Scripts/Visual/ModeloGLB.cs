@@ -12,7 +12,7 @@ namespace RitualReversal.Visual
 {
     public class ModeloGLB
     {
-        public Geo geo; public Material mat;
+        public Geo geo; public Material mat; public Texture2D tex; public bool alfa;   // alfa: textura PNG com recorte (as folhas da samambaia)
         static readonly Dictionary<string, ModeloGLB> cache = new Dictionary<string, ModeloGLB>();
 
         public static ModeloGLB Carregar(string nome)
@@ -47,16 +47,18 @@ namespace RitualReversal.Visual
             }
             var ai = (Dictionary<string, object>)acessores[I(pr["indices"])]; var vi = vista(I(ai["bufferView"])); int ct = I(ai["componentType"]), ni = I(ai["count"]);
             for (int k = 0; k < ni; k++) g.t.Add(ct == 5125 ? (int)BitConverter.ToUInt32(b, vi[0] + k * 4) : ct == 5121 ? b[vi[0] + k] : BitConverter.ToUInt16(b, vi[0] + k * 2));
-            Texture2D tex = null;
+            Texture2D tex = null; bool alfa = false;
             var imgs = J.ContainsKey("images") ? (List<object>)J["images"] : null;
             if (imgs != null && imgs.Count > 0)
             {
-                var vim = vista(I(((Dictionary<string, object>)imgs[0])["bufferView"])); var jpg = new byte[vim[1]]; Array.Copy(b, vim[0], jpg, 0, vim[1]);
+                var im0 = (Dictionary<string, object>)imgs[0]; alfa = im0.ContainsKey("mimeType") && (string)im0["mimeType"] == "image/png";
+                var vim = vista(I(im0["bufferView"])); var jpg = new byte[vim[1]]; Array.Copy(b, vim[0], jpg, 0, vim[1]);
                 tex = new Texture2D(2, 2, TextureFormat.RGBA32, true) { name = "modelo " + nome, wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 8 };
                 if (!ImageConversion.LoadImage(tex, jpg)) tex = null;
             }
-            var mat = Mat.Padrao(new Mat.Opcoes { mapa = tex, rugosidade = .92f }); mat.name = "modelo " + nome;
-            return new ModeloGLB { geo = g, mat = mat };
+            // PNG com alfa: recorte a .45 e as duas faces, como o alphaTest/DoubleSide do navegador
+            var mat = Mat.Padrao(new Mat.Opcoes { mapa = tex, rugosidade = .92f, recorte = alfa && tex != null, corte = .45f, duplaFace = alfa && tex != null }); mat.name = "modelo " + nome;
+            return new ModeloGLB { geo = g, mat = mat, tex = tex, alfa = alfa && tex != null };
         }
     }
 }

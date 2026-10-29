@@ -5,7 +5,8 @@
    e o lago. Montado por RR_ASILO(dependências).construir(); atualizar(dt, V, agora) a cada quadro. */
 window.RR_ASILO=function(D){
 'use strict';
-const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,makeNoise,smooth,scene,modelo}=D;
+const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,texFoto,makeNoise,smooth,scene,modelo}=D;
+const FT=n=>texFoto?texFoto(n):null, F_CONC=FT('concreto'), F_FERR=FT('ferrugem'), F_TELH=FT('telhadoAsilo');   // v6.4c: fotos novas do Asilo
 const PI=Math.PI, E=Sim.ESPACOS, W=Sim.WALLS;
 let _s=4711; const R=()=>(_s=(_s*16807)%2147483647)/2147483647;   // sorteio próprio: não mexe no vr() da catedral
 const add=o=>{ world.add(o); return o; };
@@ -32,15 +33,15 @@ const M={
   ladrilho:desgastar(new THREE.MeshStandardMaterial({...TEX.ladrilho,roughness:1}),{mancha:.5,base:0,poca:1}),
   tabua:new THREE.MeshStandardMaterial({...TEX.tabua,roughness:1}),
   teto:new THREE.MeshStandardMaterial({...TEX.teto,roughness:1,side:THREE.DoubleSide}),
-  telhado:new THREE.MeshStandardMaterial({color:0x2a2622,map:TEX.tabua.map,roughness:1}),
+  telhado:new THREE.MeshStandardMaterial(F_TELH?{...F_TELH,roughness:1}:{color:0x2a2622,map:TEX.tabua.map,roughness:1}),
   grama:new THREE.MeshStandardMaterial({...TEX.grama,roughness:1}),
   terra:new THREE.MeshStandardMaterial({...TEX.terra,roughness:1}),
   cascalho:new THREE.MeshStandardMaterial({...TEX.cascalho,roughness:1}),
   muro:MAT.wall, ferro:new THREE.MeshStandardMaterial({color:0x2c2e30,metalness:.8,roughness:.55,normalMap:TEX.metal.normalMap}),
-  ferrugem:new THREE.MeshStandardMaterial({color:0x5a3424,metalness:.5,roughness:.9}),
+  ferrugem:new THREE.MeshStandardMaterial(F_FERR?{...F_FERR,metalness:.5,roughness:.9}:{color:0x5a3424,metalness:.5,roughness:.9}),
   colchao:new THREE.MeshStandardMaterial({color:0x8e8a78,map:TEX.cloth.map,normalMap:TEX.cloth.normalMap,roughness:1}),
   porcelana:new THREE.MeshStandardMaterial({color:0xd6d2c4,roughness:.35}),
-  concreto:new THREE.MeshStandardMaterial({color:0x6a6862,map:TEX.reboco.map,roughness:1}),
+  concreto:new THREE.MeshStandardMaterial({color:0x6a6862,map:(F_CONC||TEX.reboco).map,normalMap:F_CONC?F_CONC.normalMap:null,roughness:1}),
   madeira:MAT.wood, carvao:new THREE.MeshStandardMaterial({color:0x111012,roughness:.8,flatShading:true}),
   agua:new THREE.MeshStandardMaterial({color:0x0b1416,metalness:.6,roughness:.08,transparent:true,opacity:.92}),
   lago:new THREE.MeshStandardMaterial({color:0x05090b,metalness:.75,roughness:.12}),
@@ -116,8 +117,10 @@ for(const P of Sim.PORTAS_DIN){ const ax=P.eixo==='x', larg=ax?P.x2-P.x1:P.z2-P.
 const LAMP={oeste:[],centro:[],leste:[]};
 const flameMat=new THREE.SpriteMaterial({map:RT.glow,color:0xffe0a0,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.4});
 for(const c of Sim.CANDLES){ const [x,z,tipo,setor]=c; if(tipo!=='lampada') continue;
-  const fio=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.7,4),M.ferro); fio.position.set(x,ALT-.35,z); add(fio);
-  const cg=new THREE.ConeGeometry(.42,.28,12,1,true), cup=new THREE.Mesh(cg,M.cupula), cin=new THREE.Mesh(cg,M.cupulaDentro); cup.position.set(x,ALT-.78,z); cin.position.copy(cup.position); add(cup); add(cin);
+  const ML=modelo&&modelo('luminaria');   // v6.4c: a luminária industrial escaneada (CC0) no lugar do fio e da cúpula
+  if(ML){ const l=new THREE.Mesh(ML.geo,ML.mat); l.scale.set(.84,.95,.84); l.position.set(x,ALT-.95,z); add(l); }
+  else { const fio=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.7,4),M.ferro); fio.position.set(x,ALT-.35,z); add(fio);
+    const cg=new THREE.ConeGeometry(.42,.28,12,1,true), cup=new THREE.Mesh(cg,M.cupula), cin=new THREE.Mesh(cg,M.cupulaDentro); cup.position.set(x,ALT-.78,z); cin.position.copy(cup.position); add(cup); add(cin); }
   const lamp=new THREE.Mesh(new THREE.SphereGeometry(.1,10,8),M.lampada.clone()); lamp.position.set(x,ALT-.86,z); add(lamp);
   const brilho=new THREE.Sprite(flameMat.clone()); brilho.scale.set(.55,.55,1); brilho.position.set(x,ALT-.9,z); add(brilho);
   const fonte={x,z,y:ALT-1.7,cor:0xffdca0,int:1.3,alc:13,setor}; FONTES.push(fonte);   // abaixo da cúpula, longe do teto
@@ -125,7 +128,9 @@ for(const c of Sim.CANDLES){ const [x,z,tipo,setor]=c; if(tipo!=='lampada') cont
 const QUADRO=[];
 for(const q of Sim.QUADROS){ // caixa de metal na parede mais próxima, com alavanca e uma lâmpada vermelha/verde
   const g=new THREE.Group(); g.position.set(q.x,0,q.z); g.userData.dinamico=true; add(g);
-  const cx=new THREE.Mesh(boxGeo(.7,.9,.22,1),M.ferro); cx.position.set(0,1.45,0); g.add(cx);
+  const MQ=modelo&&modelo('quadro');   // v6.4c: o quadro de força escaneado (CC0)
+  if(MQ){ const cx=new THREE.Mesh(MQ.geo,MQ.mat); cx.scale.set(.7,.9,.22); cx.position.set(0,1,0); g.add(cx); }
+  else { const cx=new THREE.Mesh(boxGeo(.7,.9,.22,1),M.ferro); cx.position.set(0,1.45,0); g.add(cx); }
   const alav=new THREE.Mesh(new THREE.BoxGeometry(.06,.36,.06),M.ferrugem); alav.position.set(.2,1.5,.14); g.add(alav);
   const luz=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),new THREE.MeshStandardMaterial({color:0x30ff60,emissive:0x30ff60,emissiveIntensity:2})); luz.position.set(-.2,1.75,.12); g.add(luz);
   const cabo=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,ALT-1.9,5),M.ferro); cabo.position.set(0,1.9+(ALT-1.9)/2,0); g.add(cabo);
@@ -138,6 +143,8 @@ const M3=(nome,w,h,giro,pedaco)=>{ const MD=modelo&&modelo(nome); if(!MD) return
   for(let k=0;k<n;k++){ const m=new THREE.Mesh(MD.geo,MD.mat), c=-L/2+(k+.5)*L/n; m.scale.set(L/n*(n>1?.94:1),h,Math.min(w.x2-w.x1,w.z2-w.z1));
     m.position.set((w.x1+w.x2)/2+(ax?c:0),0,(w.z1+w.z2)/2+(ax?0:c)); m.rotation.y=(ax?0:-PI/2)+(giro||0); m.castShadow=m.receiveShadow=true; add(m); }
   return true; };
+// v6.4d: um lampião de óleo escaneado (CC0) em cima de cada mesa e da bancada (só enfeite: fica sobre a caixa da mesa)
+const lampiao=w=>{ const ML=modelo&&modelo('lampiao'); if(!ML) return; const m=new THREE.Mesh(ML.geo,ML.mat); m.position.set((w.x1+w.x2)/2,w.h,(w.z1+w.z2)/2); m.rotation.y=(w.x1+w.z1)%PI; m.castShadow=true; add(m); };
 const leito=w=>{ const ax=w.x2-w.x1>w.z2-w.z1, cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, L=ax?w.x2-w.x1:w.z2-w.z1, P=ax?w.z2-w.z1:w.x2-w.x1;
   const B=(dx,y1,y2,dz,lx,lz,mat)=>{ const x=ax?cx+dx:cx+dz, z=ax?cz+dz:cz+dx, sx=ax?lx:lz, sz=ax?lz:lx; caixa(x-sx/2,x+sx/2,y1,y2,z-sz/2,z+sz/2,mat,1); };
   // a cama de ferro escaneada (a cabeceira, alta, no lado negativo como a de antes) com o colchão e o travesseiro por cima
@@ -147,10 +154,10 @@ const leito=w=>{ const ax=w.x2-w.x1>w.z2-w.z1, cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/
   B(-L/2+.4,.6,.72,0,.5,P*.7,M.colchao); };
 const PEC={
   leito, banco:w=>{ if(M3('banco_asilo',w,w.h,0,1.7)) return; caixa(w.x1,w.x2,.42,.5,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,.5,w.h,w.z2-.1,w.z2,M.madeira,2); caixa(w.x1+.1,w.x1+.2,0,.42,w.z1,w.z2,M.madeira,2); caixa(w.x2-.2,w.x2-.1,0,.42,w.z1,w.z2,M.madeira,2); },
-  mesa:w=>{ if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
+  mesa:w=>{ lampiao(w); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
   tanque:w=>{ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.concreto,2); caixa(w.x1+.12,w.x2-.12,w.h-.05,w.h+.01,w.z1+.12,w.z2-.12,M.agua,1,false); },
-  bancada:w=>{ caixa(w.x1,w.x2,w.h-.08,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,0,w.h-.08,w.z1+.1,w.z2-.1,M.madeira,2); },
-  maca:w=>{ caixa(w.x1,w.x2,.8,.88,w.z1,w.z2,M.colchao,1); caixa(w.x1+.1,w.x2-.1,.72,.8,w.z1+.1,w.z2-.1,M.ferro,1); for(const [x,z] of [[w.x1+.15,w.z1+.15],[w.x2-.15,w.z1+.15],[w.x1+.15,w.z2-.15],[w.x2-.15,w.z2-.15]]) caixa(x-.03,x+.03,0,.72,z-.03,z+.03,M.ferro,1); },
+  bancada:w=>{ lampiao(w); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.08,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,0,w.h-.08,w.z1+.1,w.z2-.1,M.madeira,2); },
+  maca:w=>{ if(M3('leito',w,.9,PI)){ caixa(w.x1+.06,w.x2-.06,.62,.72,w.z1+.06,w.z2-.06,M.colchao,1); return; } caixa(w.x1,w.x2,.8,.88,w.z1,w.z2,M.colchao,1); caixa(w.x1+.1,w.x2-.1,.72,.8,w.z1+.1,w.z2-.1,M.ferro,1); for(const [x,z] of [[w.x1+.15,w.z1+.15],[w.x2-.15,w.z1+.15],[w.x1+.15,w.z2-.15],[w.x2-.15,w.z2-.15]]) caixa(x-.03,x+.03,0,.72,z-.03,z+.03,M.ferro,1); },
   cadeira_eletrica:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2; caixa(cx-.45,cx+.45,.45,.55,cz-.45,cz+.45,M.madeira,1); caixa(cx-.45,cx+.45,.55,1.7,cz+.35,cz+.45,M.madeira,1);
     caixa(cx-.5,cx-.4,.55,.85,cz-.45,cz+.45,M.madeira,1); caixa(cx+.4,cx+.5,.55,.85,cz-.45,cz+.45,M.madeira,1); caixa(cx-.2,cx+.2,1.7,1.85,cz+.2,cz+.45,M.ferro,1); caixa(cx-.4,cx+.4,0,.45,cz-.4,cz+.4,M.madeira,1); },
   banheira:w=>{ const ax=w.x2-w.x1>w.z2-w.z1; caixa(w.x1,w.x2,.12,w.h,w.z1,w.z2,M.porcelana,1); caixa(w.x1+.1,w.x2-.1,w.h-.18,w.h+.005,w.z1+.1,w.z2-.1,M.agua,1,false);
@@ -164,7 +171,7 @@ const PEC={
   carvao:w=>{ for(let k=0;k<7;k++){ const p=new THREE.Mesh(new THREE.DodecahedronGeometry(.25+R()*.25,0),M.carvao); p.position.set(w.x1+R()*(w.x2-w.x1),.15+R()*w.h*.6,w.z1+R()*(w.z2-w.z1)); add(p); } },
   balcao:w=>{ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1-.05,w.x2+.05,w.h,w.h+.06,w.z1-.08,w.z2+.08,M.madeira,2); },
   coluna_coreto:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2; const c=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,w.h,8),M.ferro); c.position.set(cx,w.h/2,cz); c.castShadow=true; add(c); },
-  canteiro:w=>{ caixa(w.x1,w.x2,0,w.h*.6,w.z1,w.z2,M.terra,2); for(let x=w.x1+.3;x<w.x2-.2;x+=.55){ const p=new THREE.Mesh(new THREE.ConeGeometry(.16,.4+R()*.3,5),new THREE.MeshStandardMaterial({color:0x2c3a22,roughness:1,flatShading:true})); p.position.set(x,w.h*.6+.2,(w.z1+w.z2)/2+(R()-.5)*.4); add(p); } },
+  canteiro:w=>{ if(M3('canteiro',w,w.h*.6,0,1.4)) caixa(w.x1+.08,w.x2-.08,0,w.h*.52,w.z1+.08,w.z2-.08,M.terra,2); else caixa(w.x1,w.x2,0,w.h*.6,w.z1,w.z2,M.terra,2); for(let x=w.x1+.3;x<w.x2-.2;x+=.55){ const p=new THREE.Mesh(new THREE.ConeGeometry(.16,.4+R()*.3,5),new THREE.MeshStandardMaterial({color:0x2c3a22,roughness:1,flatShading:true})); p.position.set(x,w.h*.6+.2,(w.z1+w.z2)/2+(R()-.5)*.4); add(p); } },
   lapide:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2; caixa(w.x1,w.x2,0,w.h-.2,w.z1,w.z2,MAT.lapide,1); const t=new THREE.Mesh(new THREE.CylinderGeometry((w.x2-w.x1)/2,(w.x2-w.x1)/2,w.z2-w.z1,10,1,false,0,PI),MAT.lapide); t.rotation.set(PI/2,0,PI/2); t.position.set(cx,w.h-.2,cz); add(t);
     if(R()<.4){ const cz2=new THREE.Mesh(new THREE.BoxGeometry(.06,.5,.06),M.ferro); cz2.position.set(cx,w.h+.25,cz); add(cz2); } },
 };

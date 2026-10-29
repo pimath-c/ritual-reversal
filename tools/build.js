@@ -2,6 +2,9 @@
 // Monta a versão de arquivo único (a publicada no claude.ai): client/index.html com shared/sim.js, client/arma.js e client/sons.js
 // (as gravações, ver tools/montar-sons.py) embutidos.
 // Uso: node tools/build.js [saida]      (padrão: dist/ritual-reversal.html)
+// Também grava dist/web/: a mesma página sem os sons, as texturas e os modelos embutidos, que vão ao lado em pedaços de até
+// 12 MB (sons.js, texturas-N.js, modelos-N.js). É a versão publicada no claude.ai, onde a página tem limite de 16 MB e cada
+// arquivo ao lado tem o seu.
 'use strict';
 const fs=require('fs'), path=require('path');
 const ROOT=path.join(__dirname,'..');
@@ -27,3 +30,20 @@ if(!cli.includes(tagSons)) throw new Error('client/index.html não tem '+tagSons
 fs.mkdirSync(path.dirname(out),{recursive:true});
 fs.writeFileSync(out,cli.replace(tag,()=>'<script>\n'+sim+'\n</script>').replace(tagSons,()=>'<script>\n'+sons+'</script>').replace(tagArma,()=>'<script>\n'+arma+'\n</script>').replace(tagMundo,()=>'<script>\n'+mundo+'\n</script>').replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>'<script>\n'+modelos+'\n</script>').replace(tagTex,()=>'<script>\n'+texturas+'</script>').replace(tagAsilo,()=>'<script>\n'+asilo+'\n</script>'));
 console.log('gerado',out,(fs.statSync(out).size/1024).toFixed(0)+' KB');
+
+// ---------- dist/web: a página e a arte em arquivos separados ----------
+const WEB=path.join(ROOT,'dist','web'); fs.rmSync(WEB,{recursive:true,force:true}); fs.mkdirSync(WEB,{recursive:true});
+const LIMITE=12e6;
+function pedacos(arquivo,global,prefixo){   // window.X={...}; vira prefixo-1.js, prefixo-2.js... cada um somando ao window.X
+  const txt=fs.readFileSync(path.join(ROOT,'client',arquivo),'utf8'), i=txt.indexOf('window.'+global+'=');
+  const O=JSON.parse(txt.slice(i+('window.'+global+'=').length,txt.lastIndexOf(';'))), grupos=[[]]; let tam=0;
+  for(const k of Object.keys(O)){ const n=JSON.stringify(O[k]).length; if(tam+n>LIMITE&&grupos[grupos.length-1].length){ grupos.push([]); tam=0; } grupos[grupos.length-1].push(k); tam+=n; }
+  return grupos.map((ks,j)=>{ const nome=`${prefixo}-${j+1}.js`, sub={}; ks.forEach(k=>sub[k]=O[k]);
+    fs.writeFileSync(path.join(WEB,nome),`window.${global}=Object.assign(window.${global}||{},${JSON.stringify(sub)});\n`); return nome; }); }
+const tags=nomes=>nomes.map(n=>`<script src="${n}"></script>`).join('\n');
+fs.writeFileSync(path.join(WEB,'sons.js'),sons);
+const web=cli.replace(tag,()=>'<script>\n'+sim+'\n</script>').replace(tagSons,()=>'<script src="sons.js"></script>').replace(tagArma,()=>'<script>\n'+arma+'\n</script>').replace(tagMundo,()=>'<script>\n'+mundo+'\n</script>')
+  .replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>tags(pedacos('modelos.js','RR_MODELOS','modelos'))).replace(tagTex,()=>tags(pedacos('texturas.js','RR_TEXTURAS','texturas')))
+  .replace(tagAsilo,()=>'<script>\n'+asilo+'\n</script>');
+fs.writeFileSync(path.join(WEB,'ritual-reversal.html'),web);
+console.log('dist/web: '+fs.readdirSync(WEB).map(f=>`${f} ${(fs.statSync(path.join(WEB,f)).size/1024).toFixed(0)} KB`).join(', '));

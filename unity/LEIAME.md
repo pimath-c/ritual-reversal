@@ -19,6 +19,9 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
   escaneados em `Resources/Modelos`. A colisão não mudou. Créditos em `docs/ARTE.md` (no repositório).
 - **Mais arte (v6.4b)**: casca nas árvores, pedra bruta nas ruínas e menires, ardósia nos telhados, lápides de pedra gasta;
   fogueira com anel de pedras, lanternas de madeira nos postes e escombros de pedras com musgo.
+- **Mais duas levas (v6.4c)**: samambaias, raízes, bancos da nave e a arca escaneados, rochas em três formas, chão de capim
+  ralo no promontório e tábuas gastas; no Asilo, luminárias industriais, quadros de força, canteiros de madeira, bancadas,
+  macas e lampiões, e telhados, ferrugem e concreto fotografados.
 - **Laboratório "Entre rituais"**: troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.
 
 ## Novidades de 26/10

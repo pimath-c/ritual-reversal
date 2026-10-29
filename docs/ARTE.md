@@ -38,6 +38,11 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `pedraVelha` | pedra velha: ruínas, pilares, menires, muretas, santuários (em cinza, a cor vem do material) | [rough_block_wall](https://polyhaven.com/a/rough_block_wall) | Rob Tuytel |
 | `telha` | telhados de ardósia da catedral | [grey_roof_tiles_02](https://polyhaven.com/a/grey_roof_tiles_02) | Rob Tuytel |
 | `lapide` | lápides e tampas de túmulos | [rock_pitted_mossy](https://polyhaven.com/a/rock_pitted_mossy) | Dimitrios Savva, Rico Cilliers |
+| `concreto` | Asilo: concreto (tanques, base das caldeiras) | [concrete_floor_worn_001](https://polyhaven.com/a/concrete_floor_worn_001) | Dimitrios Savva, Rico Cilliers |
+| `ferrugem` | Asilo: ferro enferrujado (alavancas, caldeiras) | [rusty_metal_02](https://polyhaven.com/a/rusty_metal_02) | Rob Tuytel |
+| `telhadoAsilo` | Asilo: telhados de ardósia | [roof_slates_02](https://polyhaven.com/a/roof_slates_02) | Rob Tuytel |
+| `planalto` | chão do promontório da catedral (terra e capim ralo) | [grass_ground](https://polyhaven.com/a/grass_ground) | Charlotte Baglioni |
+| `tabuas` | tábuas gastas: pilhas de madeira, telhado do ermitão | [weathered_planks](https://polyhaven.com/a/weathered_planks) | Dario Barresi, Dimitrios Savva |
 
 ## Modelos
 
@@ -47,7 +52,7 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `estatua` | estátuas do monge | Higgsfield/Tripo (gerado) | — |
 | `rocha` | rochas da mata e do promontório (kind rocha) | [rock_09](https://polyhaven.com/a/rock_09), CC0 | Jenelle van Heerden |
 | `pedra` | pedra menor ao lado das rochas | [rock_07](https://polyhaven.com/a/rock_07), CC0 | Jenelle van Heerden |
-| `tronco` | troncos caídos e raízes (kind tronco/raiz) | [dead_tree_trunk](https://polyhaven.com/a/dead_tree_trunk), CC0 | Rob Tuytel |
+| `tronco` | troncos caídos (kind tronco) | [dead_tree_trunk](https://polyhaven.com/a/dead_tree_trunk), CC0 | Rob Tuytel |
 | `caixote` | caixotes do acampamento (kind caixote) | [wooden_crate_02](https://polyhaven.com/a/wooden_crate_02), CC0 | James Ray Cock, Jurita Burger |
 | `leito` | Asilo: camas de ferro da enfermaria e dos quartos (kind leito) | [old_bed_frame](https://polyhaven.com/a/old_bed_frame), CC0 | Luca B |
 | `banco_asilo` | Asilo: bancos (kind banco) | [painted_wooden_bench](https://polyhaven.com/a/painted_wooden_bench), CC0 | Kirill Sannikov |
@@ -55,6 +60,15 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `fogueira` | fogueiras do acampamento (o anel de pedras) | [stone_fire_pit](https://polyhaven.com/a/stone_fire_pit), CC0 | Sebastian Platen |
 | `lanterna` | lanternas penduradas nos postes | [wooden_lantern_01](https://polyhaven.com/a/wooden_lantern_01), CC0 | James Ray Cock |
 | `escombro` | escombros: pilhas de pedras com musgo | [rock_moss_set_02](https://polyhaven.com/a/rock_moss_set_02), CC0 | Kless Gyzen |
+| `raiz` | raízes expostas na mata (kind raiz) | [root_cluster_01](https://polyhaven.com/a/root_cluster_01), CC0 | Jenelle van Heerden, Rico Cilliers |
+| `canteiro` | Asilo: canteiros de madeira da horta (kind canteiro) | [planter_box_01](https://polyhaven.com/a/planter_box_01), CC0 | James Ray Cock |
+| `luminaria` | Asilo: luminárias penduradas no teto | [hanging_industrial_lamp](https://polyhaven.com/a/hanging_industrial_lamp), CC0 | Kuutti Siitonen |
+| `quadro` | Asilo: quadros de força das alas | [power_box_01](https://polyhaven.com/a/power_box_01), CC0 | Rico Cilliers, Yann Kervran |
+| `samambaia` | samambaias do chão da mata (811 por noite) | [fern_02](https://polyhaven.com/a/fern_02), CC0 | Rob Tuytel, Rico Cilliers |
+| `arca` | arca da catedral (kind arca) | [treasure_chest](https://polyhaven.com/a/treasure_chest), CC0 | Rico Cilliers |
+| `rocha2` | rochas da mata e do promontório, segunda forma (kind rocha) | [boulder_01](https://polyhaven.com/a/boulder_01), CC0 | Rico Cilliers |
+| `rocha3` | rochas da mata e do promontório, terceira forma, com musgo (kind rocha) | [rock_face_02](https://polyhaven.com/a/rock_face_02), CC0 | Dario Barresi, Rico Cilliers |
+| `lampiao` | Asilo: lampiões em cima das mesas e da bancada | [vintage_oil_lamp](https://polyhaven.com/a/vintage_oil_lamp), CC0 | Monsta3D |
 
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em

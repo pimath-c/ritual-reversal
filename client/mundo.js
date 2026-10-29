@@ -4,7 +4,7 @@
    Fábrica igual à de client/arma.js: o jogo chama RR_MUNDO({...}) em buildWorld e recebe {PECAS, construir, vida, quadro}. */
 window.RR_MUNDO=function(D){
 'use strict';
-const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar}=D;
+const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar,modelo}=D;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
 const W=Sim.WALLS, PI=Math.PI;
 // alturas visuais (as da prancha docs/conceito/catedral.svg)
@@ -356,7 +356,9 @@ const PECAS={
     const h=new THREE.Mesh(new THREE.BoxGeometry(.34,w.h,.34),mat); h.position.set(x,w.h/2,z); add(h); const v=new THREE.Mesh(new THREE.BoxGeometry(w.h*.42,.3,.3),mat); v.position.set(x,w.h*.74,z); add(v);
     const pe=new THREE.Mesh(new THREE.DodecahedronGeometry(.9,0),M.rocha); pe.scale.y=.45; pe.position.set(x,.15,z); add(pe); },
   banco(w){ B(w.x1,w.x2,0,w.h,w.z1,w.z2,M.pedraClara,2); },
-  arca(w){ B(w.x1,w.x2,0,w.h,w.z1,w.z2,MAT.wood,1); B(w.x1-.05,w.x2+.05,w.h-.12,w.h,w.z1-.05,w.z2+.05,MAT.metal,1); },
+  arca(w){ const MA=modelo&&modelo('arca');   // v6.4d: o baú de madeira e ferro escaneado (CC0), na caixa da peça
+    if(MA){ const L=w.x2-w.x1, D=w.z2-w.z1, m=new THREE.Mesh(MA.geo,MA.mat); m.scale.set(Math.max(L,D),w.h,Math.min(L,D)); m.position.set((w.x1+w.x2)/2,0,(w.z1+w.z2)/2); if(L<D) m.rotation.y=PI/2; add(m); return; }
+    B(w.x1,w.x2,0,w.h,w.z1,w.z2,MAT.wood,1); B(w.x1-.05,w.x2+.05,w.h-.12,w.h,w.z1-.05,w.z2+.05,MAT.metal,1); },
   torre_portaria(w){ const x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2; B(w.x1,w.x2,0,w.h,w.z1,w.z2,MAT.pedraVelha,3);
     for(let k=0;k<4;k++){ const a=w.x1+.4+k*(w.x2-w.x1-.8)/3; B(a-.35,a+.35,w.h,w.h+.9,w.z1,w.z1+.7,MAT.pedraVelha,2); B(a-.35,a+.35,w.h,w.h+.9,w.z2-.7,w.z2,MAT.pedraVelha,2); }
     for(const y of [4,8]){ const s=new THREE.Mesh(new THREE.PlaneGeometry(.25,1.3),M.fundo); s.position.set(x,y,w.z2+.02); world.add(s); } },

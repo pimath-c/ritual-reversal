@@ -68,16 +68,25 @@ namespace RitualReversal.Visual
             // v6: o chão é feito por regiões, com bordas exatamente onde o desfiladeiro começa (x = ±98, z = -6) e onde o
             // promontório termina (x = ±82, z = -22): o chão que se vê e o chão onde se anda coincidem. Fora do mapa, a mata
             // continua por 40 m. A textura pintada cobre tudo; cada região pega o seu pedaço dela.
-            var geoChao = new Geo();
+            // v6.4d: com a foto do planalto (terra e capim ralo, CC0), o promontório vira uma malha própria com ela no detalhe
+            var fPlan = Pbr.Foto("planalto"); var geoChao = new Geo(); var geoPlan = new Geo(); var alvo = geoChao;
             Action<float, float, float, float> regiao = (x1, x2, z1, z2) =>
             {
                 var g = Geo.Plano(x2 - x1, z2 - z1, Math.Max(1, Mathf.RoundToInt((x2 - x1) / 12)), Math.Max(1, Mathf.RoundToInt((z2 - z1) / 12))).GirarX(-PI / 2).Mover((x1 + x2) / 2, 0, (z1 + z2) / 2);
                 for (int i = 0; i < g.p.Count; i++) g.uv[i] = new Vector2((g.p[i].x + LX / 2) / LX, (LZ / 2 - g.p[i].z) / LZ);
-                geoChao.Juntar(g);
+                alvo.Juntar(g);
             };
-            regiao(-LX / 2, LX / 2, DF.z2, LZ / 2); regiao(-LX / 2, DF.x1, -LZ / 2, DF.z2); regiao(DF.x2, LX / 2, -LZ / 2, DF.z2); regiao(PR.x1, PR.x2, PR.z1, PR.z2);
+            regiao(-LX / 2, LX / 2, DF.z2, LZ / 2); regiao(-LX / 2, DF.x1, -LZ / 2, DF.z2); regiao(DF.x2, LX / 2, -LZ / 2, DF.z2);
+            if (fPlan != null) alvo = geoPlan; regiao(PR.x1, PR.x2, PR.z1, PR.z2);
             var chao = Malha(geoChao, chaoMat, raiz, "Chão da mata", false); Pos(chao, 0, -.04f, 0);
             chao.GetComponent<MeshRenderer>().receiveShadows = true;
+            if (fPlan != null)
+            {
+                var planMat = new Material(chaoMat) { name = "chaoPlanalto" }; planMat.SetTexture("_DetailAlbedoMap", fPlan.mapa);
+                if (Qualidade.nivel >= 2) planMat.SetTexture("_DetailNormalMap", fPlan.relevo);
+                var plan = Malha(geoPlan, planMat, raiz, "Chão do promontório", false); Pos(plan, 0, -.04f, 0);
+                plan.GetComponent<MeshRenderer>().receiveShadows = true;
+            }
 
             // ---------- árvores ----------
             double sd = 5150; Func<float> R = () => { sd = (sd * 16807) % 2147483647; return (float)(sd / 2147483647); };
@@ -117,14 +126,18 @@ namespace RitualReversal.Visual
             }
             // ---------- samambaias e montes de musgo ----------
             var samMat = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.Samambaia(), recorte = true, corte = .4f, duplaFace = true, rugosidade = .9f }); samMat.name = "samambaia";
-            var samGeo = new Geo(); for (int k = 0; k < 7; k++) samGeo.Juntar(Geo.Plano(.55f, 1.6f).Mover(0, .8f, 0).GirarX(.75f + (k % 3) * .18f).GirarY(k / 7f * PI * 2));
+            // v6.4c: a samambaia escaneada (CC0, folhas recortadas); sem ela, as frondes desenhadas de antes
+            var MSAM = ModeloGLB.Carregar("samambaia");
+            Geo samGeo; if (MSAM != null) samGeo = MSAM.geo.Copia().Escalar(1.4f, .9f, 1.4f);
+            else { samGeo = new Geo(); for (int k = 0; k < 7; k++) samGeo.Juntar(Geo.Plano(.55f, 1.6f).Mover(0, .8f, 0).GirarX(.75f + (k % 3) * .18f).GirarY(k / 7f * PI * 2)); }
             var moitaGeo = Geo.Unir(new[] { Arvores.Tufo(0, .18f, 0, .75f, .38f), Arvores.Tufo(.55f, .12f, .3f, .5f, .4f), Arvores.Tufo(-.45f, .1f, -.35f, .45f, .4f) });
             var samV = new Material[6]; var moitaV = new Material[6]; int ia = 0;
             foreach (var q in MapaVisual.ARBUSTOS)
             {
                 int var_ = ia % 6; var MM = M4.T(q.x, 0, q.z) * M4.RY(q.rot) * M4.S(q.s, q.s * (q.tipo == 1 ? 1 : .9f), q.s);
                 if (q.tipo == 1) { if (moitaV[var_] == null) { moitaV[var_] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.11f, .15f * (.85f + ((ia * 11) % 10) / 30f), .08f)) }); moitaV[var_].name = "moita" + var_; facetados.Add(moitaV[var_]); } Est(moitaGeo, moitaV[var_], MM, false); }
-                else { if (samV[var_] == null) { samV[var_] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.42f + ((ia * 7) % 10) / 60f, .55f + ((ia * 3) % 10) / 50f, .36f)), mapa = Tex.Samambaia(), recorte = true, corte = .4f, duplaFace = true, rugosidade = .9f }); samV[var_].name = "samambaia" + var_; } Est(samGeo, samV[var_], MM, false); }
+                else { if (samV[var_] == null) { samV[var_] = MSAM != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.62f + ((ia * 7) % 10) / 40f, .7f + ((ia * 3) % 10) / 40f, .6f)), mapa = MSAM.tex, recorte = true, corte = .45f, duplaFace = true, rugosidade = .92f })
+                    : Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.42f + ((ia * 7) % 10) / 60f, .55f + ((ia * 3) % 10) / 50f, .36f)), mapa = Tex.Samambaia(), recorte = true, corte = .4f, duplaFace = true, rugosidade = .9f }); samV[var_].name = "samambaia" + var_; } Est(samGeo, samV[var_], MM, false); }
                 ia++;
             }
             // ---------- espinheiros ----------

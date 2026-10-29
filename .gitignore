@@ -6,3 +6,5 @@ assets/texturas/fontes/
 assets/modelos/fontes/*.glb
 !assets/modelos/fontes/altar.glb
 !assets/modelos/fontes/estatua.glb
+assets/modelos/fontes/*_alfa.img
+__pycache__/
