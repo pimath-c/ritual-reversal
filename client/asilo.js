@@ -5,7 +5,7 @@
    e o lago. Montado por RR_ASILO(dependências).construir(); atualizar(dt, V, agora) a cada quadro. */
 window.RR_ASILO=function(D){
 'use strict';
-const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,makeNoise,smooth,scene}=D;
+const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,makeNoise,smooth,scene,modelo}=D;
 const PI=Math.PI, E=Sim.ESPACOS, W=Sim.WALLS;
 let _s=4711; const R=()=>(_s=(_s*16807)%2147483647)/2147483647;   // sorteio próprio: não mexe no vr() da catedral
 const add=o=>{ world.add(o); return o; };
@@ -13,18 +13,18 @@ const caixa=(x1,x2,y1,y2,z1,z2,mat,S,sombra)=>{ const m=meshBox(x1,x2,y1,y2,z1,z
 
 // ---------- materiais ----------
 const n=makeNoise(9091);
-TEX.reboco=pbr(256,(u,v,o)=>{ const f=n.fbm(u*5,v*5,5,5), desc=smooth(.62,.7,n.fbm(u*3+7,v*3,3,4)), mancha=smooth(.5,.9,n.fbm(u*2,v*9+3,2,3))*(1-v)*.5;
+TEX.reboco=pbrReal('reboco',256,(u,v,o)=>{ const f=n.fbm(u*5,v*5,5,5), desc=smooth(.62,.7,n.fbm(u*3+7,v*3,3,4)), mancha=smooth(.5,.9,n.fbm(u*2,v*9+3,2,3))*(1-v)*.5;
   const k=.85+.18*(f-.5)-mancha*.4; o.h=f*.3-desc*.5;
   if(desc>.5){ o.r=120*k; o.g=84*k; o.b=64*k; o.ro=.95; } else { o.r=150*k; o.g=160*k; o.b=140*k; o.ro=.9; } },1.6);   // verde-hospital, descascando no tijolo
-TEX.lambri=pbr(256,(u,v,o)=>{ const T=8,tx=Math.floor(u*T),ty=Math.floor(v*T),lu=u*T-tx,lv=v*T-ty,e=Math.min(lu,1-lu,lv,1-lv), f=n.fbm(u*9,v*9,9,3), rachado=smooth(.7,.75,n.fbm(u*6+1,v*6,6,3));
+TEX.lambri=pbrReal('lambri',256,(u,v,o)=>{ const T=8,tx=Math.floor(u*T),ty=Math.floor(v*T),lu=u*T-tx,lv=v*T-ty,e=Math.min(lu,1-lu,lv,1-lv), f=n.fbm(u*9,v*9,9,3), rachado=smooth(.7,.75,n.fbm(u*6+1,v*6,6,3));
   const junta=e<.05?.45:1, k=(.78+.2*f)*junta*(1-rachado*.3); o.h=junta<1?-.4:f*.1; o.r=72*k; o.g=92*k; o.b=84*k; o.ro=junta<1?.95:.35; },1.2);    // azulejo verde-escuro
-TEX.ladrilho=pbr(512,(u,v,o)=>{ const T=10,tx=Math.floor(u*T),ty=Math.floor(v*T),lu=u*T-tx,lv=v*T-ty,e=Math.min(lu,1-lu,lv,1-lv), f=n.fbm(u*8,v*8,8,4), suj=smooth(.45,.85,n.fbm(u*2+4,v*2,2,4));
+TEX.ladrilho=pbrReal('ladrilho',512,(u,v,o)=>{ const T=10,tx=Math.floor(u*T),ty=Math.floor(v*T),lu=u*T-tx,lv=v*T-ty,e=Math.min(lu,1-lu,lv,1-lv), f=n.fbm(u*8,v*8,8,4), suj=smooth(.45,.85,n.fbm(u*2+4,v*2,2,4));
   const claro=(tx+ty)%2===0, junta=e<.04?.5:1, k=(claro?1:.42)*(.82+.2*f)*junta*(1-suj*.35); o.h=junta<1?-.3:f*.08; o.r=196*k; o.g=190*k; o.b=172*k; o.ro=junta<1?.95:.4+suj*.4; },1);   // xadrez gasto
-TEX.tabua=pbr(256,(u,v,o)=>{ const tb=Math.floor(u*6), lu=u*6-tb, f=n.fbm(u*3,v*24+tb*7,3,4), junta=lu<.04?.5:1, k=(.65+.3*f)*junta; o.h=junta<1?-.3:f*.2; o.r=82*k; o.g=58*k; o.b=40*k; o.ro=.75; },1.3);
-TEX.teto=pbr(256,(u,v,o)=>{ const f=n.fbm(u*4,v*4,4,5), mofo=smooth(.55,.8,n.fbm(u*2+9,v*2,2,4)), k=.6+.2*f-mofo*.35; o.h=f*.2; o.r=120*k; o.g=120*k; o.b=112*k; o.ro=.95; },1);
-TEX.grama=pbr(256,(u,v,o)=>{ const f=n.fbm(u*10,v*10,10,5), t=smooth(.5,.8,n.fbm(u*3+2,v*3,3,4)), k=.55+.3*f; o.h=f*.3; o.r=(46+40*t)*k; o.g=(62+20*t)*k; o.b=(34+12*t)*k; o.ro=1; },1.4);
-TEX.terra=pbr(256,(u,v,o)=>{ const f=n.fbm(u*8,v*8,8,5), k=.6+.3*f; o.h=f*.4; o.r=64*k; o.g=48*k; o.b=34*k; o.ro=1; },1.6);
-TEX.cascalho=pbr(256,(u,v,o)=>{ const f=n.fbm(u*20,v*20,20,4), k=.55+.4*f; o.h=f*.6; o.r=96*k; o.g=92*k; o.b=86*k; o.ro=1; },2.2);
+TEX.tabua=pbrReal('tabua',256,(u,v,o)=>{ const tb=Math.floor(u*6), lu=u*6-tb, f=n.fbm(u*3,v*24+tb*7,3,4), junta=lu<.04?.5:1, k=(.65+.3*f)*junta; o.h=junta<1?-.3:f*.2; o.r=82*k; o.g=58*k; o.b=40*k; o.ro=.75; },1.3);
+TEX.teto=pbrReal('teto',256,(u,v,o)=>{ const f=n.fbm(u*4,v*4,4,5), mofo=smooth(.55,.8,n.fbm(u*2+9,v*2,2,4)), k=.6+.2*f-mofo*.35; o.h=f*.2; o.r=120*k; o.g=120*k; o.b=112*k; o.ro=.95; },1);
+TEX.grama=pbrReal('grama',256,(u,v,o)=>{ const f=n.fbm(u*10,v*10,10,5), t=smooth(.5,.8,n.fbm(u*3+2,v*3,3,4)), k=.55+.3*f; o.h=f*.3; o.r=(46+40*t)*k; o.g=(62+20*t)*k; o.b=(34+12*t)*k; o.ro=1; },1.4);
+TEX.terra=pbrReal('terra',256,(u,v,o)=>{ const f=n.fbm(u*8,v*8,8,5), k=.6+.3*f; o.h=f*.4; o.r=64*k; o.g=48*k; o.b=34*k; o.ro=1; },1.6);
+TEX.cascalho=pbrReal('cascalho',256,(u,v,o)=>{ const f=n.fbm(u*20,v*20,20,4), k=.55+.4*f; o.h=f*.6; o.r=96*k; o.g=92*k; o.b=86*k; o.ro=1; },2.2);
 const rep=(t,x,y)=>{ const c={}; for(const k of ['map','normalMap','roughnessMap']) if(t[k]){ c[k]=t[k].clone(); c[k].wrapS=c[k].wrapT=THREE.RepeatWrapping; c[k].repeat.set(x,y); c[k].needsUpdate=true; } return c; };
 const M={
   reboco:desgastar(new THREE.MeshStandardMaterial({...TEX.reboco,roughness:1}),{mancha:.5,base:.45,musgo:.2}),
@@ -132,14 +132,22 @@ for(const q of Sim.QUADROS){ // caixa de metal na parede mais próxima, com alav
   QUADRO.push({q,alav,luz}); }
 
 // ---------- móveis (a caixa da simulação é a colisão; aqui o que se vê) ----------
+// v6.4: modelos escaneados (CC0, assets/modelos/fontes.json) esticados na caixa da peça; o eixo comprido do modelo é x
+// pedaco: a peça comprida vira uma fileira de modelos de uns tantos metros (um banco de 6,8 m são quatro bancos, não um esticado)
+const M3=(nome,w,h,giro,pedaco)=>{ const MD=modelo&&modelo(nome); if(!MD) return null; const ax=w.x2-w.x1>=w.z2-w.z1, L=Math.max(w.x2-w.x1,w.z2-w.z1), n=pedaco?Math.max(1,Math.round(L/pedaco)):1;
+  for(let k=0;k<n;k++){ const m=new THREE.Mesh(MD.geo,MD.mat), c=-L/2+(k+.5)*L/n; m.scale.set(L/n*(n>1?.94:1),h,Math.min(w.x2-w.x1,w.z2-w.z1));
+    m.position.set((w.x1+w.x2)/2+(ax?c:0),0,(w.z1+w.z2)/2+(ax?0:c)); m.rotation.y=(ax?0:-PI/2)+(giro||0); m.castShadow=m.receiveShadow=true; add(m); }
+  return true; };
 const leito=w=>{ const ax=w.x2-w.x1>w.z2-w.z1, cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, L=ax?w.x2-w.x1:w.z2-w.z1, P=ax?w.z2-w.z1:w.x2-w.x1;
   const B=(dx,y1,y2,dz,lx,lz,mat)=>{ const x=ax?cx+dx:cx+dz, z=ax?cz+dz:cz+dx, sx=ax?lx:lz, sz=ax?lz:lx; caixa(x-sx/2,x+sx/2,y1,y2,z-sz/2,z+sz/2,mat,1); };
+  // a cama de ferro escaneada (a cabeceira, alta, no lado negativo como a de antes) com o colchão e o travesseiro por cima
+  if(M3('leito',w,1.05,PI)){ B(0,.47,.62,0,L-.16,P-.12,M.colchao); B(-L/2+.4,.62,.72,0,.5,P*.7,M.colchao); return; }
   B(0,.42,.6,0,L-.1,P-.1,M.colchao); B(0,.36,.42,0,L,P,M.ferro);
   for(const s of [-1,1]){ B(s*(L/2-.03),0,s<0?1.05:.8,0,.05,P,M.ferro); for(const t of [-1,1]) B(s*(L/2-.03),0,.4,t*(P/2-.03),.05,.05,M.ferro); }
   B(-L/2+.4,.6,.72,0,.5,P*.7,M.colchao); };
 const PEC={
-  leito, banco:w=>{ caixa(w.x1,w.x2,.42,.5,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,.5,w.h,w.z2-.1,w.z2,M.madeira,2); caixa(w.x1+.1,w.x1+.2,0,.42,w.z1,w.z2,M.madeira,2); caixa(w.x2-.2,w.x2-.1,0,.42,w.z1,w.z2,M.madeira,2); },
-  mesa:w=>{ caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
+  leito, banco:w=>{ if(M3('banco_asilo',w,w.h,0,1.7)) return; caixa(w.x1,w.x2,.42,.5,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,.5,w.h,w.z2-.1,w.z2,M.madeira,2); caixa(w.x1+.1,w.x1+.2,0,.42,w.z1,w.z2,M.madeira,2); caixa(w.x2-.2,w.x2-.1,0,.42,w.z1,w.z2,M.madeira,2); },
+  mesa:w=>{ if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
   tanque:w=>{ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.concreto,2); caixa(w.x1+.12,w.x2-.12,w.h-.05,w.h+.01,w.z1+.12,w.z2-.12,M.agua,1,false); },
   bancada:w=>{ caixa(w.x1,w.x2,w.h-.08,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,0,w.h-.08,w.z1+.1,w.z2-.1,M.madeira,2); },
   maca:w=>{ caixa(w.x1,w.x2,.8,.88,w.z1,w.z2,M.colchao,1); caixa(w.x1+.1,w.x2-.1,.72,.8,w.z1+.1,w.z2-.1,M.ferro,1); for(const [x,z] of [[w.x1+.15,w.z1+.15],[w.x2-.15,w.z1+.15],[w.x1+.15,w.z2-.15],[w.x2-.15,w.z2-.15]]) caixa(x-.03,x+.03,0,.72,z-.03,z+.03,M.ferro,1); },

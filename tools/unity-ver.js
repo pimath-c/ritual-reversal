@@ -108,7 +108,7 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const VP={width:960,height:540};
   // jogo oficial
-  const of=await browser.newPage({viewport:VP}); const erros=[]; of.on('pageerror',e=>erros.push('oficial: '+e.message));
+  const of=await browser.newPage({viewport:VP}); const erros=[]; of.setDefaultTimeout(240000); of.on('pageerror',e=>erros.push('oficial: '+e.message));
   await of.route('**/*',r=>{ const u=r.request().url(); if(THREE_DIR&&u.includes('cdn.jsdelivr.net/npm/three@0.128.0/')) return r.fulfill({path:path.join(THREE_DIR,u.split('three@0.128.0/')[1]),contentType:'application/javascript'}); if(u.includes('fonts.g')) return r.abort(); return r.continue(); });
   if(MAPA!=='catedral') await of.addInitScript(m=>{ try{ sessionStorage.setItem('rr-mapa-boot',m); }catch(e){} },MAPA);
   await of.goto('file://'+(process.env.HTML||path.join(ROOT,'dist','ritual-reversal.html'))+'#autotest'); await of.waitForFunction(()=>window.__T,null,{timeout:180000});
@@ -132,7 +132,7 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
   }
   await of.close();
   // depois a exportação do Unity
-  const un=await browser.newPage({viewport:VP}); un.on('pageerror',e=>{ console.error('a página do Unity falhou: '+e.message); process.exit(2); }); un.on('console',m=>{ if(process.env.DEBUG) console.log('[unity]',m.text()); });
+  const un=await browser.newPage({viewport:VP}); un.setDefaultTimeout(240000); un.on('pageerror',e=>{ console.error('a página do Unity falhou: '+e.message); process.exit(2); }); un.on('console',m=>{ if(process.env.DEBUG) console.log('[unity]',m.text()); });
   un.on('crash',()=>{ console.error('a página do Unity caiu (memória?)'); process.exit(2); });
   await un.route('http://ver.local/**',r=>{ const u=r.request().url(), rel=u.split('ver.local/')[1];
     if(rel==='pagina') return r.fulfill({body:PAGINA,contentType:'text/html'});

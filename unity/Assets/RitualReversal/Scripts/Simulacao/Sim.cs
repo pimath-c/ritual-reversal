@@ -189,6 +189,7 @@ namespace RitualReversal.Simulacao
             int r = Fendas(g) + Farois(g);
             if (r >= 3) return "Os três rituais desta noite já aconteceram";
             if (g.momento < 1) return "Este altar só desperta na Vigília";
+            if (g.lab.pausa > 0) { double falta = g.lab.pausa - (g.rt - g.lastResolveT); return r > 0 && falta > 0 ? "O próximo ritual pode começar em " + JS.Num(Math.Ceiling(falta)) + " s" : null; }
             if (r >= 2 && g.momento < 2) return "O último ritual só pode começar na Hora Morta";
             return null;
         }
@@ -790,7 +791,9 @@ namespace RitualReversal.Simulacao
         {
             if (A.localized) return; A.localized = true; g.know[A.i] = "ativo"; g.eco = null;
             Feed(g, "O coro revela: " + A.name + ".", "big", "H"); Feed(g, "Os Caçadores descobriram " + A.name + ".", "c", "C");
-            LogE(g, "localized", "altar", A.name, "prog", R2(A.prog), "how", how);
+            // v6.4: quanto faltava do ritual e a que distância (em linha reta) estava o Caçador vivo mais perto (-1: nenhum de pé)
+            var hs = g.actors.Where(x => x.team == "H" && x.st == "alive").ToList();
+            LogE(g, "localized", "altar", A.name, "prog", R2(A.prog), "how", how, "restante", R2((1 - A.prog) * RitDur(g, Math.Max(1, A.lastN))), "distCaca", hs.Count > 0 ? R2(hs.Min(h => Dist(h, A))) : -1);
             if ((how == "ouvido" || how == "circulo") && !A.eco && A.prog >= CFG.achouLance) { var h = g.actors.Where(x => x.team == "H" && x.st == "alive").OrderBy(x => Dist(x, A)).FirstOrDefault(); if (h != null) Lance(g, "achou_cedo", new[] { h.name }, A, "H", R2(A.prog)); }
         }
         // move e, se o resultado ainda ficar preso entre peças (cantos côncavos de escombros), desfaz o passo

@@ -144,13 +144,29 @@ namespace RitualReversal.Visual
                 case "estatua": Estatua(w, x, z); return;
                 case "rocha":
                     {
-                        float ry = vr() * 3; Est(Geo.Dodecaedro(.5f, 1), M("rocha"), TRS(x, w.h * .42f, z, 0, ry, 0, L * 1.05f, w.h * 1.5f, D * 1.05f));
-                        if (vr() < .6f) { float px = x + (vr() - .5f) * L, pz = z + (vr() - .5f) * D; float a = vr(), b = vr() * 3, c = vr(); Est(Geo.Dodecaedro(.5f), M("rocha"), TRS(px, w.h * .25f, pz, a, b, c, L * .5f, w.h * .8f, D * .5f)); }
+                        // v6.4: a rocha e a pedra escaneadas (CC0, Resources/Modelos) esticadas na caixa da peça; sem elas, os dodecaedros
+                        var MR = ModeloGLB.Carregar("rocha"); var MP = ModeloGLB.Carregar("pedra");
+                        float ry = vr() * 3;
+                        if (MR != null) Est(MR.geo, MR.mat, TRS(x, -w.h * .08f, z, 0, ry, 0, L * 1.05f, w.h * 1.2f, D * 1.05f));
+                        else Est(Geo.Dodecaedro(.5f, 1), M("rocha"), TRS(x, w.h * .42f, z, 0, ry, 0, L * 1.05f, w.h * 1.5f, D * 1.05f));
+                        if (vr() < .6f)
+                        {
+                            float px = x + (vr() - .5f) * L, pz = z + (vr() - .5f) * D; float a = vr(), b = vr() * 3, c = vr();
+                            if (MP != null) Est(MP.geo, MP.mat, TRS(px, -.05f, pz, a * .3f, b, c * .3f, L * .5f, w.h * .65f, D * .5f));
+                            else Est(Geo.Dodecaedro(.5f), M("rocha"), TRS(px, w.h * .25f, pz, a, b, c, L * .5f, w.h * .8f, D * .5f));
+                        }
                         return;
                     }
                 case "tronco": case "raiz":
                     {
                         bool aoX = L >= D; float len = Math.Max(L, D), gr = w.kind == "tronco" ? 1.3f : 1;
+                        var MT = ModeloGLB.Carregar("tronco");
+                        if (MT != null)
+                        {   // v6.4: o tronco morto escaneado (CC0), deitado na caixa; os mesmos sorteios dos galhos de antes
+                            Est(MT.geo, MT.mat, TRS(x, -.05f, z, 0, aoX ? 0 : PI / 2, 0, len * 1.05f, 1.05f * gr, 1.05f * gr));
+                            for (int k = 0; k < 12; k++) vr();
+                            return;
+                        }
                         Est(Geo.Cilindro(.42f * gr, .5f * gr, len, 10), M("casca"), TRS(x, .45f * gr, z, aoX ? 0 : PI / 2, 0, aoX ? PI / 2 : 0));
                         for (int k = 0; k < 3; k++) { float t = (vr() - .5f) * len * .8f; var gh = Geo.Cilindro(.05f, .12f, 1 + vr(), 5); float rx = vr() - .5f, rz = vr() - .5f; Est(gh, M("casca"), TRS(x + (aoX ? t : 0), .8f, z + (aoX ? 0 : t), rx, 0, rz)); }
                         foreach (int e in new[] { -1, 1 }) Est(Geo.Circulo(.44f, 10), M("madeiraCorte"), TRS(x + (aoX ? e * len / 2 : 0), .45f * gr, z + (aoX ? 0 : e * len / 2), 0, aoX ? e * PI / 2 : (e > 0 ? 0 : PI), 0, gr, gr, gr));
@@ -165,7 +181,12 @@ namespace RitualReversal.Visual
                 case "tenda":
                     Est(Geo.Cone(.5f, 1, 4, 1, true), M("lona"), TRS(x, w.h / 2, z, 0, PI / 4, 0, L * 1.35f, w.h, D * 1.35f));
                     Est(Geo.Cilindro(.05f, .05f, w.h + .5f, 5), M("wood"), x, (w.h + .5f) / 2, z); return;
-                case "caixote": Caixa(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 1); return;
+                case "caixote":
+                    {
+                        var MC = ModeloGLB.Carregar("caixote");   // v6.4: o caixote escaneado (CC0)
+                        if (MC == null) { Caixa(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 1); return; }
+                        bool aoX = L >= D; Est(MC.geo, MC.mat, TRS(x, 0, z, 0, aoX ? 0 : PI / 2, 0, Math.Max(L, D), w.h, Math.Min(L, D))); return;
+                    }
                 case "carvalho":
                     {
                         float r = Math.Min(L, D) / 2; Est(Geo.Cilindro(r * .8f, r * 1.25f, w.h, 14, 4), M("casca"), x, w.h / 2, z);

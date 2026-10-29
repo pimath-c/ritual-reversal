@@ -11,6 +11,9 @@ const csvOut=args.includes('--csv')?args[args.indexOf('--csv')+1]:null;
 const Sim=require('../shared/sim.js');
 const CACA_NOME={selou:'selou (Farol)',perdeu_disputa:'chegou a tempo e perdeu o círculo',chegou_tarde:'chegou tarde demais',perto_sem_entrar:'chegou perto e não entrou',altar_errado:'foi a outro altar e não chegou',nunca_chegou:'nunca chegou perto',aberto:'noite acabou antes'};
 const CONV={}, SAIDA={}, VERSOES={}, DIFS={}, DISP={}, LANCES={}, ISCA=[];
+// v6.4 (da análise de design de 28/10): o que decide a noite. Primeira queda, resgates, a chance de selar pelo tempo que faltava e
+// pela distância do Caçador quando o ritual foi localizado, vitória por classe e por altar, e o intervalo entre rituais.
+const DEC={noites:0,primeira:{n:0,venceu:0,porLado:{H:[0,0],C:[0,0]}},quedas:0,reanim:0,exec:0,sangrou:0,loc:[],classes:{},altares:{},entre:[],consagrar:[]};
 const NOITE={n:0,culto:0,fendas:0,farois:0,duracao:[],verdade:[],semVerdade:0,maiorSemPista:[],pistas:[],lanterna:0,desmasc:0,localizarFim:[],labs:{}};
 
 const METAS={
@@ -79,6 +82,19 @@ for(const f of files){
         soma('cultoCirculo',C.circulo); soma('cultoCanal',C.canal); soma('cultoAtacando',C.atacando); soma('cultoDano',C.dano); soma('cultoQuedas',C.quedas);
         soma('intSelo',R.interrupcoes&&R.interrupcoes.selo); soma('intCanal',R.interrupcoes&&R.interrupcoes.canal); } });
     (M.lances||[]).forEach(x=>LANCES[x.tipo]=(LANCES[x.tipo]||0)+1); if(M.engano.segundosPresosEmChamariz!=null) ev.filter(e=>e.ev==='purge'&&e.decoy&&e.isca!=null).forEach(e=>ISCA.push(e.isca));
+    { const cultoVenceu=J.scores.B.done>=2; DEC.noites++;
+      // primeira queda: quem derrubou primeiro venceu a noite? (o caído é de um lado; quem derrubou, do outro)
+      const q=ev.find(e=>e.ev==='down'); if(q){ const derrubou=q.team==='H'?'C':'H', ganhou=(derrubou==='C')===cultoVenceu; DEC.primeira.n++; if(ganhou) DEC.primeira.venceu++; DEC.primeira.porLado[derrubou][0]++; if(ganhou) DEC.primeira.porLado[derrubou][1]++; }
+      DEC.quedas+=ev.filter(e=>e.ev==='down').length; DEC.reanim+=ev.filter(e=>e.ev==='revive').length; DEC.exec+=ev.filter(e=>e.ev==='death'&&e.how==='exec').length; DEC.sangrou+=ev.filter(e=>e.ev==='death'&&e.how==='bleed').length;
+      // cada ritual: quanto faltava e a que distância estava a caça na localização (registros da v6.4 em diante) e como acabou
+      const aberto={}; let fimAnt=null;
+      for(const e of ev){
+        if(e.ev==='ritual_start'){ aberto[e.altar]={loc:null}; if(fimAnt!=null){ DEC.entre.push(e.t-fimAnt); fimAnt=null; } }
+        if(e.ev==='consecrate'&&fimAnt!=null&&DEC._ultimaConsagracao!==fimAnt){ DEC.consagrar.push(e.t-fimAnt); DEC._ultimaConsagracao=fimAnt; }
+        if(e.ev==='localized'&&aberto[e.altar]) aberto[e.altar].loc=e;
+        if(e.ev==='sealed'||e.ev==='ritual_complete'){ const R=aberto[e.altar]; const A_=DEC.altares[e.altar]||(DEC.altares[e.altar]={selou:0,fenda:0}); A_[e.ev==='sealed'?'selou':'fenda']++;
+          if(R&&R.loc&&R.loc.restante!=null) DEC.loc.push({restante:R.loc.restante,dist:R.loc.distCaca,selou:e.ev==='sealed'}); delete aberto[e.altar]; fimAnt=e.t; } }
+      const ini=ev.find(e=>e.ev==='round_start'); (ini&&ini.teams||[]).forEach(t=>{ const C=DEC.classes[t.cls]||(DEC.classes[t.cls]={n:0,venceu:0}); C.n++; if((t.team==='C')===cultoVenceu) C.venceu++; }); }
     const v=J.versao?`v${J.versao} (registro ${J.registro})`:'anterior à v5.6'; VERSOES[v]=(VERSOES[v]||0)+1; const dd=J.dificuldade||'não registrada'; DIFS[dd]=(DIFS[dd]||0)+1;
     const lab=Sim.labDe(J.lab), mud=Object.keys(Sim.LAB_OPCOES).filter(k=>lab[k]!==Sim.labDe()[k]).map(k=>`${k}=${lab[k]}`).join(',')||'padrão'; NOITE.labs[mud]=(NOITE.labs[mud]||0)+1; }
   const S=J.scores||{};
@@ -169,6 +185,25 @@ if(NOITE.n){ L.push('\nNOITE ÚNICA (relatório de playtest)'); L.push('-'.repea
     const NL={selo_limite:'selo no último instante',achou_cedo:'achou o ritual antes do coro',defesa:'defendeu o ritual até a Fenda',resgate:'reanimou depois de impedir a execução',transferencia:'Transferência que virou Fenda',chamariz:'Chamariz que prendeu a caça'};
     for(const [k,v] of Object.entries(LANCES).sort((a,b)=>b[1]-a[1])) linha(NL[k]||k, v, num(v/NOITE.n,2)+' por noite', '');
     if(ISCA.length) linha('Chamariz queimado: caça presa (s)', num(med(ISCA),0), `mediana de ${ISCA.length}`, ''); } }
+
+if(DEC.noites){ L.push('\nO QUE DECIDE A NOITE (v6.4)'); L.push('-'.repeat(78));
+  const P=DEC.primeira; linha('Quem derrubou primeiro venceu', P.n?`${P.venceu}/${P.n}`:'—', P.n?pct(P.venceu/P.n):'', '');
+  for(const [k,nome] of [['H','   a caça derrubou primeiro'],['C','   o culto derrubou primeiro']]) if(P.porLado[k][0]) linha(nome, `${P.porLado[k][1]}/${P.porLado[k][0]}`, pct(P.porLado[k][1]/P.porLado[k][0])+' venceu', '');
+  linha('Quedas reanimadas', `${DEC.reanim}/${DEC.quedas}`, DEC.quedas?pct(DEC.reanim/DEC.quedas):'', '');
+  linha('   executadas / sangraram', `${DEC.exec} / ${DEC.sangrou}`, '', '');
+  linha('Entre um ritual e o próximo', num(med(DEC.entre),0)+' s', `mediana de ${DEC.entre.length}`, '');
+  linha('   até a próxima consagração', num(med(DEC.consagrar),0)+' s', 'mediana', '');
+  if(DEC.loc.length){ L.push('\nCHANCE DE SELAR PELO QUE FALTAVA QUANDO O RITUAL FOI LOCALIZADO'); L.push('-'.repeat(78));
+    const faixa=(lista,campo,cortes,un)=>{ for(let i=0;i<=cortes.length;i++){ const a=i?cortes[i-1]:-Infinity,b=i<cortes.length?cortes[i]:Infinity; const R=lista.filter(x=>x[campo]!=null&&x[campo]>=a&&x[campo]<b);
+      if(R.length) linha(`   ${i?a:'<'+(i<cortes.length?b:'')}${i?(b===Infinity?'+':'–'+b):''} ${un}`, `${R.filter(x=>x.selou).length}/${R.length}`, pct(R.filter(x=>x.selou).length/R.length)+' selados', ''); } };
+    linha('Tempo restante do ritual','','',''); faixa(DEC.loc,'restante',[10,20,30],'s');
+    linha('Caçador mais perto (linha reta)','','',''); faixa(DEC.loc.filter(x=>x.dist>=0),'dist',[30,60,100],'m');
+    const nv=DEC.loc.filter(x=>x.dist<0); if(nv.length) linha('   nenhum Caçador de pé', `${nv.filter(x=>x.selou).length}/${nv.length}`, '', ''); }
+  L.push('\nVITÓRIA POR CLASSE (noites em que a classe jogou)'); L.push('-'.repeat(78));
+  for(const [k,C] of Object.entries(DEC.classes).sort((a,b)=>b[1].n-a[1].n)) linha(k, `${C.venceu}/${C.n}`, pct(C.venceu/C.n), '');
+  L.push('\nRITUAIS POR ALTAR (selados / Fendas)'); L.push('-'.repeat(78));
+  for(const [k,X] of Object.entries(DEC.altares).sort()) linha(k, `${X.selou} / ${X.fenda}`, pct(X.selou/(X.selou+X.fenda))+' selados', '');
+  L.push('(Ainda não medido: tempo de cada jogador sem nenhuma ação útil.)'); }
 
 const fora=Object.keys(METAS).filter(k=>medido[k]!=null&&status(k,medido[k])!=='na meta');
 L.push('\n'+(fora.length?`Fora da meta: ${fora.map(k=>METAS[k][2]).join('; ')}.`:'Todas as métricas principais estão dentro da meta.'));

@@ -1,0 +1,208 @@
+{
+ "floor": {
+  "id": "rock_tile_floor",
+  "pagina": "https://polyhaven.com/a/rock_tile_floor",
+  "licenca": "CC0",
+  "autor": "Charlotte Baglioni",
+  "uso": "chão de pedra da catedral (nave, coro, claustro)",
+  "media": [
+   61.9,
+   57.1,
+   52.6
+  ]
+ },
+ "wall": {
+  "id": "castle_wall_slates",
+  "pagina": "https://polyhaven.com/a/castle_wall_slates",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "paredes de pedra (catedral, mosteiro, ruínas)",
+  "media": [
+   71.2,
+   66.4,
+   61.3
+  ]
+ },
+ "wood": {
+  "id": "rough_wood",
+  "pagina": "https://polyhaven.com/a/rough_wood",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "madeira (bancos, vigas, caixotes, portas)",
+  "media": [
+   65.9,
+   38.6,
+   23.8
+  ]
+ },
+ "marble": {
+  "id": "marble_01",
+  "pagina": "https://polyhaven.com/a/marble_01",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "mármore (altares, colunas)",
+  "media": [
+   169.4,
+   164.4,
+   157.6
+  ]
+ },
+ "metal": {
+  "id": "rusty_metal_04",
+  "pagina": "https://polyhaven.com/a/rusty_metal_04",
+  "licenca": "CC0",
+  "autor": "Amal Kumar",
+  "uso": "metal enferrujado (grades, ferragens)",
+  "media": [
+   108.4,
+   82.2,
+   49.6
+  ]
+ },
+ "cloth": {
+  "id": "rough_linen",
+  "pagina": "https://polyhaven.com/a/rough_linen",
+  "licenca": "CC0",
+  "autor": "colormass, Rico Cilliers",
+  "uso": "pano (tendas, estandartes; em cinza, a cor vem do material)",
+  "cinza": true,
+  "media": [
+   187.3,
+   187.3,
+   187.3
+  ]
+ },
+ "leather": {
+  "id": "brown_leather",
+  "pagina": "https://polyhaven.com/a/brown_leather",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "couro (em cinza, a cor vem do material)",
+  "media": [
+   192.3,
+   192.3,
+   192.3
+  ],
+  "cinza": true
+ },
+ "rocha": {
+  "id": "rock_face_03",
+  "pagina": "https://polyhaven.com/a/rock_face_03",
+  "licenca": "CC0",
+  "autor": "Dario Barresi, Rico Cilliers",
+  "uso": "rocha do desfiladeiro e do promontório",
+  "media": [
+   67.2,
+   66.4,
+   62.6
+  ]
+ },
+ "chao": {
+  "id": "forest_leaves_02",
+  "pagina": "https://polyhaven.com/a/forest_leaves_02",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "chão da mata",
+  "media": [
+   50.3,
+   42.4,
+   29.6
+  ]
+ },
+ "reboco": {
+  "id": "worn_plaster_wall",
+  "pagina": "https://polyhaven.com/a/worn_plaster_wall",
+  "licenca": "CC0",
+  "autor": "Dimitrios Savva",
+  "uso": "Asilo: reboco das paredes",
+  "media": [
+   120.7,
+   123.9,
+   107.4
+  ]
+ },
+ "lambri": {
+  "id": "grey_tiles",
+  "pagina": "https://polyhaven.com/a/grey_tiles",
+  "licenca": "CC0",
+  "autor": "Amal Kumar",
+  "uso": "Asilo: azulejo do lambri",
+  "media": [
+   56,
+   71.6,
+   65.4
+  ]
+ },
+ "ladrilho": {
+  "id": "floor_tiles_06",
+  "pagina": "https://polyhaven.com/a/floor_tiles_06",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "Asilo: ladrilho xadrez do piso",
+  "media": [
+   103.8,
+   100.6,
+   91.1
+  ]
+ },
+ "tabua": {
+  "id": "old_wood_floor",
+  "pagina": "https://polyhaven.com/a/old_wood_floor",
+  "licenca": "CC0",
+  "autor": "Guillaume Monsergent",
+  "uso": "Asilo: assoalho de tábuas",
+  "media": [
+   64.4,
+   45.6,
+   31.5
+  ]
+ },
+ "teto": {
+  "id": "ceiling_interior",
+  "pagina": "https://polyhaven.com/a/ceiling_interior",
+  "licenca": "CC0",
+  "autor": "Dimitrios Savva",
+  "uso": "Asilo: teto",
+  "media": [
+   74.3,
+   74.3,
+   69.4
+  ]
+ },
+ "grama": {
+  "id": "grass_path_2",
+  "pagina": "https://polyhaven.com/a/grass_path_2",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "Asilo: gramado",
+  "media": [
+   36.7,
+   45.3,
+   25
+  ]
+ },
+ "terra": {
+  "id": "brown_mud_02",
+  "pagina": "https://polyhaven.com/a/brown_mud_02",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "Asilo: terra da horta",
+  "media": [
+   47.7,
+   35.8,
+   25.4
+  ]
+ },
+ "cascalho": {
+  "id": "gravel_floor",
+  "pagina": "https://polyhaven.com/a/gravel_floor",
+  "licenca": "CC0",
+  "autor": "Jenelle van Heerden, Matterfield",
+  "uso": "Asilo: cascalho das trilhas",
+  "media": [
+   71,
+   68.1,
+   63.6
+  ]
+ }
+}

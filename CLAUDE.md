@@ -47,7 +47,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.3b)
+## Estado atual (v6.4)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -196,6 +196,17 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Rituais em altar não escolhido = Transferência (dos bots), não defeito.
   Unity: `Mundo.Montar` faz `Mapa.Usar(MapaVisual.ID)` antes de montar (altares/reagentes/NPCs saem do `Mapa` da simulação; trocar
   de mapa no título montava a catedral com os pontos do Asilo).
+- v6.4 (notas em `notas/v6.4.md`, da análise de design de 28/10; créditos em `docs/ARTE.md`): texturas fotográficas CC0 do Poly Haven
+  (`assets/texturas/fontes.json` com `media` = cor média da textura gerada antiga; `python3 tools/montar-texturas.py` grava
+  `client/texturas.js` (`RR_TEXTURAS`, embutido pelos builds e servido) e `Resources/Texturas/<nome>_cor/_nor/_rug.bytes`; originais
+  em `assets/texturas/fontes/`, fora do git). Navegador: `pbrReal(nome,...)` no lugar de `pbr` (a Image entra já em `t.image`, o three
+  sobe quando decodifica; cópias com outra repetição dividem a mesma Image). Unity: `Pbr.Foto(nome) ?? Pbr.Criar(...)`. Modelos CC0
+  do Poly Haven no `montar-modelos.py` (`"polyhaven": id`, glTF 1K juntado em GLB, `reduzir` com pyfqmr e uv do vértice mais perto,
+  `"bordas": false` na cama): `rocha`/`pedra` (kind rocha), `tronco` (tronco/raiz, consome os 12 `vr()` dos galhos), `caixote`,
+  Asilo `leito`/`banco_asilo`/`mesa_asilo` (`M3` no asilo.js e no MundoAsilo.cs; eixo comprido em x). Laboratório `pausa`
+  ([0,45,25]: 0 = horários; senão `bloqueioRitual` deixa o próximo ritual passados `pausa` s de `lastResolveT`; C# `Lab.pausa`).
+  'localized' leva `restante` e `distCaca` (portado; comparar-cs bit a bit). `analisar.js`: "O que decide a noite" (primeira queda,
+  resgates, entre rituais, chance de selar por restante/distância, classe, altar). Bots 200 noites: pausa 45 → culto 37% → 28%.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

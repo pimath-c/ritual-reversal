@@ -12,6 +12,9 @@ import base64, io, json, math, os, struct, sys, urllib.request
 import numpy as np
 from PIL import Image
 
+# o Poly Haven recusa o User-Agent padrão do urllib (403)
+def pedido(url): return urllib.request.Request(url, headers={'User-Agent': 'RitualReversal/1.0 (ferramenta de montagem)'})
+
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTES = os.path.join(RAIZ, 'assets', 'modelos')
 
@@ -98,6 +101,46 @@ def normais(p, idx):
     return n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
 
 
+def baixar_polyhaven(ident, destino):
+    """Poly Haven (CC0): baixa o glTF de 1K (json, bin e a textura de cor) e junta num GLB com a textura de cor dentro."""
+    with urllib.request.urlopen(pedido(f'https://api.polyhaven.com/files/{ident}'), timeout=60) as r:
+        F = json.load(r)['gltf']['1k']['gltf']
+    def pegar(url):
+        with urllib.request.urlopen(pedido(url), timeout=180) as r:
+            return r.read()
+    J = json.loads(pegar(F['url'])); inc = {k: v['url'] for k, v in F.get('include', {}).items()}
+    BIN = b''; novas = []
+    for b in J['buffers']:   # todos os buffers num só, um atrás do outro
+        dado = pegar(inc[b['uri']]); novas.append(len(BIN)); BIN += dado + b'\0' * ((4 - len(dado) % 4) % 4)
+    for v in J['bufferViews']:
+        v['byteOffset'] = v.get('byteOffset', 0) + novas[v.get('buffer', 0)]; v['buffer'] = 0
+    usadas = {J['textures'][m['pbrMetallicRoughness']['baseColorTexture']['index']]['source'] for m in J.get('materials', []) if m.get('pbrMetallicRoughness', {}).get('baseColorTexture')}
+    for i in sorted(usadas):
+        im = J['images'][i]; dado = pegar(inc[im.pop('uri')])
+        J['bufferViews'].append({'buffer': 0, 'byteOffset': len(BIN), 'byteLength': len(dado)}); im['bufferView'] = len(J['bufferViews']) - 1
+        BIN += dado + b'\0' * ((4 - len(dado) % 4) % 4)
+    for im in J.get('images', []): im.pop('uri', None)
+    J['buffers'] = [{'byteLength': len(BIN)}]
+    js = json.dumps(J, separators=(',', ':')).encode(); js += b' ' * ((4 - len(js) % 4) % 4)
+    total = 12 + 8 + len(js) + 8 + len(BIN)
+    open(destino, 'wb').write(struct.pack('<III', 0x46546C67, 2, total) + struct.pack('<II', len(js), 0x4E4F534A) + js + struct.pack('<II', len(BIN), 0x004E4942) + BIN)
+
+
+def reduzir(p, n, uv, idx, alvo, bordas=True):
+    """Menos triângulos (pyfqmr, simplificação por erro quadrático, com as bordas e as emendas da textura preservadas); cada
+    vértice novo herda a normal e o uv do vértice original mais perto (o pyfqmr só devolve posições)."""
+    if len(idx) // 3 <= alvo:
+        return p, n, uv, idx
+    import pyfqmr
+    s = pyfqmr.Simplify(); s.setMesh(p.astype(np.float64), idx.reshape(-1, 3).astype(np.int32))
+    s.simplify_mesh(target_count=alvo, aggressiveness=7, preserve_border=bordas, verbose=False)
+    q, f, _ = s.getMesh()
+    perto = np.empty(len(q), dtype=np.int64)
+    for i in range(0, len(q), 512):
+        d = ((q[i:i + 512, None, :] - p[None, :, :]) ** 2).sum(-1); perto[i:i + 512] = d.argmin(1)
+    return q, n[perto], uv[perto], f.reshape(-1).astype(np.int64)
+
+
 def encaixar(p, n, cfg):
     """No tamanho do jogo: o pé em y = 0 e o meio em x/z = 0; normais pela inversa transposta da escala."""
     mn, mx = p.min(0), p.max(0); ext = mx - mn
@@ -150,9 +193,12 @@ def main():
         if nome.startswith('_'): continue
         orig = os.path.join(origens, nome + '.glb')
         if not os.path.exists(orig):
-            print('baixando', nome); urllib.request.urlretrieve(cfg['url'], orig)
+            print('baixando', nome)
+            if cfg.get('polyhaven'): baixar_polyhaven(cfg['polyhaven'], orig)
+            else: urllib.request.urlretrieve(cfg['url'], orig)
         J, BIN = ler_glb(open(orig, 'rb').read())
         p, n, uv, idx, img = juntar(J, BIN)
+        if cfg.get('triangulos'): p, n, uv, idx = reduzir(p, n, uv, idx, cfg['triangulos'], cfg.get('bordas', True))
         p, n = encaixar(p, n, cfg)
         if img is None:
             img = Image.new('RGB', (4, 4), (150, 148, 140))
@@ -163,7 +209,7 @@ def main():
         open(os.path.join(unity, nome + '.bytes'), 'wb').write(glb)
         saida[nome] = base64.b64encode(glb).decode()
         print('%-8s %6d vértices %6d triângulos  %4.2f × %4.2f × %4.2f m  textura %d  GLB %d KB' % (nome, len(p), len(idx) // 3, *(p.max(0) - p.min(0)), t, len(glb) // 1024))
-    js = ('// Modelos 3D gerados (Higgsfield/Tripo), montados por tools/montar-modelos.py a partir de assets/modelos/fontes.json.\n'
+    js = ('// Modelos 3D (gerados no Higgsfield/Tripo e escaneados CC0 do Poly Haven), montados por tools/montar-modelos.py a partir de assets/modelos/fontes.json.\n'
           '// GLB enxutos em base64; lidos por lerGLB no index.html (o Unity lê os mesmos em Resources/Modelos).\n'
           'window.RR_MODELOS=' + json.dumps(saida, separators=(',', ':')) + ';\n')
     open(js_saida, 'w').write(js)

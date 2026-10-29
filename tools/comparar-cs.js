@@ -66,7 +66,7 @@ function roteiro(Sim,g,D,r){
 // LAB=crepusculo=90,fogo=b,execucao=6,economia=0,formato=placar testa o laboratório de playtest
 function labDoAmbiente(){ const s=process.env.LAB; if(!s) return undefined; const o={};
   for(const par of s.split(',')){ const [k,v]=par.split('=').map(x=>x&&x.trim()); if(!k||v==null) continue;
-    o[k]=k==='crepusculo'||k==='execucao'?+v:k==='economia'?(v!=='0'&&v!=='false'):v; }
+    o[k]=k==='crepusculo'||k==='execucao'||k==='pausa'?+v:k==='economia'?(v!=='0'&&v!=='false'):v; }
   return o; }
 
 // 0. a planta que o C# lê sai do sim.js atual (um simulacao.json velho dá diferença que não é do porte)

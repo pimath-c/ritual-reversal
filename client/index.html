@@ -603,6 +603,7 @@ details.lab summary{ font-family:var(--mono); font-size:13px; } details.lab summ
 <script src="mundo.js"></script>
 <script src="skins.js"></script>
 <script src="modelos.js"></script>
+<script src="texturas.js"></script>
 <script src="asilo.js"></script>
 <script>
 (function(){
@@ -728,26 +729,34 @@ function pbr(size,fn,normalK){ if(PERF.leve) size=Math.max(128,size>>1);
     const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy()); if(srgb) t.encoding=THREE.sRGBEncoding; return t; };
   return {map:tex(C,true),normalMap:tex(N,false),roughnessMap:tex(R,false)};
 }
+// v6.4: texturas fotográficas (client/texturas.js, tools/montar-texturas.py; CC0 do Poly Haven). Com a foto do nome pedido,
+// ela entra no lugar da textura gerada por código (cor, relevo e rugosidade); sem ela, volta o pbr() de sempre.
+function pbrReal(nome,size,fn,normalK){ const R=window.RR_TEXTURAS&&window.RR_TEXTURAS[nome]; if(!R||!R.cor) return pbr(size,fn,normalK);
+  const tex=(b64,srgb)=>{ const t=new THREE.Texture(); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy()); if(srgb) t.encoding=THREE.sRGBEncoding;
+    // a imagem entra já (as cópias com outra repetição feitas antes de ela decodificar dividem a mesma Image); o three só
+    // envia à placa quando ela termina de decodificar (image.complete) e tenta de novo a cada quadro até lá
+    if(b64){ const img=new Image(); img.src='data:image/jpeg;base64,'+b64; t.image=img; t.needsUpdate=true; } return t; };
+  return {map:tex(R.cor,true),normalMap:tex(R.nor,false),roughnessMap:tex(R.rug,false),foto:nome}; }
 const smooth=(a,b,x)=>{ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
 const TEX={};
 function buildTextures(){
   const n=makeNoise(1337), tone=[]; for(let i=0;i<64;i++) tone.push(0.78+n.r()*0.3);
-  TEX.floor=pbr(512,(u,v,o)=>{ const T=4,tx=Math.floor(u*T),ty=Math.floor(v*T),lu=u*T-tx,lv=v*T-ty,e=Math.min(lu,1-lu,lv,1-lv);
+  TEX.floor=pbrReal('floor',512,(u,v,o)=>{ const T=4,tx=Math.floor(u*T),ty=Math.floor(v*T),lu=u*T-tx,lv=v*T-ty,e=Math.min(lu,1-lu,lv,1-lv);
     const f=n.fbm(u*8,v*8,8,5),f2=n.fbm(u*3+7,v*3+3,3,4),crack=Math.abs(n.fbm(u*16+2,v*16,16,3)-.5)<.006?.6:0,gr=smooth(.015,.05,e),k=tone[(tx*7+ty*3)%64]*(.72+.5*f)*(.75+.45*f2);
     o.h=gr*(.55+.35*f)-crack*.25; o.r=78*k*(.35+.65*gr)*(1-crack*.5); o.g=72*k*(.35+.65*gr)*(1-crack*.5); o.b=66*k*(.38+.62*gr)*(1-crack*.5); o.ro=lerp(.95,.55+.3*f,gr); },2.2);
-  TEX.wall=pbr(512,(u,v,o)=>{ const rows=6,ry=Math.floor(v*rows),lv=v*rows-ry,off=(ry%2)*.5,cols=3,cx=Math.floor(u*cols+off),lu=u*cols+off-cx,e=Math.min(lu,1-lu,lv*.5,(1-lv)*.5);
+  TEX.wall=pbrReal('wall',512,(u,v,o)=>{ const rows=6,ry=Math.floor(v*rows),lv=v*rows-ry,off=(ry%2)*.5,cols=3,cx=Math.floor(u*cols+off),lu=u*cols+off-cx,e=Math.min(lu,1-lu,lv*.5,(1-lv)*.5);
     const f=n.fbm(u*10,v*10,10,5),moss=smooth(.55,.75,n.fbm(u*4+9,v*4,4,4))*smooth(.3,1,v),bev=smooth(0,.05,e),t=.8+.35*tone[(cx*5+ry*11)%64]-.2,k=(.45+.55*bev)*t*(.75+.45*f);
     o.h=bev*.7+f*.3; o.r=lerp(86,48,moss*.6)*k; o.g=lerp(80,56,moss*.6)*k; o.b=lerp(74,44,moss*.6)*k; o.ro=.85+.1*f; },2.6);
-  TEX.wood=pbr(256,(u,v,o)=>{ const w=n.fbm(u*2,v*6,2,4),g=.5+.5*Math.sin((u*28+w*7)*Math.PI),f=n.fbm(u*20,v*4,16,3),k=.6+.4*g; o.h=g*.4+f*.3; o.r=70*k+20*f; o.g=42*k+10*f; o.b=26*k+6*f; o.ro=.6+.25*f; },1.5);
-  TEX.marble=pbr(256,(u,v,o)=>{ const f=n.fbm(u*4,v*4,4,5),vein=Math.pow(1-Math.abs(Math.sin((u*3+v*2+f*4)*Math.PI)),10),k=.78+.2*f-vein*.55; o.h=f*.2-vein*.2; o.r=200*k; o.g=194*k; o.b=186*k; o.ro=.28+.2*f+vein*.3; },1.2);
-  TEX.metal=pbr(256,(u,v,o)=>{ const f=n.fbm(u*8,v*8,8,5),scr=Math.abs(Math.sin(u*60+n.fbm(u*3,v*3,3,2)*20))>.985?1:0,pat=smooth(.55,.7,n.fbm(u*5+3,v*5,5,4)),k=.8+.3*f+scr*.3;
+  TEX.wood=pbrReal('wood',256,(u,v,o)=>{ const w=n.fbm(u*2,v*6,2,4),g=.5+.5*Math.sin((u*28+w*7)*Math.PI),f=n.fbm(u*20,v*4,16,3),k=.6+.4*g; o.h=g*.4+f*.3; o.r=70*k+20*f; o.g=42*k+10*f; o.b=26*k+6*f; o.ro=.6+.25*f; },1.5);
+  TEX.marble=pbrReal('marble',256,(u,v,o)=>{ const f=n.fbm(u*4,v*4,4,5),vein=Math.pow(1-Math.abs(Math.sin((u*3+v*2+f*4)*Math.PI)),10),k=.78+.2*f-vein*.55; o.h=f*.2-vein*.2; o.r=200*k; o.g=194*k; o.b=186*k; o.ro=.28+.2*f+vein*.3; },1.2);
+  TEX.metal=pbrReal('metal',256,(u,v,o)=>{ const f=n.fbm(u*8,v*8,8,5),scr=Math.abs(Math.sin(u*60+n.fbm(u*3,v*3,3,2)*20))>.985?1:0,pat=smooth(.55,.7,n.fbm(u*5+3,v*5,5,4)),k=.8+.3*f+scr*.3;
     o.h=f*.3+scr*.15; o.r=lerp(120,58,pat)*k; o.g=lerp(84,78,pat)*k; o.b=lerp(48,60,pat)*k; o.ro=.35+.3*f+pat*.3; },1.2);
 }
 function buildTexturasExtras(){
   const n=makeNoise(4242);
-  TEX.cloth=pbr(256,(u,v,o)=>{ const w=Math.sin(u*180*Math.PI)*Math.sin(v*180*Math.PI), f=n.fbm(u*6,v*6,6,4), gasto=smooth(.55,.85,n.fbm(u*3+5,v*3,3,4)), k=.8+.1*w+.3*(f-.5)-gasto*.2;
+  TEX.cloth=pbrReal('cloth',256,(u,v,o)=>{ const w=Math.sin(u*180*Math.PI)*Math.sin(v*180*Math.PI), f=n.fbm(u*6,v*6,6,4), gasto=smooth(.55,.85,n.fbm(u*3+5,v*3,3,4)), k=.8+.1*w+.3*(f-.5)-gasto*.2;
     o.h=.5+.3*w+f*.25; o.r=o.g=o.b=clamp(240*k,0,255); o.ro=.95; },1.6);
-  TEX.leather=pbr(256,(u,v,o)=>{ const f=n.fbm(u*14,v*14,14,4), vinco=Math.pow(Math.abs(n.fbm(u*4+2,v*4,4,3)-.5)*2,6), k=.82+.25*(f-.5)-vinco*.3;
+  TEX.leather=pbrReal('leather',256,(u,v,o)=>{ const f=n.fbm(u*14,v*14,14,4), vinco=Math.pow(Math.abs(n.fbm(u*4+2,v*4,4,3)-.5)*2,6), k=.82+.25*(f-.5)-vinco*.3;
     o.h=f*.4-vinco*.3; o.r=o.g=o.b=clamp(235*k,0,255); o.ro=.55+.3*f; },1.8);
   ['cloth','leather'].forEach(k=>['map','normalMap','roughnessMap'].forEach(m=>TEX[k][m].repeat.set(2,2)));
 }
@@ -908,10 +917,21 @@ const PECAS={
     }
     for(let k=0;k<3;k++){ const pd=new THREE.Mesh(new THREE.DodecahedronGeometry(.12+vr()*.12,0),M); pd.position.set(x+(vr()-.5)*1.4,.08,z+(vr()-.5)*1.4); world.add(pd); } },
   rocha(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, L=w.x2-w.x1, D=w.z2-w.z1;
-    const m=new THREE.Mesh(new THREE.DodecahedronGeometry(.5,1),MAT.rocha); m.scale.set(L*1.05,w.h*1.5,D*1.05); m.position.set(x,w.h*.42,z); m.rotation.y=vr()*3; m.castShadow=m.receiveShadow=true; world.add(m);
-    if(vr()<.6){ const q=new THREE.Mesh(new THREE.DodecahedronGeometry(.5,0),MAT.rocha); q.scale.set(L*.5,w.h*.8,D*.5); q.position.set(x+(vr()-.5)*L,w.h*.25,z+(vr()-.5)*D); q.rotation.set(vr(),vr()*3,vr()); q.castShadow=true; world.add(q); } },
+    // v6.4: a rocha escaneada (modelo 'rocha', CC0) esticada na caixa da peça, um pouco enterrada; sem o modelo, o dodecaedro
+    const MR=modelo('rocha'), MP=modelo('pedra');
+    const m=MR?new THREE.Mesh(MR.geo,MR.mat):new THREE.Mesh(new THREE.DodecahedronGeometry(.5,1),MAT.rocha);
+    if(MR){ m.scale.set(L*1.05,w.h*1.2,D*1.05); m.position.set(x,-w.h*.08,z); } else { m.scale.set(L*1.05,w.h*1.5,D*1.05); m.position.set(x,w.h*.42,z); }
+    m.rotation.y=vr()*3; m.castShadow=m.receiveShadow=true; world.add(m);
+    if(vr()<.6){ const q=MP?new THREE.Mesh(MP.geo,MP.mat):new THREE.Mesh(new THREE.DodecahedronGeometry(.5,0),MAT.rocha); const qx=x+(vr()-.5)*L, qz=z+(vr()-.5)*D, rx=vr(), ry=vr()*3, rz=vr();
+      if(MP){ q.scale.set(L*.5,w.h*.65,D*.5); q.position.set(qx,-.05,qz); q.rotation.set(rx*.3,ry,rz*.3); } else { q.scale.set(L*.5,w.h*.8,D*.5); q.position.set(qx,w.h*.25,qz); q.rotation.set(rx,ry,rz); }
+      q.castShadow=true; world.add(q); } },
   tronco(w){ const aoX=(w.x2-w.x1)>=(w.z2-w.z1), len=Math.max(w.x2-w.x1,w.z2-w.z1), x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2;
-    const grosso=w.kind==='tronco'?1.3:1, c=new THREE.Mesh(new THREE.CylinderGeometry(.42*grosso,.5*grosso,len,10),MAT.casca); c.position.set(x,.45*grosso,z); if(aoX) c.rotation.z=Math.PI/2; else c.rotation.x=Math.PI/2; c.castShadow=c.receiveShadow=true; world.add(c);
+    const grosso=w.kind==='tronco'?1.3:1, MT=modelo('tronco');
+    if(MT){ // v6.4: o tronco morto escaneado (CC0), deitado ao longo da caixa; os galhos e os cortes já vêm nele
+      const c=new THREE.Mesh(MT.geo,MT.mat); c.scale.set(len*1.05,1.05*grosso,1.05*grosso); c.position.set(x,-.05,z); if(!aoX) c.rotation.y=Math.PI/2; c.castShadow=c.receiveShadow=true; world.add(c);
+      for(let k=0;k<12;k++) vr();   // os mesmos sorteios dos galhos de antes, para o resto do mapa não mudar
+      return; }
+    const c=new THREE.Mesh(new THREE.CylinderGeometry(.42*grosso,.5*grosso,len,10),MAT.casca); c.position.set(x,.45*grosso,z); if(aoX) c.rotation.z=Math.PI/2; else c.rotation.x=Math.PI/2; c.castShadow=c.receiveShadow=true; world.add(c);
     for(let k=0;k<3;k++){ const t=(vr()-.5)*len*.8, gh=new THREE.Mesh(new THREE.CylinderGeometry(.05,.12,1+vr(),5),MAT.casca); gh.position.set(x+(aoX?t:0),.8,z+(aoX?0:t)); gh.rotation.set(vr()-.5,0,vr()-.5); world.add(gh); }
     for(const e of [-1,1]){ const d=new THREE.Mesh(new THREE.CircleGeometry(.44,10),MAT.madeiraCorte); d.scale.setScalar(grosso); d.position.set(x+(aoX?e*len/2:0),.45*grosso,z+(aoX?0:e*len/2)); d.rotation.y=aoX?e*Math.PI/2:(e>0?0:Math.PI); world.add(d); } },
   raiz(w){ PECAS.tronco(w); },
@@ -921,7 +941,8 @@ const PECAS={
   tenda(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, L=w.x2-w.x1, D=w.z2-w.z1;
     const t=new THREE.Mesh(new THREE.ConeGeometry(.5,1,4,1,true),MAT.lona); t.material.side=THREE.DoubleSide; t.scale.set(L*1.35,w.h,D*1.35); t.position.set(x,w.h/2,z); t.rotation.y=Math.PI/4; t.castShadow=true; world.add(t);
     const mastro=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,w.h+.5,5),MAT.wood); mastro.position.set(x,(w.h+.5)/2,z); world.add(mastro); },
-  caixote(w){ meshBox(w.x1,w.x2,0,w.h,w.z1,w.z2,MAT.wood,1); },
+  caixote(w){ const MC=modelo('caixote'); if(!MC){ meshBox(w.x1,w.x2,0,w.h,w.z1,w.z2,MAT.wood,1); return; }   // v6.4: o caixote escaneado (CC0)
+    const aoX=(w.x2-w.x1)>=(w.z2-w.z1), c=new THREE.Mesh(MC.geo,MC.mat); c.scale.set(Math.max(w.x2-w.x1,w.z2-w.z1),w.h,Math.min(w.x2-w.x1,w.z2-w.z1)); c.position.set((w.x1+w.x2)/2,0,(w.z1+w.z2)/2); if(!aoX) c.rotation.y=Math.PI/2; c.castShadow=c.receiveShadow=true; world.add(c); },
   carvalho(w){ const x=(w.x1+w.x2)/2,z=(w.z1+w.z2)/2, r=Math.min(w.x2-w.x1,w.z2-w.z1)/2;
     const tr=new THREE.Mesh(new THREE.CylinderGeometry(r*.8,r*1.25,w.h,14,4),MAT.casca); tr.position.set(x,w.h/2,z); tr.castShadow=tr.receiveShadow=true; world.add(tr);
     const oco=new THREE.Mesh(new THREE.CircleGeometry(1,16),new THREE.MeshBasicMaterial({color:0x020103})); oco.scale.set(.9,1.5,1); oco.position.set(x,1.7,w.z1-.02); oco.rotation.y=Math.PI; world.add(oco);
@@ -1077,7 +1098,7 @@ function buildWorld(){
   MAT.estatua=desgastar(new THREE.MeshStandardMaterial({color:0x8e8c84,normalMap:TEX.floor.normalMap,roughness:1,flatShading:true}),{mancha:.5,base:.5,musgo:1});
   MAT.madeiraCorte=new THREE.MeshStandardMaterial({color:0x8a6a48,roughness:1});
   // v6: rocha de verdade (ruído em camadas, veios e estratos), sem as juntas das lajes do piso que antes apareciam nas pedras
-  { const nr=makeNoise(4404); TEX.rocha=pbr(256,(u,v,o)=>{ const f=nr.fbm(u*6,v*6,6,5), veio=Math.abs(Math.sin((v*9+nr.fbm(u*3,v*3,3,3)*3)*Math.PI)), estr=smooth(.55,1,veio)*.3, k=.55+.55*f;
+  { const nr=makeNoise(4404); TEX.rocha=pbrReal('rocha',256,(u,v,o)=>{ const f=nr.fbm(u*6,v*6,6,5), veio=Math.abs(Math.sin((v*9+nr.fbm(u*3,v*3,3,3)*3)*Math.PI)), estr=smooth(.55,1,veio)*.3, k=.55+.55*f;
       o.h=f*.8+estr*.4; o.r=(70+30*f-25*estr)*k; o.g=(70+28*f-24*estr)*k; o.b=(66+26*f-22*estr)*k; o.ro=.92; },3.4); }
   const nmRocha=TEX.rocha.normalMap.clone(); nmRocha.repeat.set(1.2,1.2); nmRocha.needsUpdate=true;
   MAT.rocha=desgastar(new THREE.MeshStandardMaterial({color:0x5c5e56,normalMap:nmRocha,roughness:1,flatShading:true}),{mancha:.5,base:.1,musgo:1});
@@ -1108,7 +1129,7 @@ function buildWorld(){
   CEU.lua=lua; CEU.lua2=lua2; CEU.ceu=ceu; CEU.estrelas=cupula.children.find(o=>o.isPoints)||null;
   const luar=new THREE.PointLight(0x8fa8e0,.9,70,1.5); luar.position.set(-30,26,-54); scene.add(luar); // sobre o jardim do Claustro, a céu aberto
   }
-  if(ASILO) VIS_ASILO=window.RR_ASILO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,makeNoise,smooth,scene});
+  if(ASILO) VIS_ASILO=window.RR_ASILO({THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,makeNoise,smooth,scene,modelo});
   else {
   // paredes vindas da simulação, com material por tipo
   Sim.WALLS.forEach(w=>{ if(PECAS[w.kind]) return PECAS[w.kind](w);
@@ -1160,7 +1181,7 @@ function buildWorld(){
 // (uma chamada de desenho por tipo de peça, centenas de árvores cada). A colisão vem da simulação.
 function buildFloresta(){
   const n=makeNoise(9091);
-  TEX.chao=pbr(512,(u,v,o)=>{ const f=n.fbm(u*8,v*8,8,5), fol=smooth(.52,.66,n.fbm(u*16+9,v*16+2,16,3)), musgo=smooth(.5,.72,n.fbm(u*4+5,v*4+1,4,4)), gr=n.fbm(u*32,v*32,32,2);
+  TEX.chao=pbrReal('chao',512,(u,v,o)=>{ const f=n.fbm(u*8,v*8,8,5), fol=smooth(.52,.66,n.fbm(u*16+9,v*16+2,16,3)), musgo=smooth(.5,.72,n.fbm(u*4+5,v*4+1,4,4)), gr=n.fbm(u*32,v*32,32,2);
     const k=.62+.5*f; o.h=f*.45+fol*.35+gr*.2; o.r=lerp(lerp(58,40,musgo),84,fol*.7)*k; o.g=lerp(lerp(46,54,musgo),56,fol*.7)*k; o.b=lerp(lerp(36,32,musgo),30,fol*.7)*k; o.ro=.96; },2.4);
   // v6: o chão é feito por regiões, com bordas exatamente onde o desfiladeiro começa (x = ±98, z = -6) e onde o promontório
   // termina (x = ±82, z = -22): o chão que se vê e o chão onde se anda coincidem. Fora do mapa, a mata continua por 40 m.
@@ -3525,7 +3546,8 @@ const LAB_UI=[['crepusculo','Crepúsculo',[[180,'3:00'],[120,'2:00'],[90,'1:30']
   ['execucao','Executar um caído',[[4.5,'4,5 s'],[6,'6 s'],[7.5,'7,5 s']]],
   ['economia','Óbolos e mercadores',[[true,'Ligados'],[false,'Desligados']]],
   ['formato','Fim da noite',[['melhorDeTres','2 rituais encerram'],['placar','Noite inteira']]],
-  ['dupla','Ritual em dupla',[['atual','34 s, localiza aos 50%'],['longo','42 s'],['cedo','Localiza aos 40%']]]];
+  ['dupla','Ritual em dupla',[['atual','34 s, localiza aos 50%'],['longo','42 s'],['cedo','Localiza aos 40%']]],
+  ['pausa','Entre rituais',[[0,'Horários'],[45,'Pausa de 45 s'],[25,'Pausa de 25 s']]]];
 function labMudancas(lab){ const L=Sim.labDe(lab), P=Sim.labDe(); return LAB_UI.filter(([k])=>L[k]!==P[k]).map(([k,nome,ops])=>`${nome}: ${ops.find(o=>o[0]===L[k])[1]}`); }
 function labPainel(lab,editavel){ const L=Sim.labDe(lab), mud=labMudancas(lab);
   return `<details class="lab" ${SET.labAberto?'open':''}><summary>Laboratório de playtest${mud.length?` <b>· ${mud.length} ${mud.length>1?'regras alteradas':'regra alterada'}</b>`:''}</summary>
@@ -3641,7 +3663,8 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Correções (v6.3b)','As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais.'],
+const NOVIDADES=[['Texturas e modelos de verdade (v6.4)','As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, "Entre rituais" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.'],
+  ['Correções (v6.3b)','As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais.'],
   ['Só sons gravados (v6.2b)','Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA.'],
   ['Asilo Blackwater (v6.2)','Mapa novo: um sanatório na margem de um lago, com duas alas, seis altares e o coreto no gramado. Portas que se abrem e fecham (segure E): fechadas, bloqueiam passagem, tiros e visão e abafam o som. Um quadro de força por ala: o culto corta a luz, a caça religa, e sem ninguém ela volta em 90 s. Escolha o mapa no título.'],
   ['Culto que se defende (v6.1)','Do primeiro playtest com duas pessoas: os Cultistas controlados pelo jogo, canalizando, só reagiam a quem chegava a 8 m, e uma dupla de Caçadores derrubava o culto de longe sem levar um tiro. Agora quem canaliza revida quem o acertou e quem chega a 20 m (atacar ainda pausa a canalização).'],

@@ -54,7 +54,9 @@ const setorDoAltar=i=>SETORES.find(s=>s.altares.includes(i));
 // online de 25/10, em que a caça humana teve uns 15 s entre a localização e a Fenda): o ritual de dois canalizadores mais
 // longo (42 s em vez de 34) ou localizado mais cedo (aos 40% em vez de 50%).
 const FOGO={atual:[CFG.fire1,CFG.fire2],a:[.8,.6],b:[.9,.7]};
-const LAB_OPCOES={crepusculo:[180,120,90],fogo:['atual','a','b'],execucao:[4.5,6,7.5],economia:[true,false],formato:['melhorDeTres','placar'],dupla:['atual','longo','cedo']};
+// pausa (v6.4, da análise de design de 28/10): 0 = os horários de sempre (o 2º ritual na Vigília, o 3º só na Hora Morta);
+// 45 ou 25 = depois de cada ritual resolvido, o próximo pode começar passados tantos segundos, sem esperar a Hora Morta.
+const LAB_OPCOES={crepusculo:[180,120,90],fogo:['atual','a','b'],execucao:[4.5,6,7.5],economia:[true,false],formato:['melhorDeTres','placar'],dupla:['atual','longo','cedo'],pausa:[0,45,25]};
 function labDe(o){ o=o||{}; const L={};
   for(const k in LAB_OPCOES){ const ops=LAB_OPCOES[k]; L[k]=ops.includes(o[k])?o[k]:(k==='formato'&&ops.includes(CFG.formatoNoite)?CFG.formatoNoite:ops[0]); }
   L.fire1=FOGO[L.fogo][0]; L.fire2=FOGO[L.fogo][1];
@@ -861,6 +863,7 @@ function bloqueioRitual(g){
   const r=fendas(g)+farois(g);
   if(r>=3) return 'Os três rituais desta noite já aconteceram';
   if(g.momento<1) return 'Este altar só desperta na Vigília';
+  if(g.lab.pausa>0){ const falta=g.lab.pausa-(g.rt-g.lastResolveT); return r>0&&falta>0?`O próximo ritual pode começar em ${Math.ceil(falta)} s`:null; }
   if(r>=2&&g.momento<2) return 'O último ritual só pode começar na Hora Morta';
   return null; }
 function prepararNoite(g){
@@ -1266,7 +1269,9 @@ function ecoDoCoro(g,A){ A.eco=true; const S=setorDoAltar(A.i); g.eco={setor:S.i
   logE(g,'eco',{altar:A.name,setor:S.id}); }
 function localize(g,A,how){ if(A.localized) return; A.localized=true; g.know[A.i]='ativo'; g.eco=null;
   feed(g,`O coro revela: ${A.name}.`,'big','H'); feed(g,`Os Caçadores descobriram ${A.name}.`,'c','C');
-  logE(g,'localized',{altar:A.name,prog:r2(A.prog),how});
+  // v6.4: quanto faltava do ritual e a que distância (em linha reta) estava o Caçador vivo mais perto (-1: nenhum de pé)
+  const hs=g.actors.filter(x=>x.team==='H'&&x.st==='alive');
+  logE(g,'localized',{altar:A.name,prog:r2(A.prog),how,restante:r2((1-A.prog)*ritDur(g,Math.max(1,A.lastN||0))),distCaca:hs.length?r2(Math.min(...hs.map(h=>dist(h,A)))):-1});
   if((how==='ouvido'||how==='circulo')&&!A.eco&&A.prog>=CFG.achouLance){ const h=g.actors.filter(x=>x.team==='H'&&x.st==='alive').sort((x,y)=>dist(x,A)-dist(y,A))[0]; if(h) lance(g,'achou_cedo',[h.name],A,'H',r2(A.prog)); } }
 // Move e, se o resultado ainda ficar preso entre peças (cantos côncavos de escombros), desfaz o passo.
 function moverSeguro(a,nx,nz,r){ const px=a.x,pz=a.z; a.x=nx; a.z=nz; resolve(a,r); if(!livre(a,r)){ a.x=px; a.z=pz; } }

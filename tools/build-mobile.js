@@ -24,6 +24,7 @@ html=html.split(CDN).join('vendor/three/')
   .replace('<script src="skins.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','skins.js'),'utf8')+'\n</script>') // skins das armas
   .replace('<script src="asilo.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','asilo.js'),'utf8')+'\n</script>') // Asilo Blackwater
   .replace('<script src="modelos.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','modelos.js'),'utf8')+'\n</script>') // modelos 3D (tools/montar-modelos.py)
+  .replace('<script src="texturas.js"></script>',()=>'<script>\n'+fs.readFileSync(path.join(ROOT,'client','texturas.js'),'utf8')+'</script>') // texturas fotográficas (tools/montar-texturas.py)
   .replace('<head>','<head>\n<script>window.RR_APP=true;</script>');
 if(!html.includes('window.RR_APP=true')) throw new Error('não achei <head> para marcar o app');
 fs.writeFileSync(path.join(WWW,'index.html'),html);

@@ -52,6 +52,23 @@ namespace RitualReversal.Visual
             P.rugosidade = (float)(ro / (tam * tam)); return P;
         }
         static byte B(float v) { return (byte)Math.Max(0, Math.Min(255, (int)v)); }
+        // v6.4: a textura fotográfica (Resources/Texturas/<nome>_cor/_nor/_rug.bytes, tools/montar-texturas.py; CC0 do Poly Haven),
+        // a mesma do navegador (client/texturas.js). Sem ela, null: quem chama gera a textura por código como antes.
+        public static Pbr Foto(string nome)
+        {
+            var c = Resources.Load<TextAsset>("Texturas/" + nome + "_cor"); if (c == null) return null;
+            var P = new Pbr { foto = nome, mapa = Imagem(c.bytes, true, nome), rugosidade = .9f }; if (P.mapa == null) return null; P.tam = P.mapa.width;
+            var n = Resources.Load<TextAsset>("Texturas/" + nome + "_nor"); if (n != null) P.relevo = Imagem(n.bytes, false, nome + "_normal");
+            var r = Resources.Load<TextAsset>("Texturas/" + nome + "_rug");
+            if (r != null) { var t = Imagem(r.bytes, false, nome + "_rug"); if (t != null) { var px = t.GetPixels32(); double soma = 0; foreach (var q in px) soma += q.r; if (px.Length > 0) P.rugosidade = (float)(soma / px.Length / 255); } }
+            return P;
+        }
+        public string foto;   // o nome da textura fotográfica (null: gerada por código)
+        static Texture2D Imagem(byte[] jpg, bool srgb, string nome)
+        {
+            var t = new Texture2D(2, 2, TextureFormat.RGBA32, true, !srgb) { name = nome, wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
+            return ImageConversion.LoadImage(t, jpg) ? t : null;
+        }
         public Pbr Texturas()
         {
             if (mapa == null) { mapa = Tela.Tex2D(tam, tam, cor, true, "pbr"); relevo = Tela.Tex2D(tam, tam, normal, false, "pbr_normal"); }
@@ -205,37 +222,37 @@ namespace RitualReversal.Visual
         {
             if (floor != null) return;
             var n = new Ruido(1337); var tone = new float[64]; for (int i = 0; i < 64; i++) tone[i] = .78f + (float)n.R() * .3f;
-            floor = Pbr.Criar(Tam(512), (u, v) =>
+            floor = Pbr.Foto("floor") ?? Pbr.Criar(Tam(512), (u, v) =>
             {
                 int T = 4, tx = (int)Math.Floor(u * T), ty = (int)Math.Floor(v * T); float lu = u * T - tx, lv = v * T - ty, e = Math.Min(Math.Min(lu, 1 - lu), Math.Min(lv, 1 - lv));
                 float f = n.Fbm(u * 8, v * 8, 8, 5), f2 = n.Fbm(u * 3 + 7, v * 3 + 3, 3, 4), crack = Math.Abs(n.Fbm(u * 16 + 2, v * 16, 16, 3) - .5f) < .006f ? .6f : 0, gr = Sm(.015f, .05f, e), k = tone[(tx * 7 + ty * 3) % 64] * (.72f + .5f * f) * (.75f + .45f * f2);
                 return S(gr * (.55f + .35f * f) - crack * .25f, 78 * k * (.35f + .65f * gr) * (1 - crack * .5f), 72 * k * (.35f + .65f * gr) * (1 - crack * .5f), 66 * k * (.38f + .62f * gr) * (1 - crack * .5f), L(.95f, .55f + .3f * f, gr));
             }, 2.2f);
-            wall = Pbr.Criar(Tam(512), (u, v) =>
+            wall = Pbr.Foto("wall") ?? Pbr.Criar(Tam(512), (u, v) =>
             {
                 int rows = 6, ry = (int)Math.Floor(v * rows); float lv = v * rows - ry, off = (ry % 2) * .5f; int cols = 3, cx = (int)Math.Floor(u * cols + off); float lu = u * cols + off - cx, e = Math.Min(Math.Min(lu, 1 - lu), Math.Min(lv * .5f, (1 - lv) * .5f));
                 float f = n.Fbm(u * 10, v * 10, 10, 5), moss = Sm(.55f, .75f, n.Fbm(u * 4 + 9, v * 4, 4, 4)) * Sm(.3f, 1, v), bev = Sm(0, .05f, e), t = .8f + .35f * tone[(((cx * 5 + ry * 11) % 64) + 64) % 64] - .2f, k = (.45f + .55f * bev) * t * (.75f + .45f * f);
                 return S(bev * .7f + f * .3f, L(86, 48, moss * .6f) * k, L(80, 56, moss * .6f) * k, L(74, 44, moss * .6f) * k, .85f + .1f * f);
             }, 2.6f);
-            wood = Pbr.Criar(Tam(256), (u, v) => { float w = n.Fbm(u * 2, v * 6, 2, 4), g = .5f + .5f * (float)Math.Sin((u * 28 + w * 7) * Math.PI), f = n.Fbm(u * 20, v * 4, 16, 3), k = .6f + .4f * g; return S(g * .4f + f * .3f, 70 * k + 20 * f, 42 * k + 10 * f, 26 * k + 6 * f, .6f + .25f * f); }, 1.5f);
-            marble = Pbr.Criar(Tam(256), (u, v) => { float f = n.Fbm(u * 4, v * 4, 4, 5), vein = (float)Math.Pow(1 - Math.Abs(Math.Sin((u * 3 + v * 2 + f * 4) * Math.PI)), 10), k = .78f + .2f * f - vein * .55f; return S(f * .2f - vein * .2f, 200 * k, 194 * k, 186 * k, .28f + .2f * f + vein * .3f); }, 1.2f);
-            metal = Pbr.Criar(Tam(256), (u, v) =>
+            wood = Pbr.Foto("wood") ?? Pbr.Criar(Tam(256), (u, v) => { float w = n.Fbm(u * 2, v * 6, 2, 4), g = .5f + .5f * (float)Math.Sin((u * 28 + w * 7) * Math.PI), f = n.Fbm(u * 20, v * 4, 16, 3), k = .6f + .4f * g; return S(g * .4f + f * .3f, 70 * k + 20 * f, 42 * k + 10 * f, 26 * k + 6 * f, .6f + .25f * f); }, 1.5f);
+            marble = Pbr.Foto("marble") ?? Pbr.Criar(Tam(256), (u, v) => { float f = n.Fbm(u * 4, v * 4, 4, 5), vein = (float)Math.Pow(1 - Math.Abs(Math.Sin((u * 3 + v * 2 + f * 4) * Math.PI)), 10), k = .78f + .2f * f - vein * .55f; return S(f * .2f - vein * .2f, 200 * k, 194 * k, 186 * k, .28f + .2f * f + vein * .3f); }, 1.2f);
+            metal = Pbr.Foto("metal") ?? Pbr.Criar(Tam(256), (u, v) =>
             {
                 float f = n.Fbm(u * 8, v * 8, 8, 5), scr = Math.Abs(Math.Sin(u * 60 + n.Fbm(u * 3, v * 3, 3, 2) * 20)) > .985 ? 1 : 0, pat = Sm(.55f, .7f, n.Fbm(u * 5 + 3, v * 5, 5, 4)), k = .8f + .3f * f + scr * .3f;
                 return S(f * .3f + scr * .15f, L(120, 58, pat) * k, L(84, 78, pat) * k, L(48, 60, pat) * k, .35f + .3f * f + pat * .3f);
             }, 1.2f);
             var n2 = new Ruido(4242);
-            cloth = Pbr.Criar(Tam(256), (u, v) => { float w = (float)(Math.Sin(u * 180 * Math.PI) * Math.Sin(v * 180 * Math.PI)), f = n2.Fbm(u * 6, v * 6, 6, 4), gasto = Sm(.55f, .85f, n2.Fbm(u * 3 + 5, v * 3, 3, 4)), k = .8f + .1f * w + .3f * (f - .5f) - gasto * .2f; float c = Mathf.Clamp(240 * k, 0, 255); return S(.5f + .3f * w + f * .25f, c, c, c, .95f); }, 1.6f);
-            leather = Pbr.Criar(Tam(256), (u, v) => { float f = n2.Fbm(u * 14, v * 14, 14, 4), vinco = (float)Math.Pow(Math.Abs(n2.Fbm(u * 4 + 2, v * 4, 4, 3) - .5f) * 2, 6), k = .82f + .25f * (f - .5f) - vinco * .3f; float c = Mathf.Clamp(235 * k, 0, 255); return S(f * .4f - vinco * .3f, c, c, c, .55f + .3f * f); }, 1.8f);
+            cloth = Pbr.Foto("cloth") ?? Pbr.Criar(Tam(256), (u, v) => { float w = (float)(Math.Sin(u * 180 * Math.PI) * Math.Sin(v * 180 * Math.PI)), f = n2.Fbm(u * 6, v * 6, 6, 4), gasto = Sm(.55f, .85f, n2.Fbm(u * 3 + 5, v * 3, 3, 4)), k = .8f + .1f * w + .3f * (f - .5f) - gasto * .2f; float c = Mathf.Clamp(240 * k, 0, 255); return S(.5f + .3f * w + f * .25f, c, c, c, .95f); }, 1.6f);
+            leather = Pbr.Foto("leather") ?? Pbr.Criar(Tam(256), (u, v) => { float f = n2.Fbm(u * 14, v * 14, 14, 4), vinco = (float)Math.Pow(Math.Abs(n2.Fbm(u * 4 + 2, v * 4, 4, 3) - .5f) * 2, 6), k = .82f + .25f * (f - .5f) - vinco * .3f; float c = Mathf.Clamp(235 * k, 0, 255); return S(f * .4f - vinco * .3f, c, c, c, .55f + .3f * f); }, 1.8f);
             var n3 = new Ruido(9091);
-            chao = Pbr.Criar(Tam(512), (u, v) =>
+            chao = Pbr.Foto("chao") ?? Pbr.Criar(Tam(512), (u, v) =>
             {
                 float f = n3.Fbm(u * 8, v * 8, 8, 5), fol = Sm(.52f, .66f, n3.Fbm(u * 16 + 9, v * 16 + 2, 16, 3)), musgo = Sm(.5f, .72f, n3.Fbm(u * 4 + 5, v * 4 + 1, 4, 4)), gr = n3.Fbm(u * 32, v * 32, 32, 2);
                 float k = .62f + .5f * f; return S(f * .45f + fol * .35f + gr * .2f, L(L(58, 40, musgo), 84, fol * .7f) * k, L(L(46, 54, musgo), 56, fol * .7f) * k, L(L(36, 32, musgo), 30, fol * .7f) * k, .96f);
             }, 2.4f);
             // v6: rocha de verdade (ruído em camadas, veios e estratos), sem as juntas das lajes do piso que antes apareciam nas pedras
             var n4 = new Ruido(4404);
-            rocha = Pbr.Criar(Tam(256), (u, v) =>
+            rocha = Pbr.Foto("rocha") ?? Pbr.Criar(Tam(256), (u, v) =>
             {
                 float f = n4.Fbm(u * 6, v * 6, 6, 5), veio = Math.Abs((float)Math.Sin((v * 9 + n4.Fbm(u * 3, v * 3, 3, 3) * 3) * Math.PI)), estr = Sm(.55f, 1, veio) * .3f, k = .55f + .55f * f;
                 return S(f * .8f + estr * .4f, (70 + 30 * f - 25 * estr) * k, (70 + 28 * f - 24 * estr) * k, (66 + 26 * f - 22 * estr) * k, .92f);

@@ -14,7 +14,7 @@ fs.mkdirSync(dir,{recursive:true});
 const slots=[{team:'A',cid:null,name:'Bot A1'},{team:'A',cid:null,name:'Bot A2'},{team:'B',cid:null,name:'Bot B1'},{team:'B',cid:null,name:'Bot B2'}];
 function labDoAmbiente(){ const s=process.env.LAB; if(!s) return undefined; const o={};
   for(const par of s.split(',')){ const [k,v]=par.split('=').map(x=>x&&x.trim()); if(!k||v==null) continue;
-    o[k]=k==='crepusculo'||k==='execucao'?+v:k==='economia'?(v!=='0'&&v!=='false'):v; }
+    o[k]=k==='crepusculo'||k==='execucao'||k==='pausa'?+v:k==='economia'?(v!=='0'&&v!=='false'):v; }
   return o; }
 for(const par of (process.env.CFG||'').split(',').filter(Boolean)){ const [k,v]=par.split('='); if(!(k in Sim.CFG)) throw new Error('CFG desconhecido: '+k);
   Sim.CFG[k]=v==='true'?true:v==='false'?false:isNaN(+v)?v:+v; }

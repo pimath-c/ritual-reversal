@@ -28,34 +28,34 @@ namespace RitualReversal.Visual
         void MateriaisAsilo()
         {
             var n = new Ruido(9091);
-            var reboco = Pbr.Criar(Tex.Tam(256), (u, v) =>
+            var reboco = Pbr.Foto("reboco") ?? Pbr.Criar(Tex.Tam(256), (u, v) =>
             {
                 float f = n.Fbm(u * 5, v * 5, 5, 5), desc = SmA(.62f, .7f, n.Fbm(u * 3 + 7, v * 3, 3, 4)), mancha = SmA(.5f, .9f, n.Fbm(u * 2, v * 9 + 3, 2, 3)) * (1 - v) * .5f;
                 float k = .85f + .18f * (f - .5f) - mancha * .4f; var o = new Pbr.Saida { h = f * .3f - desc * .5f };
                 if (desc > .5f) { o.r = 120 * k; o.g = 84 * k; o.b = 64 * k; o.ro = .95f; } else { o.r = 150 * k; o.g = 160 * k; o.b = 140 * k; o.ro = .9f; }   // verde-hospital, descascando no tijolo
                 return o;
             }, 1.6f).Texturas();
-            var lambri = Pbr.Criar(Tex.Tam(256), (u, v) =>
+            var lambri = Pbr.Foto("lambri") ?? Pbr.Criar(Tex.Tam(256), (u, v) =>
             {
                 int T = 8, tx = Mathf.FloorToInt(u * T), ty = Mathf.FloorToInt(v * T); float lu = u * T - tx, lv = v * T - ty, e = Mathf.Min(Mathf.Min(lu, 1 - lu), Mathf.Min(lv, 1 - lv)), f = n.Fbm(u * 9, v * 9, 9, 3), rachado = SmA(.7f, .75f, n.Fbm(u * 6 + 1, v * 6, 6, 3));
                 float junta = e < .05f ? .45f : 1, k = (.78f + .2f * f) * junta * (1 - rachado * .3f);
                 return new Pbr.Saida { h = junta < 1 ? -.4f : f * .1f, r = 72 * k, g = 92 * k, b = 84 * k, ro = junta < 1 ? .95f : .35f };   // azulejo verde-escuro
             }, 1.2f).Texturas();
-            var ladrilho = Pbr.Criar(Tex.Tam(512), (u, v) =>
+            var ladrilho = Pbr.Foto("ladrilho") ?? Pbr.Criar(Tex.Tam(512), (u, v) =>
             {
                 int T = 10, tx = Mathf.FloorToInt(u * T), ty = Mathf.FloorToInt(v * T); float lu = u * T - tx, lv = v * T - ty, e = Mathf.Min(Mathf.Min(lu, 1 - lu), Mathf.Min(lv, 1 - lv)), f = n.Fbm(u * 8, v * 8, 8, 4), suj = SmA(.45f, .85f, n.Fbm(u * 2 + 4, v * 2, 2, 4));
                 bool claro = (tx + ty) % 2 == 0; float junta = e < .04f ? .5f : 1, k = (claro ? 1 : .42f) * (.82f + .2f * f) * junta * (1 - suj * .35f);
                 return new Pbr.Saida { h = junta < 1 ? -.3f : f * .08f, r = 196 * k, g = 190 * k, b = 172 * k, ro = junta < 1 ? .95f : .4f + suj * .4f };   // xadrez gasto
             }, 1).Texturas();
-            var tabua = Pbr.Criar(Tex.Tam(256), (u, v) =>
+            var tabua = Pbr.Foto("tabua") ?? Pbr.Criar(Tex.Tam(256), (u, v) =>
             {
                 int tb = Mathf.FloorToInt(u * 6); float lu = u * 6 - tb, f = n.Fbm(u * 3, v * 24 + tb * 7, 3, 4), junta = lu < .04f ? .5f : 1, k = (.65f + .3f * f) * junta;
                 return new Pbr.Saida { h = junta < 1 ? -.3f : f * .2f, r = 82 * k, g = 58 * k, b = 40 * k, ro = .75f };
             }, 1.3f).Texturas();
-            var teto = Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 4, v * 4, 4, 5), mofo = SmA(.55f, .8f, n.Fbm(u * 2 + 9, v * 2, 2, 4)), k = .6f + .2f * f - mofo * .35f; return new Pbr.Saida { h = f * .2f, r = 120 * k, g = 120 * k, b = 112 * k, ro = .95f }; }, 1).Texturas();
-            var grama = Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 10, v * 10, 10, 5), t = SmA(.5f, .8f, n.Fbm(u * 3 + 2, v * 3, 3, 4)), k = .55f + .3f * f; return new Pbr.Saida { h = f * .3f, r = (46 + 40 * t) * k, g = (62 + 20 * t) * k, b = (34 + 12 * t) * k, ro = 1 }; }, 1.4f).Texturas();
-            var terra = Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 8, v * 8, 8, 5), k = .6f + .3f * f; return new Pbr.Saida { h = f * .4f, r = 64 * k, g = 48 * k, b = 34 * k, ro = 1 }; }, 1.6f).Texturas();
-            var cascalho = Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 20, v * 20, 20, 4), k = .55f + .4f * f; return new Pbr.Saida { h = f * .6f, r = 96 * k, g = 92 * k, b = 86 * k, ro = 1 }; }, 2.2f).Texturas();
+            var teto = Pbr.Foto("teto") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 4, v * 4, 4, 5), mofo = SmA(.55f, .8f, n.Fbm(u * 2 + 9, v * 2, 2, 4)), k = .6f + .2f * f - mofo * .35f; return new Pbr.Saida { h = f * .2f, r = 120 * k, g = 120 * k, b = 112 * k, ro = .95f }; }, 1).Texturas();
+            var grama = Pbr.Foto("grama") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 10, v * 10, 10, 5), t = SmA(.5f, .8f, n.Fbm(u * 3 + 2, v * 3, 3, 4)), k = .55f + .3f * f; return new Pbr.Saida { h = f * .3f, r = (46 + 40 * t) * k, g = (62 + 20 * t) * k, b = (34 + 12 * t) * k, ro = 1 }; }, 1.4f).Texturas();
+            var terra = Pbr.Foto("terra") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 8, v * 8, 8, 5), k = .6f + .3f * f; return new Pbr.Saida { h = f * .4f, r = 64 * k, g = 48 * k, b = 34 * k, ro = 1 }; }, 1.6f).Texturas();
+            var cascalho = Pbr.Foto("cascalho") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 20, v * 20, 20, 4), k = .55f + .4f * f; return new Pbr.Saida { h = f * .6f, r = 96 * k, g = 92 * k, b = 86 * k, ro = 1 }; }, 2.2f).Texturas();
             Func<Pbr, float, bool, Material> pbr = (p, relevoK, dupla) => Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = p.mapa, relevo = p.relevo, relevoK = relevoK, duplaFace = dupla });
             MA = new Dictionary<string, Material>
             {
@@ -223,6 +223,20 @@ namespace RitualReversal.Visual
             }
         }
 
+        // v6.4: modelo escaneado (CC0, Resources/Modelos) esticado na caixa da peça; o eixo comprido do modelo é x (o M3 do asilo.js)
+        // pedaco: a peça comprida vira uma fileira de modelos de uns tantos metros (um banco de 6,8 m são quatro bancos)
+        bool M3(string nome, PecaV w, float h, float giro = 0, float pedaco = 0)
+        {
+            var MD = ModeloGLB.Carregar(nome); if (MD == null) return false; bool ax = w.x2 - w.x1 >= w.z2 - w.z1;
+            float L = Math.Max(w.x2 - w.x1, w.z2 - w.z1); int n = pedaco > 0 ? Math.Max(1, (int)Math.Round(L / pedaco, MidpointRounding.AwayFromZero)) : 1;
+            for (int k = 0; k < n; k++)
+            {
+                float c = -L / 2 + (k + .5f) * L / n;
+                Est(MD.geo, MD.mat, TRS((w.x1 + w.x2) / 2 + (ax ? c : 0), 0, (w.z1 + w.z2) / 2 + (ax ? 0 : c), 0, (ax ? 0 : -PI / 2) + giro, 0, L / n * (n > 1 ? .94f : 1), h, Math.Min(w.x2 - w.x1, w.z2 - w.z1)));
+            }
+            return true;
+        }
+
         void MovelAsilo(PecaV w)
         {
             float cx = (w.x1 + w.x2) / 2, cz = (w.z1 + w.z2) / 2;
@@ -233,14 +247,18 @@ namespace RitualReversal.Visual
                         bool ax = w.x2 - w.x1 > w.z2 - w.z1; float L = ax ? w.x2 - w.x1 : w.z2 - w.z1, P = ax ? w.z2 - w.z1 : w.x2 - w.x1;
                         Action<float, float, float, float, float, float, Material> B = (dx, y1, y2, dz, lx, lz, mat) =>
                         { float x = ax ? cx + dx : cx + dz, z = ax ? cz + dz : cz + dx, sx = ax ? lx : lz, sz = ax ? lz : lx; CxA(x - sx / 2, x + sx / 2, y1, y2, z - sz / 2, z + sz / 2, mat, 1); };
+                        // a cama de ferro escaneada (a cabeceira no lado negativo) com o colchão e o travesseiro por cima
+                        if (M3("leito", w, 1.05f, PI)) { B(0, .47f, .62f, 0, L - .16f, P - .12f, A("colchao")); B(-L / 2 + .4f, .62f, .72f, 0, .5f, P * .7f, A("colchao")); break; }
                         B(0, .42f, .6f, 0, L - .1f, P - .1f, A("colchao")); B(0, .36f, .42f, 0, L, P, A("ferro"));
                         foreach (float s in new[] { -1f, 1f }) { B(s * (L / 2 - .03f), 0, s < 0 ? 1.05f : .8f, 0, .05f, P, A("ferro")); foreach (float t in new[] { -1f, 1f }) B(s * (L / 2 - .03f), 0, .4f, t * (P / 2 - .03f), .05f, .05f, A("ferro")); }
                         B(-L / 2 + .4f, .6f, .72f, 0, .5f, P * .7f, A("colchao")); break;
                     }
                 case "banco":
+                    if (M3("banco_asilo", w, w.h, 0, 1.7f)) break;
                     CxA(w.x1, w.x2, .42f, .5f, w.z1, w.z2, M("wood"), 2); CxA(w.x1, w.x2, .5f, w.h, w.z2 - .1f, w.z2, M("wood"), 2);
                     CxA(w.x1 + .1f, w.x1 + .2f, 0, .42f, w.z1, w.z2, M("wood"), 2); CxA(w.x2 - .2f, w.x2 - .1f, 0, .42f, w.z1, w.z2, M("wood"), 2); break;
                 case "mesa":
+                    if (M3("mesa_asilo", w, w.h)) break;
                     CxA(w.x1, w.x2, w.h - .07f, w.h, w.z1, w.z2, M("wood"), 2);
                     foreach (var p in new[] { new Vector2(w.x1 + .1f, w.z1 + .1f), new Vector2(w.x2 - .1f, w.z1 + .1f), new Vector2(w.x1 + .1f, w.z2 - .1f), new Vector2(w.x2 - .1f, w.z2 - .1f) }) CxA(p.x - .05f, p.x + .05f, 0, w.h - .07f, p.y - .05f, p.y + .05f, M("wood"), 1);
                     break;

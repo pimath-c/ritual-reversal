@@ -12,7 +12,14 @@ montado por código no Play, a partir de `Resources/mapa.json` e dos dados expor
 A simulação (`Scripts/Simulacao`) é um porte linha a linha de `shared/sim.js`, conferido contra o protótipo passo a
 passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a bit (`node tools/comparar-cs.js`).
 
-## Novidades desta versão (26/10)
+## Novidades desta versão (29/10)
+
+- **Texturas e modelos de verdade**: as texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven), as mesmas do
+  navegador, em `Resources/Texturas`. Rochas, troncos, caixotes, camas de ferro, bancos e mesas do Asilo são modelos 3D
+  escaneados em `Resources/Modelos`. A colisão não mudou. Créditos em `docs/ARTE.md` (no repositório).
+- **Laboratório "Entre rituais"**: troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.
+
+## Novidades de 26/10
 
 - **Correção**: trocar de mapa na tela inicial montava o mundo novo com os altares e os reagentes do mapa anterior (a catedral
   com os pontos do Asilo, por exemplo). Agora cada mapa nasce com os seus.

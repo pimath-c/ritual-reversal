@@ -1,3 +1,8 @@
 node_modules/
 logs/
 dist/
+assets/texturas/fontes/
+# originais dos modelos do Poly Haven (tools/montar-modelos.py baixa de novo); o altar e a estátua gerados ficam
+assets/modelos/fontes/*.glb
+!assets/modelos/fontes/altar.glb
+!assets/modelos/fontes/estatua.glb

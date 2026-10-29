@@ -88,6 +88,7 @@ static class CompararSim
         {
             var kv = par.Split('='); if (kv.Length != 2) continue; string k = kv[0].Trim(), v = kv[1].Trim();
             if (k == "crepusculo") L.crepusculo = double.Parse(v, System.Globalization.CultureInfo.InvariantCulture);
+            else if (k == "pausa") L.pausa = double.Parse(v, System.Globalization.CultureInfo.InvariantCulture);
             else if (k == "execucao") L.execucao = double.Parse(v, System.Globalization.CultureInfo.InvariantCulture);
             else if (k == "fogo") L.fogo = v; else if (k == "formato") L.formato = v; else if (k == "dupla") L.dupla = v; else if (k == "economia") L.economia = v != "0" && v != "false";
         }
