@@ -1,0 +1,27 @@
+{
+  "_sobre": "Armas CC0 do OpenGameArt (Lucian Pavel). tools/montar-armas.py converte o FBX (tools/converter-fbx.js), corta o que sobra, separa as peças móveis (a alavanca, o tambor) e os papéis dos materiais (madeira e escuro pela cor da textura; caixa, aço e prata pela região) e leva o modelo para o quadro da arma do jogo: gira em y ('giro', graus), escala e põe 'ancora_modelo' em 'ancora_jogo'. Coordenadas das regras no espaço do modelo (centímetros do FBX).",
+  "armas": {
+    "carabina": {
+      "pagina": "https://opengameart.org/content/hunting-rifle", "zip": "https://opengameart.org/sites/default/files/Hunting%20Rifle%20New%20%20Spec_0.zip",
+      "fbx": "Hunting Rifle.fbx", "textura": "Hunting Rifle.png", "licenca": "CC0", "autor": "Lucian Pavel",
+      "uso": "a carabina de alavanca do Soldado (primeira e terceira pessoa)",
+      "giro": -90, "escala": 0.00709,
+      "ancora_modelo": [17.0, 9.8, 0], "ancora_jogo": [0, -0.034, -0.02],
+      "boca_modelo": [-86.7, 17.6, 0],
+      "partes": [{"parte": "alav", "caixa": [[16, 42], [-50, 9.6], [-50, 50]], "pivo": [0, -0.034, -0.02]}],
+      "papeis_lista": ["caixa", "aco", "madeira"], "papel_padrao": "aco",
+      "papeis": [{"papel": "caixa", "caixa": [[8, 42], [-50, 30], [-50, 50]]}]
+    },
+    "revolver": {
+      "pagina": "https://opengameart.org/content/old-revolver", "zip": "https://opengameart.org/sites/default/files/Old%20Revolver.zip",
+      "fbx": "Revolver.fbx", "textura": "Revolver.png", "licenca": "CC0", "autor": "Lucian Pavel",
+      "uso": "o revólver do Exorcista (primeira e terceira pessoa)",
+      "giro": 90, "escala": 0.00085,
+      "ancora_modelo": [130, 150, 0], "ancora_jogo": [0, 0.014, -0.035],
+      "boca_modelo": [429, 166, 0],
+      "cortar": [{"caixa": [[-1000, -280], [-1000, 1000], [-1000, 1000]]}],
+      "partes": [{"parte": "tambor", "cilindro": {"x": [80, 182], "yz": [150, 0], "raio": 34}, "pivo": [0, 0.014, -0.035], "ajuste": {"raio": 0.036, "comprimento": 0.066}}],
+      "papeis_lista": ["prata", "escuro", "madeira"], "papel_padrao": "prata", "escuro_val": 0.16
+    }
+  }
+}

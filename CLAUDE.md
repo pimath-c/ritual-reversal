@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.4e)
+## Estado atual (v6.5)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -233,6 +233,28 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
 - v6.4e (notas em `notas/v6.4e.md`): `cadeira` (WoodenChair_01, encaixe altura 1,7 m, escala 1,5 em x/z, `GIRO_CADEIRA` = PI: o
   encosto do modelo fica em −z) com o capacete de ferro; `armario` no balcão (M3 com pedaço 1,3, frente em +z, para a entrada) e
   o tampo; textura `portaAsilo` sem `media` (fica com a cor da foto; material 0xb0b0a8) nas portas.
+- v6.5 (notas em `notas/v6.5.md`): bonecos de verdade, CC0 da Quaternius (Modular Character Outfits - Fantasy e Universal Base
+  Characters, Standard grátis do itch.io; `tools/montar-bonecos.py` baixa pelo fluxo do itch: csrf → /download_url → /file/<upload>).
+  `assets/bonecos/fontes.json` (pacotes em `assets/bonecos/fontes/`, fora do git) monta 5 bonecos (ritualista, guardiao, soldado,
+  exorcista, rastreador): o glTF com esqueleto vai para a pose de repouso, gira 180° (olham para −z), cada triângulo vai para a junta
+  do osso de maior peso (body, torso, head, legL/R, armL/R), os braços descem da pose em T (giro no ombro), a cabeça de um corpo inteiro
+  entra com o filtro "cabeca" e as texturas viram atlas recolorido (`cores`: "verde" troca a matiz, "mult"). Sem redução (o uv do
+  vértice mais perto manchava a roupa): 27–33 mil triângulos, ~1,3 MB por boneco. GLB enxuto com TEXCOORD_1.x = peça e `extras`
+  (pivôs relativos ao pai da junta, `mao` = ponta do braço direito). Saída `client/bonecos.js` (`RR_BONECOS`; build.js grava
+  `dist/web/bonecos-N.js`, build-mobile embute, o servidor serve) e `Resources/Bonecos/<nome>.bytes`. Navegador: `boneco(nome)` e
+  `bonecoReal(...)` no `makeCharacter` (as juntas nos pivôs; rosto escuro e olhos no capuz, runa, ossos do Guardião, chapéu ×0,66, lanterna
+  e estola pela caixa do torso; sem o arquivo, os bonecos antigos). Unity: `Visual/BonecoGLB.cs` e `Boneco.BonecoReal` no `Personagens.cs`;
+  `unity-ver.js`/`unity-fp.js` compilam o `BonecoGLB.cs`. `tools/arte.py` também faz a tabela dos bonecos.
+  Armas na mesma versão: carabina de alavanca e revólver CC0 do OpenGameArt (Lucian Pavel, só FBX: `tools/converter-fbx.js` converte
+  no Chromium com o FBXLoader/GLTFExporter do three). `tools/montar-armas.py` (`assets/armas/fontes.json`, pacotes em `assets/armas/fontes/`
+  fora do git): corta o municiador solto, separa as peças móveis (alav por caixa, tambor por cilindro) e os papéis (madeira/escuro pela
+  cor da textura, caixa/aco/prata pela região), gira (−90/+90 em y), escala (0,00709/0,00085) e leva `ancora_modelo` a `ancora_jogo`
+  (pivô da alavanca; centro do tambor). GLB sem textura, TEXCOORD_1 = (peça, papel), uv pela posição; `client/armas.js` (`RR_ARMAS`) e
+  `Resources/Armas`. Navegador: `arma3d(nome)` (geos[peça][papel], `caixa(papel)`) e `malhasArma3d`; `armaCarabina`/`armaRevolver`
+  escondem as peças antigas (os objetos que a animação usa ficam) e pintam o modelo com os materiais por papel (as skins valem);
+  `carabinaFP` põe portinhola, ferrolho, câmara e entrada pela caixa do modelo; `revolverFP` usa o tambor do modelo e põe câmaras,
+  cartuchos, extrator e municiador no raio (0,61 do tambor) e na face dele (`S.zcRev`, `zMun`). `RR_ARMA` recebe `arma3d`/`malhasArma3d`.
+  Unity: `Visual/ArmaGLB.cs` e `Pecas.Carabina/Revolver` (terceira pessoa); a primeira pessoa vem do `exportar-primeira-pessoa.js`.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

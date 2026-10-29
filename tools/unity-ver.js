@@ -45,7 +45,7 @@ const VISTAS_SEL=(MAPA==='asilo'?VISTAS_ASILO:VISTAS).filter(v=>FILTRO.test(v.no
 // 1) exporta o mundo do Unity
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'unity-ver-')), EXE=path.join(tmp,'exportar.exe'), EXP=path.join(OUT,'exportado');
 const VIS=path.join(UN,'Scripts','Visual'); // o mundo inteiro (Mundo*.cs) e o que ele usa; Som, primeira pessoa e pós ficam de fora
-const scripts=fs.readdirSync(VIS).filter(f=>/^(Mundo.*|Geo|Texturas|Materiais|MapaVisual|Arvores|Qualidade|Personagens|ModeloGLB)\.cs$/.test(f)).map(f=>path.join(VIS,f));
+const scripts=fs.readdirSync(VIS).filter(f=>/^(Mundo.*|Geo|Texturas|Materiais|MapaVisual|Arvores|Qualidade|Personagens|ModeloGLB|BonecoGLB|ArmaGLB)\.cs$/.test(f)).map(f=>path.join(VIS,f));
 const sim=fs.readdirSync(path.join(UN,'Scripts','Simulacao')).filter(f=>f.endsWith('.cs')).map(f=>path.join(UN,'Scripts','Simulacao',f));
 try{ execFileSync('mcs',['-nowarn:414,618,169,649,219,162,168,1717','-out:'+EXE,path.join(CS,'UnityFalso.cs'),path.join(CS,'SomFalso.cs'),path.join(CS,'ExportarMundo.cs'),...scripts,...sim],{stdio:['ignore','pipe','pipe']}); }
 catch(e){ console.error('o visual do Unity não compilou contra o UnityEngine de mentira:\n'+String(e.stdout||'')+String(e.stderr||'')); process.exit(2); }

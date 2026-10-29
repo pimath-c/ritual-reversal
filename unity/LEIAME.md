@@ -26,6 +26,8 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
   pintado (os modelos de várias texturas agora juntam todas num atlas).
 - **Cadeira, balcão e portas (v6.4e)**: cadeira elétrica gótica de madeira, balcão de armários descascados e portas de
   tábuas pintadas no Asilo.
+- **Bonecos de verdade (v6.5)**: os personagens são modelos da Quaternius (CC0) em `Resources/Bonecos`, em peças presas às
+  juntas do `Boneco` (`BonecoGLB.cs`); sem os arquivos, voltam os bonecos montados por código.
 - **Laboratório "Entre rituais"**: troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.
 
 ## Novidades de 26/10

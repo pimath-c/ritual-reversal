@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Bonecos e armas de verdade (v6.5)","Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz vermelho, Soldado e Exorcista de casaco e chapéu, a Rastreadora de couro marrom. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas."},
             new[]{"Cadeira, balcão e portas (v6.4e)","A cadeira do Eletrochoque é uma cadeira gótica de madeira entalhada, o balcão do Saguão é uma fileira de armários brancos descascados e as portas do Asilo são de tábuas pintadas e gastas."},
             new[]{"Pinturas e espelhos (v6.4d)","O Asilo ganhou pinturas emolduradas e espelhos entalhados nas paredes de 29 salas, e os lampiões das mesas agora têm o vidro pintado e o metal dourado."},
             new[]{"Mais duas levas de arte (v6.4c)","As samambaias da mata, as raízes do carvalho, os bancos da nave e a arca agora são modelos escaneados, e as rochas têm três formas. O promontório ganhou chão de terra e capim ralo, e as pilhas de madeira, tábuas gastas. No Asilo, luminárias industriais, quadros de força, canteiros de madeira na horta, bancadas e macas de verdade, lampiões nas mesas, e telhados de ardósia, ferro enferrujado e concreto fotografados."},

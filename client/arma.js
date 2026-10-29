@@ -17,7 +17,7 @@
 // O jogo (index.html) roda dentro de uma função: ele chama RR_ARMA com o que este módulo usa e recebe a API de volta.
 window.RR_ARMA=function(D){
 'use strict';
-const {nivel,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula,SKINS}=D;
+const {nivel,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,arma3d,malhasArma3d,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula,SKINS}=D;
 let vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas=[],vmFlash;
 const PI=Math.PI, TAU=PI*2;
 const cl=(v,a,b)=>v<a?a:v>b?b:v, mix=(a,b,t)=>a+(b-a)*t;
@@ -154,19 +154,27 @@ function criarCartucho(tipo,vazio){ matsPeca(); const g=new THREE.Group(), car=t
 function carabinaFP(){ const A=armaCarabina(), aco=matMetal(0x3a3d43,.36), acoClaro=matMetal(0x6a6e75,.3);
   aco.userData.papel=acoClaro.userData.papel='caixa'; acoClaro.userData.claro=1.7;   // peças da caixa (portinhola, ferrolho): seguem o acabamento da caixa, mais claras
   // portinhola de carga no lado direito, presa pela frente: o cartucho a empurra para dentro
-  const port=new THREE.Group(); port.position.set(.0262,-.011,-.078); A.g.add(port);
+  // v6.5: com a carabina de verdade, as peças da caixa vão para a caixa do modelo (mais baixa e mais fina que a antiga)
+  const C3=A.real?A.caixa3d:null, xD=C3?C3.max.x+.0004:.0262, yP=C3?C3.min.y+(C3.max.y-C3.min.y)*.3:-.011, yT=C3?C3.max.y:.058;
+  const port=new THREE.Group(); port.position.set(xD,yP,-.078); A.g.add(port);
   const placa=new THREE.Mesh(new THREE.BoxGeometry(.0035,.021,.031),acoClaro); placa.position.set(0,0,.0155); port.add(placa);
   const parafuso=new THREE.Mesh(new THREE.CylinderGeometry(.0026,.0026,.004,8),acoClaro); parafuso.rotation.z=PI/2; parafuso.position.set(.003,0,.003); port.add(parafuso);
   // ferrolho por cima da caixa: recua com a alavanca e mostra o cartucho na câmara
-  const ferr=new THREE.Group(); ferr.position.set(0,.0612,.018); A.g.add(ferr);
+  const ferr=new THREE.Group(); ferr.position.set(0,yT+.0032,.018); A.g.add(ferr);
   const fb=new THREE.Mesh(new THREE.BoxGeometry(.0125,.007,.05),acoClaro); ferr.add(fb);
   const fe=new THREE.Mesh(new THREE.CylinderGeometry(.003,.003,.006,8),acoClaro); fe.position.set(0,.004,.018); ferr.add(fe);
-  const camara=criarCartucho('carabina'); camara.position.set(0,.047,-.038); camara.visible=false; A.g.add(camara);
+  const camara=criarCartucho('carabina'); camara.position.set(0,yT-.011,-.038); camara.visible=false; A.g.add(camara);
   // a alça da alavanca precisa de um ponto de referência para os dedos (o pivô já existe em A.alav)
   return Object.assign(A,{tipo:'carabina',port,ferr,camara,
     // entrada da portinhola e direção de entrada do cartucho (ponta para dentro, levemente para o centro)
-    entrada:V3(.0385,-.011,-.034), dirEntrada:V3(-Math.sin(.3),0,-Math.cos(.3)), rotEntrada:[0,.3,0]}); }
+    entrada:V3(xD+.0123,yP,-.034), dirEntrada:V3(-Math.sin(.3),0,-Math.cos(.3)), rotEntrada:[0,.3,0]}); }
 function revolverFP(){ matsPeca();
+  // v6.5: com o revólver de verdade, a armação e o tambor são do modelo; as câmaras, os cartuchos, o extrator e o municiador
+  // vão para o raio e o comprimento do tambor dele (RC: raio das câmaras; ZC: a face de trás do tambor)
+  const M3=arma3d&&arma3d('revolver'); let RC=.022, ZC=.0335, TB=null;
+  if(M3&&M3.geos.tambor){ TB=new THREE.Box3(); for(const pa in M3.geos.tambor) TB.union(M3.geos.tambor[pa].boundingBox);
+    RC=Math.max(TB.max.x,-TB.min.x,TB.max.y-.0,-TB.min.y)*.61; ZC=TB.max.z-.0001; }
+  S.zcRev=ZC;
   const g=new THREE.Group(), prata=matMetal(0xc8ccd2,.22,1), escuro=matMetal(0x1c1d20,.45), mad=new THREE.MeshStandardMaterial({color:0x2e1a12,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:.45,emissive:0});
   prata.emissive=new THREE.Color(0x000000); prata.userData.papel='prata'; escuro.userData.papel='escuro'; mad.userData.papel='madeira';
   const arm=lateral([[-.05,-.022],[.075,-.022],[.085,.042],[-.02,.05],[-.05,.03]],.03,.005,prata); g.add(arm);
@@ -178,17 +186,17 @@ function revolverFP(){ matsPeca();
   const braco=new THREE.Mesh(new THREE.BoxGeometry(.006,.03,.012),prata); braco.position.set(.004,.014,-.03); guin.add(braco);
   const tam=new THREE.Group(); tam.position.set(-PIVO.x,.014-PIVO.y,0); guin.add(tam);
   const cil=cilZ(.036,.036,.066,prata,32); tam.add(cil);
-  for(let k=0;k<8;k++){ const a=k/8*TAU; const f=cilZ(.0055,.0055,.05,escuro,8); f.position.set(Math.cos(a)*.0345,Math.sin(a)*.0345,-.004); tam.add(f); }
+  const estrias=[]; for(let k=0;k<8;k++){ const a=k/8*TAU; const f=cilZ(.0055,.0055,.05,escuro,8); f.position.set(Math.cos(a)*.0345,Math.sin(a)*.0345,-.004); tam.add(f); estrias.push(f); }
   const furoGeo=new THREE.CircleGeometry(.0068,12);
-  for(let k=0;k<8;k++){ const a=(k+.5)/8*TAU, fu=new THREE.Mesh(furoGeo,escuro); fu.position.set(Math.cos(a)*.022,Math.sin(a)*.022,-.0334); fu.rotation.y=PI; tam.add(fu);
-    const tr=new THREE.Mesh(furoGeo,escuro); tr.position.set(Math.cos(a)*.022,Math.sin(a)*.022,.0336); tam.add(tr); }   // câmaras abertas na frente e atrás
+  for(let k=0;k<8;k++){ const a=(k+.5)/8*TAU, fu=new THREE.Mesh(furoGeo,escuro); fu.position.set(Math.cos(a)*RC,Math.sin(a)*RC,-ZC-.0001); fu.rotation.y=PI; tam.add(fu);
+    const tr=new THREE.Mesh(furoGeo,escuro); tr.position.set(Math.cos(a)*RC,Math.sin(a)*RC,ZC+.0001); tam.add(tr); }   // câmaras abertas na frente e atrás
   // extrator: vareta na frente, estrela atrás; as cápsulas das câmaras andam junto quando ele é empurrado
   const ext=new THREE.Group(); tam.add(ext);
   const vareta=cilZ(.0042,.0042,.056,prata,10); vareta.position.set(0,0,-.062); ext.add(vareta);
   const ponta=cilZ(.0062,.0062,.008,escuro,10); ponta.position.set(0,0,-.092); ext.add(ponta);
-  const estrela=cilZ(.0152,.0152,.003,prata,16); estrela.position.set(0,0,.0335); ext.add(estrela);
+  const estrela=cilZ(.0152,.0152,.003,prata,16); estrela.position.set(0,0,ZC); ext.add(estrela);
   const camaras=[]; for(let k=0;k<8;k++){ const a=(k+.5)/8*TAU, cv=criarCartucho('prata'), cz=criarCartucho('prata',true);
-    for(const c of [cv,cz]){ c.position.set(Math.cos(a)*.022,Math.sin(a)*.022,.0335-.017+.0016); ext.add(c); }
+    for(const c of [cv,cz]){ c.position.set(Math.cos(a)*RC,Math.sin(a)*RC,ZC-.017+.0016); ext.add(c); }
     camaras.push({vivo:cv,vazio:cz,a}); }
   const cabo=lateral([[-.05,.012],[.012,-.015],[.0,-.1],[-.012,-.14,-.05,-.135],[-.075,-.07],[-.07,-.005]],.034,.007,mad); g.add(cabo);
   const cruzMat=prata.clone(); cruzMat.emissive=new THREE.Color(0x000000); cruzMat.userData.papel='cruz'; const cruz=[];
@@ -200,9 +208,14 @@ function revolverFP(){ matsPeca();
   // municiador de oito: disco escuro, botão atrás e os oito cartuchos de prata à frente
   const mun=new THREE.Group(), disco=cilZ(.03,.03,.009,escuro,24); disco.position.z=.0; mun.add(disco);
   const botao=cilZ(.009,.0075,.016,escuro,12); botao.position.z=.012; mun.add(botao);
-  const munC=[]; for(let k=0;k<8;k++){ const a=(k+.5)/8*TAU, c=criarCartucho('prata'); c.position.set(Math.cos(a)*.022,Math.sin(a)*.022,-.004-.017); mun.add(c); munC.push(c); }
+  const munC=[]; for(let k=0;k<8;k++){ const a=(k+.5)/8*TAU, c=criarCartucho('prata'); c.position.set(Math.cos(a)*RC,Math.sin(a)*RC,-.004-.017); mun.add(c); munC.push(c); }
   mun.visible=false;
-  return {tipo:'revolver',g,boca:V3(0,.03,-.28),tambor:tam,guin,PIVO,ext,camaras,cao,cruz,cruzMat,prata,mun,munC,trava}; }
+  if(M3){ // a armação e o tambor do modelo; as peças antigas ficam escondidas (os objetos que a animação usa continuam)
+    g.children.forEach(o=>{ if(o!==guin&&!cruz.includes(o)) o.visible=false; }); cil.visible=false; estrias.forEach(o=>o.visible=false); braco.visible=false;
+    const mats={prata,escuro,madeira:mad}; malhasArma3d(M3.geos.estatico,mats,g); malhasArma3d(M3.geos.tambor,mats,tam);
+    const CB=M3.caixa('madeira'), cy=(CB.min.y+CB.max.y)/2, cz=(CB.min.z+CB.max.z)/2;   // a cruz nos dois lados do cabo do modelo
+    cruz.forEach((o,i)=>{ const sx=i<2?-1:1; o.position.x=sx*(CB.max.x+.0007); o.position.y+=cy-(-.064); o.position.z+=cz-.04; }); }
+  return {tipo:'revolver',g,boca:M3?V3(...M3.ex.boca):V3(0,.03,-.28),tambor:tam,guin,PIVO,ext,camaras,cao,cruz,cruzMat,prata,mun,munC,trava}; }
 function cetroFP(cor){ const C=cetroOsso(cor);
   // as vértebras ganham material próprio para acender em sequência (sacar, lançar, canalizar)
   const vert=[]; C.g.children.forEach(o=>{ if(o.isMesh&&o.geometry&&o.geometry.type==='TorusGeometry'){ o.material=o.material.clone(); o.material.emissive=new THREE.Color(cor); o.material.emissiveIntensity=0; vert.push(o); } });
@@ -698,7 +711,7 @@ function aplicarObjetos(R,pose){ const W=R.arma;
       else { const vivo=i<S.carga; c.vivo.visible=vivo; c.vazio.visible=!vivo; } }); } }
 const qPinca=qE([0,0,0]), qMunMao=qE([0,0,0]), MUN_NA_MAO=new THREE.Vector3(), MUN_DED=[.05,-.25,-1], MUN_DOR=[0,1,-.2];
 // municiador no eixo do tambor: s=0 com as pontas encostando atrás das câmaras, s=1 com os aros rentes à face traseira
-const zMun=s=>.0375+(1-s)*.0365;
+const zMun=s=>(S.zcRev!=null?S.zcRev:.0335)+.004+(1-s)*.0365;   // .0375 com o tambor antigo (face de trás em .0335)
 // palma da mão direita para que o ponto de pinça caia em p (no quadro da chave)
 function maoPorPonto(p,q){ const M=S.rigs.carabina.maos.D, off=M.pinca.position.clone().sub(PALMA_CENTRO).applyQuaternion(q); return [p.x-off.x,p.y-off.y,p.z-off.z]; }
 

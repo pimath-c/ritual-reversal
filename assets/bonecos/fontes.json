@@ -1,0 +1,194 @@
+{
+  "_sobre": "Bonecos de verdade, CC0 (Quaternius, quaternius.com: Modular Character Outfits - Fantasy e Universal Base Characters, versões Standard gratuitas). tools/montar-bonecos.py baixa os .zip do itch.io para assets/bonecos/fontes/ (fora do git), lê os glTF com esqueleto e grava cada boneco em peças rígidas por junta em client/bonecos.js e Resources/Bonecos/<nome>.bytes. 'pecas': [pacote, glTF, filtro] (filtro: lista de '!malha' a tirar, ou 'cabeca' para tirar só a cabeça de um corpo inteiro); 'cores': recoloração por textura ('verde': [matiz, sat×, val×] troca o verde da roupa; 'mult': [r, g, b]).",
+  "fontes": {
+    "roupas": {
+      "itch": "https://quaternius.itch.io/modular-character-outfits-fantasy",
+      "arquivo": "Standard",
+      "pasta": "Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/",
+      "licenca": "CC0",
+      "autor": "Quaternius"
+    },
+    "base": {
+      "itch": "https://quaternius.itch.io/universal-base-characters",
+      "arquivo": "Standard",
+      "pasta": "Universal Base Characters[Standard]/",
+      "licenca": "CC0",
+      "autor": "Quaternius"
+    }
+  },
+  "bonecos": {
+    "ritualista": {
+      "uso": "Cultista Ritualista: a roupa de ranger com capuz, em vermelho-sangue; o rosto fica escuro dentro do capuz",
+      "pecas": [
+        [
+          "roupas",
+          "Outfits/Male_Ranger.gltf",
+          null
+        ]
+      ],
+      "cores": {
+        "T_Ranger_BaseColor.png": {
+          "verde": [
+            352,
+            1.1,
+            0.72
+          ]
+        },
+        "T_Regular_Male_Dark_BaseColor.png": {
+          "mult": [
+            0.32,
+            0.22,
+            0.24
+          ]
+        }
+      }
+    },
+    "guardiao": {
+      "uso": "Cultista Guardião: a mesma roupa, num vermelho mais escuro (o jogo põe a armadura de osso por cima)",
+      "pecas": [
+        [
+          "roupas",
+          "Outfits/Male_Ranger.gltf",
+          null
+        ]
+      ],
+      "cores": {
+        "T_Ranger_BaseColor.png": {
+          "verde": [
+            346,
+            1.0,
+            0.5
+          ]
+        },
+        "T_Regular_Male_Dark_BaseColor.png": {
+          "mult": [
+            0.32,
+            0.22,
+            0.24
+          ]
+        }
+      }
+    },
+    "soldado": {
+      "uso": "Caçador Soldado: a roupa de ranger sem o capuz, em azul-aço, com a cabeça e o cabelo do corpo base (o chapéu é do jogo)",
+      "pecas": [
+        [
+          "roupas",
+          "Outfits/Male_Ranger.gltf",
+          [
+            "!Male_Ranger_Head_Hood"
+          ]
+        ],
+        [
+          "base",
+          "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+          "cabeca"
+        ],
+        [
+          "base",
+          "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Beard.gltf",
+          null
+        ]
+      ],
+      "cores": {
+        "T_Ranger_BaseColor.png": {
+          "verde": [
+            212,
+            0.45,
+            0.85
+          ]
+        },
+        "T_Hair_1_BaseColor.png": {
+          "mult": [
+            0.28,
+            0.2,
+            0.14
+          ]
+        }
+      }
+    },
+    "exorcista": {
+      "uso": "Caçador Exorcista: a roupa sem o capuz, em cinza-carvão",
+      "pecas": [
+        [
+          "roupas",
+          "Outfits/Male_Ranger.gltf",
+          [
+            "!Male_Ranger_Head_Hood"
+          ]
+        ],
+        [
+          "base",
+          "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+          "cabeca"
+        ],
+        [
+          "base",
+          "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_SimpleParted.gltf",
+          null
+        ]
+      ],
+      "cores": {
+        "T_Ranger_BaseColor.png": {
+          "verde": [
+            230,
+            0.12,
+            0.55
+          ]
+        },
+        "T_Hair_1_BaseColor.png": {
+          "mult": [
+            0.12,
+            0.1,
+            0.09
+          ]
+        }
+      }
+    },
+    "rastreador": {
+      "uso": "Caçadora Rastreadora: a roupa feminina de ranger sem o capuz, em couro marrom",
+      "pecas": [
+        [
+          "roupas",
+          "Outfits/Female_Ranger.gltf",
+          [
+            "!Female_Ranger_Head_Hood"
+          ]
+        ],
+        [
+          "base",
+          "Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
+          "cabeca"
+        ],
+        [
+          "base",
+          "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buns.gltf",
+          null
+        ]
+      ],
+      "cores": {
+        "T_Ranger_BaseColor.png": {
+          "verde": [
+            28,
+            0.75,
+            0.7
+          ]
+        },
+        "T_Hair_2_BaseColor.png": {
+          "mult": [
+            0.32,
+            0.18,
+            0.1
+          ]
+        },
+        "T_Hair_1_BaseColor.png": {
+          "mult": [
+            0.32,
+            0.18,
+            0.1
+          ]
+        }
+      }
+    }
+  }
+}

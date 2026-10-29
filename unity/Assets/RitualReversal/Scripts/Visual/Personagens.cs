@@ -67,6 +67,17 @@ namespace RitualReversal.Visual
         public static Arma Carabina(Kit k, Transform pai)
         {
             var g = Mundo.Grupo(pai, "carabina"); Material aco = Metal(0x34373c, .4f), latao = Metal(0xb58c48, .28f, 1), mad = Madeira(0x7a4626, .5f);
+            var M = ArmaGLB.Carregar("carabina");
+            if (M != null)
+            {   // v6.5: a carabina de alavanca de verdade (o modelo com os materiais por papel; o armaCarabina do index.html)
+                var mats = new Dictionary<string, Material> { { "caixa", aco }, { "aco", aco }, { "madeira", mad } };
+                foreach (var kv in M.geos["estatico"]) k.Por(g, mats[kv.Key], kv.Value, M4.I);
+                var pivM = Mundo.Grupo(g, "alavanca"); pivM.localPosition = M.pivos["alav"];
+                Dictionary<string, Geo> alavG; if (M.geos.TryGetValue("alav", out alavG)) foreach (var kv in alavG) k.Por(pivM, mats[kv.Key], kv.Value, M4.I);
+                var caoM = Mundo.Grupo(g, "cão"); caoM.localPosition = new Vector3(0, .07f, .045f);
+                var C = M.Caixa("caixa");
+                return new Arma { g = g, boca = M.boca, alav = pivM, cao = caoM, janela = new Vector3(C.max.x, C.max.y - .008f, .03f) };
+            }
             k.Por(g, aco, Lateral(new[] { P(-.06f, -.034f), P(.1f, -.034f), P(.1f, .05f), P(.03f, .062f), P(-.05f, .058f), P(-.06f, .04f) }, .042f, .006f), M4.I);
             k.Por(g, aco, CilZ(.015f, .017f, .64f), 0, .036f, -.42f);
             k.Por(g, aco, CilZ(.011f, .011f, .52f, 16), 0, .004f, -.36f);
@@ -87,6 +98,16 @@ namespace RitualReversal.Visual
         public static Arma Revolver(Kit k, Transform pai)
         {
             var g = Mundo.Grupo(pai, "revólver"); Material prata = Metal(0xc8ccd2, .22f, 1), escuro = Metal(0x1c1d20, .45f), mad = Madeira(0x2e1a12, .45f);
+            var M = ArmaGLB.Carregar("revolver");
+            if (M != null)
+            {   // v6.5: o revólver de verdade; o tambor do modelo gira no lugar do antigo (o armaRevolver do index.html)
+                var mats = new Dictionary<string, Material> { { "prata", prata }, { "escuro", escuro }, { "madeira", mad } };
+                foreach (var kv in M.geos["estatico"]) k.Por(g, mats[kv.Key], kv.Value, M4.I);
+                var tambM = Mundo.Grupo(g, "tambor"); tambM.localPosition = new Vector3(0, .014f, -.035f);
+                Dictionary<string, Geo> tg; if (M.geos.TryGetValue("tambor", out tg)) foreach (var kv in tg) k.Por(tambM, mats[kv.Key], kv.Value, M4.I);
+                var caoM = Mundo.Grupo(g, "cão"); caoM.localPosition = new Vector3(0, .058f, .035f);
+                return new Arma { g = g, boca = M.boca, tambor = tambM, cao = caoM };
+            }
             k.Por(g, prata, Lateral(new[] { P(-.05f, -.022f), P(.075f, -.022f), P(.085f, .042f), P(-.02f, .05f), P(-.05f, .03f) }, .03f, .005f), M4.I);
             k.Por(g, prata, CilZ(.013f, .014f, .2f, 20), 0, .03f, -.17f);
             k.Por(g, prata, Geo.Caixa(.012f, .012f, .2f), 0, .045f, -.17f);
@@ -155,6 +176,71 @@ namespace RitualReversal.Visual
         GameObject atord, cego, runaM, orbita; Material mAtord, mCego, mRunaM; readonly List<GameObject> orb = new List<GameObject>(); readonly List<Material> mOrb = new List<Material>();
         Material mVeu; bool veuOn; float fadeAtual = 1;
 
+        // v6.5: o boneco de verdade (Quaternius, CC0; BonecoGLB) nas mesmas juntas, pelos pivôs do arquivo, com o que distingue cada
+        // classe por cima (o bonecoReal do index.html); sem o arquivo, false e o construtor monta as peças antigas
+        bool BonecoReal(Kit k)
+        {
+            var B = BonecoGLB.Carregar(team == "C" ? (cls == "guardiao" ? "guardiao" : "ritualista") : (cls == "exorcista" || cls == "rastreador" ? cls : "soldado"));
+            if (B == null) return false;
+            var P = B.pivos; var M = B.mao; var mat = Pisca(new Material(B.mat));
+            legL = J(bodyT, P["legL"].x, P["legL"].y, P["legL"].z, "perna E"); legR = J(bodyT, P["legR"].x, P["legR"].y, P["legR"].z, "perna D");
+            torso = J(bodyT, P["torso"].x, P["torso"].y, P["torso"].z, "tronco");
+            head = J(torso.t, P["head"].x, P["head"].y, P["head"].z, "cabeça");
+            armL = J(torso.t, P["armL"].x, P["armL"].y, P["armL"].z, "braço E"); armR = J(torso.t, P["armR"].x, P["armR"].y, P["armR"].z, "braço D");
+            var Jt = new Dictionary<string, Transform> { { "body", bodyT }, { "torso", torso.t }, { "head", head.t }, { "legL", legL.t }, { "legR", legR.t }, { "armL", armL.t }, { "armR", armR.t } };
+            foreach (var kv in B.geos) k.Por(Jt[kv.Key], mat, kv.Value, M4.I);
+            float frente = B.torsoMin.z, peito = B.torsoMin.y + (B.torsoMax.y - B.torsoMin.y) * .62f;   // a frente do peito, no espaço do torso
+            if (team == "C")
+            {
+                bool guard = cls == "guardiao";
+                // o rosto é escuro dentro do capuz, com os olhos vermelhos
+                k.Por(head.t, Pecas.Basico(0x020103), Geo.Esfera(.11f, 18, 14), 0, .15f, -.035f, 0, 0, 0, 1, 1.2f, .75f);
+                var olho = Pecas.Basico(0xff2a44); foreach (float sx in new[] { -1f, 1f }) k.Por(head.t, olho, Geo.Esfera(.019f, 10, 8), sx * .042f, .165f, -.105f);
+                if (guard)
+                {
+                    var osso = Pecas.Osso();
+                    foreach (var par in new[] { new KeyValuePair<Junta, float>(armL, -1), new KeyValuePair<Junta, float>(armR, 1) })
+                    {
+                        var A = par.Key; float sx = par.Value;
+                        k.Por(A.t, osso, Geo.Esfera(.11f, 20, 14, 0, PI * 2, 0, PI * .55f), 0, .03f, 0, 0, 0, 0, 1.05f, .85f, 1.15f);
+                        for (int i = 0; i < 3; i++) k.Por(A.t, osso, Geo.Cone(.026f, .22f, 14), sx * (.03f + i * .03f), .11f + i * .02f, .03f - i * .035f, 0, 0, -sx * (.35f + i * .25f));
+                    }
+                    escala = 1.12f;
+                }
+                else { mRune = Pecas.Aditivo(0x9a4ad0, Tex.Runa(), false); rune = Mundo.Malha(Geo.Plano(.22f, .22f), mRune, torso.t, "runa", false); Mundo.Pos(rune, 0, peito, frente - .012f); Mundo.Rot(rune, 0, PI, 0); }
+                gun = J(armR.t, M.x, M.y, M.z, "mão");
+                cetro = Pecas.CetroOsso(k, gun.t, guard ? 0xff4a5a : 0xb050ff); cetro.g.localPosition = new Vector3(0, -.36f, 0);
+                sprites.Add(cetro.halo); sprites.Add(cetro.runa);
+            }
+            else
+            {
+                bool exo = cls == "exorcista"; var couro = Pecas.Couro(0x3a2818); couro.SetFloat("_Cull", 0);
+                if (cls != "rastreador")
+                {   // o chapéu da caça (a Rastreadora fica com o coque)
+                    var chapeu = Mundo.Grupo(head.t, "chapéu"); chapeu.localPosition = new Vector3(0, .245f, -.005f); chapeu.localScale = Vector3.one * .66f;
+                    k.Por(chapeu, couro, Pecas.Torno(0, 0, .43f, -.012f, .445f, .012f, .22f, .036f, 0, .04f), M4.I);
+                    k.Por(chapeu, couro, Pecas.Torno(.185f, 0, .2f, .1f, .19f, .17f, .12f, .21f, 0, .2f), 0, .02f, 0);
+                    k.Por(chapeu, Pecas.Pano(exo ? 0xe6ddd0 : 0x1a1a1a), Geo.Toro(.195f, .014f, 8, 28), 0, .045f, 0, PI / 2);
+                }
+                // a lanterna presa no cinto
+                k.Por(torso.t, Pecas.Metal(0x2a2a2e, .5f), Geo.Cilindro(.04f, .04f, .11f, 12, 1, true), B.torsoMin.x - .02f, peito - .32f, frente + .07f);
+                k.Por(torso.t, Pecas.Basico(0xffd58a), Geo.Esfera(.028f, 12, 10), B.torsoMin.x - .02f, peito - .32f, frente + .07f);
+                if (exo)
+                {   // a estola branca do Exorcista
+                    Material alvo = Pecas.Pano(0xeee6d8), dour = Pecas.Metal(0xd4b060, .3f, 1);
+                    foreach (float sx in new[] { -1f, 1f })
+                    {
+                        k.Por(torso.t, alvo, Geo.Caixa(.065f, .62f, .01f), sx * .075f, peito - .12f, frente - .012f);
+                        k.Por(torso.t, dour, Geo.Caixa(.01f, .06f, .012f), sx * .075f, peito - .33f, frente - .02f); k.Por(torso.t, dour, Geo.Caixa(.04f, .01f, .012f), sx * .075f, peito - .315f, frente - .02f);
+                    }
+                }
+                gun = J(armR.t, M.x, M.y, M.z, "mão"); gun.r = new Vector3(-PI / 2, 0, 0); gun.Aplicar();
+                var ar = exo ? Pecas.Revolver(k, gun.t) : Pecas.Carabina(k, gun.t); ar.g.localPosition = new Vector3(0, 0, .02f);
+                mFlash = Pecas.Aditivo(0xffd08a, Tex.Chama(), true, 0); flash = Mundo.Sprite(ar.g, mFlash, .5f, .5f, "clarão"); flash.transform.localPosition = ar.boca; sprites.Add(flash);
+            }
+            return true;
+        }
+
         Junta J(Transform pai, float x, float y, float z, string nome) { var t = Mundo.Grupo(pai, nome); t.localPosition = new Vector3(x, y, z); return new Junta { t = t }; }
         Material Pisca(Material m) { pisca.Add(m); m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", Color.black); piscaE.Add(Color.black); return m; }
 
@@ -162,7 +248,8 @@ namespace RitualReversal.Visual
         {
             this.team = team; this.cls = cls; var k = new Kit();
             g = Mundo.Grupo(pai, team + " " + cls); bodyT = Mundo.Grupo(g, "corpo"); body = new Junta { t = bodyT };
-            if (team == "C")
+            if (BonecoReal(k)) { }
+            else if (team == "C")
             {
                 bool guard = cls == "guardiao";
                 var tunica = Pisca(Pecas.Pano(guard ? 0x40101a : 0x581320)); tunica.SetFloat("_Cull", 0);

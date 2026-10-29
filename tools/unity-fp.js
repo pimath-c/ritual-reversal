@@ -68,7 +68,7 @@ recarga('carabina',0); recarga('carabina',6); recarga('revolver',0); recarga('re
   // ---- Unity (Mono)
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'unity-fp-')), EXE=path.join(tmp,'teste.exe'), ENT=path.join(tmp,'casos.json'), SAI=path.join(tmp,'saida.json');
   const VIS=path.join(UN,'Scripts','Visual');
-  const scripts=fs.readdirSync(VIS).filter(f=>/^(Mundo.*|Geo|Texturas|Materiais|MapaVisual|Arvores|Qualidade|Personagens|ModeloGLB|ArmaFP|SkinsFP)\.cs$/.test(f)).map(f=>path.join(VIS,f));
+  const scripts=fs.readdirSync(VIS).filter(f=>/^(Mundo.*|Geo|Texturas|Materiais|MapaVisual|Arvores|Qualidade|Personagens|ModeloGLB|BonecoGLB|ArmaGLB|ArmaFP|SkinsFP)\.cs$/.test(f)).map(f=>path.join(VIS,f));
   const sim=fs.readdirSync(path.join(UN,'Scripts','Simulacao')).filter(f=>f.endsWith('.cs')).map(f=>path.join(UN,'Scripts','Simulacao',f));
   try{ execFileSync('mcs',['-nowarn:414,618,169,649,219,162,168,1717','-out:'+EXE,path.join(CS,'UnityFalso.cs'),path.join(CS,'SomFalso.cs'),path.join(CS,'TesteFP.cs'),...scripts,...sim],{stdio:['ignore','pipe','pipe']}); }
   catch(e){ console.error('o ArmaFP não compilou contra o UnityEngine de mentira:\n'+String(e.stdout||'')+String(e.stderr||'')); process.exit(2); }

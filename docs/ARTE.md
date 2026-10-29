@@ -76,6 +76,27 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `cadeira` | Asilo: a cadeira elétrica (kind cadeira_eletrica) | [WoodenChair_01](https://polyhaven.com/a/WoodenChair_01), CC0 | Jake Mobley |
 | `armario` | Asilo: o balcão da recepção, uma fileira de armários (kind balcao) | [painted_wooden_cabinet](https://polyhaven.com/a/painted_wooden_cabinet), CC0 | Kirill Sannikov |
 
+## Bonecos
+
+Personagens em peças rígidas por junta (`tools/montar-bonecos.py`, `assets/bonecos/fontes.json`).
+
+| No jogo | Classe | Pacote | Autor |
+| --- | --- | --- | --- |
+| `ritualista` | Cultista Ritualista: a roupa de ranger com capuz, em vermelho-sangue; o rosto fica escuro dentro do capuz | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `guardiao` | Cultista Guardião: a mesma roupa, num vermelho mais escuro (o jogo põe a armadura de osso por cima) | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `soldado` | Caçador Soldado: a roupa de ranger sem o capuz, em azul-aço, com a cabeça e o cabelo do corpo base (o chapéu é do jogo) | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `exorcista` | Caçador Exorcista: a roupa sem o capuz, em cinza-carvão | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `rastreador` | Caçadora Rastreadora: a roupa feminina de ranger sem o capuz, em couro marrom | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+
+## Armas
+
+A forma do modelo no quadro da arma do jogo, pintada com os materiais por papel (`tools/montar-armas.py`, `assets/armas/fontes.json`).
+
+| No jogo | Onde aparece | Origem | Autor |
+| --- | --- | --- | --- |
+| `carabina` | a carabina de alavanca do Soldado (primeira e terceira pessoa) | [hunting-rifle](https://opengameart.org/content/hunting-rifle), CC0 | Lucian Pavel |
+| `revolver` | o revólver do Exorcista (primeira e terceira pessoa) | [old-revolver](https://opengameart.org/content/old-revolver), CC0 | Lucian Pavel |
+
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em
 faixas do estilo ilustrado não exagerar.
