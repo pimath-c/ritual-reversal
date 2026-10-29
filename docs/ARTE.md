@@ -82,11 +82,11 @@ Personagens em peças rígidas por junta (`tools/montar-bonecos.py`, `assets/bon
 
 | No jogo | Classe | Pacote | Autor |
 | --- | --- | --- | --- |
-| `ritualista` | Cultista Ritualista: a roupa de ranger com capuz, em vermelho-sangue; o rosto fica escuro dentro do capuz | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `guardiao` | Cultista Guardião: a mesma roupa, num vermelho mais escuro (o jogo põe a armadura de osso por cima) | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `soldado` | Caçador Soldado: a roupa de ranger sem o capuz, em azul-aço, com a cabeça e o cabelo do corpo base (o chapéu é do jogo) | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `exorcista` | Caçador Exorcista: a roupa sem o capuz, em cinza-carvão | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `rastreador` | Caçadora Rastreadora: a roupa feminina de ranger sem o capuz, em couro marrom | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `ritualista` | Cultista Ritualista: capuz e túnica longa esfarrapada (a túnica é do jogo) em sangue seco; o rosto fica escuro dentro do capuz | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `guardiao` | Cultista Guardião: a mesma roupa num vermelho quase preto, com a armadura de osso do jogo por cima | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `soldado` | Caçador Soldado: colete e casaco longo (a aba é do jogo) em azul-noite, com a cabeça e a barba do corpo base e o chapéu | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `exorcista` | Caçador Exorcista: casaco longo cinza-carvão, chapéu e a estola branca | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `rastreador` | Caçadora Rastreadora: couro escuro e casaco longo, cabelo preso, sem chapéu | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
 
 ## Armas
 

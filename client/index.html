@@ -797,7 +797,7 @@ function arma3d(nome){ if(nome in ARMAS3D) return ARMAS3D[nome]; const b64=windo
     const listas={}; for(let t=0;t<I.length;t+=3){ const pt=ex.partes[Math.round(U2[I[t]*2])], pa=ex.papeis[Math.round(U2[I[t]*2+1])]; ((listas[pt]=listas[pt]||{})[pa]=listas[pt][pa]||[]).push(I[t],I[t+1],I[t+2]); }
     const geos={}; for(const pt in listas){ geos[pt]={}; for(const pa in listas[pt]){ const g=new THREE.BufferGeometry();
       g.setAttribute('position',new THREE.BufferAttribute(P,3)); g.setAttribute('normal',new THREE.BufferAttribute(N,3)); g.setAttribute('uv',new THREE.BufferAttribute(UV,2));
-      g.setIndex(new THREE.BufferAttribute(P.length/3>65535?new Uint32Array(listas[pt][pa]):new Uint16Array(listas[pt][pa]),1)); g.computeBoundingBox(); g.computeBoundingSphere(); COMPARTILHADAS.add(g); geos[pt][pa]=g; } }
+      g.setIndex(new THREE.BufferAttribute(P.length/3>65535?new Uint32Array(listas[pt][pa]):new Uint16Array(listas[pt][pa]),1)); limitesPorIndice(g,P,listas[pt][pa]); COMPARTILHADAS.add(g); geos[pt][pa]=g; } }
     const caixa=papel=>{ const b=new THREE.Box3(); for(const pt of ['estatico']) for(const pa in geos[pt]||{}) if(!papel||pa===papel) b.union(geos[pt][pa].boundingBox); return b; };
     return ARMAS3D[nome]={geos,ex,caixa};
   }catch(e){ console.warn('arma '+nome,e); return ARMAS3D[nome]=null; } }
@@ -889,6 +889,10 @@ function modelo(nome){ if(nome in MODELOS) return MODELOS[nome]; const b64=windo
 // v6.5: bonecos de verdade (Quaternius, CC0; tools/montar-bonecos.py, RR_BONECOS): o mesmo GLB enxuto, com a peça de cada
 // triângulo em TEXCOORD_1.x (body, torso, head, legL, legR, armL, armR) e, em extras, os pivôs das juntas e a mão direita.
 // Cada peça vira uma geometria presa na sua junta: a animação procedural continua a mesma. O Unity lê os mesmos (BonecoGLB.cs).
+// caixa e esfera só dos vértices que os índices usam: as peças de um GLB dividem o mesmo vetor de posições, e o
+// computeBoundingBox do three mediria o modelo inteiro
+function limitesPorIndice(g,P,ids){ const b=new THREE.Box3(), v=new THREE.Vector3(); for(let i=0;i<ids.length;i++){ const k=ids[i]*3; b.expandByPoint(v.set(P[k],P[k+1],P[k+2])); }
+  g.boundingBox=b; g.boundingSphere=b.getBoundingSphere(new THREE.Sphere()); }
 const BONECOS={};
 function boneco(nome){ if(nome in BONECOS) return BONECOS[nome]; const b64=window.RR_BONECOS&&RR_BONECOS[nome]; if(!b64) return BONECOS[nome]=null;
   try{ const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)), jl=new DataView(bin.buffer).getUint32(12,true);
@@ -898,7 +902,7 @@ function boneco(nome){ if(nome in BONECOS) return BONECOS[nome]; const b64=windo
     const ms=J.meshes[0], pr=ms.primitives[0], at=pr.attributes, P=acc(at.POSITION), N=acc(at.NORMAL), U=acc(at.TEXCOORD_0), U2=acc(at.TEXCOORD_1), I=acc(pr.indices), ex=ms.extras;
     const geos={}; ex.partes.forEach((parte,pi)=>{ const ids=[]; for(let t=0;t<I.length;t+=3) if(Math.round(U2[I[t]*2])===pi) ids.push(I[t],I[t+1],I[t+2]); if(!ids.length) return;
       const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(P,3)); g.setAttribute('normal',new THREE.BufferAttribute(N,3)); g.setAttribute('uv',new THREE.BufferAttribute(U,2));
-      g.setIndex(new THREE.BufferAttribute(I.length>65535||P.length/3>65535?new Uint32Array(ids):new Uint16Array(ids),1)); g.computeBoundingBox(); g.computeBoundingSphere(); geos[parte]=g; });
+      g.setIndex(new THREE.BufferAttribute(I.length>65535||P.length/3>65535?new Uint32Array(ids):new Uint16Array(ids),1)); limitesPorIndice(g,P,ids); geos[parte]=g; });
     const im=J.images[0], url=URL.createObjectURL(new Blob([vista(im.bufferView)],{type:im.mimeType}));
     const tex=new THREE.TextureLoader().load(url,()=>URL.revokeObjectURL(url)); tex.flipY=false; tex.encoding=THREE.sRGBEncoding; tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
     return BONECOS[nome]={geos,mat:new THREE.MeshStandardMaterial({map:tex,roughness:.88,metalness:0,emissive:0}),ex};
@@ -1691,6 +1695,9 @@ function bonecoReal(team,cls,g,U,junta,put,pisca){
   for(const k in B.geos) put(new THREE.Mesh(B.geos[k],mat),J[k]);
   const T=B.geos.torso.boundingBox, frente=T.min.z, peito=T.min.y+(T.max.y-T.min.y)*.62;   // a frente do peito, no espaço do torso
   if(team==='C'){ const guard=cls==='guardiao';
+    // a túnica longa e esfarrapada até os pés, por cima das pernas (o culto não usa calça de couro à vista)
+    const tunica=pisca(matPano(guard?0x140306:0x22060b));
+    U.robe=esfarrapar(put(torno([[.34,0],[.32,.12],[.28,.4],[.24,.7],[.21,.95],[.19,1.08],[0,1.09]],tunica),body,0,.03,0),.06,guard?2:5); U.robe.material.side=THREE.DoubleSide;
     // o rosto é escuro dentro do capuz, com os olhos vermelhos
     const rosto=put(new THREE.Mesh(new THREE.SphereGeometry(.11,18,14),new THREE.MeshBasicMaterial({color:0x020103})),U.head,0,.15,-.035); rosto.scale.set(1,1.2,.75);
     for(const sx of [-1,1]) put(new THREE.Mesh(new THREE.SphereGeometry(.019,10,8),new THREE.MeshBasicMaterial({color:0xff2a44,toneMapped:false})),U.head,sx*.042,.165,-.105);
@@ -1702,6 +1709,8 @@ function bonecoReal(team,cls,g,U,junta,put,pisca){
     U.gun=junta(U.armR,M[0],M[1],M[2]);
     const ce=cetroOsso(guard?0xff4a5a:0xb050ff); ce.g.position.set(0,-.36,0); U.gun.add(ce.g); U.cetro=ce; U.armaA=ce; U.armaK='cetro';
   } else { const exo=cls==='exorcista', couro=matCouro(0x3a2818);
+    // a aba do casaco longo, da cintura ao joelho (a caça do século 19, não um ranger)
+    U.aba=esfarrapar(put(torno([[.27,0],[.255,.2],[.23,.42],[.2,.58],[0,.59]],pisca(matPano(exo?0x1e1e22:cls==='rastreador'?0x2a1d14:0x1c2230))),body,0,.4,0),.025,3); U.aba.material.side=THREE.DoubleSide;
     if(cls!=='rastreador'){ const chapeu=put(new THREE.Group(),U.head,0,.245,-.005); chapeu.scale.setScalar(.66);   // o chapéu da caça (a Rastreadora fica com o coque)
       put(torno([[0,0],[.43,-.012],[.445,.012],[.22,.036],[0,.04]],couro),chapeu); put(torno([[.185,0],[.2,.1],[.19,.17],[.12,.21],[0,.2]],couro),chapeu,0,.02,0);
       const fita=put(new THREE.Mesh(new THREE.TorusGeometry(.195,.014,8,28),matPano(exo?0xe6ddd0:0x1a1a1a)),chapeu,0,.045,0); fita.rotation.x=Math.PI/2; }
@@ -3770,7 +3779,7 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Bonecos e armas de verdade (v6.5)','Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz vermelho, Soldado e Exorcista de casaco e chapéu, a Rastreadora de couro marrom. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas.'],['Cadeira, balcão e portas (v6.4e)','A cadeira do Eletrochoque é uma cadeira gótica de madeira entalhada, o balcão do Saguão é uma fileira de armários brancos descascados e as portas do Asilo são de tábuas pintadas e gastas.'],['Pinturas e espelhos (v6.4d)','O Asilo ganhou pinturas emolduradas e espelhos entalhados nas paredes de 29 salas, e os lampiões das mesas agora têm o vidro pintado e o metal dourado.'],['Mais duas levas de arte (v6.4c)','As samambaias da mata, as raízes do carvalho, os bancos da nave e a arca agora são modelos escaneados, e as rochas têm três formas. O promontório ganhou chão de terra e capim ralo, e as pilhas de madeira, tábuas gastas. No Asilo, luminárias industriais, quadros de força, canteiros de madeira na horta, bancadas e macas de verdade, lampiões nas mesas, e telhados de ardósia, ferro enferrujado e concreto fotografados.'],['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
+const NOVIDADES=[['Bonecos e armas de verdade (v6.5)','Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz e túnica longa, Soldado e Exorcista de casaco longo e chapéu, a Rastreadora de couro escuro. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas.'],['Cadeira, balcão e portas (v6.4e)','A cadeira do Eletrochoque é uma cadeira gótica de madeira entalhada, o balcão do Saguão é uma fileira de armários brancos descascados e as portas do Asilo são de tábuas pintadas e gastas.'],['Pinturas e espelhos (v6.4d)','O Asilo ganhou pinturas emolduradas e espelhos entalhados nas paredes de 29 salas, e os lampiões das mesas agora têm o vidro pintado e o metal dourado.'],['Mais duas levas de arte (v6.4c)','As samambaias da mata, as raízes do carvalho, os bancos da nave e a arca agora são modelos escaneados, e as rochas têm três formas. O promontório ganhou chão de terra e capim ralo, e as pilhas de madeira, tábuas gastas. No Asilo, luminárias industriais, quadros de força, canteiros de madeira na horta, bancadas e macas de verdade, lampiões nas mesas, e telhados de ardósia, ferro enferrujado e concreto fotografados.'],['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
   ['Texturas e modelos de verdade (v6.4)','As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, "Entre rituais" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.'],
   ['Correções (v6.3b)','As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais.'],
   ['Só sons gravados (v6.2b)','Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA.'],

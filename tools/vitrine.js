@@ -39,7 +39,7 @@ add('skin-cetro-afogado-inspecao',{arma:'cetro',clipe:'inspecao',skin:'afogado',
 fs.mkdirSync(OUT,{recursive:true});
 (async()=>{
   const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
-  const page=await browser.newPage({viewport:{width:1280,height:720}});
+  const page=await browser.newPage({viewport:{width:1280,height:720}}); page.setDefaultTimeout(300000);   // no SwiftShader uma foto da cena inteira passa de 30 s
   const erros=[]; page.on('pageerror',e=>erros.push('pageerror: '+e.message)); page.on('console',m=>{ if(m.type()==='error'&&!/api\/info|ERR_FAILED/.test(m.text())) erros.push('console: '+m.text()); });
   await page.route('**/*',r=>{ const u=r.request().url();
     if(THREE_DIR&&u.includes('cdn.jsdelivr.net/npm/three@0.128.0/')) return r.fulfill({path:path.join(THREE_DIR,u.split('three@0.128.0/')[1]),contentType:'application/javascript'});

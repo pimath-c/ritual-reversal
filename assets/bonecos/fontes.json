@@ -18,20 +18,28 @@
   },
   "bonecos": {
     "ritualista": {
-      "uso": "Cultista Ritualista: a roupa de ranger com capuz, em vermelho-sangue; o rosto fica escuro dentro do capuz",
+      "uso": "Cultista Ritualista: capuz e túnica longa esfarrapada (a túnica é do jogo) em sangue seco; o rosto fica escuro dentro do capuz",
       "pecas": [
         [
           "roupas",
           "Outfits/Male_Ranger.gltf",
-          null
+          [
+            "!Male_Ranger_Acc_Pauldron",
+            "!Male_Ranger_Arms_Bracer"
+          ]
         ]
       ],
       "cores": {
         "T_Ranger_BaseColor.png": {
           "verde": [
             352,
-            1.1,
-            0.72
+            1.0,
+            0.5
+          ],
+          "mult": [
+            0.85,
+            0.8,
+            0.8
           ]
         },
         "T_Regular_Male_Dark_BaseColor.png": {
@@ -44,20 +52,28 @@
       }
     },
     "guardiao": {
-      "uso": "Cultista Guardião: a mesma roupa, num vermelho mais escuro (o jogo põe a armadura de osso por cima)",
+      "uso": "Cultista Guardião: a mesma roupa num vermelho quase preto, com a armadura de osso do jogo por cima",
       "pecas": [
         [
           "roupas",
           "Outfits/Male_Ranger.gltf",
-          null
+          [
+            "!Male_Ranger_Acc_Pauldron",
+            "!Male_Ranger_Arms_Bracer"
+          ]
         ]
       ],
       "cores": {
         "T_Ranger_BaseColor.png": {
           "verde": [
-            346,
-            1.0,
-            0.5
+            348,
+            0.9,
+            0.34
+          ],
+          "mult": [
+            0.7,
+            0.66,
+            0.66
           ]
         },
         "T_Regular_Male_Dark_BaseColor.png": {
@@ -70,13 +86,15 @@
       }
     },
     "soldado": {
-      "uso": "Caçador Soldado: a roupa de ranger sem o capuz, em azul-aço, com a cabeça e o cabelo do corpo base (o chapéu é do jogo)",
+      "uso": "Caçador Soldado: colete e casaco longo (a aba é do jogo) em azul-noite, com a cabeça e a barba do corpo base e o chapéu",
       "pecas": [
         [
           "roupas",
           "Outfits/Male_Ranger.gltf",
           [
-            "!Male_Ranger_Head_Hood"
+            "!Male_Ranger_Head_Hood",
+            "!Male_Ranger_Acc_Pauldron",
+            "!Male_Ranger_Arms_Bracer"
           ]
         ],
         [
@@ -93,9 +111,14 @@
       "cores": {
         "T_Ranger_BaseColor.png": {
           "verde": [
-            212,
-            0.45,
-            0.85
+            218,
+            0.35,
+            0.5
+          ],
+          "mult": [
+            0.85,
+            0.85,
+            0.88
           ]
         },
         "T_Hair_1_BaseColor.png": {
@@ -108,13 +131,15 @@
       }
     },
     "exorcista": {
-      "uso": "Caçador Exorcista: a roupa sem o capuz, em cinza-carvão",
+      "uso": "Caçador Exorcista: casaco longo cinza-carvão, chapéu e a estola branca",
       "pecas": [
         [
           "roupas",
           "Outfits/Male_Ranger.gltf",
           [
-            "!Male_Ranger_Head_Hood"
+            "!Male_Ranger_Head_Hood",
+            "!Male_Ranger_Acc_Pauldron",
+            "!Male_Ranger_Arms_Bracer"
           ]
         ],
         [
@@ -132,8 +157,13 @@
         "T_Ranger_BaseColor.png": {
           "verde": [
             230,
-            0.12,
-            0.55
+            0.08,
+            0.36
+          ],
+          "mult": [
+            0.8,
+            0.8,
+            0.8
           ]
         },
         "T_Hair_1_BaseColor.png": {
@@ -146,13 +176,15 @@
       }
     },
     "rastreador": {
-      "uso": "Caçadora Rastreadora: a roupa feminina de ranger sem o capuz, em couro marrom",
+      "uso": "Caçadora Rastreadora: couro escuro e casaco longo, cabelo preso, sem chapéu",
       "pecas": [
         [
           "roupas",
           "Outfits/Female_Ranger.gltf",
           [
-            "!Female_Ranger_Head_Hood"
+            "!Female_Ranger_Head_Hood",
+            "!Female_Ranger_Acc_Pauldrons",
+            "!Female_Ranger_Arms_Bracer"
           ]
         ],
         [
@@ -169,9 +201,14 @@
       "cores": {
         "T_Ranger_BaseColor.png": {
           "verde": [
-            28,
-            0.75,
-            0.7
+            24,
+            0.6,
+            0.42
+          ],
+          "mult": [
+            0.85,
+            0.82,
+            0.8
           ]
         },
         "T_Hair_2_BaseColor.png": {
