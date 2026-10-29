@@ -1,0 +1,28 @@
+# Empacota o projeto do Unity (unity/) num zip e publica na release "unity", com link direto que baixa sem login:
+# https://github.com/pimath-c/ritual-reversal/releases/download/unity/ritual-reversal-unity.zip
+# Crie um projeto Universal 3D (URP) no Unity Hub, copie Assets/RitualReversal do zip para Assets do projeto (ver LEIAME.md)
+# e use o menu Ritual Reversal > Criar cena do jogo.
+name: Pacote Unity
+
+on:
+  push:
+    paths: ['unity/**', 'shared/**', '.github/workflows/unity.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write   # para atualizar a release unity
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Compacta o projeto
+        run: cd unity && zip -qr ../ritual-reversal-unity.zip . -x 'Library/*' 'Temp/*' 'Logs/*' 'obj/*'
+      - name: Publica na release unity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view unity >/dev/null 2>&1 || gh release create unity --prerelease --target "$GITHUB_SHA" --title "Projeto Unity (último envio)" --notes "Projeto do Unity."
+          gh release upload unity ritual-reversal-unity.zip --clobber
+          gh release edit unity --notes "Projeto do Unity do commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d)). Crie um projeto Universal 3D (URP) no Unity Hub, copie a pasta Assets/RitualReversal do zip para dentro de Assets do projeto, espere compilar e use o menu Ritual Reversal > Criar cena do jogo. Detalhes no LEIAME.md dentro do zip."

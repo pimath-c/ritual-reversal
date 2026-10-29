@@ -1,0 +1,388 @@
+{
+  "_sobre": "Modelos 3D gerados no Higgsfield (Tripo, texto para 3D) para o teste de 23/10. tools/montar-modelos.py baixa o original em fontes/<nome>.glb, ajusta o tamanho, a orientação e a textura, e grava client/modelos.js e unity/Assets/RitualReversal/Resources/Modelos/<nome>.bytes. Uso comercial liberado pelo dono do projeto (24/10). v6.4: modelos escaneados CC0 do Poly Haven (\"polyhaven\": id; licença CC0, página em https://polyhaven.com/a/<id>), baixados como glTF de 1K, reduzidos a \"triangulos\" e encaixados numa caixa de 1 × 1 × 1 m (o jogo estica cada um na caixa de colisão da peça).",
+  "altar": {
+    "job": "09dbca59-31e6-4432-ba50-144cb4f4c5e8",
+    "modelo": "tripo_3d",
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3L79INUfLFtqLgbIRxFLR11q4HF/hf_20261023_223349_09dbca59-31e6-4432-ba50-144cb4f4c5e8.glb",
+    "prompt": "A rectangular gothic stone altar table: a solid carved block of weathered pale grey marble with a thick overhanging top slab, carved pointed arches and a small cross relief on the front panel, chipped corners and cracks, medieval cathedral altar, game asset, nothing on top",
+    "negativo": "candles, cloth, tablecloth, people, steps, platform, base, text, modern",
+    "encaixe": "caixa",
+    "tamanho": [
+      2.9,
+      1.32,
+      1.55
+    ],
+    "textura": 1024
+  },
+  "estatua": {
+    "job": "8d3e6db3-4a30-4ced-93ab-ea65486ac366",
+    "modelo": "tripo_3d",
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3L79INUfLFtqLgbIRxFLR11q4HF/hf_20261023_223350_8d3e6db3-4a30-4ced-93ab-ea65486ac366.glb",
+    "prompt": "Weathered stone statue of a hooded monk standing in prayer, head bowed under a deep hood, hands clasped at the chest, long heavy robe reaching the ground, gothic cemetery sculpture, grey stone with cracks and patches of moss, game asset",
+    "negativo": "pedestal, base, plinth, colorful, face details, people, modern",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1.95,
+      0
+    ],
+    "textura": 512,
+    "brilho": 1.6
+  },
+  "rocha": {
+    "polyhaven": "rock_09",
+    "autor": "Jenelle van Heerden",
+    "licenca": "CC0",
+    "uso": "rochas da mata e do promontório (kind rocha)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2400,
+    "textura": 512
+  },
+  "pedra": {
+    "polyhaven": "rock_07",
+    "autor": "Jenelle van Heerden",
+    "licenca": "CC0",
+    "uso": "pedra menor ao lado das rochas",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1200,
+    "textura": 256
+  },
+  "tronco": {
+    "polyhaven": "dead_tree_trunk",
+    "autor": "Rob Tuytel",
+    "licenca": "CC0",
+    "uso": "troncos caídos (kind tronco)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512
+  },
+  "caixote": {
+    "polyhaven": "wooden_crate_02",
+    "autor": "James Ray Cock, Jurita Burger",
+    "licenca": "CC0",
+    "uso": "caixotes do acampamento (kind caixote)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 512,
+    "brilho": 0.75
+  },
+  "leito": {
+    "polyhaven": "old_bed_frame",
+    "autor": "Luca B",
+    "licenca": "CC0",
+    "uso": "Asilo: camas de ferro da enfermaria e dos quartos (kind leito)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 5000,
+    "textura": 512,
+    "bordas": false
+  },
+  "banco_asilo": {
+    "polyhaven": "painted_wooden_bench",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: bancos (kind banco)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 512,
+    "brilho": 0.62
+  },
+  "mesa_asilo": {
+    "polyhaven": "wooden_table_02",
+    "autor": "Serhii Khromov",
+    "licenca": "CC0",
+    "uso": "Asilo: mesas (kind mesa)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 512
+  },
+  "fogueira": {
+    "polyhaven": "stone_fire_pit",
+    "autor": "Sebastian Platen",
+    "licenca": "CC0",
+    "uso": "fogueiras do acampamento (o anel de pedras)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 512
+  },
+  "lanterna": {
+    "polyhaven": "wooden_lantern_01",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "lanternas penduradas nos postes",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 256,
+    "bordas": false
+  },
+  "escombro": {
+    "polyhaven": "rock_moss_set_02",
+    "autor": "Kless Gyzen",
+    "licenca": "CC0",
+    "uso": "escombros: pilhas de pedras com musgo",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512
+  },
+  "raiz": {
+    "polyhaven": "root_cluster_01",
+    "autor": "Jenelle van Heerden, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "raízes expostas na mata (kind raiz)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": false,
+    "brilho": 0.5
+  },
+  "canteiro": {
+    "polyhaven": "planter_box_01",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: canteiros de madeira da horta (kind canteiro)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1200,
+    "textura": 512,
+    "bordas": false
+  },
+  "luminaria": {
+    "polyhaven": "hanging_industrial_lamp",
+    "autor": "Kuutti Siitonen",
+    "licenca": "CC0",
+    "uso": "Asilo: luminárias penduradas no teto",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1200,
+    "textura": 256,
+    "bordas": false
+  },
+  "quadro": {
+    "polyhaven": "power_box_01",
+    "autor": "Rico Cilliers, Yann Kervran",
+    "licenca": "CC0",
+    "uso": "Asilo: quadros de força das alas",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1500,
+    "textura": 512,
+    "bordas": false
+  },
+  "samambaia": {
+    "polyhaven": "fern_02",
+    "autor": "Rob Tuytel, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "samambaias do chão da mata (811 por noite)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 500,
+    "textura": 512,
+    "bordas": false,
+    "alfa": true
+  },
+  "arca": {
+    "polyhaven": "treasure_chest",
+    "autor": "Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "arca da catedral (kind arca)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2500,
+    "textura": 512,
+    "bordas": false
+  },
+  "rocha2": {
+    "polyhaven": "boulder_01",
+    "autor": "Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "rochas da mata e do promontório, segunda forma (kind rocha)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2400,
+    "textura": 512,
+    "bordas": false
+  },
+  "rocha3": {
+    "polyhaven": "rock_face_02",
+    "autor": "Dario Barresi, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "rochas da mata e do promontório, terceira forma, com musgo (kind rocha)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2400,
+    "textura": 512,
+    "bordas": false
+  },
+  "lampiao": {
+    "polyhaven": "vintage_oil_lamp",
+    "autor": "Monsta3D",
+    "licenca": "CC0",
+    "uso": "Asilo: lampiões em cima das mesas e da bancada",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.42,
+      0
+    ],
+    "triangulos": 1200,
+    "textura": 256,
+    "bordas": false
+  },
+  "pintura1": {
+    "polyhaven": "fancy_picture_frame_01",
+    "autor": "Rob Tuytel, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "Asilo: pinturas nas paredes das salas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.8,
+      0
+    ],
+    "triangulos": 1000,
+    "textura": 512,
+    "bordas": true
+  },
+  "pintura2": {
+    "polyhaven": "fancy_picture_frame_02",
+    "autor": "Rob Tuytel, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "Asilo: pinturas nas paredes das salas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.75,
+      0
+    ],
+    "triangulos": 4000,
+    "textura": 512,
+    "bordas": true
+  },
+  "espelho": {
+    "polyhaven": "ornate_mirror_01",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: espelhos nas paredes das salas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1.1,
+      0
+    ],
+    "triangulos": 4000,
+    "textura": 512,
+    "bordas": true
+  },
+  "cadeira": {
+    "polyhaven": "WoodenChair_01",
+    "autor": "Jake Mobley",
+    "licenca": "CC0",
+    "uso": "Asilo: a cadeira elétrica (kind cadeira_eletrica)",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1.7,
+      0
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": true
+  },
+  "armario": {
+    "polyhaven": "painted_wooden_cabinet",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: o balcão da recepção, uma fileira de armários (kind balcao)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2227,
+    "textura": 512,
+    "bordas": true
+  }
+}
