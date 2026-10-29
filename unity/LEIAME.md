@@ -24,6 +24,8 @@ passo: com o mesmo sorteio, o C# e o JavaScript jogam partidas idênticas bit a 
   macas e lampiões, e telhados, ferrugem e concreto fotografados.
 - **Pinturas e espelhos (v6.4d)**: pinturas emolduradas e espelhos nas paredes de 29 salas do Asilo; o lampião com o vidro
   pintado (os modelos de várias texturas agora juntam todas num atlas).
+- **Cadeira, balcão e portas (v6.4e)**: cadeira elétrica gótica de madeira, balcão de armários descascados e portas de
+  tábuas pintadas no Asilo.
 - **Laboratório "Entre rituais"**: troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.
 
 ## Novidades de 26/10

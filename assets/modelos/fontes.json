@@ -354,5 +354,35 @@
     "triangulos": 4000,
     "textura": 512,
     "bordas": true
+  },
+  "cadeira": {
+    "polyhaven": "WoodenChair_01",
+    "autor": "Jake Mobley",
+    "licenca": "CC0",
+    "uso": "Asilo: a cadeira elétrica (kind cadeira_eletrica)",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1.7,
+      0
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": true
+  },
+  "armario": {
+    "polyhaven": "painted_wooden_cabinet",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: o balcão da recepção, uma fileira de armários (kind balcao)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2227,
+    "textura": 512,
+    "bordas": true
   }
 }

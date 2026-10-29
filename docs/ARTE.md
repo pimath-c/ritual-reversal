@@ -43,6 +43,7 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `telhadoAsilo` | Asilo: telhados de ardósia | [roof_slates_02](https://polyhaven.com/a/roof_slates_02) | Rob Tuytel |
 | `planalto` | chão do promontório da catedral (terra e capim ralo) | [grass_ground](https://polyhaven.com/a/grass_ground) | Charlotte Baglioni |
 | `tabuas` | tábuas gastas: pilhas de madeira, telhado do ermitão | [weathered_planks](https://polyhaven.com/a/weathered_planks) | Dario Barresi, Dimitrios Savva |
+| `portaAsilo` | Asilo: portas de tábuas pintadas e gastas (com a cor da foto) | [distressed_painted_planks](https://polyhaven.com/a/distressed_painted_planks) | Rob Tuytel |
 
 ## Modelos
 
@@ -72,6 +73,8 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `pintura1` | Asilo: pinturas nas paredes das salas | [fancy_picture_frame_01](https://polyhaven.com/a/fancy_picture_frame_01), CC0 | Rob Tuytel, Rico Cilliers |
 | `pintura2` | Asilo: pinturas nas paredes das salas | [fancy_picture_frame_02](https://polyhaven.com/a/fancy_picture_frame_02), CC0 | Rob Tuytel, Rico Cilliers |
 | `espelho` | Asilo: espelhos nas paredes das salas | [ornate_mirror_01](https://polyhaven.com/a/ornate_mirror_01), CC0 | James Ray Cock |
+| `cadeira` | Asilo: a cadeira elétrica (kind cadeira_eletrica) | [WoodenChair_01](https://polyhaven.com/a/WoodenChair_01), CC0 | Jake Mobley |
+| `armario` | Asilo: o balcão da recepção, uma fileira de armários (kind balcao) | [painted_wooden_cabinet](https://polyhaven.com/a/painted_wooden_cabinet), CC0 | Kirill Sannikov |
 
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em

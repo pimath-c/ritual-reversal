@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.4d)
+## Estado atual (v6.4e)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -230,6 +230,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   2,5 m; a 10 cm da parede (com 4 cm o reboco do lado z2 cobria), y 1,2. 29 peças; `RR_ASILO` devolve `NA_PAREDE`. No Unity,
   o mesmo bloco antes dos quadros de força. `montar-modelos.py` junta várias texturas de cor num atlas em grade (uv de cada
   primitiva no seu quadrado): mudou `lampiao` (era preto) e `lanterna`.
+- v6.4e (notas em `notas/v6.4e.md`): `cadeira` (WoodenChair_01, encaixe altura 1,7 m, escala 1,5 em x/z, `GIRO_CADEIRA` = PI: o
+  encosto do modelo fica em −z) com o capacete de ferro; `armario` no balcão (M3 com pedaço 1,3, frente em +z, para a entrada) e
+  o tampo; textura `portaAsilo` sem `media` (fica com a cor da foto; material 0xb0b0a8) nas portas.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

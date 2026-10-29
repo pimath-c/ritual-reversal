@@ -57,7 +57,7 @@ namespace RitualReversal.Visual
             var terra = Pbr.Foto("terra") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 8, v * 8, 8, 5), k = .6f + .3f * f; return new Pbr.Saida { h = f * .4f, r = 64 * k, g = 48 * k, b = 34 * k, ro = 1 }; }, 1.6f).Texturas();
             var cascalho = Pbr.Foto("cascalho") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 20, v * 20, 20, 4), k = .55f + .4f * f; return new Pbr.Saida { h = f * .6f, r = 96 * k, g = 92 * k, b = 86 * k, ro = 1 }; }, 2.2f).Texturas();
             // v6.4c: telhado, ferrugem e concreto fotografados (CC0); sem a foto, os de antes
-            var fTelh = Pbr.Foto("telhadoAsilo"); var fFerr = Pbr.Foto("ferrugem"); var fConc = Pbr.Foto("concreto");
+            var fTelh = Pbr.Foto("telhadoAsilo"); var fFerr = Pbr.Foto("ferrugem"); var fConc = Pbr.Foto("concreto"); var fPorta = Pbr.Foto("portaAsilo");
             Func<Pbr, float, bool, Material> pbr = (p, relevoK, dupla) => Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = p.mapa, relevo = p.relevo, relevoK = relevoK, duplaFace = dupla });
             MA = new Dictionary<string, Material>
             {
@@ -72,7 +72,7 @@ namespace RitualReversal.Visual
                 { "carvao", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x111012), rugosidade = .8f }) },
                 { "agua", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x0b1416), metal = .6f, rugosidade = .08f, transparente = true, opacidade = .92f }) },
                 { "lago", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x05090b), metal = .75f, rugosidade = .12f }) },
-                { "porta", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x7a5c40), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo, rugosidade = .9f }) },
+                { "porta", fPorta != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xb0b0a8), mapa = fPorta.mapa, relevo = fPorta.relevo, rugosidade = .9f }) : Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x7a5c40), mapa = Tex.wood.mapa, relevo = Tex.wood.relevo, rugosidade = .9f }) },   // v6.4e: tábuas pintadas e gastas
                 { "cupula", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x2e3532), metal = .6f, rugosidade = .5f }) },
                 { "cupulaDentro", Mat.Brilho(Mat.Hex(0x7a6648), null, Mat.Mistura.Alfa, false, true, 0, true, 2450) },   // o esmalte de dentro, sem luz
                 { "visor", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x1a2224), metal = .4f, rugosidade = .2f }) },
@@ -260,6 +260,7 @@ namespace RitualReversal.Visual
 
         // v6.4: modelo escaneado (CC0, Resources/Modelos) esticado na caixa da peça; o eixo comprido do modelo é x (o M3 do asilo.js)
         // pedaco: a peça comprida vira uma fileira de modelos de uns tantos metros (um banco de 6,8 m são quatro bancos)
+        const float GIRO_CADEIRA = PI, GIRO_ARMARIO = 0;   // v6.4e: a frente dos modelos (a cadeira olha para -z, o balcão para a entrada)
         bool M3(string nome, PecaV w, float h, float giro = 0, float pedaco = 0)
         {
             var MD = ModeloGLB.Carregar(nome); if (MD == null) return false; bool ax = w.x2 - w.x1 >= w.z2 - w.z1;
@@ -312,6 +313,10 @@ namespace RitualReversal.Visual
                     foreach (var p in new[] { new Vector2(w.x1 + .15f, w.z1 + .15f), new Vector2(w.x2 - .15f, w.z1 + .15f), new Vector2(w.x1 + .15f, w.z2 - .15f), new Vector2(w.x2 - .15f, w.z2 - .15f) }) CxA(p.x - .03f, p.x + .03f, 0, .72f, p.y - .03f, p.y + .03f, A("ferro"), 1);
                     break;
                 case "cadeira_eletrica":
+                    {   // v6.4e: a cadeira gótica de madeira escaneada (CC0) e o capacete de ferro
+                        var MC = ModeloGLB.Carregar("cadeira");
+                        if (MC != null) { Est(MC.geo, MC.mat, TRS(cx, 0, cz + .05f, 0, GIRO_CADEIRA, 0, 1.5f, 1, 1.5f)); CxA(cx - .2f, cx + .2f, 1.72f, 1.87f, cz + .15f, cz + .4f, A("ferro"), 1); break; }
+                    }
                     CxA(cx - .45f, cx + .45f, .45f, .55f, cz - .45f, cz + .45f, M("wood"), 1); CxA(cx - .45f, cx + .45f, .55f, 1.7f, cz + .35f, cz + .45f, M("wood"), 1);
                     CxA(cx - .5f, cx - .4f, .55f, .85f, cz - .45f, cz + .45f, M("wood"), 1); CxA(cx + .4f, cx + .5f, .55f, .85f, cz - .45f, cz + .45f, M("wood"), 1);
                     CxA(cx - .2f, cx + .2f, 1.7f, 1.85f, cz + .2f, cz + .45f, A("ferro"), 1); CxA(cx - .4f, cx + .4f, 0, .45f, cz - .4f, cz + .4f, M("wood"), 1); break;
@@ -336,7 +341,7 @@ namespace RitualReversal.Visual
                 case "carvao":
                     for (int k = 0; k < 7; k++) { float rr = .25f + RA() * .25f, x = w.x1 + RA() * (w.x2 - w.x1), y = .15f + RA() * w.h * .6f, z = w.z1 + RA() * (w.z2 - w.z1); Est(Geo.Dodecaedro(rr), A("carvao"), x, y, z); }
                     break;
-                case "balcao": CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 2); CxA(w.x1 - .05f, w.x2 + .05f, w.h, w.h + .06f, w.z1 - .08f, w.z2 + .08f, M("wood"), 2); break;
+                case "balcao": if (M3("armario", w, w.h - .06f, GIRO_ARMARIO, 1.3f)) { CxA(w.x1 - .05f, w.x2 + .05f, w.h - .06f, w.h, w.z1 - .08f, w.z2 + .08f, M("wood"), 2); break; } CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 2); CxA(w.x1 - .05f, w.x2 + .05f, w.h, w.h + .06f, w.z1 - .08f, w.z2 + .08f, M("wood"), 2); break;
                 case "coluna_coreto": Est(Geo.Cilindro(.13f, .16f, w.h, 8), A("ferro"), cx, w.h / 2, cz); break;
                 case "canteiro":
                     if (M3("canteiro", w, w.h * .6f, 0, 1.4f)) CxA(w.x1 + .08f, w.x2 - .08f, 0, w.h * .52f, w.z1 + .08f, w.z2 - .08f, A("terra"), 2);
