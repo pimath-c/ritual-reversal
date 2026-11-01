@@ -223,7 +223,7 @@ function cetroFP(cor){ const C=cetroOsso(cor);
 
 // Luz de leitura: a arma na mão é a estrela, mas a noite é escura. Em vez de mais uma luz na cena (que pesaria em todo
 // material do mundo), os materiais da primeira pessoa ganham uma luz própria vinda de cima à esquerda (no espaço da câmera)
-// e um contorno de luz fria. Só eles pagam por isso.
+// e um contorno de luz fria (v6.5b: quase nada nos materiais ásperos; nas mangas de pano escuro ele virava um cinza-lilás). Só eles pagam por isso.
 const LEITURA={uL:{value:.2},uRim:{value:.16}};
 function luzDeLeitura(mat){ const L=Array.isArray(mat)?mat:[mat];
   for(const m of L){ if(!m||m.userData.leitura||!(m.isMeshStandardMaterial)) continue; m.userData.leitura=true;
@@ -232,7 +232,7 @@ function luzDeLeitura(mat){ const L=Array.isArray(mat)?mat:[mat];
         .replace('#include <output_fragment>','{ vec3 nL=normalize(normal), Ld=normalize(vec3(-.45,.7,.55)), Vd=normalize(vViewPosition); float k=max(dot(nL,Ld),0.); float r=pow(1.-max(dot(nL,vec3(0.,0.,1.)),0.),3.);\n'+
           // brilho especular da mesma luz: é ele que faz o metal, a gravura e o latão aparecerem no escuro
           '  float sp=pow(max(dot(nL,normalize(Ld+Vd)),0.),mix(6.,72.,1.-roughnessFactor))*(1.-roughnessFactor*.75)*(.25+metalnessFactor*.75);\n'+
-          '  outgoingLight+=diffuseColor.rgb*uLeitura*(k*(1.-metalnessFactor*.6)+.22)+mix(vec3(1.),diffuseColor.rgb,metalnessFactor)*min(sp*uLeitura*1.1,.85)+vec3(.55,.62,.8)*uRim*r*(1.-roughnessFactor*.6); }\n#include <output_fragment>'); };
+          '  outgoingLight+=diffuseColor.rgb*uLeitura*(k*(1.-metalnessFactor*.6)+.22)+mix(vec3(1.),diffuseColor.rgb,metalnessFactor)*min(sp*uLeitura*1.1,.85)+vec3(.55,.62,.8)*uRim*r*max(0.,1.15-roughnessFactor*1.1); }\n#include <output_fragment>'); };
     m.customProgramCacheKey=()=>'leitura'; m.needsUpdate=true; } }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -321,7 +321,7 @@ const S={ok:false,rigs:{},arma:null,R:null,est:{nome:'',C:null,t:0,dur:0,fim:nul
 const _pose=novaPose(), _de=novaPose(), _out=novaPose(), _tmp=novaPose();
 
 function construir(){ if(S.ok) return; matsPeca();
-  const luva=matCouro(0x2a1c14), manga=matPano(0x3b342d), mangaSup=matPano(0x312b25), punho=matCouro(0x3a2618);   // casaco de oleado gasto, luva de couro
+  const luva=matCouro(0x2a1c14), manga=matPano(0x24252a), mangaSup=matPano(0x1f2024), punho=matCouro(0x3a2618);   // casaco de lã carvão (v6.5b: o oleado pardo de antes saía claro na noite), luva de couro
   const peleC=new THREE.MeshStandardMaterial({color:0x5a4650,roughness:.62,metalness:0}), mangaC=matPano(0x581320), unha=new THREE.MeshStandardMaterial({color:0x1a1014,roughness:.3,metalness:.2});
   // ---- caça: corpo (vmH, já na câmera) → raiz da arma → carabina/revólver; mãos e braços no corpo
   vmH=new THREE.Group(); camera.add(vmH); vmH.position.set(.2,-.17,-.42); vmH.scale.setScalar(.72);

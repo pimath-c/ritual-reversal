@@ -221,8 +221,8 @@ namespace RitualReversal.Visual
                 bool exo = cls == "exorcista"; var couro = Pecas.Couro(0x3a2818); couro.SetFloat("_Cull", 0);
                 // a aba do casaco longo, da cintura ao joelho
                 var casaco = Pisca(Pecas.Pano(exo ? 0x1e1e22 : cls == "rastreador" ? 0x2a1d14 : 0x1c2230)); casaco.SetFloat("_Cull", 0);
-                aba = Mundo.Grupo(bodyT, "aba"); aba.localPosition = new Vector3(0, .4f, 0);
-                k.Por(aba, casaco, Pecas.Esfarrapar(Pecas.Torno(.27f, 0, .255f, .2f, .23f, .42f, .2f, .58f, 0, .59f), .025f, 3), M4.I);
+                aba = Mundo.Grupo(bodyT, "aba"); aba.localPosition = new Vector3(0, .4f, 0); aba.localScale = new Vector3(1, 1, .8f);   // mais rasa que larga
+                k.Por(aba, casaco, Pecas.Esfarrapar(Geo.Torno(new float[,] { { .25f, 0 }, { .24f, .2f }, { .22f, .42f }, { .2f, .6f } }, 28, PI + .7f, PI * 2 - 1.4f), .025f, 3), M4.I);   // v6.5b: abertas na frente, sem tampa
                 if (cls != "rastreador")
                 {   // o chapéu da caça (a Rastreadora fica com o coque)
                     var chapeu = Mundo.Grupo(head.t, "chapéu"); chapeu.localPosition = new Vector3(0, .245f, -.005f); chapeu.localScale = Vector3.one * .66f;
@@ -234,8 +234,8 @@ namespace RitualReversal.Visual
                 k.Por(torso.t, Pecas.Metal(0x2a2a2e, .5f), Geo.Cilindro(.04f, .04f, .11f, 12, 1, true), B.torsoMin.x - .02f, peito - .32f, frente + .07f);
                 k.Por(torso.t, Pecas.Basico(0xffd58a), Geo.Esfera(.028f, 12, 10), B.torsoMin.x - .02f, peito - .32f, frente + .07f);
                 if (exo)
-                {   // a estola branca do Exorcista
-                    Material alvo = Pecas.Pano(0xeee6d8), dour = Pecas.Metal(0xd4b060, .3f, 1);
+                {   // a estola roxa do Exorcista com a cruz dourada (v6.5b)
+                    Material alvo = Pecas.Pano(0x4a1838), dour = Pecas.Metal(0xd4b060, .3f, 1);
                     foreach (float sx in new[] { -1f, 1f })
                     {
                         k.Por(torso.t, alvo, Geo.Caixa(.065f, .62f, .01f), sx * .075f, peito - .12f, frente - .012f);

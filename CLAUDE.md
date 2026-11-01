@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.5a)
+## Estado atual (v6.5b)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -262,6 +262,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `castical` em cima das tumbas, `livros`/`quimica`/`relogio` pelo `enfeite(nome,w,d,y)` do asilo.js (C# `Enfeite`), `moldura` (oval)
   como quarta peça do NA_PAREDE; textura `tapete` (jacquard) ladrilhada a cada 56 cm por baixo do desenho do `texTapete` (agora
   `{map,normalMap}`; C# `Tex.Tapete`/`TapeteRelevo`). As molduras retangulares do Poly Haven vêm sem pintura (miolo preto): fora.
+- v6.5b (notas em `notas/v6.5b.md`): lanterna da primeira pessoa em (.25, −.2, −.7) da câmera (Unity (.25, −.2, .7)): rente à câmera
+  ela estourava as mãos (luva 0x2a1c14 saía bege). Contorno frio da luz de leitura × `max(0, 1.15 − rug·1.1)` (arma.js e
+  `RitualReversalPrimeiraPessoa.shader`; metal igual, pano quase zero). Mangas da caça 0x24252a/0x1f2024 (reexportar a primeira pessoa).
+  Caçadores: `U.aba` é um torno aberto na frente (`torno(pts,mat,segs,ini,arco)`, vão de 1,4 rad em −z, sem tampa, scale.z .8; C#
+  `Geo.Torno(..., 28, PI + .7f, PI * 2 - 1.4f)` e `aba.localScale`), estola do Exorcista roxa 0x4a1838.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

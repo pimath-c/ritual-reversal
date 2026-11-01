@@ -127,7 +127,7 @@ Shader "RitualReversal/PrimeiraPessoa"
                 float3 Ld = normalize(float3(-.45, .7, .55)), Vd = normalize(-posVS);
                 float k = max(dot(n, Ld), 0), r = pow(1 - max(dot(n, float3(0, 0, 1)), 0), 3);
                 float sp = pow(max(dot(n, normalize(Ld + Vd)), 0), lerp(6, 72, 1 - rug)) * (1 - rug * .75) * (.25 + met * .75);
-                c.rgb += cor * _RRLeitura * (k * (1 - met * .6) + .22) + lerp(float3(1, 1, 1), cor, met) * min(sp * _RRLeitura * 1.1, .85) + float3(.55, .62, .8) * _RRRim * r * (1 - rug * .6);
+                c.rgb += cor * _RRLeitura * (k * (1 - met * .6) + .22) + lerp(float3(1, 1, 1), cor, met) * min(sp * _RRLeitura * 1.1, .85) + float3(.55, .62, .8) * _RRRim * r * max(0, 1.15 - rug * 1.1);   // v6.5b: quase nada no pano
                 c.rgb = MixFog(c.rgb, i.fog);
                 return half4(c.rgb, 1);
             }

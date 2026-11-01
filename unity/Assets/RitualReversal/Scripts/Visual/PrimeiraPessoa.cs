@@ -31,7 +31,7 @@ namespace RitualReversal.Visual
             vm = Mundo.Grupo(cam.transform, "Primeira pessoa (espelhada)"); vm.localScale = new Vector3(1, 1, -1);
             arma = new ArmaFP(vm); arma.AoCapsula = EjetarCapsula;
             // lanterna (SpotLight do three: 26 m, meio-ângulo 0,42 rad, penumbra 0,55, decaimento 1,6) e clarão da boca
-            var lg = new GameObject("Lanterna"); lg.transform.SetParent(cam.transform, false); lg.transform.localPosition = new Vector3(.25f, -.2f, 0); lg.transform.localRotation = Quaternion.LookRotation(new Vector3(-.25f, .2f, 5)); // fora do espelho: eixos do Unity
+            var lg = new GameObject("Lanterna"); lg.transform.SetParent(cam.transform, false); lg.transform.localPosition = new Vector3(.25f, -.2f, .7f); lg.transform.localRotation = Quaternion.LookRotation(new Vector3(-.25f, .2f, 4.3f));   // v6.5b: à frente das mãos // fora do espelho: eixos do Unity
             lanterna = lg.AddComponent<Light>(); lanterna.type = LightType.Spot; lanterna.color = Mat.Hex(0xfff0d0); lanterna.range = 26; lanterna.spotAngle = .42f * 2 * Mathf.Rad2Deg; lanterna.innerSpotAngle = lanterna.spotAngle * .45f;
             lanterna.intensity = Mundo.IntensidadeUnity(3.2f, 26, 1.6f); lanterna.shadows = Qualidade.nivel >= 2 ? LightShadows.Soft : LightShadows.None; lanterna.enabled = false;
             boca = Mundo.LuzPonto(cam.transform, 0xffc27a, 0, 9, 2, "clarão da arma"); boca.transform.localPosition = new Vector3(.3f, -.2f, .8f); boca.enabled = false;

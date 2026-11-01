@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Mãos e Caçadores (v6.5b)","As mãos em primeira pessoa não estouram mais com a lanterna: luvas de couro escuro e mangas de lã carvão. O casaco longo dos Caçadores ficou aberto na frente (não parece mais saia) e a estola do Exorcista é roxa, com a cruz dourada."},
             new[]{"Arma no lugar e mais arte (v6.5a)","A arma dos outros Caçadores não aponta mais para o céu: o cano acompanha o braço e a mira, e as recargas vistas de fora ficaram certas. Na arte: um segundo tronco morto na mata, castiçais de latão nas tumbas, tapetes com trama de jacquard na catedral e, no Asilo, livros nas mesas, vidraria na bancada, um relógio no balcão e molduras ovais nas paredes."},
             new[]{"Bonecos e armas de verdade (v6.5)","Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz e túnica longa, Soldado e Exorcista de casaco longo e chapéu, a Rastreadora de couro escuro. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas."},
             new[]{"Cadeira, balcão e portas (v6.4e)","A cadeira do Eletrochoque é uma cadeira gótica de madeira entalhada, o balcão do Saguão é uma fileira de armários brancos descascados e as portas do Asilo são de tábuas pintadas e gastas."},
