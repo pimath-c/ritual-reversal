@@ -15,7 +15,7 @@ const ROOT=path.join(__dirname,'..'), THREE_DIR=process.env.THREE_DIR;
   const res=await page.evaluate(()=>{ const T=window.THREE, Sim=__T.Sim, sc=__T.cena(), alvos=[], atores=new Set();
     for(const m of __T.actorMeshes.values()) m.traverse(o=>atores.add(o)); // os bonecos andam: só o mapa conta
     for(const k of ['npcs','pontos','sal']) for(const g of __T.NOITE[k].values()) g.traverse(o=>atores.add(o));   // mercadores, pontos e sal da noite também (aparecem e somem)
-    sc.traverse(o=>{ if(o.isMesh&&!o.isInstancedMesh&&o.visible&&!atores.has(o)&&!(o.material&&o.material.transparent)) alvos.push(o); });
+    sc.traverse(o=>{ if(o.isMesh&&!o.isInstancedMesh&&o.visible&&!atores.has(o)&&!(o.material&&(o.material.transparent||o.material.depthWrite===false))) alvos.push(o); });   // depthWrite falso: o céu (a cúpula de 190 m segue o jogador e, longe, passa rente ao chão)
     const rc=new T.Raycaster(), OLHO=1.62+.9, ruins=[], pula=/arvore_f|espinheiro|abismo|limite|santuario/; let n=0;
     for(const w of Sim.WALLS){ if(w.h<=2.2||pula.test(w.kind)) continue; n++; let topo=-9;
       for(const [a,b] of [[.5,.5],[.2,.2],[.8,.8],[.2,.8],[.8,.2]]){ const x=w.x1+(w.x2-w.x1)*a, z=w.z1+(w.z2-w.z1)*b; rc.set(new T.Vector3(x,w.h+60,z),new T.Vector3(0,-1,0)); rc.far=w.h+70;

@@ -201,9 +201,9 @@ namespace RitualReversal.Visual
             }
             // v6.4d: quadros e espelhos nas paredes das salas (modelos escaneados, CC0; só enfeite, encostados na parede). Em cada
             // sala interna, no meio da primeira parede (z1, z2, x1, x2) com parede atrás em toda a largura (nem vão de porta), chão
-            // livre na frente e nenhum quadro de força perto; pintura, pintura e espelho, um de cada vez (o asilo.js)
+            // livre na frente e nenhum quadro de força perto; pintura, pintura, espelho e moldura oval, um de cada vez (o asilo.js)
             {
-                var PAREDE = new[] { "pintura1", "pintura2", "espelho" }; int np = 0;
+                var PAREDE = new[] { "pintura1", "pintura2", "espelho", "moldura" }; int np = 0;   // v6.5a: e a moldura oval
                 Func<float, float, bool> livreA = (x, z) => Mapa.Livre(x, z, .1);
                 foreach (var e in MapaVisual.ESPACOS)
                 {
@@ -219,7 +219,7 @@ namespace RitualReversal.Visual
                             if (livreA(bx, bz) || MapaVisual.VAOS.Exists(v => bx > v.x1 - .3f && bx < v.x2 + .3f && bz > v.z1 - .3f && bz < v.z2 + .3f) || !livreA(ax + nx * .6f, az + nz * .6f)) { ok = false; break; }
                         }
                         if (!ok || MapaVisual.QUADROS.Exists(q => Mathf.Sqrt((q.x - cx) * (q.x - cx) + (q.z - cz) * (q.z - cz)) < 2.5f)) continue;
-                        var MP = ModeloGLB.Carregar(PAREDE[np % 3]); np++;
+                        var MP = ModeloGLB.Carregar(PAREDE[np % PAREDE.Length]); np++;
                         if (MP != null) Est(MP.geo, MP.mat, TRS(cx + nx * .1f, 1.2f, cz + nz * .1f, 0, Mathf.Atan2(nx, nz), 0));
                         break;
                     }
@@ -280,6 +280,13 @@ namespace RitualReversal.Visual
             Est(ML.geo, ML.mat, TRS((w.x1 + w.x2) / 2, w.h, (w.z1 + w.z2) / 2, 0, (w.x1 + w.z1) % PI, 0), false);
         }
 
+        // v6.5a: enfeites escaneados (CC0) em cima dos móveis, no eixo comprido: livros nas mesas, vidraria na bancada, relógio no balcão
+        void Enfeite(string nome, PecaV w, float d, float y)
+        {
+            var ME = ModeloGLB.Carregar(nome); if (ME == null) return; bool ax = w.x2 - w.x1 >= w.z2 - w.z1;
+            Est(ME.geo, ME.mat, TRS((w.x1 + w.x2) / 2 + (ax ? d : 0), y, (w.z1 + w.z2) / 2 + (ax ? 0 : d), 0, ax ? 0 : PI / 2, 0));
+        }
+
         void MovelAsilo(PecaV w)
         {
             float cx = (w.x1 + w.x2) / 2, cz = (w.z1 + w.z2) / 2;
@@ -301,12 +308,12 @@ namespace RitualReversal.Visual
                     CxA(w.x1, w.x2, .42f, .5f, w.z1, w.z2, M("wood"), 2); CxA(w.x1, w.x2, .5f, w.h, w.z2 - .1f, w.z2, M("wood"), 2);
                     CxA(w.x1 + .1f, w.x1 + .2f, 0, .42f, w.z1, w.z2, M("wood"), 2); CxA(w.x2 - .2f, w.x2 - .1f, 0, .42f, w.z1, w.z2, M("wood"), 2); break;
                 case "mesa":
-                    Lampiao(w); if (M3("mesa_asilo", w, w.h)) break;
+                    Lampiao(w); Enfeite("livros", w, -1.2f, w.h); if (M3("mesa_asilo", w, w.h)) break;
                     CxA(w.x1, w.x2, w.h - .07f, w.h, w.z1, w.z2, M("wood"), 2);
                     foreach (var p in new[] { new Vector2(w.x1 + .1f, w.z1 + .1f), new Vector2(w.x2 - .1f, w.z1 + .1f), new Vector2(w.x1 + .1f, w.z2 - .1f), new Vector2(w.x2 - .1f, w.z2 - .1f) }) CxA(p.x - .05f, p.x + .05f, 0, w.h - .07f, p.y - .05f, p.y + .05f, M("wood"), 1);
                     break;
                 case "tanque": CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, A("concreto"), 2); CxA(w.x1 + .12f, w.x2 - .12f, w.h - .05f, w.h + .01f, w.z1 + .12f, w.z2 - .12f, A("agua"), 1, false); break;
-                case "bancada": Lampiao(w); if (M3("mesa_asilo", w, w.h)) break; CxA(w.x1, w.x2, w.h - .08f, w.h, w.z1, w.z2, M("wood"), 2); CxA(w.x1, w.x2, 0, w.h - .08f, w.z1 + .1f, w.z2 - .1f, M("wood"), 2); break;
+                case "bancada": Lampiao(w); Enfeite("quimica", w, 1.1f, w.h); if (M3("mesa_asilo", w, w.h)) break; CxA(w.x1, w.x2, w.h - .08f, w.h, w.z1, w.z2, M("wood"), 2); CxA(w.x1, w.x2, 0, w.h - .08f, w.z1 + .1f, w.z2 - .1f, M("wood"), 2); break;
                 case "maca":
                     if (M3("leito", w, .9f, PI)) { CxA(w.x1 + .06f, w.x2 - .06f, .62f, .72f, w.z1 + .06f, w.z2 - .06f, A("colchao"), 1); break; }
                     CxA(w.x1, w.x2, .8f, .88f, w.z1, w.z2, A("colchao"), 1); CxA(w.x1 + .1f, w.x2 - .1f, .72f, .8f, w.z1 + .1f, w.z2 - .1f, A("ferro"), 1);
@@ -341,7 +348,7 @@ namespace RitualReversal.Visual
                 case "carvao":
                     for (int k = 0; k < 7; k++) { float rr = .25f + RA() * .25f, x = w.x1 + RA() * (w.x2 - w.x1), y = .15f + RA() * w.h * .6f, z = w.z1 + RA() * (w.z2 - w.z1); Est(Geo.Dodecaedro(rr), A("carvao"), x, y, z); }
                     break;
-                case "balcao": if (M3("armario", w, w.h - .06f, GIRO_ARMARIO, 1.3f)) { CxA(w.x1 - .05f, w.x2 + .05f, w.h - .06f, w.h, w.z1 - .08f, w.z2 + .08f, M("wood"), 2); break; } CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 2); CxA(w.x1 - .05f, w.x2 + .05f, w.h, w.h + .06f, w.z1 - .08f, w.z2 + .08f, M("wood"), 2); break;
+                case "balcao": Enfeite("relogio", w, -2, w.h); if (M3("armario", w, w.h - .06f, GIRO_ARMARIO, 1.3f)) { CxA(w.x1 - .05f, w.x2 + .05f, w.h - .06f, w.h, w.z1 - .08f, w.z2 + .08f, M("wood"), 2); break; } CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 2); CxA(w.x1 - .05f, w.x2 + .05f, w.h, w.h + .06f, w.z1 - .08f, w.z2 + .08f, M("wood"), 2); break;
                 case "coluna_coreto": Est(Geo.Cilindro(.13f, .16f, w.h, 8), A("ferro"), cx, w.h / 2, cz); break;
                 case "canteiro":
                     if (M3("canteiro", w, w.h * .6f, 0, 1.4f)) CxA(w.x1 + .08f, w.x2 - .08f, 0, w.h * .52f, w.z1 + .08f, w.z2 - .08f, A("terra"), 2);

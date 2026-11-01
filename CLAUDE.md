@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.5)
+## Estado atual (v6.5a)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -255,6 +255,13 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `carabinaFP` põe portinhola, ferrolho, câmara e entrada pela caixa do modelo; `revolverFP` usa o tambor do modelo e põe câmaras,
   cartuchos, extrator e municiador no raio (0,61 do tambor) e na face dele (`S.zcRev`, `zMun`). `RR_ARMA` recebe `arma3d`/`malhasArma3d`.
   Unity: `Visual/ArmaGLB.cs` e `Pecas.Carabina/Revolver` (terceira pessoa); a primeira pessoa vem do `exportar-primeira-pessoa.js`.
+- v6.5a (notas em `notas/v6.5a.md`): a arma da terceira pessoa apontava para o céu desde a v5.9 (a mira fazia `U.gun.rotation.set(0,0,0)`;
+  o quadro da arma precisa de −PI/2 em x para o cano seguir o braço). Mira fica no −PI/2 do começo do animateActor; recargas somam ao
+  −PI/2 (revólver `-PI/2+cima*1.4-baixo*.7`, carabina `-PI/2+rola*.35`); mesmo no `Personagens.cs`. `pbrReal` não devolve mais `foto`
+  (ia para o MeshStandardMaterial). Sétima leva: `tronco2` (dead_tree_trunk_02; kind tronco com `Math.abs(Math.round(x*7+z*13))%2`),
+  `castical` em cima das tumbas, `livros`/`quimica`/`relogio` pelo `enfeite(nome,w,d,y)` do asilo.js (C# `Enfeite`), `moldura` (oval)
+  como quarta peça do NA_PAREDE; textura `tapete` (jacquard) ladrilhada a cada 56 cm por baixo do desenho do `texTapete` (agora
+  `{map,normalMap}`; C# `Tex.Tapete`/`TapeteRelevo`). As molduras retangulares do Poly Haven vêm sem pintura (miolo preto): fora.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

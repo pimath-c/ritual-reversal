@@ -138,16 +138,16 @@ for(const q of Sim.QUADROS){ // caixa de metal na parede mais próxima, com alav
 
 // ---------- quadros e espelhos nas paredes (v6.4d: modelos escaneados, CC0; só enfeite, encostados na parede) ----------
 // Em cada sala interna, no meio da primeira parede (z1, z2, x1, x2) que tem parede atrás em toda a largura, chão livre na
-// frente e nenhum quadro de força perto. Pintura, pintura e espelho, um de cada vez.
+// frente e nenhum quadro de força perto. Pintura, pintura, espelho e moldura oval (v6.5a), um de cada vez.
 const NA_PAREDE=[];
-{ const PAREDE=['pintura1','pintura2','espelho']; let np=0;
+{ const PAREDE=['pintura1','pintura2','espelho','moldura']; let np=0;
   for(const e of E){ if(!e.int||Math.min(e.x2-e.x1,e.z2-e.z1)<3.5) continue;
     const mx=(e.x1+e.x2)/2, mz=(e.z1+e.z2)/2, lados=[[mx,e.z1,0,1,e.x2-e.x1],[mx,e.z2,0,-1,e.x2-e.x1],[e.x1,mz,1,0,e.z2-e.z1],[e.x2,mz,-1,0,e.z2-e.z1]];
     for(const [cx,cz,nx,nz,L] of lados){ if(L<4) continue; let ok=true;
       for(let t=-.9;t<=.91;t+=.3){ const ax=cx+nz*t, az=cz+nx*t, bx=ax-nx*.3, bz=az-nz*.3;   // atrás: parede (nem vão de porta); na frente: chão livre
         if(livreA(bx,bz)||Sim.VAOS.some(v=>bx>v.x1-.3&&bx<v.x2+.3&&bz>v.z1-.3&&bz<v.z2+.3)||!livreA(ax+nx*.6,az+nz*.6)){ ok=false; break; } }
       if(!ok||Sim.QUADROS.some(q=>Math.hypot(q.x-cx,q.z-cz)<2.5)) continue;
-      const MP=modelo&&modelo(PAREDE[np%3]); NA_PAREDE.push({nome:PAREDE[np%3],sala:e.nome,x:cx,z:cz}); np++; if(MP){ const m=new THREE.Mesh(MP.geo,MP.mat); m.position.set(cx+nx*.1,1.2,cz+nz*.1); m.rotation.y=Math.atan2(nx,nz); add(m); }
+      const MP=modelo&&modelo(PAREDE[np%PAREDE.length]); NA_PAREDE.push({nome:PAREDE[np%PAREDE.length],sala:e.nome,x:cx,z:cz}); np++; if(MP){ const m=new THREE.Mesh(MP.geo,MP.mat); m.position.set(cx+nx*.1,1.2,cz+nz*.1); m.rotation.y=Math.atan2(nx,nz); add(m); }
       break; } } }
 
 // ---------- móveis (a caixa da simulação é a colisão; aqui o que se vê) ----------
@@ -160,6 +160,9 @@ const M3=(nome,w,h,giro,pedaco)=>{ const MD=modelo&&modelo(nome); if(!MD) return
   return true; };
 // v6.4d: um lampião de óleo escaneado (CC0) em cima de cada mesa e da bancada (só enfeite: fica sobre a caixa da mesa)
 const lampiao=w=>{ const ML=modelo&&modelo('lampiao'); if(!ML) return; const m=new THREE.Mesh(ML.geo,ML.mat); m.position.set((w.x1+w.x2)/2,w.h,(w.z1+w.z2)/2); m.rotation.y=(w.x1+w.z1)%PI; m.castShadow=true; add(m); };
+// v6.5a: enfeites escaneados (CC0) em cima dos móveis, no eixo comprido: livros nas mesas, vidraria na bancada, relógio no balcão
+const enfeite=(nome,w,d,y)=>{ const ME=modelo&&modelo(nome); if(!ME) return; const ax=w.x2-w.x1>=w.z2-w.z1, m=new THREE.Mesh(ME.geo,ME.mat);
+  m.position.set((w.x1+w.x2)/2+(ax?d:0),y,(w.z1+w.z2)/2+(ax?0:d)); m.rotation.y=ax?0:PI/2; m.castShadow=true; add(m); };
 const leito=w=>{ const ax=w.x2-w.x1>w.z2-w.z1, cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, L=ax?w.x2-w.x1:w.z2-w.z1, P=ax?w.z2-w.z1:w.x2-w.x1;
   const B=(dx,y1,y2,dz,lx,lz,mat)=>{ const x=ax?cx+dx:cx+dz, z=ax?cz+dz:cz+dx, sx=ax?lx:lz, sz=ax?lz:lx; caixa(x-sx/2,x+sx/2,y1,y2,z-sz/2,z+sz/2,mat,1); };
   // a cama de ferro escaneada (a cabeceira, alta, no lado negativo como a de antes) com o colchão e o travesseiro por cima
@@ -169,9 +172,9 @@ const leito=w=>{ const ax=w.x2-w.x1>w.z2-w.z1, cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/
   B(-L/2+.4,.6,.72,0,.5,P*.7,M.colchao); };
 const PEC={
   leito, banco:w=>{ if(M3('banco_asilo',w,w.h,0,1.7)) return; caixa(w.x1,w.x2,.42,.5,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,.5,w.h,w.z2-.1,w.z2,M.madeira,2); caixa(w.x1+.1,w.x1+.2,0,.42,w.z1,w.z2,M.madeira,2); caixa(w.x2-.2,w.x2-.1,0,.42,w.z1,w.z2,M.madeira,2); },
-  mesa:w=>{ lampiao(w); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
+  mesa:w=>{ lampiao(w); enfeite('livros',w,-1.2,w.h); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
   tanque:w=>{ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.concreto,2); caixa(w.x1+.12,w.x2-.12,w.h-.05,w.h+.01,w.z1+.12,w.z2-.12,M.agua,1,false); },
-  bancada:w=>{ lampiao(w); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.08,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,0,w.h-.08,w.z1+.1,w.z2-.1,M.madeira,2); },
+  bancada:w=>{ lampiao(w); enfeite('quimica',w,1.1,w.h); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.08,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,0,w.h-.08,w.z1+.1,w.z2-.1,M.madeira,2); },
   maca:w=>{ if(M3('leito',w,.9,PI)){ caixa(w.x1+.06,w.x2-.06,.62,.72,w.z1+.06,w.z2-.06,M.colchao,1); return; } caixa(w.x1,w.x2,.8,.88,w.z1,w.z2,M.colchao,1); caixa(w.x1+.1,w.x2-.1,.72,.8,w.z1+.1,w.z2-.1,M.ferro,1); for(const [x,z] of [[w.x1+.15,w.z1+.15],[w.x2-.15,w.z1+.15],[w.x1+.15,w.z2-.15],[w.x2-.15,w.z2-.15]]) caixa(x-.03,x+.03,0,.72,z-.03,z+.03,M.ferro,1); },
   cadeira_eletrica:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, MC=modelo&&modelo('cadeira');
     if(MC){ const m=new THREE.Mesh(MC.geo,MC.mat); m.position.set(cx,0,cz+.05); m.rotation.y=GIRO_CADEIRA; m.scale.set(1.5,1,1.5); m.castShadow=m.receiveShadow=true; add(m); caixa(cx-.2,cx+.2,1.72,1.87,cz+.15,cz+.4,M.ferro,1); return; }   // v6.4e: a cadeira gótica de madeira escaneada (CC0) e o capacete de ferro
@@ -186,7 +189,7 @@ const PEC={
     for(let k=-1;k<=1;k++){ const grade=new THREE.Mesh(boxGeo(.04,.62,.04,1),M.ferro); grade.position.set(cx+k*.15,1.1,cz+r+.04); add(grade); } // grade da fornalha
     FONTES.push({x:cx,z:cz+r+.6,y:1.1,cor:0xff6a20,int:1.8,alc:9}); },
   carvao:w=>{ for(let k=0;k<7;k++){ const p=new THREE.Mesh(new THREE.DodecahedronGeometry(.25+R()*.25,0),M.carvao); p.position.set(w.x1+R()*(w.x2-w.x1),.15+R()*w.h*.6,w.z1+R()*(w.z2-w.z1)); add(p); } },
-  balcao:w=>{ if(M3('armario',w,w.h-.06,GIRO_ARMARIO,1.3)){ caixa(w.x1-.05,w.x2+.05,w.h-.06,w.h,w.z1-.08,w.z2+.08,M.madeira,2); return; } caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1-.05,w.x2+.05,w.h,w.h+.06,w.z1-.08,w.z2+.08,M.madeira,2); },
+  balcao:w=>{ enfeite('relogio',w,-2,w.h); if(M3('armario',w,w.h-.06,GIRO_ARMARIO,1.3)){ caixa(w.x1-.05,w.x2+.05,w.h-.06,w.h,w.z1-.08,w.z2+.08,M.madeira,2); return; } caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1-.05,w.x2+.05,w.h,w.h+.06,w.z1-.08,w.z2+.08,M.madeira,2); },
   coluna_coreto:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2; const c=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,w.h,8),M.ferro); c.position.set(cx,w.h/2,cz); c.castShadow=true; add(c); },
   canteiro:w=>{ if(M3('canteiro',w,w.h*.6,0,1.4)) caixa(w.x1+.08,w.x2-.08,0,w.h*.52,w.z1+.08,w.z2-.08,M.terra,2); else caixa(w.x1,w.x2,0,w.h*.6,w.z1,w.z2,M.terra,2); for(let x=w.x1+.3;x<w.x2-.2;x+=.55){ const p=new THREE.Mesh(new THREE.ConeGeometry(.16,.4+R()*.3,5),new THREE.MeshStandardMaterial({color:0x2c3a22,roughness:1,flatShading:true})); p.position.set(x,w.h*.6+.2,(w.z1+w.z2)/2+(R()-.5)*.4); add(p); } },
   lapide:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2; caixa(w.x1,w.x2,0,w.h-.2,w.z1,w.z2,MAT.lapide,1); const t=new THREE.Mesh(new THREE.CylinderGeometry((w.x2-w.x1)/2,(w.x2-w.x1)/2,w.z2-w.z1,10,1,false,0,PI),MAT.lapide); t.rotation.set(PI/2,0,PI/2); t.position.set(cx,w.h-.2,cz); add(t);

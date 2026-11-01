@@ -509,15 +509,15 @@ namespace RitualReversal.Visual
                         {
                             float cima = Suave(en(T, .08f, .34f)) * (1 - Suave(en(T, .42f, .58f))), baixo = Suave(en(T, .42f, .58f)) * (1 - Suave(en(T, 1.1f, 1.3f)));
                             armL.r = new Vector3(1.05f + cima * .5f - baixo * .1f, 0, .45f); armR.r = new Vector3(mira * .55f + cima * .2f - baixo * .3f + (T > .4f && T < 1.05f ? Mathf.Sin((T - .4f) * 5) * .25f : 0), 0, -.25f);
-                            gun.r = new Vector3(cima * -1.1f + baixo * .9f, 0, (cima + baixo) * -.5f);
+                            gun.r = new Vector3(-PI / 2 + cima * 1.4f - baixo * .7f, 0, (cima + baixo) * -.5f);
                         }
                         else
                         {
                             float rola = Suave(en(T, 0, .2f)) * (1 - Suave(en(T, 1.05f, 1.25f))), ciclo = T > .15f && T < 1.1f ? Mathf.Max(0, Mathf.Sin((T - .15f) / .29f * PI * 2)) : 0;
-                            armL.r = new Vector3(1.0f + rola * .15f, 0, .4f); armR.r = new Vector3(.85f + ciclo * .45f - rola * .1f, 0, -.35f - ciclo * .25f); gun.r = new Vector3(0, rola * .5f, rola * 1.0f);
+                            armL.r = new Vector3(1.0f + rola * .15f, 0, .4f); armR.r = new Vector3(.85f + ciclo * .45f - rola * .1f, 0, -.35f - ciclo * .25f); gun.r = new Vector3(-PI / 2 + rola * .35f, rola * .5f, rola * 1.0f);
                         }
                     }
-                    else { armR.r = new Vector3(mira - kick * .45f, 0, 0); armL.r = new Vector3(mira - .1f - kick * .3f, 0, .45f); torso.r.x += kick * .08f; gun.r = Vector3.zero; }
+                    else { armR.r = new Vector3(mira - kick * .45f, 0, 0); armL.r = new Vector3(mira - .1f - kick * .3f, 0, .45f); torso.r.x += kick * .08f; } // a arma fica no -90° do começo: o cano segue o braço (com 0 apontava para o céu)
                     if (mFlash != null) Mat.Opacidade(mFlash, kick > .7f ? 1 : 0);
                 }
                 else

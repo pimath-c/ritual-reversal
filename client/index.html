@@ -740,7 +740,7 @@ function pbrReal(nome,size,fn,normalK){ const R=window.RR_TEXTURAS&&window.RR_TE
     // a imagem entra já (as cópias com outra repetição feitas antes de ela decodificar dividem a mesma Image); o three só
     // envia à placa quando ela termina de decodificar (image.complete) e tenta de novo a cada quadro até lá
     if(b64){ const img=new Image(); img.src='data:image/jpeg;base64,'+b64; t.image=img; t.needsUpdate=true; } return t; };
-  return {map:tex(R.cor,true),normalMap:tex(R.nor,false),roughnessMap:tex(R.rug,false),foto:nome}; }
+  return {map:tex(R.cor,true),normalMap:tex(R.nor,false),roughnessMap:tex(R.rug,false)}; }
 const smooth=(a,b,x)=>{ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
 const TEX={};
 function buildTextures(){
@@ -984,7 +984,7 @@ const PECAS={
       if(MP){ q.scale.set(L*.5,w.h*.65,D*.5); q.position.set(qx,-.05,qz); q.rotation.set(rx*.3,ry,rz*.3); } else { q.scale.set(L*.5,w.h*.8,D*.5); q.position.set(qx,w.h*.25,qz); q.rotation.set(rx,ry,rz); }
       q.castShadow=true; world.add(q); } },
   tronco(w){ const aoX=(w.x2-w.x1)>=(w.z2-w.z1), len=Math.max(w.x2-w.x1,w.z2-w.z1), x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2;
-    const grosso=w.kind==='tronco'?1.3:1, MT=modelo('tronco');
+    const grosso=w.kind==='tronco'?1.3:1, MT=(w.kind==='tronco'&&Math.abs(Math.round(x*7+z*13))%2&&modelo('tronco2'))||modelo('tronco');   // v6.5a: um tronco sim, outro não, o segundo modelo
     if(MT){ // v6.4: o tronco morto escaneado (CC0), deitado ao longo da caixa; os galhos e os cortes já vêm nele
       const c=new THREE.Mesh(MT.geo,MT.mat); c.scale.set(len*1.05,1.05*grosso,1.05*grosso); c.position.set(x,-.05,z); if(!aoX) c.rotation.y=Math.PI/2; c.castShadow=c.receiveShadow=true; world.add(c);
       for(let k=0;k<12;k++) vr();   // os mesmos sorteios dos galhos de antes, para o resto do mapa não mudar
@@ -1202,6 +1202,7 @@ function buildWorld(){
   Sim.WALLS.forEach(w=>{ if(PECAS[w.kind]) return PECAS[w.kind](w);
     const mat=w.kind==='tumba'?MAT.marble:w.kind==='cripta'?MAT.wallDark:w.kind==='biombo'?MAT.wood:MAT.wall;
     meshBox(w.x1,w.x2,0,w.h,w.z1,w.z2,mat,w.kind==='tumba'?2:4);
+    if(w.kind==='tumba'){ const MC=modelo('castical'); if(MC){ const c=new THREE.Mesh(MC.geo,MC.mat); c.position.set((w.x1+w.x2)/2,w.h,(w.z1+w.z2)/2); c.rotation.y=w.x2-w.x1>=w.z2-w.z1?0:Math.PI/2; c.castShadow=true; world.add(c); } }   // v6.5a: castiçais de latão (CC0) em cima
     if(w.h>2.2&&w.kind!=='biombo') meshBox(w.x1-.1,w.x2+.1,w.h,w.h+.35,w.z1-.1,w.z2+.1,MAT.wallDark).castShadow=false;
   });
   // v6.4c: os bancos da nave são o banco de madeira escaneado (CC0), num tom de madeira escura
@@ -1415,11 +1416,23 @@ function texEstandarte(){ return canvasTex(256,256,(c,W,H)=>{ c.clearRect(0,0,W,
     c.lineWidth=3; for(let k=0;k<8;k++){ const a=k/8*Math.PI*2; c.beginPath(); c.moveTo(x+Math.cos(a)*44,y+Math.sin(a)*44); c.lineTo(x+Math.cos(a)*56,y+Math.sin(a)*56); c.stroke(); } });
   faixa(128,'#1b2a5e','#d9b262',(x,y)=>{ c.lineWidth=4; c.beginPath(); c.arc(x,y-12,26,0,7); c.stroke(); c.fillRect(x-5,y-56,10,112); c.fillRect(x-30,y-20,60,10);
     for(let k=0;k<12;k++){ const a=k/12*Math.PI*2; c.beginPath(); c.moveTo(x+Math.cos(a)*32,y-12+Math.sin(a)*32); c.lineTo(x+Math.cos(a)*40,y-12+Math.sin(a)*40); c.stroke(); } }); }); }
-function texTapete(){ const t=canvasTex(64,256,(c,W,H)=>{ c.fillStyle='#5c1018'; c.fillRect(0,0,W,H);
-  c.fillStyle='#b8893c'; c.fillRect(3,0,4,H); c.fillRect(W-7,0,4,H); c.fillStyle='#3a0a10'; c.fillRect(9,0,2,H); c.fillRect(W-11,0,2,H);
-  for(let y=0;y<H;y+=32){ c.fillStyle='#8a6a2c'; c.beginPath(); c.moveTo(W/2,y+4); c.lineTo(W/2+12,y+16); c.lineTo(W/2,y+28); c.lineTo(W/2-12,y+16); c.closePath(); c.fill(); c.fillStyle='#5c1018'; c.fillRect(W/2-3,y+13,6,6); }
-  for(let k=0;k<60;k++){ c.fillStyle=`rgba(20,10,8,${Math.random()*.35})`; c.fillRect(Math.random()*W,Math.random()*H,2+Math.random()*8,2+Math.random()*14); } });
-  t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; }
+// v6.5a: o tapete é o jacquard de quadrifólios fotografado (CC0, client/texturas.js 'tapete'), escurecido e repetido a cada 56 cm,
+// com as barras douradas, os losangos e as manchas de antes por cima; o relevo da foto dá a trama. Devolve {map, normalMap};
+// sem a foto, o desenho antigo e normalMap null. A Image decodifica depois: o canvas é redesenhado quando ela chega.
+function texTapete(){ const F=window.RR_TEXTURAS&&window.RR_TEXTURAS.tapete, W=128, H=512, TW=W*.56/2.2, TH=H*.56/4;
+  const mk=()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; return c; }, cc=mk(), cn=F&&F.nor?mk():null;
+  const manchas=[]; for(let k=0;k<60;k++) manchas.push([Math.random()*.35,Math.random()*W,Math.random()*H,4+Math.random()*16,4+Math.random()*28]);
+  const ladrilhar=(c,img)=>{ for(let y=0;y<H;y+=TH) for(let x=0;x<W;x+=TW) c.drawImage(img,x,y,TW,TH); };
+  const cor=img=>{ const c=cc.getContext('2d'); c.globalCompositeOperation='source-over'; c.fillStyle='#5c1018'; c.fillRect(0,0,W,H);
+    if(img){ ladrilhar(c,img); c.globalCompositeOperation='multiply'; c.fillStyle='#a0a0a0'; c.fillRect(0,0,W,H); c.globalCompositeOperation='source-over'; }
+    c.fillStyle='#b8893c'; c.fillRect(6,0,8,H); c.fillRect(W-14,0,8,H); c.fillStyle='#3a0a10'; c.fillRect(18,0,4,H); c.fillRect(W-22,0,4,H);
+    for(let y=0;y<H;y+=64){ c.fillStyle='#8a6a2c'; c.beginPath(); c.moveTo(W/2,y+8); c.lineTo(W/2+24,y+32); c.lineTo(W/2,y+56); c.lineTo(W/2-24,y+32); c.closePath(); c.fill(); c.fillStyle='#5c1018'; c.fillRect(W/2-6,y+26,12,12); }
+    for(const [a,x,y,w,h] of manchas){ c.fillStyle=`rgba(20,10,8,${a})`; c.fillRect(x,y,w,h); } };
+  const t=new THREE.CanvasTexture(cc); t.encoding=THREE.sRGBEncoding; t.wrapS=t.wrapT=THREE.RepeatWrapping; cor(null);
+  let n=null; if(cn){ const c=cn.getContext('2d'); c.fillStyle='rgb(128,128,255)'; c.fillRect(0,0,W,H); n=new THREE.CanvasTexture(cn); n.wrapS=n.wrapT=THREE.RepeatWrapping;
+    const im=new Image(); im.onload=()=>{ ladrilhar(c,im); n.needsUpdate=true; }; im.src='data:image/jpeg;base64,'+F.nor; }
+  if(F&&F.cor){ const im=new Image(); im.onload=()=>{ cor(im); t.needsUpdate=true; }; im.src='data:image/jpeg;base64,'+F.cor; }
+  return {map:t,normalMap:n}; }
 function texHera(){ return canvasTex(128,256,(c,W,H)=>{ c.clearRect(0,0,W,H); let sd=77; const R=()=>(sd=(sd*16807)%2147483647)/2147483647;
   for(let v=0;v<5;v++){ let x=20+R()*88, y=H; c.strokeStyle='rgb(60,70,40)'; c.lineWidth=2; c.beginPath(); c.moveTo(x,y);
     const pts=[]; while(y>H*(.1+R()*.4)){ x+=(R()-.5)*16; y-=10; c.lineTo(x,y); pts.push([x,y]); } c.stroke();
@@ -1467,7 +1480,7 @@ function buildCatedralViva(){
   { const tex=texTapete(), geos=[], tapete=(x1,z1,x2,z2,larg)=>{ const L=Math.hypot(x2-x1,z2-z1), g=new THREE.PlaneGeometry(larg,L), uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setY(i,uv.getY(i)*L/4);
       g.rotateX(-Math.PI/2); g.rotateY(Math.atan2(x2-x1,z2-z1)); g.translate((x1+x2)/2,.022,(z1+z2)/2); geos.push(g); };
     tapete(0,-33,0,-62,2.2); tapete(-40,-71,40,-71,2.2); tapete(0,-79,0,-84,2); tapete(-60,-49,-60,-61,1.8);
-    const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),new THREE.MeshStandardMaterial({map:tex,roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
+    const m=new THREE.Mesh(THREE.BufferGeometryUtils.mergeBufferGeometries(geos,false),new THREE.MeshStandardMaterial({map:tex.map,normalMap:tex.normalMap,normalScale:new THREE.Vector2(.7,.7),roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
     m.receiveShadow=true; m.userData.dinamico=true; world.add(m); }
   // ---------- hera subindo pela capela desabada, pela torre partida, pelo claustro e pelas ruínas do mosteiro ----------
   { const geos=[], planta=(x,z,ry,alt,larg)=>{ const g=new THREE.PlaneGeometry(larg,alt); g.translate(0,alt/2,0); g.rotateY(ry); g.translate(x,0,z); geos.push(g); };
@@ -1815,10 +1828,10 @@ function animateActor(m,a,x,z,yaw,dt,now){
         // a mesma coreografia da primeira pessoa (client/arma.js), em ponto grande para quem vê de longe
         if(a.cls==='exorcista'){ const cima=suv(en(T,.08,.34))*(1-suv(en(T,.42,.58))), baixo=suv(en(T,.42,.58))*(1-suv(en(T,1.1,1.3)));
           U.armL.rotation.set(1.05+cima*.5-baixo*.1,0,.45); U.armR.rotation.set(mira*.55+cima*.2-baixo*.3+(T>.4&&T<1.05?Math.sin((T-.4)*5)*.25:0),0,-.25);
-          U.gun.rotation.set(cima*-1.1+baixo*.9,0,(cima+baixo)*-.5); }
+          U.gun.rotation.set(-Math.PI/2+cima*1.4-baixo*.7,0,(cima+baixo)*-.5); }
         else { const rola=suv(en(T,0,.2))*(1-suv(en(T,1.05,1.25))), ciclo=T>.15&&T<1.1?Math.max(0,Math.sin((T-.15)/.29*Math.PI*2)):0;
-          U.armL.rotation.set(1.0+rola*.15,0,.4); U.armR.rotation.set(.85+ciclo*.45-rola*.1,0,-.35-ciclo*.25); U.gun.rotation.set(0,rola*.5,rola*1.0); } }
-      else { U.armR.rotation.set(mira-A.kick*.45,0,0); U.armL.rotation.set(mira-.1-A.kick*.3,0,.45); U.torso.rotation.x+=A.kick*.08; U.gun.rotation.set(0,0,0); }
+          U.armL.rotation.set(1.0+rola*.15,0,.4); U.armR.rotation.set(.85+ciclo*.45-rola*.1,0,-.35-ciclo*.25); U.gun.rotation.set(-Math.PI/2+rola*.35,rola*.5,rola*1.0); } }
+      else { U.armR.rotation.set(mira-A.kick*.45,0,0); U.armL.rotation.set(mira-.1-A.kick*.3,0,.45); U.torso.rotation.x+=A.kick*.08; } // a arma fica no -90° do começo: o cano segue o braço (com 0 apontava para o céu)
       U.flash.material.opacity=A.kick>.7?1:0;
     } else {
       const noCirculo=V.altars.some(Al=>Al.state==='active'&&Math.hypot(Al.x-x,Al.z-z)<=CFG.circleR);
@@ -3779,7 +3792,7 @@ async function downloadLog(){
 }
 // ================= NOVIDADES =================
 let novidadesAberto=false;
-const NOVIDADES=[['Bonecos e armas de verdade (v6.5)','Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz e túnica longa, Soldado e Exorcista de casaco longo e chapéu, a Rastreadora de couro escuro. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas.'],['Cadeira, balcão e portas (v6.4e)','A cadeira do Eletrochoque é uma cadeira gótica de madeira entalhada, o balcão do Saguão é uma fileira de armários brancos descascados e as portas do Asilo são de tábuas pintadas e gastas.'],['Pinturas e espelhos (v6.4d)','O Asilo ganhou pinturas emolduradas e espelhos entalhados nas paredes de 29 salas, e os lampiões das mesas agora têm o vidro pintado e o metal dourado.'],['Mais duas levas de arte (v6.4c)','As samambaias da mata, as raízes do carvalho, os bancos da nave e a arca agora são modelos escaneados, e as rochas têm três formas. O promontório ganhou chão de terra e capim ralo, e as pilhas de madeira, tábuas gastas. No Asilo, luminárias industriais, quadros de força, canteiros de madeira na horta, bancadas e macas de verdade, lampiões nas mesas, e telhados de ardósia, ferro enferrujado e concreto fotografados.'],['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
+const NOVIDADES=[['Arma no lugar e mais arte (v6.5a)','A arma dos outros Caçadores não aponta mais para o céu: o cano acompanha o braço e a mira, e as recargas vistas de fora ficaram certas. Na arte: um segundo tronco morto na mata, castiçais de latão nas tumbas, tapetes com trama de jacquard na catedral e, no Asilo, livros nas mesas, vidraria na bancada, um relógio no balcão e molduras ovais nas paredes.'],['Bonecos e armas de verdade (v6.5)','Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz e túnica longa, Soldado e Exorcista de casaco longo e chapéu, a Rastreadora de couro escuro. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas.'],['Cadeira, balcão e portas (v6.4e)','A cadeira do Eletrochoque é uma cadeira gótica de madeira entalhada, o balcão do Saguão é uma fileira de armários brancos descascados e as portas do Asilo são de tábuas pintadas e gastas.'],['Pinturas e espelhos (v6.4d)','O Asilo ganhou pinturas emolduradas e espelhos entalhados nas paredes de 29 salas, e os lampiões das mesas agora têm o vidro pintado e o metal dourado.'],['Mais duas levas de arte (v6.4c)','As samambaias da mata, as raízes do carvalho, os bancos da nave e a arca agora são modelos escaneados, e as rochas têm três formas. O promontório ganhou chão de terra e capim ralo, e as pilhas de madeira, tábuas gastas. No Asilo, luminárias industriais, quadros de força, canteiros de madeira na horta, bancadas e macas de verdade, lampiões nas mesas, e telhados de ardósia, ferro enferrujado e concreto fotografados.'],['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
   ['Texturas e modelos de verdade (v6.4)','As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, "Entre rituais" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.'],
   ['Correções (v6.3b)','As portas largas do Asilo não têm mais uma fresta para o céu em cima. Jogo e servidor de versões diferentes não trocam mais o mapa: o jogo monta o mapa da sala, um jogo antigo não entra numa sala do Asilo e o chat da sala avisa quando as versões não batem. Os nomes compridos na faixa dos altares não se sobrepõem mais.'],
   ['Só sons gravados (v6.2b)','Os bipes, o vento de ruído, a música do menu, a trilha de tensão e a pulsação dos rituais eram sintetizados na hora. Agora tudo sai de gravações reais (CC0): cliques, sensor, coração, tambor, presságio, trovão, a música do menu no coro gravado. Nenhum som do jogo é feito por IA.'],

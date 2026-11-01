@@ -44,6 +44,7 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `planalto` | chão do promontório da catedral (terra e capim ralo) | [grass_ground](https://polyhaven.com/a/grass_ground) | Charlotte Baglioni |
 | `tabuas` | tábuas gastas: pilhas de madeira, telhado do ermitão | [weathered_planks](https://polyhaven.com/a/weathered_planks) | Dario Barresi, Dimitrios Savva |
 | `portaAsilo` | Asilo: portas de tábuas pintadas e gastas (com a cor da foto) | [distressed_painted_planks](https://polyhaven.com/a/distressed_painted_planks) | Rob Tuytel |
+| `tapete` | catedral: tapetes nos eixos de passagem (jacquard de quadrifólios, tingido de vinho) | [quatrefoil_jacquard_fabric](https://polyhaven.com/a/quatrefoil_jacquard_fabric) | colormass, Rico Cilliers |
 
 ## Modelos
 
@@ -75,6 +76,12 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `espelho` | Asilo: espelhos nas paredes das salas | [ornate_mirror_01](https://polyhaven.com/a/ornate_mirror_01), CC0 | James Ray Cock |
 | `cadeira` | Asilo: a cadeira elétrica (kind cadeira_eletrica) | [WoodenChair_01](https://polyhaven.com/a/WoodenChair_01), CC0 | Jake Mobley |
 | `armario` | Asilo: o balcão da recepção, uma fileira de armários (kind balcao) | [painted_wooden_cabinet](https://polyhaven.com/a/painted_wooden_cabinet), CC0 | Kirill Sannikov |
+| `tronco2` | troncos caídos (kind tronco), um sim, outro não pela posição | [dead_tree_trunk_02](https://polyhaven.com/a/dead_tree_trunk_02), CC0 | Jenelle van Heerden, Rico Cilliers |
+| `livros` | Asilo: livros em cima das mesas | [book_encyclopedia_set_01](https://polyhaven.com/a/book_encyclopedia_set_01), CC0 | John Malcolm |
+| `quimica` | Asilo: vidraria de laboratório na bancada | [chemistry_set](https://polyhaven.com/a/chemistry_set), CC0 | Jiří Ptáček |
+| `relogio` | Asilo: relógio de mesa no balcão da recepção | [mantel_clock_01](https://polyhaven.com/a/mantel_clock_01), CC0 | Yann Kervran, Rico Cilliers |
+| `castical` | castiçais de latão em cima das tumbas da cripta | [brass_candleholders](https://polyhaven.com/a/brass_candleholders), CC0 | Tina |
+| `moldura` | Asilo: moldura oval pendurada nas paredes das salas (vidro escuro) | [hanging_picture_frame_03](https://polyhaven.com/a/hanging_picture_frame_03), CC0 | James Ray Cock |
 
 ## Bonecos
 

@@ -71,7 +71,7 @@ namespace RitualReversal.Visual
                     geo.Juntar(g.GirarX(-PI / 2).GirarY(Mathf.Atan2(x2 - x1, z2 - z1)).Mover((x1 + x2) / 2, .022f, (z1 + z2) / 2));
                 };
                 tapete(0, -33, 0, -62, 2.2f); tapete(-40, -71, 40, -71, 2.2f); tapete(0, -79, 0, -84, 2); tapete(-60, -49, -60, -61, 1.8f);
-                var mat = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.Tapete(), rugosidade = 1 }); mat.name = "tapete"; Est(geo, mat, M4.I, false);
+                var mat = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.Tapete(), relevo = Tex.TapeteRelevo(), relevoK = .7f, rugosidade = 1 }); mat.name = "tapete"; Est(geo, mat, M4.I, false);
             }
             // ---------- hera subindo pela capela desabada, pela torre partida, pelo claustro e pelas ruínas do mosteiro ----------
             {

@@ -320,5 +320,12 @@
   "licenca": "CC0",
   "autor": "Rob Tuytel",
   "uso": "Asilo: portas de tábuas pintadas e gastas (com a cor da foto)"
+ },
+ "tapete": {
+  "id": "quatrefoil_jacquard_fabric",
+  "pagina": "https://polyhaven.com/a/quatrefoil_jacquard_fabric",
+  "licenca": "CC0",
+  "autor": "colormass, Rico Cilliers",
+  "uso": "catedral: tapetes nos eixos de passagem (jacquard de quadrifólios, tingido de vinho)"
  }
 }

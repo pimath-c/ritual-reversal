@@ -177,7 +177,7 @@ namespace RitualReversal.Visual
                 case "tronco":
                     {
                         bool aoX = L >= D; float len = Math.Max(L, D), gr = w.kind == "tronco" ? 1.3f : 1;
-                        var MT = ModeloGLB.Carregar("tronco");
+                        var MT = (w.kind == "tronco" && (int)Math.Abs(Math.Floor((double)x * 7 + (double)z * 13 + .5)) % 2 == 1 ? ModeloGLB.Carregar("tronco2") : null) ?? ModeloGLB.Carregar("tronco");   // v6.5a: um tronco sim, outro não, o segundo modelo
                         if (MT != null)
                         {   // v6.4: o tronco morto escaneado (CC0), deitado na caixa; os mesmos sorteios dos galhos de antes
                             Est(MT.geo, MT.mat, TRS(x, -.05f, z, 0, aoX ? 0 : PI / 2, 0, len * 1.05f, 1.05f * gr, 1.05f * gr));
@@ -290,6 +290,7 @@ namespace RitualReversal.Visual
             }
             var mat = w.kind == "tumba" ? M("marble") : w.kind == "cripta" ? M("wallDark") : w.kind == "biombo" ? M("wood") : M("wall");
             Caixa(w.x1, w.x2, 0, w.h, w.z1, w.z2, mat, w.kind == "tumba" ? 2 : 4);
+            if (w.kind == "tumba") { var MC = ModeloGLB.Carregar("castical"); if (MC != null) Est(MC.geo, MC.mat, TRS(x, w.h, z, 0, L >= D ? 0 : PI / 2, 0)); }   // v6.5a: castiçais de latão (CC0) em cima
             if (w.h > 2.2f && w.kind != "biombo") Caixa(w.x1 - .1f, w.x2 + .1f, w.h, w.h + .35f, w.z1 - .1f, w.z2 + .1f, M("wallDark"), 4, false);
         }
 

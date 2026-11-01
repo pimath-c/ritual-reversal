@@ -348,14 +348,45 @@ namespace RitualReversal.Visual
             });
             return _estandarte = c.Textura(false, "estandarte");
         }
+        // v6.5a: o jacquard de quadrifólios fotografado (Resources/Texturas/tapete_*, CC0), escurecido e repetido a cada 56 cm, com as
+        // barras douradas, os losangos e as manchas por cima; TapeteRelevo é o relevo da foto repetido do mesmo jeito (o texTapete do
+        // index.html). Sem a foto, o desenho antigo e relevo null.
+        const int TAP_W = 128, TAP_H = 512; const float TAP_TW = TAP_W * .56f / 2.2f, TAP_TH = TAP_H * .56f / 4;
+        static Texture2D _tapeteRelevo; static bool _tapeteRelevoFeito;
+        // a foto ladrilhada nas linhas do canvas (de cima para baixo), média de 4 × 4 amostras por pixel
+        static Color[] Ladrilhar(Texture2D foto, float k)
+        {
+            var src = foto.GetPixels32(); int pw = foto.width, ph = foto.height; var o = new Color[TAP_W * TAP_H];
+            for (int y = 0; y < TAP_H; y++) for (int x = 0; x < TAP_W; x++)
+                {
+                    float r = 0, g = 0, b = 0;
+                    for (int sy = 0; sy < 4; sy++) for (int sx = 0; sx < 4; sx++)
+                        {
+                            float u = ((x + (sx + .5f) / 4) % TAP_TW) / TAP_TW, v = ((y + (sy + .5f) / 4) % TAP_TH) / TAP_TH;
+                            int px = Math.Min(pw - 1, (int)(u * pw)), py = ph - 1 - Math.Min(ph - 1, (int)(v * ph)); var q = src[py * pw + px];
+                            r += q.r; g += q.g; b += q.b;
+                        }
+                    o[y * TAP_W + x] = new Color(r / 16 / 255 * k, g / 16 / 255 * k, b / 16 / 255 * k, 1);
+                }
+            return o;
+        }
         public static Texture2D Tapete()
         {
-            if (_tapete != null) return _tapete; int W = 64, H = 256; var c = new Tela(W, H); var rnd = new System.Random(3);
-            c.preencher = Tela.Cor("#5c1018"); c.Retangulo(0, 0, W, H);
-            c.preencher = Tela.Cor("#b8893c"); c.Retangulo(3, 0, 4, H); c.Retangulo(W - 7, 0, 4, H); c.preencher = Tela.Cor("#3a0a10"); c.Retangulo(9, 0, 2, H); c.Retangulo(W - 11, 0, 2, H);
-            for (int y = 0; y < H; y += 32) { c.preencher = Tela.Cor("#8a6a2c"); c.Iniciar(); c.Mover(W / 2f, y + 4); c.Linha(W / 2f + 12, y + 16); c.Linha(W / 2f, y + 28); c.Linha(W / 2f - 12, y + 16); c.Fechar(); c.Preencher(); c.preencher = Tela.Cor("#5c1018"); c.Retangulo(W / 2f - 3, y + 13, 6, 6); }
-            for (int k = 0; k < 60; k++) { c.preencher = new Color(20 / 255f, 10 / 255f, 8 / 255f, (float)rnd.NextDouble() * .35f); c.Retangulo((float)rnd.NextDouble() * W, (float)rnd.NextDouble() * H, 2 + (float)rnd.NextDouble() * 8, 2 + (float)rnd.NextDouble() * 14); }
+            if (_tapete != null) return _tapete; int W = TAP_W, H = TAP_H; var c = new Tela(W, H); var rnd = new System.Random(3);
+            var F = Pbr.Foto("tapete");
+            if (F != null && F.mapa != null) Array.Copy(Ladrilhar(F.mapa, 160 / 255f), c.px, c.px.Length);
+            else { c.preencher = Tela.Cor("#5c1018"); c.Retangulo(0, 0, W, H); }
+            c.preencher = Tela.Cor("#b8893c"); c.Retangulo(6, 0, 8, H); c.Retangulo(W - 14, 0, 8, H); c.preencher = Tela.Cor("#3a0a10"); c.Retangulo(18, 0, 4, H); c.Retangulo(W - 22, 0, 4, H);
+            for (int y = 0; y < H; y += 64) { c.preencher = Tela.Cor("#8a6a2c"); c.Iniciar(); c.Mover(W / 2f, y + 8); c.Linha(W / 2f + 24, y + 32); c.Linha(W / 2f, y + 56); c.Linha(W / 2f - 24, y + 32); c.Fechar(); c.Preencher(); c.preencher = Tela.Cor("#5c1018"); c.Retangulo(W / 2f - 6, y + 26, 12, 12); }
+            for (int k = 0; k < 60; k++) { c.preencher = new Color(20 / 255f, 10 / 255f, 8 / 255f, (float)rnd.NextDouble() * .35f); c.Retangulo((float)rnd.NextDouble() * W, (float)rnd.NextDouble() * H, 4 + (float)rnd.NextDouble() * 16, 4 + (float)rnd.NextDouble() * 28); }
             return _tapete = c.Textura(true, "tapete");
+        }
+        public static Texture2D TapeteRelevo()
+        {
+            if (_tapeteRelevoFeito) return _tapeteRelevo; _tapeteRelevoFeito = true;
+            var F = Pbr.Foto("tapete"); if (F == null || F.relevo == null) return null;
+            var px = Ladrilhar(F.relevo, 1); var cs = new Color32[px.Length]; for (int i = 0; i < px.Length; i++) cs[i] = px[i];
+            return _tapeteRelevo = Tela.Tex2D(TAP_W, TAP_H, cs, false, "tapete_normal");
         }
         public static Texture2D Hera()
         {

@@ -384,5 +384,95 @@
     "triangulos": 2227,
     "textura": 512,
     "bordas": true
+  },
+  "tronco2": {
+    "polyhaven": "dead_tree_trunk_02",
+    "autor": "Jenelle van Heerden, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "troncos caídos (kind tronco), um sim, outro não pela posição",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": false
+  },
+  "livros": {
+    "polyhaven": "book_encyclopedia_set_01",
+    "autor": "John Malcolm",
+    "licenca": "CC0",
+    "uso": "Asilo: livros em cima das mesas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.24,
+      0
+    ],
+    "triangulos": 1500,
+    "textura": 256,
+    "bordas": false
+  },
+  "quimica": {
+    "polyhaven": "chemistry_set",
+    "autor": "Jiří Ptáček",
+    "licenca": "CC0",
+    "uso": "Asilo: vidraria de laboratório na bancada",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.36,
+      0
+    ],
+    "triangulos": 2500,
+    "textura": 512,
+    "bordas": false
+  },
+  "relogio": {
+    "polyhaven": "mantel_clock_01",
+    "autor": "Yann Kervran, Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "Asilo: relógio de mesa no balcão da recepção",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.3,
+      0
+    ],
+    "triangulos": 2000,
+    "textura": 256,
+    "bordas": false
+  },
+  "castical": {
+    "polyhaven": "brass_candleholders",
+    "autor": "Tina",
+    "licenca": "CC0",
+    "uso": "castiçais de latão em cima das tumbas da cripta",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.55,
+      0
+    ],
+    "triangulos": 2500,
+    "textura": 256,
+    "bordas": false
+  },
+  "moldura": {
+    "polyhaven": "hanging_picture_frame_03",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: moldura oval pendurada nas paredes das salas (vidro escuro)",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.6,
+      0
+    ],
+    "triangulos": 1500,
+    "textura": 512,
+    "bordas": true
   }
 }
