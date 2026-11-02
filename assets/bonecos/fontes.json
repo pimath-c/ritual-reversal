@@ -1,231 +1,598 @@
 {
-  "_sobre": "Bonecos de verdade, CC0 (Quaternius, quaternius.com: Modular Character Outfits - Fantasy e Universal Base Characters, versões Standard gratuitas). tools/montar-bonecos.py baixa os .zip do itch.io para assets/bonecos/fontes/ (fora do git), lê os glTF com esqueleto e grava cada boneco em peças rígidas por junta em client/bonecos.js e Resources/Bonecos/<nome>.bytes. 'pecas': [pacote, glTF, filtro] (filtro: lista de '!malha' a tirar, ou 'cabeca' para tirar só a cabeça de um corpo inteiro); 'cores': recoloração por textura ('verde': [matiz, sat×, val×] troca o verde da roupa; 'mult': [r, g, b]).",
-  "fontes": {
-    "roupas": {
-      "itch": "https://quaternius.itch.io/modular-character-outfits-fantasy",
-      "arquivo": "Standard",
-      "pasta": "Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/",
-      "licenca": "CC0",
-      "autor": "Quaternius"
-    },
-    "base": {
-      "itch": "https://quaternius.itch.io/universal-base-characters",
-      "arquivo": "Standard",
-      "pasta": "Universal Base Characters[Standard]/",
-      "licenca": "CC0",
-      "autor": "Quaternius"
-    }
-  },
+  "_sobre": "v6.5c: bonecos do MakeHuman (tools/makehuman.py lê os formatos; tools/montar-bonecos.py monta as peças por junta). Corpo, alvos de forma, esqueleto game_engine e pesos: dados do MPFB 2 (CC0; clone em fontes/mpfb2, só lido). Peles, olhos, roupas e chapéus: pacotes de files.makehumancommunity.org (CC0 e CC BY; créditos de cada peça em 'creditos'). Os bonecos antigos da Quaternius ficam em _quaternius.",
+  "fontes": {},
   "bonecos": {
     "ritualista": {
-      "uso": "Cultista Ritualista: capuz e túnica longa esfarrapada (a túnica é do jogo) em sangue seco; o rosto fica escuro dentro do capuz",
-      "pecas": [
-        [
-          "roupas",
-          "Outfits/Male_Ranger.gltf",
+      "uso": "Cultista Ritualista: hábito de monge e capuz em vinho",
+      "makehuman": {
+        "alvos": [
           [
-            "!Male_Ranger_Acc_Pauldron",
-            "!Male_Ranger_Arms_Bracer"
-          ]
-        ]
-      ],
-      "cores": {
-        "T_Ranger_BaseColor.png": {
-          "verde": [
-            352,
-            1.0,
-            0.5
+            "macrodetails/universal-male-young-averagemuscle-minweight.target.gz",
+            1
           ],
+          [
+            "macrodetails/caucasian-male-young.target.gz",
+            1
+          ]
+        ],
+        "pele": "skins/middleage_caucasian_male/middleage_caucasian_male.mhmat",
+        "roupas": [
+          [
+            "eyes/low-poly/low-poly.mhclo",
+            "eyes/materials/brown.mhmat"
+          ],
+          "clothes/donitz_monk_robe/donitz_monk_robe.mhclo",
+          "clothes/donitz_monk_robe_hood/donitz_monk_robe_hood.mhclo"
+        ]
+      },
+      "cores": {
+        "robe_brown__diffuse.png": {
+          "tingir": [
+            350,
+            0.9,
+            0.8
+          ]
+        },
+        "middleage_lightskinned_male_diffuse.png": {
           "mult": [
-            0.85,
+            0.82,
             0.8,
             0.8
           ]
         },
-        "T_Regular_Male_Dark_BaseColor.png": {
+        "young_lightskinned_male_diffuse.png": {
           "mult": [
-            0.32,
-            0.22,
-            0.24
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "young_lightskinned_female_diffuse.png": {
+          "mult": [
+            0.82,
+            0.8,
+            0.8
           ]
         }
-      }
+      },
+      "creditos": [
+        "corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0",
+        "hábito e capuz: Donitz, CC0"
+      ],
+      "triangulos": 30000
     },
     "guardiao": {
-      "uso": "Cultista Guardião: a mesma roupa num vermelho quase preto, com a armadura de osso do jogo por cima",
-      "pecas": [
-        [
-          "roupas",
-          "Outfits/Male_Ranger.gltf",
+      "uso": "Cultista Guardião: corpo forte, hábito e capuz quase pretos",
+      "makehuman": {
+        "alvos": [
           [
-            "!Male_Ranger_Acc_Pauldron",
-            "!Male_Ranger_Arms_Bracer"
-          ]
-        ]
-      ],
-      "cores": {
-        "T_Ranger_BaseColor.png": {
-          "verde": [
-            348,
-            0.9,
-            0.34
+            "macrodetails/universal-male-young-maxmuscle-averageweight.target.gz",
+            1
           ],
-          "mult": [
+          [
+            "macrodetails/caucasian-male-young.target.gz",
+            1
+          ]
+        ],
+        "pele": "skins/middleage_caucasian_male/middleage_caucasian_male.mhmat",
+        "roupas": [
+          [
+            "eyes/low-poly/low-poly.mhclo",
+            "eyes/materials/brown.mhmat"
+          ],
+          "clothes/donitz_monk_robe/donitz_monk_robe.mhclo",
+          "clothes/donitz_monk_robe_hood/donitz_monk_robe_hood.mhclo"
+        ]
+      },
+      "cores": {
+        "robe_brown__diffuse.png": {
+          "tingir": [
+            350,
             0.7,
-            0.66,
-            0.66
+            0.45
           ]
         },
-        "T_Regular_Male_Dark_BaseColor.png": {
+        "middleage_lightskinned_male_diffuse.png": {
           "mult": [
-            0.32,
-            0.22,
-            0.24
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "young_lightskinned_male_diffuse.png": {
+          "mult": [
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "young_lightskinned_female_diffuse.png": {
+          "mult": [
+            0.82,
+            0.8,
+            0.8
           ]
         }
-      }
+      },
+      "creditos": [
+        "corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0",
+        "hábito e capuz: Donitz, CC0"
+      ],
+      "triangulos": 30000
     },
     "soldado": {
-      "uso": "Caçador Soldado: colete e casaco longo (a aba é do jogo) em azul-noite, com a cabeça e a barba do corpo base e o chapéu",
-      "pecas": [
-        [
-          "roupas",
-          "Outfits/Male_Ranger.gltf",
+      "uso": "Caçador Soldado: roupa de trabalho, sobretudo azul-noite, botas e chapéu de aba larga",
+      "makehuman": {
+        "alvos": [
           [
-            "!Male_Ranger_Head_Hood",
-            "!Male_Ranger_Acc_Pauldron",
-            "!Male_Ranger_Arms_Bracer"
+            "macrodetails/universal-male-young-maxmuscle-averageweight.target.gz",
+            1
+          ],
+          [
+            "macrodetails/caucasian-male-young.target.gz",
+            1
           ]
         ],
-        [
-          "base",
-          "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
-          "cabeca"
-        ],
-        [
-          "base",
-          "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Beard.gltf",
-          null
-        ]
-      ],
-      "cores": {
-        "T_Ranger_BaseColor.png": {
-          "verde": [
-            218,
-            0.35,
-            0.5
+        "pele": "skins/middleage_caucasian_male/middleage_caucasian_male.mhmat",
+        "roupas": [
+          [
+            "eyes/low-poly/low-poly.mhclo",
+            "eyes/materials/brown.mhmat"
           ],
-          "mult": [
-            0.85,
-            0.85,
-            0.88
+          "clothes/male_worksuit01/male_worksuit01.mhclo",
+          "clothes/punkduck_winter_coat/punkduck_winter_coat.mhclo",
+          "clothes/rehmanpolanski_viking_boots/rehmanpolanski_viking_boots.mhclo",
+          "clothes/culturalibre_cl_don_quixote_hat/culturalibre_cl_don_quixote_hat.mhclo"
+        ]
+      },
+      "cores": {
+        "coat.png": {
+          "contraste": 0.45,
+          "tingir": [
+            218,
+            0.45,
+            0.2
           ]
         },
-        "T_Hair_1_BaseColor.png": {
+        "quixote.png": {
+          "tingir": [
+            25,
+            0.55,
+            0.12
+          ]
+        },
+        "middleage_lightskinned_male_diffuse.png": {
           "mult": [
-            0.28,
-            0.2,
-            0.14
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "young_lightskinned_male_diffuse.png": {
+          "mult": [
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "young_lightskinned_female_diffuse.png": {
+          "mult": [
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "male_worksuit01_diffuse.png": {
+          "contraste": 0.7,
+          "tingir": [
+            30,
+            0.3,
+            0.32
           ]
         }
-      }
+      },
+      "creditos": [
+        "corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0",
+        "roupa de trabalho: MakeHuman, CC0",
+        "sobretudo: punkduck, CC BY 3.0",
+        "botas: Rehman Polanski, CC0",
+        "chapéu de aba larga: culturalibre, CC BY"
+      ],
+      "triangulos": 30000
     },
     "exorcista": {
-      "uso": "Caçador Exorcista: casaco longo cinza-carvão, chapéu e a estola branca",
-      "pecas": [
-        [
-          "roupas",
-          "Outfits/Male_Ranger.gltf",
+      "uso": "Caçador Exorcista: terno escuro, sobretudo preto e cartola (a estola roxa é do jogo)",
+      "makehuman": {
+        "alvos": [
           [
-            "!Male_Ranger_Head_Hood",
-            "!Male_Ranger_Acc_Pauldron",
-            "!Male_Ranger_Arms_Bracer"
+            "macrodetails/universal-male-young-averagemuscle-averageweight.target.gz",
+            1
+          ],
+          [
+            "macrodetails/caucasian-male-young.target.gz",
+            1
           ]
         ],
-        [
-          "base",
-          "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
-          "cabeca"
-        ],
-        [
-          "base",
-          "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_SimpleParted.gltf",
-          null
-        ]
-      ],
-      "cores": {
-        "T_Ranger_BaseColor.png": {
-          "verde": [
-            230,
-            0.08,
-            0.36
+        "pele": "skins/young_caucasian_male/young_caucasian_male.mhmat",
+        "roupas": [
+          [
+            "eyes/low-poly/low-poly.mhclo",
+            "eyes/materials/brown.mhmat"
           ],
+          "clothes/male_elegantsuit01/male_elegantsuit01.mhclo",
+          "clothes/punkduck_winter_coat/punkduck_winter_coat.mhclo",
+          "clothes/rehmanpolanski_viking_boots/rehmanpolanski_viking_boots.mhclo",
+          "clothes/elvs_tophat1/elvs_tophat1.mhclo"
+        ]
+      },
+      "cores": {
+        "coat.png": {
+          "contraste": 0.45,
           "mult": [
-            0.8,
+            0.13,
+            0.13,
+            0.14
+          ]
+        },
+        "middleage_lightskinned_male_diffuse.png": {
+          "mult": [
+            0.82,
             0.8,
             0.8
           ]
         },
-        "T_Hair_1_BaseColor.png": {
+        "young_lightskinned_male_diffuse.png": {
           "mult": [
-            0.12,
-            0.1,
-            0.09
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "young_lightskinned_female_diffuse.png": {
+          "mult": [
+            0.82,
+            0.8,
+            0.8
+          ]
+        },
+        "tophat1.png": {
+          "contraste": 0.5,
+          "mult": [
+            0.35,
+            0.3,
+            0.32
           ]
         }
-      }
+      },
+      "creditos": [
+        "corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0",
+        "terno: MakeHuman, CC0",
+        "sobretudo: punkduck, CC BY 3.0",
+        "botas: Rehman Polanski, CC0",
+        "cartola: Elvaerwyn, CC BY"
+      ],
+      "triangulos": 30000
     },
     "rastreador": {
-      "uso": "Caçadora Rastreadora: couro escuro e casaco longo, cabelo preso, sem chapéu",
-      "pecas": [
-        [
-          "roupas",
-          "Outfits/Female_Ranger.gltf",
+      "uso": "Caçadora Rastreadora: sobretudo de couro pardo, botas e trilby",
+      "makehuman": {
+        "alvos": [
           [
-            "!Female_Ranger_Head_Hood",
-            "!Female_Ranger_Acc_Pauldrons",
-            "!Female_Ranger_Arms_Bracer"
+            "macrodetails/universal-female-young-averagemuscle-averageweight.target.gz",
+            1
+          ],
+          [
+            "macrodetails/caucasian-female-young.target.gz",
+            1
           ]
         ],
-        [
-          "base",
-          "Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
-          "cabeca"
-        ],
-        [
-          "base",
-          "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buns.gltf",
-          null
+        "pele": "skins/young_caucasian_female/young_caucasian_female.mhmat",
+        "roupas": [
+          [
+            "eyes/low-poly/low-poly.mhclo",
+            "eyes/materials/brown.mhmat"
+          ],
+          "hair/ponytail01/ponytail01.mhclo",
+          "clothes/female_casualsuit01/female_casualsuit01.mhclo",
+          "clothes/punkduck_winter_coat/punkduck_winter_coat.mhclo",
+          "clothes/rehmanpolanski_viking_boots/rehmanpolanski_viking_boots.mhclo",
+          "clothes/elvs_male_trilby_hat/elvs_male_trilby_hat.mhclo"
         ]
-      ],
+      },
       "cores": {
-        "T_Ranger_BaseColor.png": {
-          "verde": [
+        "coat.png": {
+          "contraste": 0.45,
+          "tingir": [
             24,
             0.6,
-            0.42
-          ],
+            0.3
+          ]
+        },
+        "middleage_lightskinned_male_diffuse.png": {
           "mult": [
-            0.85,
             0.82,
+            0.8,
             0.8
           ]
         },
-        "T_Hair_2_BaseColor.png": {
+        "young_lightskinned_male_diffuse.png": {
           "mult": [
-            0.32,
-            0.18,
-            0.1
+            0.82,
+            0.8,
+            0.8
           ]
         },
-        "T_Hair_1_BaseColor.png": {
+        "young_lightskinned_female_diffuse.png": {
           "mult": [
-            0.32,
-            0.18,
-            0.1
+            0.82,
+            0.8,
+            0.8
           ]
+        },
+        "trilby_tex8.png": {
+          "tingir": [
+            22,
+            0.5,
+            0.22
+          ]
+        },
+        "female_casualsuit01_diffuse.png": {
+          "contraste": 0.7,
+          "tingir": [
+            30,
+            0.3,
+            0.3
+          ]
+        }
+      },
+      "creditos": [
+        "corpo, pele, olhos, cabelo, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0",
+        "roupa: MakeHuman, CC0",
+        "sobretudo: punkduck, CC BY 3.0",
+        "botas: Rehman Polanski, CC0",
+        "trilby: Elvaerwyn, CC BY"
+      ],
+      "triangulos": 30000
+    }
+  },
+  "_quaternius": {
+    "fontes": {
+      "roupas": {
+        "itch": "https://quaternius.itch.io/modular-character-outfits-fantasy",
+        "arquivo": "Standard",
+        "pasta": "Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/",
+        "licenca": "CC0",
+        "autor": "Quaternius"
+      },
+      "base": {
+        "itch": "https://quaternius.itch.io/universal-base-characters",
+        "arquivo": "Standard",
+        "pasta": "Universal Base Characters[Standard]/",
+        "licenca": "CC0",
+        "autor": "Quaternius"
+      }
+    },
+    "bonecos": {
+      "ritualista": {
+        "uso": "Cultista Ritualista: capuz e túnica longa esfarrapada (a túnica é do jogo) em sangue seco; o rosto fica escuro dentro do capuz",
+        "pecas": [
+          [
+            "roupas",
+            "Outfits/Male_Ranger.gltf",
+            [
+              "!Male_Ranger_Acc_Pauldron",
+              "!Male_Ranger_Arms_Bracer"
+            ]
+          ]
+        ],
+        "cores": {
+          "T_Ranger_BaseColor.png": {
+            "verde": [
+              352,
+              1.0,
+              0.5
+            ],
+            "mult": [
+              0.85,
+              0.8,
+              0.8
+            ]
+          },
+          "T_Regular_Male_Dark_BaseColor.png": {
+            "mult": [
+              0.32,
+              0.22,
+              0.24
+            ]
+          }
+        }
+      },
+      "guardiao": {
+        "uso": "Cultista Guardião: a mesma roupa num vermelho quase preto, com a armadura de osso do jogo por cima",
+        "pecas": [
+          [
+            "roupas",
+            "Outfits/Male_Ranger.gltf",
+            [
+              "!Male_Ranger_Acc_Pauldron",
+              "!Male_Ranger_Arms_Bracer"
+            ]
+          ]
+        ],
+        "cores": {
+          "T_Ranger_BaseColor.png": {
+            "verde": [
+              348,
+              0.9,
+              0.34
+            ],
+            "mult": [
+              0.7,
+              0.66,
+              0.66
+            ]
+          },
+          "T_Regular_Male_Dark_BaseColor.png": {
+            "mult": [
+              0.32,
+              0.22,
+              0.24
+            ]
+          }
+        }
+      },
+      "soldado": {
+        "uso": "Caçador Soldado: colete e casaco longo (a aba é do jogo) em azul-noite, com a cabeça e a barba do corpo base e o chapéu",
+        "pecas": [
+          [
+            "roupas",
+            "Outfits/Male_Ranger.gltf",
+            [
+              "!Male_Ranger_Head_Hood",
+              "!Male_Ranger_Acc_Pauldron",
+              "!Male_Ranger_Arms_Bracer"
+            ]
+          ],
+          [
+            "base",
+            "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+            "cabeca"
+          ],
+          [
+            "base",
+            "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Beard.gltf",
+            null
+          ]
+        ],
+        "cores": {
+          "T_Ranger_BaseColor.png": {
+            "verde": [
+              218,
+              0.35,
+              0.5
+            ],
+            "mult": [
+              0.85,
+              0.85,
+              0.88
+            ]
+          },
+          "T_Hair_1_BaseColor.png": {
+            "mult": [
+              0.28,
+              0.2,
+              0.14
+            ]
+          }
+        }
+      },
+      "exorcista": {
+        "uso": "Caçador Exorcista: casaco longo cinza-carvão, chapéu e a estola branca",
+        "pecas": [
+          [
+            "roupas",
+            "Outfits/Male_Ranger.gltf",
+            [
+              "!Male_Ranger_Head_Hood",
+              "!Male_Ranger_Acc_Pauldron",
+              "!Male_Ranger_Arms_Bracer"
+            ]
+          ],
+          [
+            "base",
+            "Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+            "cabeca"
+          ],
+          [
+            "base",
+            "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_SimpleParted.gltf",
+            null
+          ]
+        ],
+        "cores": {
+          "T_Ranger_BaseColor.png": {
+            "verde": [
+              230,
+              0.08,
+              0.36
+            ],
+            "mult": [
+              0.8,
+              0.8,
+              0.8
+            ]
+          },
+          "T_Hair_1_BaseColor.png": {
+            "mult": [
+              0.12,
+              0.1,
+              0.09
+            ]
+          }
+        }
+      },
+      "rastreador": {
+        "uso": "Caçadora Rastreadora: couro escuro e casaco longo, cabelo preso, sem chapéu",
+        "pecas": [
+          [
+            "roupas",
+            "Outfits/Female_Ranger.gltf",
+            [
+              "!Female_Ranger_Head_Hood",
+              "!Female_Ranger_Acc_Pauldrons",
+              "!Female_Ranger_Arms_Bracer"
+            ]
+          ],
+          [
+            "base",
+            "Base Characters/Godot - UE/Superhero_Female_FullBody.gltf",
+            "cabeca"
+          ],
+          [
+            "base",
+            "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buns.gltf",
+            null
+          ]
+        ],
+        "cores": {
+          "T_Ranger_BaseColor.png": {
+            "verde": [
+              24,
+              0.6,
+              0.42
+            ],
+            "mult": [
+              0.85,
+              0.82,
+              0.8
+            ]
+          },
+          "T_Hair_2_BaseColor.png": {
+            "mult": [
+              0.32,
+              0.18,
+              0.1
+            ]
+          },
+          "T_Hair_1_BaseColor.png": {
+            "mult": [
+              0.32,
+              0.18,
+              0.1
+            ]
+          }
         }
       }
     }
+  },
+  "makehuman": {
+    "mpfb": "https://github.com/makehumancommunity/mpfb2.git",
+    "commit": "6ff1eb358f6c1959ced77e79e6dd2406d9a71f49",
+    "pacotes": [
+      "https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+      "https://files.makehumancommunity.org/asset_packs/suits02/suits02_cc0.zip",
+      "https://files.makehumancommunity.org/asset_packs/hats03/hats03_cc-by.zip",
+      "https://files.makehumancommunity.org/asset_packs/dress03/dress03_cc-by.zip"
+    ]
   }
 }

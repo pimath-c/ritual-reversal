@@ -7,6 +7,7 @@
 # servido pelo servidor) e unity/Assets/RitualReversal/Resources/Modelos/<nome>.bytes (o mesmo GLB, lido pelo
 # Visual/ModeloGLB.cs). Os dois clientes leem o mesmo arquivo com o mesmo leitor mínimo, então ficam iguais.
 # Uso: python3 tools/montar-modelos.py            (precisa de numpy e Pillow; baixar precisa do domínio liberado na rede)
+#      GLTFPACK=<node_modules/gltfpack/cli.js> ...   (simplifica com o meshoptimizer; npm install gltfpack@0.22.0 numa pasta à parte)
 #      FONTES_GLB=<pasta> SAIDA_MODELOS=<pasta> ...  (testes: lê os originais de outra pasta e grava tudo em outra pasta)
 import base64, io, json, math, os, struct, sys, urllib.request
 import numpy as np
@@ -138,11 +139,30 @@ def baixar_polyhaven(ident, destino):
     open(destino, 'wb').write(struct.pack('<III', 0x46546C67, 2, total) + struct.pack('<II', len(js), 0x4E4F534A) + js + struct.pack('<II', len(BIN), 0x004E4942) + BIN)
 
 
-def reduzir(p, n, uv, idx, alvo, bordas=True):
+GLTFPACK = os.environ.get('GLTFPACK')   # caminho do cli.js do pacote npm gltfpack (meshoptimizer); sem ele, o pyfqmr de antes
+
+
+def reduzir_gltfpack(p, n, uv, idx, alvo, bordas, img, agressivo=False):
+    """Menos triângulos com o simplificador do meshoptimizer (gltfpack -si, -sv): ele junta só vértices iguais e leva o uv e a
+    normal em conta, então as emendas da textura ficam inteiras. O pyfqmr com o uv do vértice mais perto desmanchava as rochas,
+    a luminária, o quadro de força e a cama (v6.5c). A malha vai e volta por um GLB temporário."""
+    import subprocess, tempfile
+    with tempfile.TemporaryDirectory() as d:
+        buf = io.BytesIO(); (img or Image.new('RGB', (4, 4))).convert('RGB').save(buf, 'JPEG', quality=95)
+        ent, sai = os.path.join(d, 'e.glb'), os.path.join(d, 's.glb'); open(ent, 'wb').write(gravar_glb(p, n, uv, idx, buf.getvalue()))
+        r = alvo / (len(idx) // 3)
+        cmd = ['node', GLTFPACK, '-i', ent, '-o', sai, '-noq', '-si', '%.5f' % r, '-sv', '-se', '0.03'] + (['-slb'] if bordas else []) + (['-sa'] if agressivo else [])   # -sa: malhas sem vértices compartilhados (rocha2, livros) param no limite de erro
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
+        J, BIN = ler_glb(open(sai, 'rb').read()); q, m, w, f, _ = juntar(J, BIN)
+    return q, m, w, f
+
+
+def reduzir(p, n, uv, idx, alvo, bordas=True, img=None, agressivo=False):
     """Menos triângulos (pyfqmr, simplificação por erro quadrático, com as bordas e as emendas da textura preservadas); cada
     vértice novo herda a normal e o uv do vértice original mais perto (o pyfqmr só devolve posições)."""
     if len(idx) // 3 <= alvo:
         return p, n, uv, idx
+    if GLTFPACK: return reduzir_gltfpack(p, n, uv, idx, alvo, bordas, img, agressivo)
     import pyfqmr
     s = pyfqmr.Simplify(); s.setMesh(p.astype(np.float64), idx.reshape(-1, 3).astype(np.int32))
     s.simplify_mesh(target_count=alvo, aggressiveness=7, preserve_border=bordas, verbose=False)
@@ -210,7 +230,7 @@ def main():
             else: urllib.request.urlretrieve(cfg['url'], orig)
         J, BIN = ler_glb(open(orig, 'rb').read())
         p, n, uv, idx, img = juntar(J, BIN)
-        if cfg.get('triangulos'): p, n, uv, idx = reduzir(p, n, uv, idx, cfg['triangulos'], cfg.get('bordas', True))
+        if cfg.get('triangulos'): p, n, uv, idx = reduzir(p, n, uv, idx, cfg['triangulos'], cfg.get('bordas', True), img, cfg.get('agressivo', False))
         p, n = encaixar(p, n, cfg)
         if img is None:
             img = Image.new('RGB', (4, 4), (150, 148, 140))

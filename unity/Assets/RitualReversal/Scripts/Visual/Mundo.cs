@@ -177,7 +177,7 @@ namespace RitualReversal.Visual
                 case "tronco":
                     {
                         bool aoX = L >= D; float len = Math.Max(L, D), gr = w.kind == "tronco" ? 1.3f : 1;
-                        var MT = (w.kind == "tronco" && (int)Math.Abs(Math.Floor((double)x * 7 + (double)z * 13 + .5)) % 2 == 1 ? ModeloGLB.Carregar("tronco2") : null) ?? ModeloGLB.Carregar("tronco");   // v6.5a: um tronco sim, outro não, o segundo modelo
+                        var MT = ModeloGLB.Carregar("tronco");
                         if (MT != null)
                         {   // v6.4: o tronco morto escaneado (CC0), deitado na caixa; os mesmos sorteios dos galhos de antes
                             Est(MT.geo, MT.mat, TRS(x, -.05f, z, 0, aoX ? 0 : PI / 2, 0, len * 1.05f, 1.05f * gr, 1.05f * gr));

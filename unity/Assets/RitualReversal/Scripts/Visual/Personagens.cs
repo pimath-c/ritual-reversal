@@ -195,11 +195,15 @@ namespace RitualReversal.Visual
                 bool guard = cls == "guardiao";
                 // a túnica longa e esfarrapada até os pés, por cima das pernas
                 var tunica = Pisca(Pecas.Pano(guard ? 0x140306 : 0x22060b)); tunica.SetFloat("_Cull", 0);
-                robe = Mundo.Grupo(bodyT, "túnica"); robe.localPosition = new Vector3(0, .03f, 0);
-                k.Por(robe, tunica, Pecas.Esfarrapar(Pecas.Torno(.34f, 0, .32f, .12f, .28f, .4f, .24f, .7f, .21f, .95f, .19f, 1.08f, 0, 1.09f), .06f, guard ? 2 : 5), M4.I);
-                // o rosto é escuro dentro do capuz, com os olhos vermelhos
-                k.Por(head.t, Pecas.Basico(0x020103), Geo.Esfera(.11f, 18, 14), 0, .15f, -.035f, 0, 0, 0, 1, 1.2f, .75f);
-                var olho = Pecas.Basico(0xff2a44); foreach (float sx in new[] { -1f, 1f }) k.Por(head.t, olho, Geo.Esfera(.019f, 10, 8), sx * .042f, .165f, -.105f);
+                if (!B.vestido)   // v6.5c: o boneco do MakeHuman já vem de hábito e capuz
+                {
+                    robe = Mundo.Grupo(bodyT, "túnica"); robe.localPosition = new Vector3(0, .03f, 0);
+                    k.Por(robe, tunica, Pecas.Esfarrapar(Pecas.Torno(.34f, 0, .32f, .12f, .28f, .4f, .24f, .7f, .21f, .95f, .19f, 1.08f, 0, 1.09f), .06f, guard ? 2 : 5), M4.I);
+                }
+                // o rosto é escuro dentro do capuz, com os olhos vermelhos (no rosto do MakeHuman, 4 cm mais à frente)
+                float fz = B.vestido ? -.04f : 0;
+                k.Por(head.t, Pecas.Basico(0x020103), Geo.Esfera(.11f, 18, 14), 0, .15f, -.035f + fz, 0, 0, 0, 1, 1.2f, .75f);
+                var olho = Pecas.Basico(0xff2a44); foreach (float sx in new[] { -1f, 1f }) k.Por(head.t, olho, Geo.Esfera(.019f, 10, 8), sx * .042f, .165f, -.105f + fz);
                 if (guard)
                 {
                     var osso = Pecas.Osso();
@@ -221,9 +225,9 @@ namespace RitualReversal.Visual
                 bool exo = cls == "exorcista"; var couro = Pecas.Couro(0x3a2818); couro.SetFloat("_Cull", 0);
                 // a aba do casaco longo, da cintura ao joelho
                 var casaco = Pisca(Pecas.Pano(exo ? 0x1e1e22 : cls == "rastreador" ? 0x2a1d14 : 0x1c2230)); casaco.SetFloat("_Cull", 0);
-                aba = Mundo.Grupo(bodyT, "aba"); aba.localPosition = new Vector3(0, .4f, 0); aba.localScale = new Vector3(1, 1, .8f);   // mais rasa que larga
-                k.Por(aba, casaco, Pecas.Esfarrapar(Geo.Torno(new float[,] { { .25f, 0 }, { .24f, .2f }, { .22f, .42f }, { .2f, .6f } }, 28, PI + .7f, PI * 2 - 1.4f), .025f, 3), M4.I);   // v6.5b: abertas na frente, sem tampa
-                if (cls != "rastreador")
+                if (!B.vestido) { aba = Mundo.Grupo(bodyT, "aba"); aba.localPosition = new Vector3(0, .4f, 0); aba.localScale = new Vector3(1, 1, .8f); }   // mais rasa que larga
+                if (!B.vestido) k.Por(aba, casaco, Pecas.Esfarrapar(Geo.Torno(new float[,] { { .25f, 0 }, { .24f, .2f }, { .22f, .42f }, { .2f, .6f } }, 28, PI + .7f, PI * 2 - 1.4f), .025f, 3), M4.I);   // v6.5b: abertas na frente, sem tampa
+                if (cls != "rastreador" && !B.vestido)
                 {   // o chapéu da caça (a Rastreadora fica com o coque)
                     var chapeu = Mundo.Grupo(head.t, "chapéu"); chapeu.localPosition = new Vector3(0, .245f, -.005f); chapeu.localScale = Vector3.one * .66f;
                     k.Por(chapeu, couro, Pecas.Torno(0, 0, .43f, -.012f, .445f, .012f, .22f, .036f, 0, .04f), M4.I);

@@ -19,7 +19,13 @@
 # Grava o GLB enxuto de sempre (o mesmo leitor dos modelos) com TEXCOORD_1.x = índice da peça e, em "extras", as peças,
 # os pivôs das juntas e a posição da mão direita (onde a arma fica). Saída: client/bonecos.js (RR_BONECOS, embutido por
 # build.js e build-mobile.js e servido pelo servidor) e unity/Assets/RitualReversal/Resources/Bonecos/<nome>.bytes.
-# Uso: python3 tools/montar-bonecos.py   (Pillow, numpy, pyfqmr)
+#
+# v6.5c: bonecos do MakeHuman (CC0; roupas CC0 e CC BY) no lugar da Quaternius. Um boneco com "makehuman" em vez de "pecas"
+# é montado por tools/makehuman.py a partir dos dados do MPFB 2 (malha base, alvos, esqueleto game_engine e pesos: um clone
+# do repositório em assets/bonecos/fontes/mpfb2, só lido) e dos pacotes de recursos (assets/bonecos/fontes/makehuman,
+# desempacotados de files.makehumancommunity.org). Esses já vêm vestidos: "extras.vestido" diz aos clientes para não pôr a
+# aba, o chapéu e a túnica feitos para a Quaternius.
+# Uso: python3 tools/montar-bonecos.py   (Pillow, numpy, pyfqmr; git para o MPFB)
 import base64, colorsys, http.cookiejar, io, json, os, re, struct, sys, urllib.parse, urllib.request, zipfile
 import numpy as np
 from PIL import Image
@@ -46,6 +52,30 @@ def baixar_itch(pagina, trecho, saida):
             b = resp.read(1 << 20)
             if not b: break
             f.write(b)
+
+
+def makehuman_pronto(F):
+    """Pastas dos dados do MPFB e dos recursos do MakeHuman (clona e baixa se faltar)."""
+    M = F['makehuman']; dados = os.path.join(ORIG, 'mpfb2'); rec = os.path.join(ORIG, 'makehuman')
+    if not os.path.isdir(dados):
+        import subprocess
+        subprocess.run(['git', 'clone', '-q', M['mpfb'], dados], check=True); subprocess.run(['git', '-C', dados, 'checkout', '-q', M['commit']], check=True)
+    for url in M['pacotes']:
+        z = os.path.join(ORIG, os.path.basename(url)); marca = z + '.ok'
+        if os.path.exists(marca): continue
+        if not os.path.exists(z):
+            print('baixando', url); req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=600) as r, open(z, 'wb') as f:
+                while True:
+                    b = r.read(1 << 20)
+                    if not b: break
+                    f.write(b)
+        Z = zipfile.ZipFile(z)
+        for n in Z.namelist():   # só dados: malhas, materiais, roupas e imagens
+            if n.endswith('/') or '..' in n or not n.lower().endswith(('.obj', '.mhclo', '.mhmat', '.png', '.jpg', '.proxy', '.mhpxy')): continue
+            alvo = os.path.join(rec, n); os.makedirs(os.path.dirname(alvo), exist_ok=True); open(alvo, 'wb').write(Z.read(n))
+        open(marca, 'w').write('ok')
+    return os.path.join(dados, 'src', 'mpfb', 'data'), rec
 
 
 def pacote(F, chave):
@@ -145,15 +175,40 @@ def girar(d, t):
 
 # ---------- texturas ----------
 def recolorir(im, regras):
-    """regras: {"verde": [matiz, sat×, val×]} troca a matiz dos pixels verdes; {"mult": [r, g, b]} multiplica."""
+    """regras: {"verde": [matiz, sat×, val×]} troca a matiz dos pixels verdes; {"tingir": [matiz, sat×, val×]} a de todos;
+    {"contraste": k} aproxima da média; {"mult": [r, g, b]} multiplica."""
     a = np.asarray(im.convert('RGB'), dtype=np.float64) / 255
     if 'verde' in regras:
         h, s, v = np.vectorize(colorsys.rgb_to_hsv)(a[..., 0], a[..., 1], a[..., 2])
         m = (h > 60 / 360) & (h < 175 / 360) & (s > .12)
         hm, sm, vm = regras['verde']; h = np.where(m, hm / 360, h); s = np.where(m, np.clip(s * sm, 0, 1), s); v = np.where(m, np.clip(v * vm, 0, 1), v)
         r, g, b = np.vectorize(colorsys.hsv_to_rgb)(h, s, v); a = np.stack([r, g, b], -1)
+    if 'tingir' in regras:   # toda a imagem para uma matiz (o hábito pardo vira o vinho do culto), mantendo a luz e a trama
+        h, s, v = np.vectorize(colorsys.rgb_to_hsv)(a[..., 0], a[..., 1], a[..., 2])
+        hm, sm, vm = regras['tingir']; h = np.full_like(h, hm / 360); s = np.clip(np.maximum(s, .25) * sm, 0, 1); v = np.clip(v * vm, 0, 1)
+        r, g, b = np.vectorize(colorsys.hsv_to_rgb)(h, s, v); a = np.stack([r, g, b], -1)
+    if 'contraste' in regras:   # aproxima cada pixel da média (as faixas creme do sobretudo somem no tom do casaco)
+        m = a.reshape(-1, 3).mean(0); a = m + (a - m) * regras['contraste']
     if 'mult' in regras: a = np.clip(a * np.array(regras['mult']), 0, 1)
     return Image.fromarray((a * 255).round().astype(np.uint8))
+
+
+def opaca(f, tam):
+    """A imagem em RGB no tamanho do atlas; o que for transparente (os bolsos recortados do sobretudo do MakeHuman, o fundo
+    entre as ilhas de uv) recebe a cor do vizinho opaco mais perto, por dilatação (sem alfa no atlas, ficaria preto)."""
+    im = Image.open(f)
+    if im.mode not in ('RGBA', 'LA', 'P'): return im.convert('RGB').resize((tam, tam), Image.LANCZOS)
+    a = np.asarray(im.convert('RGBA').resize((tam, tam), Image.LANCZOS), dtype=np.float64)
+    cor, ok = a[..., :3], a[..., 3] > 127
+    if ok.all() or not ok.any(): return Image.fromarray(cor.round().astype(np.uint8))
+    cor = cor * ok[..., None]
+    for _ in range(tam):
+        if ok.all(): break
+        soma = np.zeros_like(cor); n = np.zeros(ok.shape)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            soma += np.roll(cor * ok[..., None], (dy, dx), (0, 1)); n += np.roll(ok, (dy, dx), (0, 1))
+        novo = ~ok & (n > 0); cor[novo] = soma[novo] / n[novo, None]; ok = ok | novo
+    return Image.fromarray(cor.round().astype(np.uint8))
 
 
 def pot(n): return 1 << max(0, (n - 1).bit_length())
@@ -186,6 +241,10 @@ def gravar_glb(p, n, uv, uv2, idx, jpeg, extras):
 def reduzir(p, n, uv, idx, alvo):
     # sem redução por padrão ("triangulos": 0): o uv do vértice mais perto erra nas costuras da textura e mancha a roupa
     if not alvo or len(idx) // 3 <= alvo: return p, n, uv, idx
+    if os.environ.get('GLTFPACK'):   # v6.5c: o simplificador do meshoptimizer respeita as costuras do uv (bordas travadas: as juntas não abrem)
+        import importlib.util
+        sp = importlib.util.spec_from_file_location('montar_modelos', os.path.join(RAIZ, 'tools', 'montar-modelos.py')); MM = importlib.util.module_from_spec(sp); sp.loader.exec_module(MM)
+        return MM.reduzir_gltfpack(p, n, uv, idx, alvo, True, None)
     import pyfqmr
     s = pyfqmr.Simplify(); s.setMesh(p.astype(np.float64), idx.reshape(-1, 3).astype(np.int32))
     s.simplify_mesh(target_count=alvo, aggressiveness=7, preserve_border=True, verbose=False)
@@ -197,7 +256,10 @@ def reduzir(p, n, uv, idx, alvo):
 
 def montar(F, nome, cfg):
     prims, ossos = [], {}
-    for chave, arq, filtro in cfg['pecas']:
+    if 'makehuman' in cfg:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import makehuman as MH
+        dados, rec = makehuman_pronto(F); prims, ossos = MH.montar_humano(dados, rec, cfg['makehuman'])
+    for chave, arq, filtro in cfg.get('pecas', []):
         pp, oo = ler_gltf(os.path.join(pacote(F, chave), arq))
         for pr in pp:
             if isinstance(filtro, list) and any(f.startswith('!') and pr['malha'].startswith(f[1:]) for f in filtro): continue
@@ -237,7 +299,7 @@ def montar(F, nome, cfg):
     atlas = Image.new('RGB', (tam * col, tam * lin), (128, 128, 128))
     for k, f in enumerate(imgs):
         if f is None: continue
-        im = Image.open(f).convert('RGB').resize((tam, tam), Image.LANCZOS)
+        im = opaca(f, tam)
         regra = cfg.get('cores', {}).get(os.path.basename(f))
         if regra: im = recolorir(im, regra)
         atlas.paste(im, ((k % col) * tam, (k // col) * tam))
@@ -261,6 +323,7 @@ def montar(F, nome, cfg):
               'pivos': {'legL': rel('legL', 'body'), 'legR': rel('legR', 'body'), 'torso': rel('torso', 'body'), 'head': rel('head', 'torso'), 'armL': rel('armL', 'torso'), 'armR': rel('armR', 'torso')},
               'mao': (((maos['armR'] - piv['armR']) @ rot['armR'].T) * esc).round(4).tolist(),
               'altura': round(altura * esc, 3)}
+    if cfg.get('makehuman'): extras['vestido'] = True
     b = io.BytesIO(); atlas.save(b, 'JPEG', quality=86, optimize=True)
     return gravar_glb(p * esc, n, uv, uv2, idx, b.getvalue(), extras), extras, len(idx) // 3, atlas.size
 

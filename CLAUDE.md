@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.5b)
+## Estado atual (v6.5c)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -267,6 +267,17 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `RitualReversalPrimeiraPessoa.shader`; metal igual, pano quase zero). Mangas da caça 0x24252a/0x1f2024 (reexportar a primeira pessoa).
   Caçadores: `U.aba` é um torno aberto na frente (`torno(pts,mat,segs,ini,arco)`, vão de 1,4 rad em −z, sem tampa, scale.z .8; C#
   `Geo.Torno(..., 28, PI + .7f, PI * 2 - 1.4f)` e `aba.localScale`), estola do Exorcista roxa 0x4a1838.
+- v6.5c (notas em `notas/v6.5c.md`): revisão crítica da arte. Bonecos do **MakeHuman** no lugar da Quaternius: `tools/makehuman.py` lê os
+  formatos (base.obj em decímetros, `.target.gz`, `rig/weights.game_engine.json` com nomes Unreal, `.mhclo` = três vértices da base +
+  deslocamento × escala por eixo, `.mhmat`) e entrega ao `montar-bonecos.py` as mesmas primitivas de um glTF; nada do MPFB é executado
+  (o clone em `assets/bonecos/fontes/mpfb2`, fixo no commit de `fontes.json`, só é lido). Pacotes de files.makehumancommunity.org (o
+  espelho files2 é lento) em `assets/bonecos/fontes/makehuman`. `fontes.json`: `makehuman` (alvos, pele, roupas; `[roupa, material]` para
+  os olhos), `cores` com `tingir`/`contraste`/`mult`, `creditos`, `triangulos` 30000; Quaternius guardada em `_quaternius`. Atlas sem alfa:
+  `opaca()` preenche o transparente por dilatação (bolsos do sobretudo, cabelo). GLB com `extras.vestido`: navegador e Unity (`BonecoGLB.vestido`)
+  não põem aba, chapéu nem túnica; rosto escuro e olhos do culto 4 cm à frente. Créditos CC BY em Ajustes (`CREDITOS_ARTE`, só navegador).
+  Redução: `GLTFPACK=<node_modules/gltfpack/cli.js>` no `montar-modelos.py` (`reduzir_gltfpack`: -si -sv -se .03, `-slb` com `bordas`,
+  `-sa` com `agressivo`) e no `montar-bonecos.py`; o pyfqmr com o uv do vértice mais perto desmanchava rocha2, luminária, quadro, leito,
+  arca, lanterna. `rocha3` = namaqualand_boulder_03; `tronco2` saiu. Galeria de estúdio para revisar: renderizar os GLB de `client/*.js`.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

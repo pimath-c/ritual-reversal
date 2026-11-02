@@ -276,24 +276,24 @@
       1,
       1
     ],
-    "triangulos": 2400,
+    "triangulos": 3000,
     "textura": 512,
-    "bordas": false
+    "bordas": false,
+    "agressivo": true
   },
   "rocha3": {
-    "polyhaven": "rock_face_02",
-    "autor": "Dario Barresi, Rico Cilliers",
+    "polyhaven": "namaqualand_boulder_03",
+    "autor": "Jenelle van Heerden, Dario Barresi",
     "licenca": "CC0",
-    "uso": "rochas da mata e do promontório, terceira forma, com musgo (kind rocha)",
+    "uso": "rochas da mata e do promontório, terceira forma, bloco anguloso (kind rocha)",
     "encaixe": "caixa",
     "tamanho": [
       1,
       1,
       1
     ],
-    "triangulos": 2400,
-    "textura": 512,
-    "bordas": false
+    "triangulos": 2500,
+    "textura": 512
   },
   "lampiao": {
     "polyhaven": "vintage_oil_lamp",
@@ -385,21 +385,6 @@
     "textura": 512,
     "bordas": true
   },
-  "tronco2": {
-    "polyhaven": "dead_tree_trunk_02",
-    "autor": "Jenelle van Heerden, Rico Cilliers",
-    "licenca": "CC0",
-    "uso": "troncos caídos (kind tronco), um sim, outro não pela posição",
-    "encaixe": "caixa",
-    "tamanho": [
-      1,
-      1,
-      1
-    ],
-    "triangulos": 3000,
-    "textura": 512,
-    "bordas": false
-  },
   "livros": {
     "polyhaven": "book_encyclopedia_set_01",
     "autor": "John Malcolm",
@@ -411,9 +396,10 @@
       0.24,
       0
     ],
-    "triangulos": 1500,
+    "triangulos": 3000,
     "textura": 256,
-    "bordas": false
+    "bordas": false,
+    "agressivo": true
   },
   "quimica": {
     "polyhaven": "chemistry_set",

@@ -25,10 +25,12 @@ def main():
             mod.append(f"| `{n}` | {f['uso']} | [{f['polyhaven']}](https://polyhaven.com/a/{f['polyhaven']}), CC0 | {f['autor']} |")
         else:
             mod.append(f"| `{n}` | {f.get('uso', gerados.get(n, ''))} | Higgsfield/Tripo (gerado) | — |")
-    bon = ['| No jogo | Classe | Pacote | Autor |', '| --- | --- | --- | --- |']
+    bon = ['| No jogo | Classe | Origem | Autor |', '| --- | --- | --- | --- |']
     try:
         B = ler('assets', 'bonecos', 'fontes.json')
         for n, f in B['bonecos'].items():
+            if f.get('creditos'):   # v6.5c: MakeHuman, peça por peça ("peça: autor, licença")
+                bon.append(f"| `{n}` | {f['uso']} | [MakeHuman](https://static.makehumancommunity.org/assets/assetpacks/index.html) | " + '; '.join(f['creditos']) + ' |'); continue
             pac = sorted({p[0] for p in f['pecas']})
             bon.append(f"| `{n}` | {f['uso']} | " + ', '.join(f"[{B['fontes'][k]['itch'].rsplit('/', 1)[1]}]({B['fontes'][k]['itch']}), {B['fontes'][k]['licenca']}" for k in pac) + f" | {B['fontes'][pac[0]]['autor']} |")
     except FileNotFoundError:
@@ -44,7 +46,7 @@ def main():
     s = re.sub(r'(## Modelos[^\n]*\n\n)(\|.*\n)+', lambda m: m.group(1) + '\n'.join(mod) + '\n', s, count=1)
     if bon:
         if '## Bonecos' not in s:
-            s = s.replace('\nNos dois clientes, a foto', '\n## Bonecos\n\nPersonagens em peças rígidas por junta (`tools/montar-bonecos.py`, `assets/bonecos/fontes.json`).\n\n' + '\n'.join(bon) + '\n\nNos dois clientes, a foto', 1)
+            s = s.replace('\nNos dois clientes, a foto', '\n## Bonecos\n\nPersonagens em peças rígidas por junta (`tools/montar-bonecos.py` e `tools/makehuman.py`, `assets/bonecos/fontes.json`).\n\n' + '\n'.join(bon) + '\n\nNos dois clientes, a foto', 1)
         else:
             s = re.sub(r'(## Bonecos[^\n]*\n\n[^\n|]*\n\n)(\|.*\n)+', lambda m: m.group(1) + '\n'.join(bon) + '\n', s, count=1)
     if arm:

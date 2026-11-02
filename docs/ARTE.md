@@ -69,14 +69,13 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `samambaia` | samambaias do chão da mata (811 por noite) | [fern_02](https://polyhaven.com/a/fern_02), CC0 | Rob Tuytel, Rico Cilliers |
 | `arca` | arca da catedral (kind arca) | [treasure_chest](https://polyhaven.com/a/treasure_chest), CC0 | Rico Cilliers |
 | `rocha2` | rochas da mata e do promontório, segunda forma (kind rocha) | [boulder_01](https://polyhaven.com/a/boulder_01), CC0 | Rico Cilliers |
-| `rocha3` | rochas da mata e do promontório, terceira forma, com musgo (kind rocha) | [rock_face_02](https://polyhaven.com/a/rock_face_02), CC0 | Dario Barresi, Rico Cilliers |
+| `rocha3` | rochas da mata e do promontório, terceira forma, bloco anguloso (kind rocha) | [namaqualand_boulder_03](https://polyhaven.com/a/namaqualand_boulder_03), CC0 | Jenelle van Heerden, Dario Barresi |
 | `lampiao` | Asilo: lampiões em cima das mesas e da bancada | [vintage_oil_lamp](https://polyhaven.com/a/vintage_oil_lamp), CC0 | Monsta3D |
 | `pintura1` | Asilo: pinturas nas paredes das salas | [fancy_picture_frame_01](https://polyhaven.com/a/fancy_picture_frame_01), CC0 | Rob Tuytel, Rico Cilliers |
 | `pintura2` | Asilo: pinturas nas paredes das salas | [fancy_picture_frame_02](https://polyhaven.com/a/fancy_picture_frame_02), CC0 | Rob Tuytel, Rico Cilliers |
 | `espelho` | Asilo: espelhos nas paredes das salas | [ornate_mirror_01](https://polyhaven.com/a/ornate_mirror_01), CC0 | James Ray Cock |
 | `cadeira` | Asilo: a cadeira elétrica (kind cadeira_eletrica) | [WoodenChair_01](https://polyhaven.com/a/WoodenChair_01), CC0 | Jake Mobley |
 | `armario` | Asilo: o balcão da recepção, uma fileira de armários (kind balcao) | [painted_wooden_cabinet](https://polyhaven.com/a/painted_wooden_cabinet), CC0 | Kirill Sannikov |
-| `tronco2` | troncos caídos (kind tronco), um sim, outro não pela posição | [dead_tree_trunk_02](https://polyhaven.com/a/dead_tree_trunk_02), CC0 | Jenelle van Heerden, Rico Cilliers |
 | `livros` | Asilo: livros em cima das mesas | [book_encyclopedia_set_01](https://polyhaven.com/a/book_encyclopedia_set_01), CC0 | John Malcolm |
 | `quimica` | Asilo: vidraria de laboratório na bancada | [chemistry_set](https://polyhaven.com/a/chemistry_set), CC0 | Jiří Ptáček |
 | `relogio` | Asilo: relógio de mesa no balcão da recepção | [mantel_clock_01](https://polyhaven.com/a/mantel_clock_01), CC0 | Yann Kervran, Rico Cilliers |
@@ -85,15 +84,15 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 
 ## Bonecos
 
-Personagens em peças rígidas por junta (`tools/montar-bonecos.py`, `assets/bonecos/fontes.json`).
+Personagens em peças rígidas por junta (`tools/montar-bonecos.py` e `tools/makehuman.py`, `assets/bonecos/fontes.json`). Desde a v6.5c, do MakeHuman: corpo, pele e olhos CC0; roupas CC0 e CC BY 3.0 (créditos na tabela; CC BY pede o nome do autor junto do jogo).
 
-| No jogo | Classe | Pacote | Autor |
+| No jogo | Classe | Origem | Autor |
 | --- | --- | --- | --- |
-| `ritualista` | Cultista Ritualista: capuz e túnica longa esfarrapada (a túnica é do jogo) em sangue seco; o rosto fica escuro dentro do capuz | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `guardiao` | Cultista Guardião: a mesma roupa num vermelho quase preto, com a armadura de osso do jogo por cima | [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `soldado` | Caçador Soldado: colete e casaco longo (a aba é do jogo) em azul-noite, com a cabeça e a barba do corpo base e o chapéu | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `exorcista` | Caçador Exorcista: casaco longo cinza-carvão, chapéu e a estola branca | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
-| `rastreador` | Caçadora Rastreadora: couro escuro e casaco longo, cabelo preso, sem chapéu | [universal-base-characters](https://quaternius.itch.io/universal-base-characters), CC0, [modular-character-outfits-fantasy](https://quaternius.itch.io/modular-character-outfits-fantasy), CC0 | Quaternius |
+| `ritualista` | Cultista Ritualista: hábito de monge e capuz em vinho | [MakeHuman](https://static.makehumancommunity.org/assets/assetpacks/index.html) | corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0; hábito e capuz: Donitz, CC0 |
+| `guardiao` | Cultista Guardião: corpo forte, hábito e capuz quase pretos | [MakeHuman](https://static.makehumancommunity.org/assets/assetpacks/index.html) | corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0; hábito e capuz: Donitz, CC0 |
+| `soldado` | Caçador Soldado: roupa de trabalho, sobretudo azul-noite, botas e chapéu de aba larga | [MakeHuman](https://static.makehumancommunity.org/assets/assetpacks/index.html) | corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0; roupa de trabalho: MakeHuman, CC0; sobretudo: punkduck, CC BY 3.0; botas: Rehman Polanski, CC0; chapéu de aba larga: culturalibre, CC BY |
+| `exorcista` | Caçador Exorcista: terno escuro, sobretudo preto e cartola (a estola roxa é do jogo) | [MakeHuman](https://static.makehumancommunity.org/assets/assetpacks/index.html) | corpo, pele, olhos, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0; terno: MakeHuman, CC0; sobretudo: punkduck, CC BY 3.0; botas: Rehman Polanski, CC0; cartola: Elvaerwyn, CC BY |
+| `rastreador` | Caçadora Rastreadora: sobretudo de couro pardo, botas e trilby | [MakeHuman](https://static.makehumancommunity.org/assets/assetpacks/index.html) | corpo, pele, olhos, cabelo, esqueleto e pesos: MakeHuman/MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0; roupa: MakeHuman, CC0; sobretudo: punkduck, CC BY 3.0; botas: Rehman Polanski, CC0; trilby: Elvaerwyn, CC BY |
 
 ## Armas
 

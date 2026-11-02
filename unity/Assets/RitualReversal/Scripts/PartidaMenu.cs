@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Personagens novos e arte consertada (v6.5c)","Caçadores e Cultistas agora são personagens realistas do MakeHuman: sobretudos, cartola, chapéu de aba larga e trilby para a caça; hábito e capuz para o culto. Vários objetos escaneados que estavam deformados (cama de ferro, luminária, quadro de força, arca, lanterna, livros, rochas) voltaram ao normal. Créditos de arte em Ajustes."},
             new[]{"Mãos e Caçadores (v6.5b)","As mãos em primeira pessoa não estouram mais com a lanterna: luvas de couro escuro e mangas de lã carvão. O casaco longo dos Caçadores ficou aberto na frente (não parece mais saia) e a estola do Exorcista é roxa, com a cruz dourada."},
             new[]{"Arma no lugar e mais arte (v6.5a)","A arma dos outros Caçadores não aponta mais para o céu: o cano acompanha o braço e a mira, e as recargas vistas de fora ficaram certas. Na arte: um segundo tronco morto na mata, castiçais de latão nas tumbas, tapetes com trama de jacquard na catedral e, no Asilo, livros nas mesas, vidraria na bancada, um relógio no balcão e molduras ovais nas paredes."},
             new[]{"Bonecos e armas de verdade (v6.5)","Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz e túnica longa, Soldado e Exorcista de casaco longo e chapéu, a Rastreadora de couro escuro. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas."},
