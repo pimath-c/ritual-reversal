@@ -237,8 +237,15 @@ namespace RitualReversal.Visual
                     Est(Geo.Plano(1.4f, 2.4f), M("preto"), TRS(x, 1.2f, w.z1 - .02f, 0, PI, 0), false);
                     Est(Geo.Caixa(.12f, 1, .12f), M("metal"), x, w.h + 2.9f, z); Est(Geo.Caixa(.5f, .1f, .1f), M("metal"), x, w.h + 3.1f, z); return;
                 case "marco":
-                    Est(Geo.Caixa(.25f, w.h + .8f, .25f), M("wood"), x, (w.h + .8f) / 2, z);
-                    foreach (var q in new[] { new Vector3(.4f, 2.6f, .5f), new Vector3(-.3f, 2.2f, -1.1f), new Vector3(.2f, 1.8f, 2) }) Est(Geo.Caixa(1.4f, .28f, .06f), M("wood"), TRS(x + Mathf.Cos(q.z) * q.x, q.y, z + Mathf.Sin(q.z) * q.x, 0, q.z, 0));
+                    {
+                        var MF = ModeloGLB.Carregar("forca");   // v6.5d: a forca na encruzilhada
+                        if (MF != null) Est(MF.geo, MF.mat, TRS(x, -.05f, z, 0, 0, 0, 3.8f, 3.8f, 3.8f));
+                        else
+                        {
+                            Est(Geo.Caixa(.25f, w.h + .8f, .25f), M("wood"), x, (w.h + .8f) / 2, z);
+                            foreach (var q in new[] { new Vector3(.4f, 2.6f, .5f), new Vector3(-.3f, 2.2f, -1.1f), new Vector3(.2f, 1.8f, 2) }) Est(Geo.Caixa(1.4f, .28f, .06f), M("wood"), TRS(x + Mathf.Cos(q.z) * q.x, q.y, z + Mathf.Sin(q.z) * q.x, 0, q.z, 0));
+                        }
+                    }
                     Est(Geo.Dodecaedro(.7f), M("rocha"), TRS(x, .3f, z, 0, 0, 0, 1, .5f, 1)); return;
                 case "santuario":
                     {

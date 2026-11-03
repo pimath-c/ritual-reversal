@@ -511,6 +511,26 @@ function mapaAsilo(){
   W(-72,-70,-53,-52,.85,'banheira'); W(-54,-52,-53,-52,.85,'banheira');
   W(53,57,-54,-50,3.6,'caldeira'); W(67,71,-54,-50,3.6,'caldeira'); W(58,61,-41,-39.5,1.1,'carvao'); W(73,75,-46,-42,1.1,'carvao');
   W(-4,4,6,7,1.1,'balcao');                                                                                                           // balcão do saguão
+  // v6.5e: móveis escaneados (CC0, Poly Haven) nas salas que estavam vazias, encostados nas paredes e longe das portas e dos
+  // pontos de erva/reagente; a caixa é a colisão e "rot" é para onde a frente do modelo olha (0 = +z, PI/2 = +x), só visual
+  const M=(x,z,w,d,h,kind,rot)=>W(x-w/2,x+w/2,z-d/2,z+d/2,h,kind,{rot:r2(rot)}), PI=Math.PI;
+  for(const s of [-1,1]){
+    // quartos (oeste) e celas (leste): fundo longe da porta; n1 de z -2 a 7 (porta no sul), s1 de 13 a 22 (porta no norte)
+    for(const [a,fundo,lado] of [[25,-2,1],[36,-2,1],[14,22,-1],[36,22,-1]]){ const b=a+10, zc=fundo+lado;
+      if(s<0){ leito(-(a+1.5),zc,'z'); leito(-(b-1.5),zc,'z');
+        M(-(a+2.5),fundo+lado*.3,.5,.5,.62,'criado',lado>0?0:PI); M(-(b-2.5),fundo+lado*.3,.5,.5,.62,'criado',lado>0?0:PI);
+        M(-(b-.35),fundo+lado*5,.7,1,2.4,'guarda_roupa',PI/2); }
+      else leito(a+2,zc,'z'); }
+  }
+  M(-30,20.7,1.1,1.1,.78,'mesa_redonda',0); M(-31.7,20.9,.84,.76,1.05,'poltrona',PI); M(-28.3,20.9,.84,.76,1.05,'poltrona',PI);   // sala de visitas
+  M(-34.6,15.5,.44,.64,2.2,'relogio_alto',PI/2); M(-26,14.4,.8,.8,1,'balanco',-PI/4);
+  for(const z of [-10.2,-6.5,-2.2]) M(-11.55,z,.9,1.6,1,'gaveteiro',PI/2);                                                            // arquivo
+  for(const x of [-9.5,-7.5,-5.5]) M(x,-11.85,1,.3,2.1,'estante',0);
+  for(const z of [-11,-9.5,-4,-2.5,-1]) M(11.85,z,.3,1,2.1,'estante',-PI/2);                                                          // farmácia
+  M(7,-11.7,1.2,.58,1.2,'comoda',0); M(9,-11.7,1.2,.58,1.2,'comoda',0);
+  for(const z of [-31.2,-29.9,-28.6,-27.3]) M(-54.65,z,.7,1,2.4,'guarda_roupa',PI/2);                                                 // rouparia
+  for(const [z,h] of [[-31.4,1],[-30.3,1.6],[-29.2,1]]) M(54.5,z,1,1,h,'caixote',-PI/2);                                                // depósito
+  M(-73,-4.5,1.7,1,2.3,'armario_gotico',PI); M(-60,-4.25,.64,.44,2.2,'relogio_alto',PI);                                            // consultório, sala de estar
   for(let k=0;k<6;k++){ const a=k*Math.PI/3+Math.PI/6, x=r2(Math.cos(a)*5.2), z=r2(46+Math.sin(a)*5.2); W(x-.3,x+.3,z-.3,z+.3,3.4,'coluna_coreto'); }
   for(let x=-96;x<=-68;x+=7) for(const z of [16,24,32]) W(x-2.4,x+2.4,z-.5,z+.5,.55,'canteiro');                                     // horta
   const LAPIDES=[];
@@ -805,7 +825,7 @@ function reclaimHuman(g,slotIdx,cid,name){ ativar(g);
 
 
 // versão do jogo e do formato do registro (sobe quando muda o que vai no registro; os relatórios antigos continuam legíveis)
-const VERSAO='6.3', REGISTRO=3;
+const VERSAO='6.5', REGISTRO=3;
 
 // ============ A NOITE: momentos, tarefas, pontos de interação, mercadores ============
 // Os pontos ficam sobre nós de navegação: garante que todo ponto é alcançável e livre de parede.

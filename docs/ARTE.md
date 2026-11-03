@@ -58,7 +58,7 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `rocha` | rochas da mata e do promontório (kind rocha) | [rock_09](https://polyhaven.com/a/rock_09), CC0 | Jenelle van Heerden |
 | `pedra` | pedra menor ao lado das rochas | [rock_07](https://polyhaven.com/a/rock_07), CC0 | Jenelle van Heerden |
 | `tronco` | troncos caídos (kind tronco) | [dead_tree_trunk](https://polyhaven.com/a/dead_tree_trunk), CC0 | Rob Tuytel |
-| `caixote` | caixotes do acampamento (kind caixote) | [wooden_crate_02](https://polyhaven.com/a/wooden_crate_02), CC0 | James Ray Cock, Jurita Burger |
+| `caixote` | caixotes do acampamento (kind caixote); caixotes do Depósito do Asilo | [wooden_crate_02](https://polyhaven.com/a/wooden_crate_02), CC0 | James Ray Cock, Jurita Burger |
 | `leito` | Asilo: camas de ferro da enfermaria e dos quartos (kind leito) | [old_bed_frame](https://polyhaven.com/a/old_bed_frame), CC0 | Luca B |
 | `banco_asilo` | Asilo: bancos (kind banco) | [painted_wooden_bench](https://polyhaven.com/a/painted_wooden_bench), CC0 | Kirill Sannikov |
 | `mesa_asilo` | Asilo: mesas (kind mesa) | [wooden_table_02](https://polyhaven.com/a/wooden_table_02), CC0 | Serhii Khromov |
@@ -88,6 +88,19 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `cruz_ornada` | cemitérios: um quarto das lápides vira cruz trevada de pedra (kind lapide) | [loafbrr (itch.io)](https://loafbrr.itch.io/graveyard-props), CC0 | loafbrr |
 | `lapide_cruz` | cemitérios: um quarto das lápides vira lápide com cruz no topo (kind lapide) | [loafbrr (itch.io)](https://loafbrr.itch.io/graveyard-props), CC0 | loafbrr |
 | `sarcofago` | cripta da catedral: as tumbas viram sarcófagos de pedra (kind tumba) | [loafbrr (itch.io)](https://loafbrr.itch.io/graveyard-props), CC0 | loafbrr |
+| `cruz_madeira` | calvário da mata: as três cruzes de madeira (kind cruz) | [loafbrr (itch.io)](https://loafbrr.itch.io/spooky-prop-set), CC0 | loafbrr |
+| `forca` | encruzilhada da mata: a forca no lugar da placa de madeira (kind marco) | [loafbrr (itch.io)](https://loafbrr.itch.io/spooky-prop-set), CC0 | loafbrr |
+| `gaiola_presa` | guindaste da mata: gaiola de ferro com um preso, pendurada acima das cabeças | [loafbrr (itch.io)](https://loafbrr.itch.io/spooky-prop-set), CC0 | loafbrr |
+| `gaveteiro` | Asilo: gaveteiros de fichas do Arquivo (kind gaveteiro) | [vintage_wooden_drawer_01](https://polyhaven.com/a/vintage_wooden_drawer_01), CC0 | James Ray Cock |
+| `estante` | Asilo: estantes brancas do Arquivo e da Farmácia (kind estante) | [Shelf_01](https://polyhaven.com/a/Shelf_01), CC0 | Gabriel Radić |
+| `guarda_roupa` | Asilo: armários azuis dos quartos e da Rouparia (kind guarda_roupa) | [painted_wooden_cabinet_02](https://polyhaven.com/a/painted_wooden_cabinet_02), CC0 | Kirill Sannikov |
+| `criado` | Asilo: criados-mudos ao lado das camas dos quartos (kind criado) | [painted_wooden_nightstand](https://polyhaven.com/a/painted_wooden_nightstand), CC0 | Kirill Sannikov |
+| `poltrona` | Asilo: poltronas da Sala de Visitas (kind poltrona) | [ArmChair_01](https://polyhaven.com/a/ArmChair_01), CC0 | Kirill Sannikov |
+| `mesa_redonda` | Asilo: mesa da Sala de Visitas (kind mesa_redonda) | [round_wooden_table_01](https://polyhaven.com/a/round_wooden_table_01), CC0 | Ulan Cabanilla |
+| `relogio_alto` | Asilo: relógios de pêndulo da Sala de Visitas e da Sala de Estar (kind relogio_alto) | [vintage_grandfather_clock_01](https://polyhaven.com/a/vintage_grandfather_clock_01), CC0 | Yann Kervran, James Ray Cock |
+| `balanco` | Asilo: cadeira de balanço da Sala de Visitas (kind balanco) | [Rockingchair_01](https://polyhaven.com/a/Rockingchair_01), CC0 | Jorge Camacho |
+| `comoda` | Asilo: cômodas da Farmácia (kind comoda) | [GothicCommode_01](https://polyhaven.com/a/GothicCommode_01), CC0 | Kirill Sannikov |
+| `armario_gotico` | Asilo: armário do Consultório (kind armario_gotico) | [GothicCabinet_01](https://polyhaven.com/a/GothicCabinet_01), CC0 | Kirill Sannikov |
 
 ## Bonecos
 

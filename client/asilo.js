@@ -185,6 +185,11 @@ const lampiao=w=>{ const ML=modelo&&modelo('lampiao'); if(!ML) return; const m=n
 // v6.5a: enfeites escaneados (CC0) em cima dos móveis, no eixo comprido: livros nas mesas, vidraria na bancada, relógio no balcão
 const enfeite=(nome,w,d,y)=>{ const ME=modelo&&modelo(nome); if(!ME) return; const ax=w.x2-w.x1>=w.z2-w.z1, m=new THREE.Mesh(ME.geo,ME.mat);
   m.position.set((w.x1+w.x2)/2+(ax?d:0),y,(w.z1+w.z2)/2+(ax?0:d)); m.rotation.y=ax?0:PI/2; m.castShadow=true; add(m); };
+// v6.5e: móvel escaneado (CC0) na caixa da peça com a frente para w.rot (0 = +z); a largura do modelo é o lado da caixa
+// perpendicular à frente. Sem o modelo, uma caixa de madeira na mesma medida.
+const movel=(nome,w)=>{ const MD=modelo&&modelo(nome), dx=w.x2-w.x1, dz=w.z2-w.z1, r=w.rot||0, deX=Math.abs(Math.sin(r))>.5;
+  if(!MD){ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.madeira,2); return; }
+  const m=new THREE.Mesh(MD.geo,MD.mat); m.scale.set(deX?dz:dx,w.h,deX?dx:dz); m.position.set((w.x1+w.x2)/2,0,(w.z1+w.z2)/2); m.rotation.y=r; m.castShadow=m.receiveShadow=true; add(m); };
 const leito=w=>{ const ax=w.x2-w.x1>w.z2-w.z1, cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, L=ax?w.x2-w.x1:w.z2-w.z1, P=ax?w.z2-w.z1:w.x2-w.x1;
   const B=(dx,y1,y2,dz,lx,lz,mat)=>{ const x=ax?cx+dx:cx+dz, z=ax?cz+dz:cz+dx, sx=ax?lx:lz, sz=ax?lz:lx; caixa(x-sx/2,x+sx/2,y1,y2,z-sz/2,z+sz/2,mat,1); };
   // a cama de ferro escaneada (a cabeceira, alta, no lado negativo como a de antes) com o colchão e o travesseiro por cima
@@ -193,7 +198,10 @@ const leito=w=>{ const ax=w.x2-w.x1>w.z2-w.z1, cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/
   for(const s of [-1,1]){ B(s*(L/2-.03),0,s<0?1.05:.8,0,.05,P,M.ferro); for(const t of [-1,1]) B(s*(L/2-.03),0,.4,t*(P/2-.03),.05,.05,M.ferro); }
   B(-L/2+.4,.6,.72,0,.5,P*.7,M.colchao); };
 const PEC={
-  leito, banco:w=>{ if(M3('banco_asilo',w,w.h,0,1.7)) return; caixa(w.x1,w.x2,.42,.5,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,.5,w.h,w.z2-.1,w.z2,M.madeira,2); caixa(w.x1+.1,w.x1+.2,0,.42,w.z1,w.z2,M.madeira,2); caixa(w.x2-.2,w.x2-.1,0,.42,w.z1,w.z2,M.madeira,2); },
+  leito, criado:w=>movel('criado',w), guarda_roupa:w=>movel('guarda_roupa',w), mesa_redonda:w=>movel('mesa_redonda',w), poltrona:w=>movel('poltrona',w),
+  relogio_alto:w=>movel('relogio_alto',w), balanco:w=>movel('balanco',w), gaveteiro:w=>movel('gaveteiro',w), estante:w=>movel('estante',w),
+  comoda:w=>movel('comoda',w), caixote:w=>movel('caixote',w), armario_gotico:w=>movel('armario_gotico',w),
+banco:w=>{ if(M3('banco_asilo',w,w.h,0,1.7)) return; caixa(w.x1,w.x2,.42,.5,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,.5,w.h,w.z2-.1,w.z2,M.madeira,2); caixa(w.x1+.1,w.x1+.2,0,.42,w.z1,w.z2,M.madeira,2); caixa(w.x2-.2,w.x2-.1,0,.42,w.z1,w.z2,M.madeira,2); },
   mesa:w=>{ lampiao(w); enfeite('livros',w,-1.2,w.h); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
   tanque:w=>{ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.concreto,2); caixa(w.x1+.12,w.x2-.12,w.h-.05,w.h+.01,w.z1+.12,w.z2-.12,M.agua,1,false); },
   bancada:w=>{ lampiao(w); enfeite('quimica',w,1.1,w.h); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.08,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,0,w.h-.08,w.z1+.1,w.z2-.1,M.madeira,2); },

@@ -247,6 +247,8 @@ def main():
         J, BIN = ler_glb(open(orig, 'rb').read())
         p, n, uv, idx, img = juntar(J, BIN)
         if cfg.get('triangulos'): p, n, uv, idx = reduzir(p, n, uv, idx, cfg['triangulos'], cfg.get('bordas', True), img, cfg.get('agressivo', False))
+        if cfg.get('z_para_cima'):   # FBX exportado com z para cima (os do loafbrr): -90° em x, (x, y, z) -> (x, z, -y)
+            p = np.c_[p[:, 0], p[:, 2], -p[:, 1]]; n = np.c_[n[:, 0], n[:, 2], -n[:, 1]]
         p, n = encaixar(p, n, cfg)
         if img is None:
             img = Image.new('RGB', (4, 4), (150, 148, 140))

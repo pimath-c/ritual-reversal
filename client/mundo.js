@@ -342,8 +342,10 @@ const PECAS={
   guindaste(w){ const x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2, mad=MAT.wood; const m=new THREE.Mesh(new THREE.BoxGeometry(.4,w.h,.4),mad); m.position.set(x,w.h/2,z); add(m);
     const lanca=new THREE.Mesh(new THREE.BoxGeometry(.3,.3,7.5),mad); lanca.position.set(x,w.h-1.4,z+2.6); lanca.rotation.x=-.35; add(lanca);
     for(const s of [-1,1]){ const p=new THREE.Mesh(new THREE.BoxGeometry(.25,w.h*.8,.25),mad); p.position.set(x+s*1.3,w.h*.38,z-.8); p.rotation.z=s*.25; add(p); }
-    const corda=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,5,4),new THREE.MeshStandardMaterial({color:0x5a4a32})); corda.position.set(x,w.h-3.5,z+5.7); world.add(corda);
-    const pedra=new THREE.Mesh(new THREE.BoxGeometry(1.1,.8,1.1),M.pedraClara); pedra.position.set(x,w.h-6.2,z+5.7); add(pedra); },
+    const MG0=modelo&&modelo('gaiola_presa'), cl=MG0?w.h-4:5, corda=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,cl,4),new THREE.MeshStandardMaterial({color:0x5a4a32})); corda.position.set(x,MG0?w.h-1-cl/2:w.h-3.5,z+5.7); world.add(corda);
+    // v6.5d: na ponta da corda, a gaiola de ferro com um preso (CC0, loafbrr), de 2,4 a 4 m: acima das cabeças, como o bloco de antes
+    if(MG0){ const g=new THREE.Mesh(MG0.geo,MG0.mat); g.scale.setScalar(1.6); g.position.set(x,2.4,z+5.7); g.rotation.y=.4; g.castShadow=true; add(g); }
+    else { const pedra=new THREE.Mesh(new THREE.BoxGeometry(1.1,.8,1.1),M.pedraClara); pedra.position.set(x,w.h-6.2,z+5.7); add(pedra); } },
   passarela(w){ const aoX=(w.x2-w.x1)>=(w.z2-w.z1), L=Math.max(w.x2-w.x1,w.z2-w.z1); for(let t=.2;t<L;t+=.45){ const tb=new THREE.Mesh(new THREE.BoxGeometry(aoX?.34:1.6,.08,aoX?1.6:.34),MAT.tabuas); tb.position.set(aoX?w.x1+t:(w.x1+w.x2)/2,.3+(vr()-.5)*.06,aoX?(w.z1+w.z2)/2:w.z1+t); tb.rotation.y=(vr()-.5)*.08; world.add(tb); }
     for(let t=1;t<L;t+=2.5) for(const s of [-1,1]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,1,5),MAT.wood); p.position.set(aoX?w.x1+t:(w.x1+w.x2)/2+s*.8,.2,aoX?(w.z1+w.z2)/2+s*.8:w.z1+t); world.add(p); } },
   // forno de carvão em colmeia: parede reta até 1,6 m e cúpula por cima, para o ombro do forno ficar acima do olho
@@ -353,7 +355,10 @@ const PECAS={
     const d=new THREE.Mesh(new THREE.SphereGeometry(r*1.06,16,8,0,PI*2,0,PI/2),mt); d.scale.y=(w.h+.5-1.6)/(r*1.06); d.position.set(x,1.6,z); add(d);
     const boca=new THREE.Mesh(new THREE.CircleGeometry(.45,10),new THREE.MeshBasicMaterial({color:0xff6a2a})); boca.position.set(x,.4,z+r*1.02); world.add(boca); FONTES.push({x,z:z+r+.5,y:.6,cor:0xff5a20,int:1.1,alc:7}); },
   cruz(w){ const x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2, madeira=w.h>5.5||Math.abs(z+27)>1; const mat=madeira?MAT.wood:M.pedraClara;
-    const h=new THREE.Mesh(new THREE.BoxGeometry(.34,w.h,.34),mat); h.position.set(x,w.h/2,z); add(h); const v=new THREE.Mesh(new THREE.BoxGeometry(w.h*.42,.3,.3),mat); v.position.set(x,w.h*.74,z); add(v);
+    // v6.5d: o calvário da mata com as cruzes de madeira do loafbrr (CC0, itch.io); a do meio é a mais alta
+    const MC=madeira&&modelo&&modelo('cruz_madeira');
+    if(MC){ const c=new THREE.Mesh(MC.geo,MC.mat); c.scale.setScalar(w.h*1.05); c.position.set(x,-.15,z); c.castShadow=true; add(c); }
+    else { const h=new THREE.Mesh(new THREE.BoxGeometry(.34,w.h,.34),mat); h.position.set(x,w.h/2,z); add(h); const v=new THREE.Mesh(new THREE.BoxGeometry(w.h*.42,.3,.3),mat); v.position.set(x,w.h*.74,z); add(v); }
     const pe=new THREE.Mesh(new THREE.DodecahedronGeometry(.9,0),M.rocha); pe.scale.y=.45; pe.position.set(x,.15,z); add(pe); },
   banco(w){ B(w.x1,w.x2,0,w.h,w.z1,w.z2,M.pedraClara,2); },
   arca(w){ const MA=modelo&&modelo('arca');   // v6.4d: o baú de madeira e ferro escaneado (CC0), na caixa da peça

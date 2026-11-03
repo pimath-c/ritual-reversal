@@ -320,11 +320,23 @@ namespace RitualReversal.Visual
             Est(ME.geo, ME.mat, TRS((w.x1 + w.x2) / 2 + (ax ? d : 0), y, (w.z1 + w.z2) / 2 + (ax ? 0 : d), 0, ax ? 0 : PI / 2, 0));
         }
 
+        // v6.5e: o movel() do asilo.js: modelo escaneado (CC0) na caixa da peça com a frente para w.rot (0 = +z); a largura do
+        // modelo é o lado da caixa perpendicular à frente. Sem o modelo, uma caixa de madeira na mesma medida.
+        void MovelEscaneado(string nome, PecaV w)
+        {
+            var MD = ModeloGLB.Carregar(nome); float dx = w.x2 - w.x1, dz = w.z2 - w.z1, r = w.rot; bool deX = Math.Abs(Math.Sin(r)) > .5;
+            if (MD == null) { CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wood"), 2); return; }
+            Est(MD.geo, MD.mat, TRS((w.x1 + w.x2) / 2, 0, (w.z1 + w.z2) / 2, 0, r, 0, deX ? dz : dx, w.h, deX ? dx : dz));
+        }
+
         void MovelAsilo(PecaV w)
         {
             float cx = (w.x1 + w.x2) / 2, cz = (w.z1 + w.z2) / 2;
             switch (w.kind)
             {
+                case "criado": case "guarda_roupa": case "mesa_redonda": case "poltrona": case "relogio_alto": case "balanco":
+                case "gaveteiro": case "estante": case "comoda": case "caixote": case "armario_gotico":
+                    MovelEscaneado(w.kind, w); break;
                 case "leito":
                     {
                         bool ax = w.x2 - w.x1 > w.z2 - w.z1; float L = ax ? w.x2 - w.x1 : w.z2 - w.z1, P = ax ? w.z2 - w.z1 : w.x2 - w.x1;

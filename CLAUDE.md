@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.5d)
+## Estado atual (v6.5e)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -286,6 +286,16 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `cruz_celta`/`cruz_ornada`/`lapide_cruz` (`LAPIDES_3D[Math.abs(Math.round(x*7+z*13))%4]`, 0 = lápide antiga; os sorteios vr()/R()
   continuam; navegador e Unity) e `sarcofago` (kind tumba). Pacotes loafbrr "Graveyard Props" e SOI "Substance Designer Material
   Pack #1". O resto do itch.io CC0 é estilizado (KayKit, Kenney, PSX) e destoa; os de emaceart são pagos.
+  Spooky Prop Set (loafbrr, FBX com z para cima: `"z_para_cima": true` no fontes.json): `forca` no `marco` da encruzilhada (escala 3,8),
+  `cruz_madeira` nas cruzes de madeira do calvário (`cruz`, escala h×1,05) e `gaiola_presa` na corda do `guindaste` (2,4 a 4 m).
+- v6.5e (notas em `notas/v6.5e.md`): Asilo mobiliado. `mapaAsilo()` ganha móveis com colisão nas salas vazias (helper `M(x,z,w,d,h,kind,rot)`;
+  `rot` = para onde a frente do modelo olha, 0 = +z, só visual; o exportar-mapa leva o `rot`): leitos e `criado` nos Quartos, um leito
+  por Cela, `guarda_roupa` (Quartos, Rouparia), `mesa_redonda`/`poltrona`/`relogio_alto`/`balanco` (Sala de Visitas; relógio também na
+  Sala de Estar), `gaveteiro` e `estante` (Arquivo), `estante` e `comoda` (Farmácia), `caixote` (Depósito), `armario_gotico` (Consultório).
+  Modelos Poly Haven em caixa 1×1×1; desenho por `movel(nome,w)` no asilo.js e `MovelEscaneado` no MundoAsilo.cs (largura = lado da caixa
+  perpendicular à frente). Mudou o mapa: reexportar (`simulacao-asilo.json`), comparar-cs `MAPA=asilo` bit a bit. `VERSAO` 6.5.
+  Bots, sementes 1000–1199 no asilo: culto 42% → 41%. Avaliados e deixados de fora: Coffin and Flowers e Mine Object Collection
+  (loafbrr, saturados/estilizados), lustres do Poly Haven (pequenos para a catedral; os de ferro procedurais ficam).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

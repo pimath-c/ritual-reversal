@@ -576,7 +576,9 @@ namespace RitualReversal.Visual
                         var mad = M("wood"); Est(Geo.Caixa(.4f, w.h, .4f), mad, cx, w.h / 2, cz); Est(Geo.Caixa(.3f, .3f, 7.5f), mad, TRS(cx, w.h - 1.4f, cz + 2.6f, -.35f, 0, 0));
                         foreach (int s in new[] { -1, 1 }) Est(Geo.Caixa(.25f, w.h * .8f, .25f), mad, TRS(cx + s * 1.3f, w.h * .38f, cz - .8f, 0, 0, s * .25f));
                         if (!MAT.ContainsKey("corda")) { MAT["corda"] = Mat.Padrao(0x5a4a32); MAT["corda"].name = "corda"; }
-                        Est(Geo.Cilindro(.03f, .03f, 5, 4), MAT["corda"], cx, w.h - 3.5f, cz + 5.7f, false); Est(Geo.Caixa(1.1f, .8f, 1.1f), mPedraClara, cx, w.h - 6.2f, cz + 5.7f); return true;
+                        var MG = ModeloGLB.Carregar("gaiola_presa"); float cl = MG != null ? w.h - 4 : 5;   // v6.5d: a gaiola com um preso, de 2,4 a 4 m
+                        Est(Geo.Cilindro(.03f, .03f, cl, 4), MAT["corda"], cx, MG != null ? w.h - 1 - cl / 2 : w.h - 3.5f, cz + 5.7f, false);
+                        if (MG != null) Est(MG.geo, MG.mat, TRS(cx, 2.4f, cz + 5.7f, 0, .4f, 0, 1.6f, 1.6f, 1.6f)); else Est(Geo.Caixa(1.1f, .8f, 1.1f), mPedraClara, cx, w.h - 6.2f, cz + 5.7f); return true;
                     }
                 case "passarela":
                     {
@@ -595,7 +597,9 @@ namespace RitualReversal.Visual
                 case "cruz":
                     {
                         bool madeira = w.h > 5.5f || Math.Abs(cz + 27) > 1; var mat = madeira ? M("wood") : mPedraClara;
-                        Est(Geo.Caixa(.34f, w.h, .34f), mat, cx, w.h / 2, cz); Est(Geo.Caixa(w.h * .42f, .3f, .3f), mat, cx, w.h * .74f, cz);
+                        var MC = madeira ? ModeloGLB.Carregar("cruz_madeira") : null;   // v6.5d: o calvário com as cruzes do loafbrr
+                        if (MC != null) Est(MC.geo, MC.mat, TRS(cx, -.15f, cz, 0, 0, 0, w.h * 1.05f, w.h * 1.05f, w.h * 1.05f));
+                        else { Est(Geo.Caixa(.34f, w.h, .34f), mat, cx, w.h / 2, cz); Est(Geo.Caixa(w.h * .42f, .3f, .3f), mat, cx, w.h * .74f, cz); }
                         Est(Geo.Dodecaedro(.9f), mRocha, TRS(cx, .15f, cz, 0, 0, 0, 1, .45f, 1)); return true;
                     }
                 case "banco": B(w.x1, w.x2, 0, w.h, w.z1, w.z2, mPedraClara, 2); return true;

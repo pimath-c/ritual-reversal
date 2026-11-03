@@ -75,7 +75,7 @@
     "polyhaven": "wooden_crate_02",
     "autor": "James Ray Cock, Jurita Burger",
     "licenca": "CC0",
-    "uso": "caixotes do acampamento (kind caixote)",
+    "uso": "caixotes do acampamento (kind caixote); caixotes do Depósito do Asilo",
     "encaixe": "caixa",
     "tamanho": [
       1,
@@ -537,5 +537,217 @@
     ],
     "triangulos": 0,
     "textura": 512
+  },
+  "cruz_madeira": {
+    "autor": "loafbrr",
+    "licenca": "CC0",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1,
+      0
+    ],
+    "triangulos": 0,
+    "textura": 512,
+    "z_para_cima": true,
+    "itch": {
+      "pagina": "https://loafbrr.itch.io/spooky-prop-set",
+      "arquivo": "SpookyPropSet.zip",
+      "fbx": "fbx_unity/Prop_BigCross_A.fbx",
+      "textura": "textures/BigCross/BigCross_Diffuse_1K.png"
+    },
+    "uso": "calvário da mata: as três cruzes de madeira (kind cruz)",
+    "brilho": 0.5
+  },
+  "forca": {
+    "autor": "loafbrr",
+    "licenca": "CC0",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1,
+      0
+    ],
+    "triangulos": 0,
+    "textura": 512,
+    "z_para_cima": true,
+    "itch": {
+      "pagina": "https://loafbrr.itch.io/spooky-prop-set",
+      "arquivo": "SpookyPropSet.zip",
+      "fbx": "fbx_unity/Prop_Gallows.fbx",
+      "textura": "textures/Gallow/Gallow_Diffuse_1K.png"
+    },
+    "uso": "encruzilhada da mata: a forca no lugar da placa de madeira (kind marco)",
+    "brilho": 0.5
+  },
+  "gaiola_presa": {
+    "autor": "loafbrr",
+    "licenca": "CC0",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1,
+      0
+    ],
+    "triangulos": 0,
+    "textura": 512,
+    "z_para_cima": true,
+    "itch": {
+      "pagina": "https://loafbrr.itch.io/spooky-prop-set",
+      "arquivo": "SpookyPropSet.zip",
+      "fbx": "fbx_unity/Prop_Gibbet_Cage_B.fbx",
+      "textura": "textures/Gibbet/Gibbet_Diffuse_1K.png"
+    },
+    "uso": "guindaste da mata: gaiola de ferro com um preso, pendurada acima das cabeças"
+  },
+  "gaveteiro": {
+    "polyhaven": "vintage_wooden_drawer_01",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: gaveteiros de fichas do Arquivo (kind gaveteiro)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": true
+  },
+  "estante": {
+    "polyhaven": "Shelf_01",
+    "autor": "Gabriel Radić",
+    "licenca": "CC0",
+    "uso": "Asilo: estantes brancas do Arquivo e da Farmácia (kind estante)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 400,
+    "textura": 512,
+    "bordas": true
+  },
+  "guarda_roupa": {
+    "polyhaven": "painted_wooden_cabinet_02",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: armários azuis dos quartos e da Rouparia (kind guarda_roupa)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 1200,
+    "textura": 512,
+    "bordas": true
+  },
+  "criado": {
+    "polyhaven": "painted_wooden_nightstand",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: criados-mudos ao lado das camas dos quartos (kind criado)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 600,
+    "textura": 512,
+    "bordas": true
+  },
+  "poltrona": {
+    "polyhaven": "ArmChair_01",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: poltronas da Sala de Visitas (kind poltrona)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": true
+  },
+  "mesa_redonda": {
+    "polyhaven": "round_wooden_table_01",
+    "autor": "Ulan Cabanilla",
+    "licenca": "CC0",
+    "uso": "Asilo: mesa da Sala de Visitas (kind mesa_redonda)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": true
+  },
+  "relogio_alto": {
+    "polyhaven": "vintage_grandfather_clock_01",
+    "autor": "Yann Kervran, James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: relógios de pêndulo da Sala de Visitas e da Sala de Estar (kind relogio_alto)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 4000,
+    "textura": 512,
+    "bordas": true
+  },
+  "balanco": {
+    "polyhaven": "Rockingchair_01",
+    "autor": "Jorge Camacho",
+    "licenca": "CC0",
+    "uso": "Asilo: cadeira de balanço da Sala de Visitas (kind balanco)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 3000,
+    "textura": 512,
+    "bordas": true
+  },
+  "comoda": {
+    "polyhaven": "GothicCommode_01",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: cômodas da Farmácia (kind comoda)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 2500,
+    "textura": 512,
+    "bordas": true
+  },
+  "armario_gotico": {
+    "polyhaven": "GothicCabinet_01",
+    "autor": "Kirill Sannikov",
+    "licenca": "CC0",
+    "uso": "Asilo: armário do Consultório (kind armario_gotico)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 4000,
+    "textura": 512,
+    "bordas": true
   }
 }
