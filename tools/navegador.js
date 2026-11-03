@@ -52,7 +52,7 @@ const VISTAS=[ // v6: um ponto de cada região e de cada travessia do mapa novo
     await page.click('#bLabPadrao'); await page.waitForFunction(()=>!/alterada/.test((document.querySelector('details.lab summary')||{}).textContent||''),null,{timeout:20000}).catch(()=>erros.push('laboratório não voltou ao normal')); console.log('laboratório no menu:',lab.resumo.trim()); }
   // v6: Arsenal. Abre do menu, troca a skin (a escolha é salva e a arma faz a inspeção), muda de arma e volta ao menu
   { await page.click('#bArsenal'); await page.waitForSelector('#arsenal .skin',{timeout:60000}); await page.waitForTimeout(1500);
-    await page.click('#arsenal .skin[data-skin="tempera"]'); await page.waitForTimeout(1800);
+    await page.click('#arsenal .skin[data-skin="tempera"]'); await page.waitForFunction(()=>__T.ARMA.S.est.nome==='inspecao',null,{timeout:30000}).catch(()=>{});   // espera o clipe começar (sob carga 1,8 s fixos não bastavam)
     const a1=await page.evaluate(()=>({esc:__T.SKINS.ESC.carabina,clipe:__T.ARMA.S.est.nome,sel:(document.querySelector('#arsenal .skin.sel b')||{}).textContent||''}));
     await page.screenshot({path:path.join(OUT,'arsenal-carabina.png')});
     await page.click('#arsenal [data-arma="revolver"]'); await page.waitForTimeout(900); await page.click('#arsenal .skin[data-skin="martir"]');
