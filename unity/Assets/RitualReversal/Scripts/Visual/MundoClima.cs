@@ -51,7 +51,7 @@ namespace RitualReversal.Visual
         public void AtualizarClima(Jogo g, Vector3 cam, float dt)
         {
             bool jogo = g != null && g.phase == "play"; string tipo = jogo ? ClimaDaRodada(g) : "limpa"; var C = CLIMAS[tipo];
-            if (tipo != climaTipo) { climaTipo = tipo; raioT = Random.Range(12f, 30f); }
+            if (tipo != climaTipo) { climaTipo = tipo; raioT = Random.Range(12f, 30f); TrocarCeu(tipo); }
             float k = Mathf.Min(1, dt * .5f); climaNevoa = Mathf.Lerp(climaNevoa, C.nevoa, k); climaChuva = Mathf.Lerp(climaChuva, C.chuva, k); climaEstrelas = Mathf.Lerp(climaEstrelas, C.estrelas, k);
             bool coberto = Mapa.Carregado && Mapa.Coberto(cam.x, cam.z);
             if (climaChuva > .02f && chuvaGO == null) ConstruirChuva();

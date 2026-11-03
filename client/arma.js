@@ -100,6 +100,14 @@ function criarMao(mat,esq,opc){ opc=opc||{};
     for(let j=0;j<3;j++){ const b=j?osso(pai,0,0,-F[j-1]):osso(pai,X[k],.003,-.088+(k===3?.008:0),'YXZ'); segs.push(b); pai=b; }
     dedos.push({segs,abre:ABRE[k]}); }
   const PL=[.034,.027,.021], pb=osso(pulso,-.036,-.008,-.022,'YXZ'), pol=[pb]; pol.push(osso(pb,0,0,-PL[0])); pol.push(osso(pol[1],0,0,-PL[1]));
+  // v6.6: a mão da malha base do MakeHuman (client/maos.js, tools/montar-maos.py), já na pose de repouso destes ossos e com
+  // pesos suaves (os nós dos dedos dobram sem quina); sem o arquivo, as cápsulas por falange de antes
+  const MH=window.RR_MAOS;
+  if(MH&&!GEO.maoPele){ const b=(s,T)=>{ const t=atob(s), u=new Uint8Array(t.length); for(let i=0;i<t.length;i++) u[i]=t.charCodeAt(i); return new T(u.buffer); };
+    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(b(MH.pos,Float32Array),3)); g.setAttribute('normal',new THREE.BufferAttribute(b(MH.nor,Float32Array),3));
+    g.setAttribute('uv',new THREE.BufferAttribute(b(MH.uv,Float32Array),2)); g.setIndex(new THREE.BufferAttribute(b(MH.idx,Uint32Array),1));
+    g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(b(MH.si,Uint16Array),4)); g.setAttribute('skinWeight',new THREE.BufferAttribute(b(MH.sw,Float32Array),4));
+    COMPARTILHADAS.add(g); GEO.maoPele=g; GEO.maoUnhas=null; }
   // a malha é montada uma vez (é igual nas duas mãos: a esquerda é espelhada pelo grupo)
   if(!GEO.maoPele){ pulso.updateMatrixWorld(true); const idx=b=>ossos.indexOf(b), pele=[], unhas=[];
     const parte=(g,b,L)=>{ const q=(g.index?g.toNonIndexed():g.clone()); q.applyMatrix4(b.matrixWorld); const n=q.attributes.position.count, si=new Uint16Array(n*4), sw=new Float32Array(n*4);
@@ -111,8 +119,8 @@ function criarMao(mat,esq,opc){ opc=opc||{};
     const junta=L=>{ const g=THREE.BufferGeometryUtils.mergeBufferGeometries(L.map(q=>{ for(const a of Object.keys(q.attributes)) if(!['position','normal','uv','skinIndex','skinWeight'].includes(a)) q.deleteAttribute(a); return q; })); COMPARTILHADAS.add(g); return g; };
     GEO.maoPele=junta(pele); GEO.maoUnhas=junta(unhas); }
   mat.skinning=true; const pele=new THREE.SkinnedMesh(GEO.maoPele,mat); pele.add(pulso); geo.add(pele); raiz.updateMatrixWorld(true); const esq_=new THREE.Skeleton(ossos); pele.bind(esq_);
-  if(opc.unhas){ opc.unhas.skinning=true; const u=new THREE.SkinnedMesh(GEO.maoUnhas,opc.unhas); geo.add(u); u.bind(esq_,pele.matrixWorld); }
-  if(opc.costura){ geo.add(new THREE.Mesh(geoCostura(),opc.costura)); const bt=new THREE.Mesh(GEO.botao||(GEO.botao=(()=>{ const c=new THREE.CylinderGeometry(.0045,.0045,.003,10); c.translate(.024,.0205,-.006); COMPARTILHADAS.add(c); return c; })()),opc.botao); geo.add(bt); }
+  if(opc.unhas&&GEO.maoUnhas){ opc.unhas.skinning=true; const u=new THREE.SkinnedMesh(GEO.maoUnhas,opc.unhas); geo.add(u); u.bind(esq_,pele.matrixWorld); }
+  if(opc.costura&&!MH){ geo.add(new THREE.Mesh(geoCostura(),opc.costura)); const bt=new THREE.Mesh(GEO.botao||(GEO.botao=(()=>{ const c=new THREE.CylinderGeometry(.0045,.0045,.003,10); c.translate(.024,.0205,-.006); COMPARTILHADAS.add(c); return c; })()),opc.botao); geo.add(bt); }
   if(opc.punho){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.027,.023,.026,16,1,true),opc.punho); c.material.side=THREE.DoubleSide; c.rotation.x=PI/2; c.position.z=.004; geo.add(c); }   // boca do punho da luva (a manga cobre o resto)
   // ponto de pinça (entre polegar e indicador) e de apoio da palma: onde os objetos ficam presos na mão
   const pinca=new THREE.Object3D(); pinca.position.set((esq?1:-1)*.044,-.02,-.098).multiplyScalar(ESC_MAO); raiz.add(pinca);

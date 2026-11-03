@@ -150,6 +150,7 @@ namespace RitualReversal.Visual
         }
         void CxA(float x1, float x2, float y1, float y2, float z1, float z2, Material m, float S = 2, bool sombra = true) { Caixa(x1, x2, y1, y2, z1, z2, m, S, sombra); }
         Material A(string k) { return MA[k]; }
+        Material aguaAsilo1, aguaAsilo2;   // v6.6a: a água das caixas (uv em metros/S): S = 1 nos tanques e banheiras, 2 nas poças do chão
 
         // ---------------- montagem (no lugar das peças, bancos e da v6 da catedral) ----------------
         void ConstruirAsilo()
@@ -217,7 +218,7 @@ namespace RitualReversal.Visual
                 PlantarArvores(lista);
             }
             // o lago Blackwater e o píer
-            Est(Geo.Plano(600, 260).GirarX(-PI / 2), A("lago"), 0, -.35f, -66 - 130, false);
+            Est(Geo.Plano(600, 260).GirarX(-PI / 2), MatAgua(0x05090b, 600, 260), 0, -.35f, -66 - 130, false);   // v6.6a: água com ondinhas
             Est(Geo.Caixa(220, .4f, .6f), M("wallDark"), 0, -.1f, -66.2f);
             for (float z = -71.5f; z <= -66.5f; z += 1) foreach (float x in new[] { -2.2f, 2.2f }) Est(Geo.Cilindro(.12f, .14f, 1.4f, 6), M("wood"), x, -.5f, z);
 
@@ -361,7 +362,7 @@ namespace RitualReversal.Visual
             // tanques da hidroterapia: água rasa com borda
             foreach (var q in MapaVisual.AGUA)
             {
-                CxA(q.x1, q.x2, .02f, .22f, q.z1, q.z2, A("agua"), 2, false);
+                CxA(q.x1, q.x2, .02f, .22f, q.z1, q.z2, aguaAsilo2 ?? (aguaAsilo2 = MatAgua(0x0b1416, 2, 2, true, .92f)), 2, false);
                 CxA(q.x1 - .2f, q.x2 + .2f, 0, .3f, q.z1 - .2f, q.z1, A("porcelana"), 1, false); CxA(q.x1 - .2f, q.x2 + .2f, 0, .3f, q.z2, q.z2 + .2f, A("porcelana"), 1, false);
                 CxA(q.x1 - .2f, q.x1, 0, .3f, q.z1, q.z2, A("porcelana"), 1, false); CxA(q.x2, q.x2 + .2f, 0, .3f, q.z1, q.z2, A("porcelana"), 1, false);
             }
@@ -439,7 +440,7 @@ namespace RitualReversal.Visual
                     CxA(w.x1, w.x2, w.h - .07f, w.h, w.z1, w.z2, M("wood"), 2);
                     foreach (var p in new[] { new Vector2(w.x1 + .1f, w.z1 + .1f), new Vector2(w.x2 - .1f, w.z1 + .1f), new Vector2(w.x1 + .1f, w.z2 - .1f), new Vector2(w.x2 - .1f, w.z2 - .1f) }) CxA(p.x - .05f, p.x + .05f, 0, w.h - .07f, p.y - .05f, p.y + .05f, M("wood"), 1);
                     break;
-                case "tanque": CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, A("concreto"), 2); CxA(w.x1 + .12f, w.x2 - .12f, w.h - .05f, w.h + .01f, w.z1 + .12f, w.z2 - .12f, A("agua"), 1, false); break;
+                case "tanque": CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, A("concreto"), 2); CxA(w.x1 + .12f, w.x2 - .12f, w.h - .05f, w.h + .01f, w.z1 + .12f, w.z2 - .12f, aguaAsilo1 ?? (aguaAsilo1 = MatAgua(0x0b1416, 1, 1, true, .92f)), 1, false); break;
                 case "bancada": Lampiao(w); Enfeite("quimica", w, 1.1f, w.h); if (M3("mesa_asilo", w, w.h)) break; CxA(w.x1, w.x2, w.h - .08f, w.h, w.z1, w.z2, M("wood"), 2); CxA(w.x1, w.x2, 0, w.h - .08f, w.z1 + .1f, w.z2 - .1f, M("wood"), 2); break;
                 case "maca":
                     if (M3("leito", w, .9f, PI)) { CxA(w.x1 + .06f, w.x2 - .06f, .62f, .72f, w.z1 + .06f, w.z2 - .06f, A("colchao"), 1); break; }
@@ -456,7 +457,7 @@ namespace RitualReversal.Visual
                     CxA(cx - .2f, cx + .2f, 1.7f, 1.85f, cz + .2f, cz + .45f, A("ferro"), 1); CxA(cx - .4f, cx + .4f, 0, .45f, cz - .4f, cz + .4f, M("wood"), 1); break;
                 case "banheira":
                     {
-                        bool ax = w.x2 - w.x1 > w.z2 - w.z1; CxA(w.x1, w.x2, .12f, w.h, w.z1, w.z2, A("porcelana"), 1); CxA(w.x1 + .1f, w.x2 - .1f, w.h - .18f, w.h + .005f, w.z1 + .1f, w.z2 - .1f, A("agua"), 1, false);
+                        bool ax = w.x2 - w.x1 > w.z2 - w.z1; CxA(w.x1, w.x2, .12f, w.h, w.z1, w.z2, A("porcelana"), 1); CxA(w.x1 + .1f, w.x2 - .1f, w.h - .18f, w.h + .005f, w.z1 + .1f, w.z2 - .1f, aguaAsilo1 ?? (aguaAsilo1 = MatAgua(0x0b1416, 1, 1, true, .92f)), 1, false);
                         foreach (float s in new[] { -1f, 1f }) foreach (float t in new[] { -1f, 1f })
                             { float x = ax ? (s < 0 ? w.x1 + .15f : w.x2 - .15f) : cx + t * .3f, z = ax ? cz + t * .3f : (s < 0 ? w.z1 + .15f : w.z2 - .15f); CxA(x - .05f, x + .05f, 0, .12f, z - .05f, z + .05f, A("ferro"), 1); }
                         break;

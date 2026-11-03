@@ -35,7 +35,10 @@ function coletar(){
     if(pecasCache.has(chave)) return pecasCache.get(chave);
     const P=g.attributes.position, N=g.attributes.normal, U=g.attributes.uv, SI=g.attributes.skinIndex, tri=triangulos(g), Nm=new THREE.Matrix3().getNormalMatrix(M);
     const mapa=new Map(), pos=[], nor=[], uv=[], ind=[], v=new THREE.Vector3(), nn=new THREE.Vector3();
-    for(let t=0;t<tri.length;t+=3){ if(SI.getX(tri[t])!==b) continue;
+    // v6.6: com pesos suaves (as mãos do MakeHuman), o pedaço do osso leva todo triângulo que pesa ao menos 30% nele: os
+    // pedaços vizinhos se sobrepõem na junta e cobrem a fresta que o dedo dobrado abriria (o Unity move cada pedaço rígido)
+    const SW=g.attributes.skinWeight, peso=(i,o)=>{ let w=0; for(let c=0;c<4;c++) if(SI.array[i*SI.itemSize+c]===o) w+=SW?SW.array[i*SW.itemSize+c]:(c===0?1:0); return w; };   // (o getComponent só chegou no three r137)
+    for(let t=0;t<tri.length;t+=3){ if(SI.getX(tri[t])!==b&&!(SW&&Math.max(peso(tri[t],b),peso(tri[t+1],b),peso(tri[t+2],b))>=.3)) continue;
       for(let j=0;j<3;j++){ const i=tri[t+j]; if(!mapa.has(i)){ mapa.set(i,pos.length/3); v.fromBufferAttribute(P,i).applyMatrix4(M); nn.fromBufferAttribute(N,i).applyMatrix3(Nm).normalize();
           pos.push(v.x,v.y,v.z); nor.push(nn.x,nn.y,nn.z); uv.push(U?U.getX(i):0,U?U.getY(i):0); } ind.push(mapa.get(i)); } }
     const k=ind.length?salvarGeo(new Float32Array(pos),new Float32Array(nor),new Float32Array(uv),Uint32Array.from(ind)):-1; pecasCache.set(chave,k); return k; }

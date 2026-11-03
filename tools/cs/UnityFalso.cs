@@ -297,6 +297,16 @@ namespace UnityEngine
     {
         public static bool fog; public static FogMode fogMode; public static float fogDensity; public static Color fogColor, ambientSkyColor, ambientEquatorColor, ambientGroundColor, ambientLight;
         public static Rendering.AmbientMode ambientMode;
+        public static Rendering.DefaultReflectionMode defaultReflectionMode; public static Cubemap customReflection; public static Texture customReflectionTexture; public static float reflectionIntensity = 1;
+    }
+    public static class DynamicGI { public static void UpdateEnvironment() { } }
+    public enum CubemapFace { Unknown = -1, PositiveX, NegativeX, PositiveY, NegativeY, PositiveZ, NegativeZ }
+    public class Cubemap : Texture
+    {
+        public readonly Color[][] faces = new Color[6][];
+        public Cubemap(int size, TextureFormat f, bool mip) { width = height = size; }
+        public void SetPixels(Color[] c, CubemapFace f) { faces[(int)f] = (Color[])c.Clone(); }
+        public void Apply(bool mip = true, bool naoLer = false) { }
     }
     public static class Time { public static float time, deltaTime = 1 / 60f, unscaledDeltaTime = 1 / 60f, realtimeSinceStartup, unscaledTime; public static int frameCount; }
     public static class Random
@@ -469,6 +479,8 @@ namespace UnityEngine
         public void SetPixels32(Color32[] p) { pixels = (Color32[])p.Clone(); }
         public void SetPixels(Color[] p) { pixels = new Color32[p.Length]; for (int i = 0; i < p.Length; i++) pixels[i] = p[i]; }
         public Color32[] GetPixels32() { return pixels; }
+        public bool isReadable = true;
+        public Color GetPixelBilinear(float u, float v) { if (pixels == null || pixels.Length == 0) return Color.black; int x = Math.Min(width - 1, Math.Max(0, (int)(u * width))), y = Math.Min(height - 1, Math.Max(0, (int)(v * height))); return pixels[y * width + x]; }
         public void SetPixel(int x, int y, Color c) { pixels[y * width + x] = c; }
         public void Apply(bool mip = true, bool naoLer = false) { versao++; }
         public static Texture2D whiteTexture { get { if (branca == null) { branca = new Texture2D(1, 1); branca.pixels[0] = new Color32(255, 255, 255, 255); } return branca; } }
@@ -568,5 +580,6 @@ namespace UnityEngine.Rendering
     public enum BlendMode { Zero = 0, One = 1, DstColor = 2, SrcColor = 3, OneMinusDstColor = 4, SrcAlpha = 5, OneMinusSrcColor = 6, DstAlpha = 7, OneMinusDstAlpha = 8, SrcAlphaSaturate = 9, OneMinusSrcAlpha = 10 }
     public enum IndexFormat { UInt16, UInt32 }
     public enum AmbientMode { Skybox = 0, Trilight = 1, Flat = 3, Custom = 4 }
+    public enum DefaultReflectionMode { Skybox = 0, Custom = 1 }
     public enum CullMode { Off, Front, Back }
 }

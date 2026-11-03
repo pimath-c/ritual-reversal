@@ -9,6 +9,46 @@ namespace RitualReversal.Visual
 {
     public partial class Mundo
     {
+        // v6.6: céu fotográfico por clima (o trocarCeu do index.html): Resources/Texturas/ceuLimpo_cor e ceuNublado_cor (Poly Haven,
+        // CC0, sem a lua), escurecidos pela cor do material; sem a foto, o degradê de antes
+        GameObject ceuGO; Texture ceuGradiente; Color ceuBase = Color.white;
+        static readonly Color CEU_LIMPO = new Color(.016f, .019f, .03f), CEU_NUBLADO = new Color(.028f, .032f, .048f);
+        void TrocarCeu(string tipo)
+        {
+            if (ceuGO == null) return; bool limpa = tipo == "limpa"; var P = Pbr.Foto(limpa ? "ceuLimpo" : "ceuNublado"); Texture t = P != null ? P.mapa : null;
+            if (t != null) t.wrapMode = TextureWrapMode.Clamp;
+            var tex = t ?? ceuGradiente; mCeu.SetTexture("_MainTex", tex); if (mCeu.HasProperty("_BaseMap")) mCeu.SetTexture("_BaseMap", tex);
+            ceuBase = t != null ? (limpa ? CEU_LIMPO : CEU_NUBLADO) : Color.white; ceuGO.transform.localRotation = Q(0, t != null ? (limpa ? -1.59f : -1.75f) : 0, 0);
+            ReflexoNoturno(P != null ? P.mapa : null, ceuBase);
+        }
+        // v6.6a: o reflexo dos materiais lisos (água, metal) vem do céu da noite, não do céu de dia padrão do Unity: um cubo pequeno
+        // com a média de cima da foto do céu (escurecida como a cúpula) no alto, a do horizonte nos lados e quase preto embaixo.
+        // No navegador só a água reflete o céu (envMap); aqui o reflexo é do ambiente inteiro, mas tão escuro quanto a noite.
+        Cubemap reflexo;
+        void ReflexoNoturno(Texture2D foto, Color base_)
+        {
+            Color cima = new Color(.004f, .006f, .012f), lado = new Color(.008f, .012f, .02f), baixo = new Color(.003f, .003f, .004f);
+            if (foto != null && foto.isReadable)
+            {
+                Color sc = Color.black, sl = Color.black; int nc = 0, nl = 0;
+                for (int j = 0; j < 32; j++) for (int i = 0; i < 64; i++) { float v = (j + .5f) / 32; var c = foto.GetPixelBilinear((i + .5f) / 64, v).linear; if (v > .75f) { sc += c; nc++; } else if (v > .5f && v < .6f) { sl += c; nl++; } }
+                if (nc > 0) cima = new Color(sc.r / nc * base_.r, sc.g / nc * base_.g, sc.b / nc * base_.b); if (nl > 0) lado = new Color(sl.r / nl * base_.r, sl.g / nl * base_.g, sl.b / nl * base_.b);
+            }
+            if (reflexo == null) reflexo = new Cubemap(8, TextureFormat.RGBA32, false) { name = "reflexo noturno" };
+            var px = new Color[64];
+            foreach (CubemapFace f in new[] { CubemapFace.PositiveX, CubemapFace.NegativeX, CubemapFace.PositiveY, CubemapFace.NegativeY, CubemapFace.PositiveZ, CubemapFace.NegativeZ })
+            {
+                var c = f == CubemapFace.PositiveY ? cima : f == CubemapFace.NegativeY ? baixo : lado; c.a = 1; for (int i = 0; i < 64; i++) px[i] = c.gamma; reflexo.SetPixels(px, f);
+            }
+            reflexo.Apply(false);
+            RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+#if UNITY_2022_1_OR_NEWER
+            RenderSettings.customReflectionTexture = reflexo;
+#else
+            RenderSettings.customReflection = reflexo;
+#endif
+            RenderSettings.reflectionIntensity = 1; DynamicGI.UpdateEnvironment();
+        }
         Transform cupula; Material mCeu, mSangue, mEstrelas, mLua, mLua2; GameObject sangue; Transform lua, lua2; Light sol, luar;
         readonly List<Light> velas = new List<Light>(); readonly List<Fonte> fonteDaLuz = new List<Fonte>(); float luzT;
         public class FlareV { public Light L; public GameObject s; public Material m; }
@@ -23,7 +63,7 @@ namespace RitualReversal.Visual
             cupula = Grupo(raiz, "Céu");
             bool asilo = MapaVisual.Asilo;   // o céu do asilo (asilo.js): mais escuro no horizonte, menos estrelas, sem o luar do Claustro
             mCeu = Mat.Brilho(Color.white, asilo ? Tex.Gradiente("ceuAsilo", 0f, "#010205", .55f, "#05090f", 1f, "#0c1418") : Tex.Gradiente("ceu", 0f, "#010205", .55f, "#060a14", 1f, "#101a2c"), Mat.Mistura.Alfa, false, false, 0, false, 1000);
-            Malha(Geo.Esfera(190, 24, 14), mCeu, cupula, "cúpula", false);
+            ceuGO = Malha(Geo.Esfera(190, 24, 14), mCeu, cupula, "cúpula", false); ceuGradiente = mCeu.GetTexture("_MainTex"); ReflexoNoturno(null, Color.white);
             mSangue = Mat.Brilho(new Color(1, 1, 1, 0), Tex.Gradiente("ceuSangue", 0f, "rgba(90,0,10,0)", .35f, "rgba(150,10,24,.55)", .52f, "rgba(230,40,50,1)", .62f, "rgba(120,6,16,.6)", 1f, "rgba(40,0,4,0)"), Mat.Mistura.Aditiva, false, false, 0, false, 1001);
             sangue = Malha(Geo.Esfera(186, 24, 14), mSangue, cupula, "céu de sangue", false); sangue.SetActive(false);
             mEstrelas = Mat.Brilho(Mat.Hex(0xdfe6ff, .8f), Tex.Brilho(), Mat.Mistura.Aditiva, true, false, 0, false, 1002);
@@ -61,7 +101,7 @@ namespace RitualReversal.Visual
         // cam: posição da câmera nas coordenadas do protótipo
         public void Atualizar(Jogo g, string papel, Ator eu, Vector3 cam, float lookYaw, float dt)
         {
-            float agora = Time.time;
+            float agora = Time.time; AtualizarAgua(agora);
             // céu e lua acompanham a câmera
             cupula.localPosition = cam;
             float dl = 150; lua.localPosition = cam + DIR_LUA * dl; lua2.localPosition = lua.localPosition;
@@ -90,7 +130,7 @@ namespace RitualReversal.Visual
             // Grande Ritual
             Altar GA = null; if (g.phase == "play") foreach (var A in g.altars) if (A.state == "active" && A.grande) GA = A;
             GRativo = GA != null; GRk = Mathf.Clamp01(GRk + (GRativo ? dt / 1.5f : -dt / 4)); float kk = GRk, t = agora;
-            Mat.Cor(mCeu, Mat.Lin(new Color(1 + 1.6f * kk, 1 - .45f * kk, 1 - .4f * kk)));
+            Mat.Cor(mCeu, Mat.Lin(new Color(ceuBase.r * (1 + 1.6f * kk), ceuBase.g * (1 - .45f * kk), ceuBase.b * (1 - .4f * kk))));
             sangue.SetActive(kk > .01f); Mat.Cor(mSangue, new Color(1, 1, 1, kk * (.8f + .2f * Mathf.Sin(t * .9f))));
             Mat.Cor(mEstrelas, Mat.Hex(0xdfe6ff, .8f * (1 - .75f * kk)));
             Mat.Cor(mLua, Color.Lerp(Mat.Hex(0xdfe8ff), Mat.Hex(0xff3a2a), kk)); Mat.Cor(mLua2, Mat.Lin(new Color(.44f + .5f * kk, .53f - .35f * kk, .78f - .6f * kk, .35f)));

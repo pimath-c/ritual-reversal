@@ -34,7 +34,8 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASTA = os.path.join(RAIZ, 'assets', 'bonecos')
 ORIG = os.path.join(PASTA, 'fontes')
 UNITY = os.path.join(RAIZ, 'unity', 'Assets', 'RitualReversal', 'Resources', 'Bonecos')
-PARTES = ['body', 'torso', 'head', 'legL', 'legR', 'armL', 'armR']
+PARTES = ['body', 'torso', 'head', 'legL', 'legR', 'armL', 'armR', 'shinL', 'shinR', 'foreL', 'foreR']   # v6.6: canela e antebraço (joelho e cotovelo)
+PAI_PARTE = {'shinL': 'legL', 'shinR': 'legR', 'foreL': 'armL', 'foreR': 'armR'}
 
 
 # ---------- pacotes do itch.io (gratuitos): página -> arquivo .zip ----------
@@ -159,9 +160,11 @@ def ler_gltf(caminho):
 
 def junta_do_osso(nome):
     n = nome.lower(); lado = 'L' if n.endswith('_l') else 'R' if n.endswith('_r') else None
-    if lado and any(k in n for k in ('thigh', 'calf', 'foot', 'ball')): return 'leg' + lado
+    if lado and any(k in n for k in ('calf', 'foot', 'ball')): return 'shin' + lado
+    if lado and 'thigh' in n: return 'leg' + lado
     if 'clavicle' in n or 'spine' in n: return 'torso'
-    if lado: return 'arm' + lado
+    if lado and 'upperarm' in n: return 'arm' + lado
+    if lado: return 'fore' + lado   # antebraço, mão e dedos
     if 'neck' in n or 'head' in n: return 'head'
     return 'body'
 
@@ -270,13 +273,20 @@ def montar(F, nome, cfg):
     G = np.diag([-1., 1, -1])   # 180° em y: o boneco passa a olhar para -z
     def O(k): return ossos[k] @ G.T
     # o modelo olha para +z com a esquerda ("_l") em +x; girado, olha para -z com a esquerda em -x, como os bonecos do jogo
-    piv = {'body': np.zeros(3), 'legL': O('thigh_l'), 'legR': O('thigh_r'), 'torso': O('spine_01'), 'head': O('neck_01'), 'armL': O('upperarm_l'), 'armR': O('upperarm_r')}
+    piv = {'body': np.zeros(3), 'legL': O('thigh_l'), 'legR': O('thigh_r'), 'torso': O('spine_01'), 'head': O('neck_01'), 'armL': O('upperarm_l'), 'armR': O('upperarm_r'),
+           'shinL': O('calf_l') if 'calf_l' in ossos else None, 'shinR': O('calf_r') if 'calf_r' in ossos else None,
+           'foreL': O('lowerarm_l') if 'lowerarm_l' in ossos else None, 'foreR': O('lowerarm_r') if 'lowerarm_r' in ossos else None}
+    piv0 = dict(piv)   # antes de descer os braços (a faixa da junta é medida no modelo como veio)
     troca = {}
     maos = {'armL': O('hand_l'), 'armR': O('hand_r')}
     # braços da pose em T para ao lado do corpo: do ombro até a mão vira (±0,12, -1, 0)
     rot = {}
     for a in ('armL', 'armR'):
         d = maos[a] - piv[a]; rot[a] = girar(d, np.array([.1 * np.sign(d[0]), -1, 0]))
+    # o antebraço desce junto, girando em volta do ombro; o cotovelo vai para onde o giro o leva
+    for f, a in (('foreL', 'armL'), ('foreR', 'armR')):
+        if piv[f] is not None: rot[f] = rot[a]; piv[f] = (piv[f] - piv[a]) @ rot[a].T + piv[a]
+    ombro = {'armL': 'armL', 'armR': 'armR', 'foreL': 'armL', 'foreR': 'armR'}
     imgs = []
     P = {k: [] for k in PARTES}
     for pr in prims:
@@ -288,11 +298,18 @@ def montar(F, nome, cfg):
         for k in PARTES:
             if 'so' in pr and k not in pr['so']: continue
             vt = vj[tri]; maioria = np.where((vt[:, 1] == vt[:, 2]) & (vt[:, 0] != vt[:, 1]), vt[:, 1], vt[:, 0])
-            sel = tri[maioria == k]
+            esc_ = maioria == k
+            # junta nova (joelho, cotovelo): os triângulos a 5 cm dela entram nas duas peças; ao dobrar, a sobra cobre a fresta
+            filho = k if k in PAI_PARTE else next((c for c, pa in PAI_PARTE.items() if pa == k), None)
+            if filho and piv0.get(filho) is not None:
+                outro = PAI_PARTE[filho] if k == filho else filho
+                perto = np.linalg.norm(p[tri].mean(1) - piv0[filho], axis=1) < .05
+                esc_ = esc_ | ((maioria == outro) & perto)
+            sel = tri[esc_]
             if not len(sel): continue
             usados, inv = np.unique(sel.reshape(-1), return_inverse=True)
             q = p[usados].copy(); m = n[usados].copy()
-            if k in rot: q = (q - piv[k]) @ rot[k].T + piv[k]; m = m @ rot[k].T
+            if k in rot: o_ = piv[ombro[k]]; q = (q - o_) @ rot[k].T + o_; m = m @ rot[k].T
             P[k].append((q - piv[k], m, pr['uv'][usados], inv.astype(np.int64), ti))
     # atlas das texturas (com a recoloração de cada uma)
     tam = 1024 if len(imgs) <= 2 else 512; col = pot(int(np.ceil(np.sqrt(len(imgs))))); lin = pot(int(np.ceil(len(imgs) / col)))
@@ -323,6 +340,10 @@ def montar(F, nome, cfg):
               'pivos': {'legL': rel('legL', 'body'), 'legR': rel('legR', 'body'), 'torso': rel('torso', 'body'), 'head': rel('head', 'torso'), 'armL': rel('armL', 'torso'), 'armR': rel('armR', 'torso')},
               'mao': (((maos['armR'] - piv['armR']) @ rot['armR'].T) * esc).round(4).tolist(),
               'altura': round(altura * esc, 3)}
+    # v6.6: joelho e cotovelo (canela filha da coxa, antebraço filho do braço); maoFore = a mão no quadro do antebraço
+    for f, a in (('shinL', 'legL'), ('shinR', 'legR'), ('foreL', 'armL'), ('foreR', 'armR')):
+        if piv[f] is not None and P[f]: extras['pivos'][f] = rel(f, a)
+    if 'foreR' in extras['pivos']: extras['maoFore'] = ((((maos['armR'] - piv['armR']) @ rot['armR'].T + piv['armR']) - piv['foreR']) * esc).round(4).tolist()
     if cfg.get('makehuman'): extras['vestido'] = True
     b = io.BytesIO(); atlas.save(b, 'JPEG', quality=86, optimize=True)
     return gravar_glb(p * esc, n, uv, uv2, idx, b.getvalue(), extras), extras, len(idx) // 3, atlas.size

@@ -20,6 +20,7 @@ const tagSkins='<script src="skins.js"></script>', skins=fs.readFileSync(path.jo
 const tagModelos='<script src="modelos.js"></script>', modelos=fs.readFileSync(path.join(ROOT,'client','modelos.js'),'utf8');
 const tagBonecos='<script src="bonecos.js"></script>', bonecos=fs.readFileSync(path.join(ROOT,'client','bonecos.js'),'utf8');
 const tagArmas='<script src="armas.js"></script>', armas=fs.readFileSync(path.join(ROOT,'client','armas.js'),'utf8');
+const tagMaos='<script src="maos.js"></script>', maos=fs.existsSync(path.join(ROOT,'client','maos.js'))?fs.readFileSync(path.join(ROOT,'client','maos.js'),'utf8'):'';   // v6.6: mãos do MakeHuman (tools/montar-maos.py)
 const tagTex='<script src="texturas.js"></script>', texturas=fs.readFileSync(path.join(ROOT,'client','texturas.js'),'utf8');
 const tagAsilo='<script src="asilo.js"></script>', asilo=fs.readFileSync(path.join(ROOT,'client','asilo.js'),'utf8');
 if(!cli.includes(tagTex)) throw new Error('client/index.html não tem '+tagTex);
@@ -32,7 +33,7 @@ if(!cli.includes(tagMundo)) throw new Error('client/index.html não tem '+tagMun
 if(!cli.includes(tagArma)) throw new Error('client/index.html não tem '+tagArma);
 if(!cli.includes(tagSons)) throw new Error('client/index.html não tem '+tagSons);
 fs.mkdirSync(path.dirname(out),{recursive:true});
-fs.writeFileSync(out,cli.replace(tag,()=>'<script>\n'+sim+'\n</script>').replace(tagSons,()=>'<script>\n'+sons+'</script>').replace(tagArma,()=>'<script>\n'+arma+'\n</script>').replace(tagMundo,()=>'<script>\n'+mundo+'\n</script>').replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>'<script>\n'+modelos+'\n</script>').replace(tagBonecos,()=>'<script>\n'+bonecos+'\n</script>').replace(tagArmas,()=>'<script>\n'+armas+'\n</script>').replace(tagTex,()=>'<script>\n'+texturas+'</script>').replace(tagAsilo,()=>'<script>\n'+asilo+'\n</script>'));
+fs.writeFileSync(out,cli.replace(tag,()=>'<script>\n'+sim+'\n</script>').replace(tagSons,()=>'<script>\n'+sons+'</script>').replace(tagArma,()=>'<script>\n'+arma+'\n</script>').replace(tagMundo,()=>'<script>\n'+mundo+'\n</script>').replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>'<script>\n'+modelos+'\n</script>').replace(tagBonecos,()=>'<script>\n'+bonecos+'\n</script>').replace(tagArmas,()=>'<script>\n'+armas+'\n</script>').replace(tagMaos,()=>'<script>\n'+maos+'\n</script>').replace(tagTex,()=>'<script>\n'+texturas+'</script>').replace(tagAsilo,()=>'<script>\n'+asilo+'\n</script>'));
 console.log('gerado',out,(fs.statSync(out).size/1024).toFixed(0)+' KB');
 
 // ---------- dist/web: a página e a arte em arquivos separados ----------
@@ -47,7 +48,7 @@ function pedacos(arquivo,global,prefixo){   // window.X={...}; vira prefixo-1.js
 const tags=nomes=>nomes.map(n=>`<script src="${n}"></script>`).join('\n');
 fs.writeFileSync(path.join(WEB,'sons.js'),sons);
 const web=cli.replace(tag,()=>'<script>\n'+sim+'\n</script>').replace(tagSons,()=>'<script src="sons.js"></script>').replace(tagArma,()=>'<script>\n'+arma+'\n</script>').replace(tagMundo,()=>'<script>\n'+mundo+'\n</script>')
-  .replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>tags(pedacos('modelos.js','RR_MODELOS','modelos'))).replace(tagBonecos,()=>tags(pedacos('bonecos.js','RR_BONECOS','bonecos'))).replace(tagArmas,()=>'<script>\n'+armas+'\n</script>').replace(tagTex,()=>tags(pedacos('texturas.js','RR_TEXTURAS','texturas')))
+  .replace(tagSkins,()=>'<script>\n'+skins+'\n</script>').replace(tagModelos,()=>tags(pedacos('modelos.js','RR_MODELOS','modelos'))).replace(tagBonecos,()=>tags(pedacos('bonecos.js','RR_BONECOS','bonecos'))).replace(tagArmas,()=>'<script>\n'+armas+'\n</script>').replace(tagMaos,()=>'<script>\n'+maos+'\n</script>').replace(tagTex,()=>tags(pedacos('texturas.js','RR_TEXTURAS','texturas')))
   .replace(tagAsilo,()=>'<script>\n'+asilo+'\n</script>');
 fs.writeFileSync(path.join(WEB,'ritual-reversal.html'),web);
 console.log('dist/web: '+fs.readdirSync(WEB).map(f=>`${f} ${(fs.statSync(path.join(WEB,f)).size/1024).toFixed(0)} KB`).join(', '));

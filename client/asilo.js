@@ -5,7 +5,9 @@
    e o lago. Montado por RR_ASILO(dependências).construir(); atualizar(dt, V, agora) a cada quadro. */
 window.RR_ASILO=function(D){
 'use strict';
-const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,texFoto,makeNoise,smooth,scene,modelo}=D;
+const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,texFoto,makeNoise,smooth,scene,modelo,matAgua}=D;
+// v6.6a: água com relevo e reflexo do céu (matAgua do index.html); sem ele, os materiais de antes
+const AGUA_M=(lx,lz)=>matAgua?matAgua(0x0b1416,lx,lz,{transparent:true,opacity:.92}):M.agua;
 const FT=n=>texFoto?texFoto(n):null, F_CONC=FT('concreto'), F_FERR=FT('ferrugem'), F_TELH=FT('telhadoAsilo'), F_PORTA=FT('portaAsilo'), F_TIJ=FT('tijolo');   // v6.4c: fotos novas do Asilo
 const PI=Math.PI, E=Sim.ESPACOS, W=Sim.WALLS;
 let _s=4711; const R=()=>(_s=(_s*16807)%2147483647)/2147483647;   // sorteio próprio: não mexe no vr() da catedral
@@ -87,7 +89,7 @@ for(const w of W){
   else if(w.kind==='lago'){ /* o lago é desenhado inteiro abaixo */ }
 }
 // o lago Blackwater: espelho escuro até o horizonte, com névoa por cima
-{ const g=new THREE.PlaneGeometry(600,260); g.rotateX(-PI/2); const m=new THREE.Mesh(g,M.lago); m.position.set(0,-.35,-66-130); add(m);
+{ const g=new THREE.PlaneGeometry(600,260); g.rotateX(-PI/2); const m=new THREE.Mesh(g,matAgua?matAgua(0x05090b,600,260,{envMapIntensity:.18}):M.lago); m.position.set(0,-.35,-66-130); add(m);
   const b=new THREE.Mesh(new THREE.BoxGeometry(220,.4,.6),MAT.wallDark); b.position.set(0,-.1,-66.2); add(b); }
 // o píer: tábuas sobre estacas
 for(let z=-71.5;z<=-66.5;z+=1){ for(const x of [-2.2,2.2]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.12,.14,1.4,6),M.madeira); p.position.set(x,-.5,z); add(p); } }
@@ -249,14 +251,14 @@ const PEC={
   comoda:w=>movel('comoda',w), caixote:w=>movel('caixote',w), armario_gotico:w=>movel('armario_gotico',w),
 banco:w=>{ if(M3('banco_asilo',w,w.h,0,1.7)) return; caixa(w.x1,w.x2,.42,.5,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,.5,w.h,w.z2-.1,w.z2,M.madeira,2); caixa(w.x1+.1,w.x1+.2,0,.42,w.z1,w.z2,M.madeira,2); caixa(w.x2-.2,w.x2-.1,0,.42,w.z1,w.z2,M.madeira,2); },
   mesa:w=>{ lampiao(w); enfeite('livros',w,-1.2,w.h); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.07,w.h,w.z1,w.z2,M.madeira,2); for(const [x,z] of [[w.x1+.1,w.z1+.1],[w.x2-.1,w.z1+.1],[w.x1+.1,w.z2-.1],[w.x2-.1,w.z2-.1]]) caixa(x-.05,x+.05,0,w.h-.07,z-.05,z+.05,M.madeira,1); },
-  tanque:w=>{ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.concreto,2); caixa(w.x1+.12,w.x2-.12,w.h-.05,w.h+.01,w.z1+.12,w.z2-.12,M.agua,1,false); },
+  tanque:w=>{ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.concreto,2); caixa(w.x1+.12,w.x2-.12,w.h-.05,w.h+.01,w.z1+.12,w.z2-.12,AGUA_M(1,1),1,false); },
   bancada:w=>{ lampiao(w); enfeite('quimica',w,1.1,w.h); if(M3('mesa_asilo',w,w.h)) return; caixa(w.x1,w.x2,w.h-.08,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1,w.x2,0,w.h-.08,w.z1+.1,w.z2-.1,M.madeira,2); },
   maca:w=>{ if(M3('leito',w,.9,PI)){ caixa(w.x1+.06,w.x2-.06,.62,.72,w.z1+.06,w.z2-.06,M.colchao,1); return; } caixa(w.x1,w.x2,.8,.88,w.z1,w.z2,M.colchao,1); caixa(w.x1+.1,w.x2-.1,.72,.8,w.z1+.1,w.z2-.1,M.ferro,1); for(const [x,z] of [[w.x1+.15,w.z1+.15],[w.x2-.15,w.z1+.15],[w.x1+.15,w.z2-.15],[w.x2-.15,w.z2-.15]]) caixa(x-.03,x+.03,0,.72,z-.03,z+.03,M.ferro,1); },
   cadeira_eletrica:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, MC=modelo&&modelo('cadeira');
     if(MC){ const m=new THREE.Mesh(MC.geo,MC.mat); m.position.set(cx,0,cz+.05); m.rotation.y=GIRO_CADEIRA; m.scale.set(1.5,1,1.5); m.castShadow=m.receiveShadow=true; add(m); caixa(cx-.2,cx+.2,1.72,1.87,cz+.15,cz+.4,M.ferro,1); return; }   // v6.4e: a cadeira gótica de madeira escaneada (CC0) e o capacete de ferro
     caixa(cx-.45,cx+.45,.45,.55,cz-.45,cz+.45,M.madeira,1); caixa(cx-.45,cx+.45,.55,1.7,cz+.35,cz+.45,M.madeira,1);
     caixa(cx-.5,cx-.4,.55,.85,cz-.45,cz+.45,M.madeira,1); caixa(cx+.4,cx+.5,.55,.85,cz-.45,cz+.45,M.madeira,1); caixa(cx-.2,cx+.2,1.7,1.85,cz+.2,cz+.45,M.ferro,1); caixa(cx-.4,cx+.4,0,.45,cz-.4,cz+.4,M.madeira,1); },
-  banheira:w=>{ const ax=w.x2-w.x1>w.z2-w.z1; caixa(w.x1,w.x2,.12,w.h,w.z1,w.z2,M.porcelana,1); caixa(w.x1+.1,w.x2-.1,w.h-.18,w.h+.005,w.z1+.1,w.z2-.1,M.agua,1,false);
+  banheira:w=>{ const ax=w.x2-w.x1>w.z2-w.z1; caixa(w.x1,w.x2,.12,w.h,w.z1,w.z2,M.porcelana,1); caixa(w.x1+.1,w.x2-.1,w.h-.18,w.h+.005,w.z1+.1,w.z2-.1,AGUA_M(1,1),1,false);
     for(const s of [-1,1]) for(const t of [-1,1]){ const x=ax?(s<0?w.x1+.15:w.x2-.15):(w.x1+w.x2)/2+t*.3, z=ax?(w.z1+w.z2)/2+t*.3:(s<0?w.z1+.15:w.z2-.15); caixa(x-.05,x+.05,0,.12,z-.05,z+.05,M.ferro,1); } },
   caldeira:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, r=Math.min(w.x2-w.x1,w.z2-w.z1)/2; const c=new THREE.Mesh(new THREE.CylinderGeometry(r,r,w.h-.4,16),M.ferrugem); c.position.set(cx,.4+(w.h-.4)/2,cz); c.castShadow=true; add(c);
     caixa(w.x1,w.x2,0,.4,w.z1,w.z2,M.concreto,2); const t=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,ALT-w.h,8),M.ferro); t.position.set(cx,w.h+(ALT-w.h)/2,cz); add(t);
@@ -277,7 +279,7 @@ for(const w of W) if(PEC[w.kind]) PEC[w.kind](w);
 // o teto do coreto: chapéu de ferro sobre as seis colunas
 { const t=new THREE.Mesh(new THREE.ConeGeometry(6.6,2.2,6,1),M.ferro); t.position.set(0,3.4+1.1,46); t.castShadow=true; add(t); caixa(-5.8,5.8,0,.3,40.2,51.8,M.concreto,3,false); }
 // tanques da hidroterapia: água rasa com borda
-for(const q of Sim.AGUA){ caixa(q.x1,q.x2,.02,.22,q.z1,q.z2,M.agua,2,false); for(const [a,b,c,d] of [[q.x1-.2,q.x2+.2,q.z1-.2,q.z1],[q.x1-.2,q.x2+.2,q.z2,q.z2+.2],[q.x1-.2,q.x1,q.z1,q.z2],[q.x2,q.x2+.2,q.z1,q.z2]]) caixa(a,b,0,.3,c,d,M.porcelana,1,false); }
+for(const q of Sim.AGUA){ caixa(q.x1,q.x2,.02,.22,q.z1,q.z2,AGUA_M(2,2),2,false); for(const [a,b,c,d] of [[q.x1-.2,q.x2+.2,q.z1-.2,q.z1],[q.x1-.2,q.x2+.2,q.z2,q.z2+.2],[q.x1-.2,q.x1,q.z1,q.z2],[q.x2,q.x2+.2,q.z1,q.z2]]) caixa(a,b,0,.3,c,d,M.porcelana,1,false); }
 // grade de ferro na margem e no muro do terreno: lanças a cada 30 cm em cima das sebes
 for(const w of W) if(w.kind==='muro'&&w.h<3.5){ const ax=w.x2-w.x1>w.z2-w.z1, L=ax?w.x2-w.x1:w.z2-w.z1; if(L>40) continue;
   for(let t=.15;t<L;t+=.3){ const x=ax?w.x1+t:(w.x1+w.x2)/2, z=ax?(w.z1+w.z2)/2:w.z1+t; const l=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.8,4),M.ferro); l.position.set(x,w.h+.65,z); add(l); } }

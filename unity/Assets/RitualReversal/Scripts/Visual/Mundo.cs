@@ -15,6 +15,15 @@ namespace RitualReversal.Visual
         public static Mundo Atual;
         public Transform raiz; // espelhada
         public readonly Dictionary<string, Material> MAT = new Dictionary<string, Material>();
+        // v6.6a: água com ondinhas (o matAgua do index.html): cor, largura e fundo em metros (o uv de 0 a 1 cobre isso; nas caixas,
+        // o uv já vai em metros/S: passe S, S). O relevo rola devagar (AtualizarAgua, no Atualizar do quadro).
+        readonly List<Material> aguas = new List<Material>();
+        public Material MatAgua(int hex, float lx, float lz, bool transparente = false, float opacidade = 1, float metal = .15f)
+        {
+            var m = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(hex), rugosidade = .08f, metal = metal, relevo = Tex.RelevoAgua(), relevoK = .5f, repetir = new Vector2(lx / 4, lz / 4), transparente = transparente, opacidade = opacidade });
+            m.name = "agua"; aguas.Add(m); return m;
+        }
+        void AtualizarAgua(float t) { var o = new Vector2(t * .011f, t * .007f); foreach (var m in aguas) if (m != null && m.HasProperty("_BumpMap")) m.SetTextureOffset("_BumpMap", o); }
         readonly HashSet<Material> facetados = new HashSet<Material>();
         class Balde { public Material m; public bool sombra; public Geo g = new Geo(); }
         readonly Dictionary<string, Balde> baldes = new Dictionary<string, Balde>();
@@ -297,7 +306,7 @@ namespace RitualReversal.Visual
                         float r = Math.Min(L, D) / 2;
                         Est(Geo.Cilindro(r, r * 1.05f, w.h, 28, 1, true), M("wall"), x, w.h / 2, z);
                         Est(Geo.Toro(r - .15f, .22f, 10, 32), M("marble"), TRS(x, w.h, z, PI / 2, 0, 0));
-                        Est(Geo.Circulo(r - .3f, 28), M("agua"), TRS(x, w.h - .35f, z, -PI / 2, 0, 0), false);
+                        Est(Geo.Circulo(r - .3f, 28), MatAgua(0x05080c, 2 * r, 2 * r), TRS(x, w.h - .35f, z, -PI / 2, 0, 0), false);
                         foreach (int sx in new[] { -1, 1 }) Est(Geo.Caixa(.25f, 3.2f, .25f), M("wood"), x + sx * (r - .2f), 1.6f, z);
                         Est(Geo.Cilindro(.1f, .1f, r * 2, 10), M("wood"), TRS(x, 3, z, 0, 0, PI / 2)); Est(Geo.Cilindro(.22f, .18f, .35f, 12), M("wood"), x + .3f, 2.2f, z); return;
                     }

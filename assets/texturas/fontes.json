@@ -409,5 +409,31 @@
   "licenca": "CC0",
   "autor": "Rob Tuytel",
   "uso": "v6.5f: Asilo por fora, a fachada de tijolo escuro (paredes que dão para o terreno)"
+ },
+ "ceuNublado": {
+  "id": "kloppenheim_07_puresky",
+  "hdri": "kloppenheim_07_puresky",
+  "pagina": "https://polyhaven.com/a/kloppenheim_07_puresky",
+  "licenca": "CC0",
+  "autor": "Greg Zaal, Jarod Guest",
+  "uso": "v6.6: céu noturno nublado (panorama 2048×1024; o jogo escurece pelo material)",
+  "tam": [
+   2048,
+   1024
+  ],
+  "sem_lua": true
+ },
+ "ceuLimpo": {
+  "id": "kloppenheim_02_puresky",
+  "hdri": "kloppenheim_02_puresky",
+  "pagina": "https://polyhaven.com/a/kloppenheim_02_puresky",
+  "licenca": "CC0",
+  "autor": "Greg Zaal, Jarod Guest",
+  "uso": "v6.6: céu noturno limpo, com estrelas (noites de clima limpo)",
+  "tam": [
+   2048,
+   1024
+  ],
+  "sem_lua": true
  }
 }

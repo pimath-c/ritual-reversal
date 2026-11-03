@@ -158,7 +158,7 @@ namespace RitualReversal.Visual
     {
         const float PI = Mathf.PI;
         public class Junta { public Transform t; public Vector3 r, p; public void Aplicar() { t.localRotation = Mundo.Q(r.x, r.y, r.z); } }
-        public Transform g, bodyT; public Junta body, torso, head, legL, legR, armL, armR, gun; Junta[] juntas;
+        public Transform g, bodyT; public Junta body, torso, head, legL, legR, armL, armR, gun, shinL, shinR, foreL, foreR; Junta[] juntas;
         public Transform robe, aba; public float robeZ, abaX;
         public GameObject rune, flash; public Material mRune, mFlash;
         public Pecas.Cetro cetro;
@@ -188,6 +188,10 @@ namespace RitualReversal.Visual
             head = J(torso.t, P["head"].x, P["head"].y, P["head"].z, "cabeça");
             armL = J(torso.t, P["armL"].x, P["armL"].y, P["armL"].z, "braço E"); armR = J(torso.t, P["armR"].x, P["armR"].y, P["armR"].z, "braço D");
             var Jt = new Dictionary<string, Transform> { { "body", bodyT }, { "torso", torso.t }, { "head", head.t }, { "legL", legL.t }, { "legR", legR.t }, { "armL", armL.t }, { "armR", armR.t } };
+            // v6.6: joelho e cotovelo (o boneco veio com canela e antebraço separados)
+            if (P.ContainsKey("shinL") && P.ContainsKey("shinR")) { shinL = J(legL.t, P["shinL"].x, P["shinL"].y, P["shinL"].z, "canela E"); shinR = J(legR.t, P["shinR"].x, P["shinR"].y, P["shinR"].z, "canela D"); Jt["shinL"] = shinL.t; Jt["shinR"] = shinR.t; }
+            if (P.ContainsKey("foreL") && P.ContainsKey("foreR")) { foreL = J(armL.t, P["foreL"].x, P["foreL"].y, P["foreL"].z, "antebraço E"); foreR = J(armR.t, P["foreR"].x, P["foreR"].y, P["foreR"].z, "antebraço D"); Jt["foreL"] = foreL.t; Jt["foreR"] = foreR.t; }
+            Transform maoJ = foreR != null && B.maoFore.HasValue ? foreR.t : armR.t; Vector3 maoP = foreR != null && B.maoFore.HasValue ? B.maoFore.Value : M;
             foreach (var kv in B.geos) k.Por(Jt[kv.Key], mat, kv.Value, M4.I);
             float frente = B.torsoMin.z, peito = B.torsoMin.y + (B.torsoMax.y - B.torsoMin.y) * .62f;   // a frente do peito, no espaço do torso
             if (team == "C")
@@ -216,7 +220,7 @@ namespace RitualReversal.Visual
                     escala = 1.12f;
                 }
                 else { mRune = Pecas.Aditivo(0x9a4ad0, Tex.Runa(), false); rune = Mundo.Malha(Geo.Plano(.22f, .22f), mRune, torso.t, "runa", false); Mundo.Pos(rune, 0, peito, frente - .012f); Mundo.Rot(rune, 0, PI, 0); }
-                gun = J(armR.t, M.x, M.y, M.z, "mão");
+                gun = J(maoJ, maoP.x, maoP.y, maoP.z, "mão");
                 cetro = Pecas.CetroOsso(k, gun.t, guard ? 0xff4a5a : 0xb050ff); cetro.g.localPosition = new Vector3(0, -.36f, 0);
                 sprites.Add(cetro.halo); sprites.Add(cetro.runa);
             }
@@ -246,7 +250,7 @@ namespace RitualReversal.Visual
                         k.Por(torso.t, dour, Geo.Caixa(.01f, .06f, .012f), sx * .075f, peito - .33f, frente - .02f); k.Por(torso.t, dour, Geo.Caixa(.04f, .01f, .012f), sx * .075f, peito - .315f, frente - .02f);
                     }
                 }
-                gun = J(armR.t, M.x, M.y, M.z, "mão"); gun.r = new Vector3(-PI / 2, 0, 0); gun.Aplicar();
+                gun = J(maoJ, maoP.x, maoP.y, maoP.z, "mão"); gun.r = new Vector3(-PI / 2, 0, 0); gun.Aplicar();
                 var ar = exo ? Pecas.Revolver(k, gun.t) : Pecas.Carabina(k, gun.t); ar.g.localPosition = new Vector3(0, 0, .02f);
                 mFlash = Pecas.Aditivo(0xffd08a, Tex.Chama(), true, 0); flash = Mundo.Sprite(ar.g, mFlash, .5f, .5f, "clarão"); flash.transform.localPosition = ar.boca; sprites.Add(flash);
             }
@@ -356,7 +360,7 @@ namespace RitualReversal.Visual
                 mFlash = Pecas.Aditivo(0xffd08a, Tex.Chama(), true, 0); flash = Mundo.Sprite(ar.g, mFlash, .5f, .5f, "clarão"); flash.transform.localPosition = ar.boca; sprites.Add(flash);
             }
             k.Fechar();
-            juntas = new[] { body, torso, head, legL, legR, armL, armR, gun };
+            juntas = System.Array.FindAll(new[] { body, torso, head, legL, legR, armL, armR, gun, shinL, shinR, foreL, foreR }, j => j != null);
             g.localScale = Vector3.one * escala;
             foreach (var r in g.GetComponentsInChildren<Renderer>(true))
             {
@@ -407,6 +411,34 @@ namespace RitualReversal.Visual
         static float Lerp(float a, float b, float k) { return a + (b - a) * k; }
 
         // animateActor: tudo em coordenadas do protótipo; 'altares' para o cultista saber se está canalizando
+        // v6.6: o juntasNovas do index.html: joelho na caminhada, ajoelhado/agachado com a coxa da frente na horizontal, cotovelos
+        // dobrados com o braço compensando (a arma aponta para o mesmo lugar)
+        void JuntasNovas(Ator a, string st)
+        {
+            string hk = a.hold != null && a.hold.key != null ? a.hold.key : ""; bool moving = spd > .5f;
+            if (shinL != null && shinR != null)
+            {
+                float jL = -.06f, jR = -.06f;
+                if (st == "down") { jL = -.35f; jR = -.15f; }
+                else if (a.sealing >= 0 || hk.StartsWith("col") || hk.StartsWith("burn") || hk.StartsWith("rev") || a.ag)
+                {
+                    float sw2 = a.ag && moving ? Mathf.Sin(phase) * .22f : 0;
+                    legR.r.x = 1.35f - sw2; jR = -1.45f; legL.r.x = -.3f + sw2; jL = -1.3f;
+                }
+                else if (hk.StartsWith("exe")) { jL = -.25f; jR = -.45f; }
+                else if (moving) { float amp = Mathf.Min(.75f, spd * .12f), c = Mathf.Cos(phase); jL = -(.08f + amp * 1.25f * Mathf.Max(0, c)); jR = -(.08f + amp * 1.25f * Mathf.Max(0, -c)); }
+                shinL.r = new Vector3(jL, 0, 0); shinR.r = new Vector3(jR, 0, 0);
+            }
+            if (foreL != null && foreR != null)
+            {
+                float eL = .22f, eR = .22f;
+                if (st == "down") { eL = .35f; eR = .35f; }
+                else if (a.team == "H") { if (!(a.sealing >= 0) && hk == "" && !(a.reloadT > 0)) { eR = .55f; eL = .8f; } else { eL = .4f; eR = .35f; } }
+                else { eR = .3f; eL = .22f + (moving ? Mathf.Max(0, Mathf.Sin(phase)) * .35f : 0); }
+                armL.r.x -= eL; armR.r.x -= eR; foreL.r = new Vector3(eL, 0, 0); foreR.r = new Vector3(eR, 0, 0);
+            }
+        }
+
         public void Animar(Mundo W, Ator a, float x, float z, float yaw, float dt, float t, List<Altar> altares)
         {
             if (px == null) { px = x; pz = z; }
@@ -566,6 +598,7 @@ namespace RitualReversal.Visual
                     B.r.x = -1.42f * (1 - kl); bodyY = -.18f * Mathf.Sin(kl * PI); legL.r.x -= 1.1f * Mathf.Sin(kl * PI); semSuave = true;
                 }
             }
+            JuntasNovas(a, st);
             float kR = 1 - Mathf.Exp(-dt * (reac != null ? 38 : 16)), kB = semSuave ? 1 : 1 - Mathf.Exp(-dt * 9); semSuave = false;
             foreach (var j in juntas) { float kk = j == body ? kB : kR; j.r = j.p + (j.r - j.p) * kk; }
             bodyY = pb + (bodyY - pb) * kB;

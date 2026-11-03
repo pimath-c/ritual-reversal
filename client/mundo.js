@@ -4,7 +4,17 @@
    Fábrica igual à de client/arma.js: o jogo chama RR_MUNDO({...}) em buildWorld e recebe {PECAS, construir, vida, quadro}. */
 window.RR_MUNDO=function(D){
 'use strict';
-const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar,modelo}=D;
+const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,vr,FONTES,flames,CEU,PERF,VENTO,desgastar,modelo,matAgua}=D;
+// v6.6a: as poças do Charco (antes as árvores mortas "dentro d'água" ficavam em chão seco). Só aparência: no Charco ninguém
+// anda mais devagar. Água rasa com o relevo e o reflexo do céu, e uma borda de lama; o contorno torto vem de senos (sem vr(),
+// para não mudar o sorteio das peças seguintes). O Unity faz o mesmo (MundoV6.Charco).
+const POCAS_CHARCO=[[-6,-4,6,4.5],[4,-6,5,3.5],[6,3,6.5,4.5],[-5,5,5,3.8],[.5,.5,4,3]];
+function charco(cx,cz){ const mLama=new THREE.MeshStandardMaterial({color:0x080604,roughness:.42,metalness:0});
+  POCAS_CHARCO.forEach(([dx,dz,rx,rz],k)=>{ const N=40, g=new THREE.CircleGeometry(1,N), P=g.attributes.position;
+    for(let i=1;i<=N+1;i++){ const x=P.getX(i), y=P.getY(i), a=Math.atan2(y,x), f=1+.13*Math.sin(a*3+k*1.7)+.08*Math.sin(a*5+k*2.9)+.05*Math.sin(a*9+k); P.setXY(i,x*f,y*f); }
+    g.rotateX(-Math.PI/2);
+    const lama=new THREE.Mesh(g,mLama); lama.scale.set(rx*1.18,1,rz*1.18); lama.position.set(cx+dx,.022+k*.002,cz+dz); lama.receiveShadow=true; world.add(lama);
+    const ag=new THREE.Mesh(g,matAgua(0x020303,2*rx,2*rz,{metalness:0,envMapIntensity:.22})); ag.scale.set(rx,1,rz); ag.position.set(cx+dx,.04+k*.002,cz+dz); ag.receiveShadow=true; world.add(ag); }); }
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
 const W=Sim.WALLS, PI=Math.PI;
 // alturas visuais (as da prancha docs/conceito/catedral.svg)
@@ -291,7 +301,7 @@ function promontorio(){
   // beira do penhasco ao norte (atrás da abside): rochas soltas sobre o limite
   for(let x=-80;x<=80;x+=6){ if(Math.abs(x)<10) continue; const r=new THREE.Mesh(new THREE.DodecahedronGeometry(1.4+vr()*1.2,0),M.rocha); r.position.set(x+vr()*3,.3,-100.2+vr()*.6); r.scale.y=.6; add(r); }
   // tanques secos do adro e os fiéis de pedra que vigiam a ponte
-  for(const w of W.filter(w=>w.kind==='tanque')){ B(w.x1,w.x2,0,w.h,w.z1,w.z2,M.pedraClara,2); const agua=new THREE.Mesh(new THREE.PlaneGeometry(w.x2-w.x1-.6,w.z2-w.z1-.6),new THREE.MeshStandardMaterial({color:0x080a0e,roughness:.15,metalness:.4})); agua.rotation.x=-PI/2; agua.position.set((w.x1+w.x2)/2,w.h-.2,(w.z1+w.z2)/2); world.add(agua); }
+  for(const w of W.filter(w=>w.kind==='tanque')){ B(w.x1,w.x2,0,w.h,w.z1,w.z2,M.pedraClara,2); const agua=new THREE.Mesh(new THREE.PlaneGeometry(w.x2-w.x1-.6,w.z2-w.z1-.6),matAgua?matAgua(0x080a0e,w.x2-w.x1,w.z2-w.z1):new THREE.MeshStandardMaterial({color:0x080a0e,roughness:.15,metalness:.4})); agua.rotation.x=-PI/2; agua.position.set((w.x1+w.x2)/2,w.h-.2,(w.z1+w.z2)/2); world.add(agua); }
 }
 
 // ================= peças novas (o jogo chama PECAS[kind](w) para cada caixa da simulação) =================
@@ -347,7 +357,8 @@ const PECAS={
     if(MG0){ const g=new THREE.Mesh(MG0.geo,MG0.mat); g.scale.setScalar(1.6); g.position.set(x,2.4,z+5.7); g.rotation.y=.4; g.castShadow=true; add(g); }
     else { const pedra=new THREE.Mesh(new THREE.BoxGeometry(1.1,.8,1.1),M.pedraClara); pedra.position.set(x,w.h-6.2,z+5.7); add(pedra); } },
   passarela(w){ const aoX=(w.x2-w.x1)>=(w.z2-w.z1), L=Math.max(w.x2-w.x1,w.z2-w.z1); for(let t=.2;t<L;t+=.45){ const tb=new THREE.Mesh(new THREE.BoxGeometry(aoX?.34:1.6,.08,aoX?1.6:.34),MAT.tabuas); tb.position.set(aoX?w.x1+t:(w.x1+w.x2)/2,.3+(vr()-.5)*.06,aoX?(w.z1+w.z2)/2:w.z1+t); tb.rotation.y=(vr()-.5)*.08; world.add(tb); }
-    for(let t=1;t<L;t+=2.5) for(const s of [-1,1]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,1,5),MAT.wood); p.position.set(aoX?w.x1+t:(w.x1+w.x2)/2+s*.8,.2,aoX?(w.z1+w.z2)/2+s*.8:w.z1+t); world.add(p); } },
+    for(let t=1;t<L;t+=2.5) for(const s of [-1,1]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,1,5),MAT.wood); p.position.set(aoX?w.x1+t:(w.x1+w.x2)/2+s*.8,.2,aoX?(w.z1+w.z2)/2+s*.8:w.z1+t); world.add(p); }
+    if(matAgua) charco(w.x1,(w.z1+w.z2)/2-1.4); },
   // forno de carvão em colmeia: parede reta até 1,6 m e cúpula por cima, para o ombro do forno ficar acima do olho
   // (a caixa da simulação é alta; um domo baixo deixaria ver por cima do que bloqueia o tiro)
   forno(w){ const x=(w.x1+w.x2)/2, z=(w.z1+w.z2)/2, r=(w.x2-w.x1)/2, mt=mA2('forno',()=>new THREE.MeshStandardMaterial({color:0x2a241e,roughness:1,map:TEX.wall.map}));

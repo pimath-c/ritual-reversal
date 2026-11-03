@@ -428,6 +428,23 @@ namespace RitualReversal.Visual
             c.Iniciar(); c.Elipse(32, 22, 11, 15, 0, 0, PI * 2); c.Preencher(); c.Iniciar(); c.Elipse(32, 48, 8, 10, 0, 0, PI * 2); c.Preencher();
             return _pegada = c.Textura(false, "pegada");
         }
+        // v6.6a: relevo de ondinhas da água (o relevoAgua() do index.html, mesmas contas e o mesmo gerador): soma de ondas que
+        // fecham no ladrilho, em ordem de canvas (o Tex2D inverte as linhas como o flipY do three)
+        static Texture2D relevoAgua;
+        public static Texture2D RelevoAgua()
+        {
+            if (relevoAgua != null) return relevoAgua; const int N = 256; var h = new float[N * N]; var d = new Color32[N * N]; double s = 7; Func<double> R = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+            var ondas = new List<double[]>();
+            for (int k = 0; k < 14; k++) { double kx = Math.Floor((R() * 2 - 1) * (2 + k) + .5), kz = Math.Floor((R() * 2 - 1) * (2 + k) + .5); ondas.Add(new[] { kx == 0 ? 1 : kx, kz, R() * 6.283, 1 / (1 + k * .35) }); }
+            for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) { double v = 0; foreach (var o in ondas) v += o[3] * Math.Sin(6.283 * (o[0] * x + o[1] * y) / N + o[2]); h[y * N + x] = (float)v; }
+            Func<double, byte> B8 = v => (byte)Math.Max(0, Math.Min(255, Math.Round(v)));
+            for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
+            {
+                double dx = (double)h[y * N + (x + 1) % N] - h[y * N + (x + N - 1) % N], dy = (double)h[((y + 1) % N) * N + x] - h[((y + N - 1) % N) * N + x], nx = -dx * .35, ny = -dy * .35, l = Math.Sqrt(nx * nx + ny * ny + 1);
+                d[y * N + x] = new Color32(B8((nx / l * .5 + .5) * 255), B8((ny / l * .5 + .5) * 255), B8((1 / l * .5 + .5) * 255), 255);
+            }
+            return relevoAgua = Tela.Tex2D(N, N, d, false, "relevoAgua");
+        }
         public static Texture2D Gradiente(string nome, params object[] paradas) { var c = new Tela(8, 256); c.gradiente = Tela.Linear(0, 0, 0, 256, paradas); c.Retangulo(0, 0, 8, 256); return c.Textura(false, nome); }
     }
 }

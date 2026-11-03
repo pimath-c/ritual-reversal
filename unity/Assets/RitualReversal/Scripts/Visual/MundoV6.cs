@@ -531,8 +531,7 @@ namespace RitualReversal.Visual
             // beira do penhasco ao norte (atrás da abside): rochas soltas sobre o limite
             for (float x = -80; x <= 80; x += 6) { if (Math.Abs(x) < 10) continue; float r = 1.4f + vr() * 1.2f, px = x + vr() * 3, pz = -100.2f + vr() * .6f; Est(Geo.Dodecaedro(r), mRocha, TRS(px, .3f, pz, 0, 0, 0, 1, .6f, 1)); }
             // tanques secos do adro
-            var agua = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x080a0e), rugosidade = .15f, metal = .4f }); agua.name = "aguaTanque";
-            foreach (var w in MapaVisual.WALLS) { if (w.kind != "tanque") continue; B(w.x1, w.x2, 0, w.h, w.z1, w.z2, mPedraClara, 2); Est(Geo.Plano(w.x2 - w.x1 - .6f, w.z2 - w.z1 - .6f), agua, TRS((w.x1 + w.x2) / 2, w.h - .2f, (w.z1 + w.z2) / 2, -PI / 2, 0, 0), false); }
+            foreach (var w in MapaVisual.WALLS) { if (w.kind != "tanque") continue; B(w.x1, w.x2, 0, w.h, w.z1, w.z2, mPedraClara, 2); Est(Geo.Plano(w.x2 - w.x1 - .6f, w.z2 - w.z1 - .6f), MatAgua(0x080a0e, w.x2 - w.x1, w.z2 - w.z1), TRS((w.x1 + w.x2) / 2, w.h - .2f, (w.z1 + w.z2) / 2, -PI / 2, 0, 0), false); }
         }
 
         void ConstruirV6() { Pisos(); Desfiladeiro(); Pontes(); CatedralV6(); InteriorV6(); PromontorioV6(); }
@@ -584,6 +583,7 @@ namespace RitualReversal.Visual
                     {
                         for (float t = .2f; t < L; t += .45f) { float py = .3f + (vr() - .5f) * .06f, ry = (vr() - .5f) * .08f; Est(Geo.Caixa(aoX ? .34f : 1.6f, .08f, aoX ? 1.6f : .34f), M("tabuas"), TRS(aoX ? w.x1 + t : cx, py, aoX ? cz : w.z1 + t, 0, ry, 0), false); }
                         var est = Geo.Cilindro(.08f, .08f, 1, 5); for (float t = 1; t < L; t += 2.5f) foreach (int s in new[] { -1, 1 }) Est(est, M("wood"), aoX ? w.x1 + t : cx + s * .8f, .2f, aoX ? cz + s * .8f : w.z1 + t, false);
+                        Charco(w.x1, (w.z1 + w.z2) / 2 - 1.4f);
                         return true;
                     }
                 // forno de carvão em colmeia: parede reta até 1,6 m e cúpula por cima, para o ombro do forno ficar acima do olho
@@ -663,6 +663,23 @@ namespace RitualReversal.Visual
             Est(Geo.Circulo(.15f, 10), mFundo, G * TRS(0, 1.66f, -.2f, 0, PI, 0), false);
             Est(Geo.Esfera(.12f, 8, 6), MM, G * M4.T(0, 1.05f, -.33f), false);
             foreach (int s in new[] { -1, 1 }) Est(Geo.Cilindro(.08f, .11f, .6f, 6), MM, G * TRS(s * .2f, 1.2f, -.18f, -.9f, 0, s * -.5f), false);
+        }
+    
+        // v6.6a: as poças do Charco (o charco() do client/mundo.js): água rasa com ondinhas e borda de lama; o contorno torto vem
+        // de senos (sem vr()). Só aparência: no Charco ninguém anda mais devagar.
+        static readonly float[][] POCAS_CHARCO = { new[] { -6f, -4, 6, 4.5f }, new[] { 4f, -6, 5, 3.5f }, new[] { 6f, 3, 6.5f, 4.5f }, new[] { -5f, 5, 5, 3.8f }, new[] { .5f, .5f, 4, 3 } };
+        void Charco(float cx, float cz)
+        {
+            var mLama = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x080604), rugosidade = .42f });
+            for (int k = 0; k < POCAS_CHARCO.Length; k++)
+            {
+                float dx = POCAS_CHARCO[k][0], dz = POCAS_CHARCO[k][1], rx = POCAS_CHARCO[k][2], rz = POCAS_CHARCO[k][3]; const int N = 40;
+                var g = Geo.Circulo(1, N);
+                for (int i = 1; i <= N + 1; i++) { var q = g.p[i]; float a = Mathf.Atan2(q.y, q.x), f = 1 + .13f * Mathf.Sin(a * 3 + k * 1.7f) + .08f * Mathf.Sin(a * 5 + k * 2.9f) + .05f * Mathf.Sin(a * 9 + k); g.p[i] = new Vector3(q.x * f, q.y * f, q.z); }
+                g.GirarX(-PI / 2);
+                Est(g, mLama, TRS(cx + dx, .022f + k * .002f, cz + dz, 0, 0, 0, rx * 1.18f, 1, rz * 1.18f), false);
+                Est(g, MatAgua(0x020303, 2 * rx, 2 * rz, metal: 0), TRS(cx + dx, .04f + k * .002f, cz + dz, 0, 0, 0, rx, 1, rz), false);
+            }
         }
     }
 }

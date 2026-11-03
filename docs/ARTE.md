@@ -50,6 +50,8 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `acolchoado` | Asilo: paredes acolchoadas do Isolamento (em cinza; a cor de lona encardida vem do material) | [soi_leather_padded_01](https://soi.itch.io/substance-designer-material-pack-1) | SOI |
 | `copa` | v6.5f: cartão de ramagem (RGBA) das copas das árvores e das moitas, composto de folhas fotografadas presas em galhinhos | [folhagem_copa](https://ambientcg.com/list?q=LeafSet) | ambientCG (LeafSet024, LeafSet005, LeafSet030) |
 | `tijolo` | v6.5f: Asilo por fora, a fachada de tijolo escuro (paredes que dão para o terreno) | [dark_brick_wall](https://polyhaven.com/a/dark_brick_wall) | Rob Tuytel |
+| `ceuNublado` | v6.6: céu noturno nublado (panorama 2048×1024; o jogo escurece pelo material) | [kloppenheim_07_puresky](https://polyhaven.com/a/kloppenheim_07_puresky) | Greg Zaal, Jarod Guest |
+| `ceuLimpo` | v6.6: céu noturno limpo, com estrelas (noites de clima limpo) | [kloppenheim_02_puresky](https://polyhaven.com/a/kloppenheim_02_puresky) | Greg Zaal, Jarod Guest |
 
 ## Modelos
 
@@ -124,6 +126,12 @@ A forma do modelo no quadro da arma do jogo, pintada com os materiais por papel 
 | --- | --- | --- | --- |
 | `carabina` | a carabina de alavanca do Soldado (primeira e terceira pessoa) | [hunting-rifle](https://opengameart.org/content/hunting-rifle), CC0 | Lucian Pavel |
 | `revolver` | o revólver do Exorcista (primeira e terceira pessoa) | [old-revolver](https://opengameart.org/content/old-revolver), CC0 | Lucian Pavel |
+
+## Mãos da primeira pessoa
+
+A mão direita da malha base do MakeHuman (CC0; Data Collection AB, Joel Palmius, Jonas Hauquier), com os alvos do Soldado,
+reassentada no esqueleto de 16 ossos do `client/arma.js` por `tools/montar-maos.py` (saída `client/maos.js`). A esquerda é
+a mesma espelhada; a luva da caça e a pele do culto são os materiais do jogo.
 
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em

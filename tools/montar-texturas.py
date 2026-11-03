@@ -101,6 +101,20 @@ def compor_folhagem(f, destino):
     img.crop((P, P, P + T, P + T)).save(destino)
 
 
+def apagar_lua(im):
+    """v6.6: a lua do panorama sai (o jogo tem a sua, que dá a luz e as sombras em outra altura): perto do ponto mais claro,
+    o que passa do fundo desfocado volta para o fundo, com borda suave."""
+    import numpy as np
+    from PIL import ImageFilter
+    a = np.asarray(im).astype(np.float32); L = a.mean(2); H, W = L.shape
+    y0, x0 = np.unravel_index(np.argmax(L[:H // 2]), L[:H // 2].shape)
+    fundo = np.asarray(im.filter(ImageFilter.GaussianBlur(W // 25))).astype(np.float32)
+    yy, xx = np.mgrid[0:H, 0:W]; dx = np.minimum(abs(xx - x0), W - abs(xx - x0)); d = np.hypot(dx, yy - y0) / (W * .06)
+    m = np.clip(1.6 - d, 0, 1)[..., None]   # 1 no centro, some a ~0,1 da largura
+    teto = np.minimum(a, fundo * .92)
+    return Image.fromarray(np.clip(a * (1 - m) + teto * m, 0, 255).astype(np.uint8))
+
+
 def baixar(i):
     os.makedirs(ORIG, exist_ok=True)
     falta = [p for p in MAPAS if not os.path.exists(os.path.join(ORIG, f'{i}_{p}.jpg'))]
@@ -145,6 +159,10 @@ def main():
             os.makedirs(ORIG, exist_ok=True)
             if f.get('folhagem'):
                 if not os.path.exists(os.path.join(ORIG, f"{f['id']}_cor.png")): compor_folhagem(f, os.path.join(ORIG, f"{f['id']}_cor.png"))
+            elif f.get('hdri'):   # v6.6: céu (panorama equirretangular do Poly Haven, o JPG já tonemapeado; só a cor)
+                alvo = os.path.join(ORIG, f"{f['id']}_cor.jpg")
+                if not os.path.exists(alvo):
+                    with urllib.request.urlopen(pedido(f"https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/{f['hdri']}.jpg"), timeout=600) as r, open(alvo, 'wb') as o: o.write(r.read())
             elif f.get('itch'): baixar_itch(f)
             else: baixar(f['id'])
         except Exception as e:
@@ -152,6 +170,12 @@ def main():
         js[nome] = {}
         for p in MAPAS:
             orig = os.path.join(ORIG, f"{f['id']}_{p}.jpg"); saida = os.path.join(UNITY, f'{nome}_{p}.bytes')
+            if f.get('hdri') and p != 'cor': continue
+            if f.get('hdri') and os.path.exists(orig):   # céu: retangular (2:1), JPEG
+                im = Image.open(orig).convert('RGB').resize(tuple(f.get('tam', [2048, 1024])), Image.LANCZOS)
+                if f.get('sem_lua'): im = apagar_lua(im)
+                b = io.BytesIO(); im.save(b, 'JPEG', quality=84, optimize=True); dado = b.getvalue(); open(saida, 'wb').write(dado)
+                js[nome][p] = base64.b64encode(dado).decode('ascii'); total += len(dado); continue
             if f.get('folhagem'):   # v6.5f: ramagem com alfa: só a cor, em PNG
                 orig = os.path.join(ORIG, f"{f['id']}_cor.png")
                 if p != 'cor': continue

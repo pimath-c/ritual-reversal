@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.5f)
+## Estado atual (v6.6)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -307,6 +307,24 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   asilo.js (C# `Fachadas`): faces de 'parede' que dão para espaço aberto ganham tijolo (textura `tijolo` = dark_brick_wall), rodapé,
   cornija, janelas gradeadas na grade global de 3,6 m, telhado de ardósia inclinado para dentro e chaminés; ardósia no topo das paredes;
   verga de tijolo nas portas para fora. Rouparia/Depósito/Sala de Visitas sem frestas. Bots, sementes 1000–1199 no asilo: culto 41% → 47%.
+- v6.6 (notas em `notas/v6.6.md`): mãos da primeira pessoa da malha base do MakeHuman (`python3 tools/montar-maos.py` → `client/maos.js`,
+  `RR_MAOS` base64 com pos/nor/uv/idx/si/sw; triângulos da mão direita com mais de metade do peso nos ossos da mão, cada vértice levado
+  dos quadros dos ossos do MakeHuman para os 16 ossos do arma.js por mistura linear, falanges esticadas para FAL/PL; `ROLO_POLEGAR` .9).
+  `criarMao` usa `GEO.maoPele` dela (sem unhas nem costura); build.js embute nas duas saídas (tag `maos.js`), build-mobile
+  embute, o servidor serve. Unity: `exportar-primeira-pessoa.js` leva a pele em pedaços que se sobrepõem (triângulo com peso ≥ .3 no osso
+  entra também no pedaço dele); unity-fp bit a bit. Bonecos com joelho e cotovelo: `montar-bonecos.py` com `shinL/R` (calf/foot) e
+  `foreL/R` (antebraço e mão), filhas de legX/armX, faixa de 5 cm sobreposta; `extras.maoFore`. Navegador: `bonecoReal` cria as juntas,
+  arma no antebraço (`maoJ`/`maoP`), `juntasNovas(U,a,A,st)` antes da suavização (joelho no passo, ajoelhar, agachar, execução, caído;
+  cotovelo por mira e classe). Unity: `Boneco.JuntasNovas`, `BonecoGLB.maoFore`. Céu fotográfico: `montar-texturas.py` com `"hdri"`
+  (JPG tonemapeado do Poly Haven, `tam` 2048×1024, `sem_lua` apaga a lua), texturas `ceuLimpo`/`ceuNublado`; `prepararCeuFoto()`/
+  `trocarCeu(tipo)` (limpa → ceuLimpo, o resto → ceuNublado; cor do material `CEU.base` escura, giro −1,59/−1,75) nos dois mapas;
+  `atualizarGrande` tinge a base. Unity: `Mundo.TrocarCeu` no `AtualizarClima`. `__T.trocarCeu`, `__T.CEU` no autoteste.
+  Água: `relevoAgua()` (ondas somadas que fecham no ladrilho, gerador fixo; C# `Tex.RelevoAgua`, linhas pelo `Tela.Tex2D`), `matAgua(cor,lx,lz,o)`
+  (relevo a cada ~4 m, rola em `atualizarAgua`; envMap = foto do céu do clima pelo PMREM, `reflexoAgua(qual)` no `trocarCeu`; nas caixas do
+  meshBox passe S,S), lago/tanques/banheiras/AGUA do Asilo, tanques do adro e poço. Charco: `charco(cx,cz)` no mundo.js (chamado pela
+  `passarela`, sem `vr()`; `POCAS_CHARCO`), só visual. Unity: `Mundo.MatAgua`/`AtualizarAgua` (sem envMap), `MundoV6.Charco`, e
+  `ReflexoNoturno` (cubo 8×8 com a média da foto do céu × base: reflexo custom do RenderSettings no lugar do céu de dia padrão).
+  `__T.pos()` = {composer, BLOOM, GRADE}. Mangas claras na vitrine = luz de estúdio (`LEITURA` 1,3); na partida saem escuras.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

@@ -13,7 +13,7 @@ namespace RitualReversal.Visual
     public class BonecoGLB
     {
         public Dictionary<string, Geo> geos = new Dictionary<string, Geo>(); public Material mat;
-        public Dictionary<string, Vector3> pivos = new Dictionary<string, Vector3>(); public Vector3 mao;
+        public Dictionary<string, Vector3> pivos = new Dictionary<string, Vector3>(); public Vector3 mao; public Vector3? maoFore;   // v6.6: a mão no quadro do antebraço
         public bool vestido;   // v6.5c: o boneco do MakeHuman já vem de roupa (sem a aba, o chapéu e a túnica do jogo)
         public Vector3 torsoMin, torsoMax;   // a caixa do torso no espaço da junta (a frente do peito para a runa, a estola e a lanterna)
         static readonly Dictionary<string, BonecoGLB> cache = new Dictionary<string, BonecoGLB>();
@@ -48,7 +48,7 @@ namespace RitualReversal.Visual
             var ex = (Dictionary<string, object>)malha["extras"]; var partes = (List<object>)ex["partes"];
             var B = new BonecoGLB();
             foreach (var kv in (Dictionary<string, object>)ex["pivos"]) B.pivos[kv.Key] = V(kv.Value);
-            B.mao = V(ex["mao"]); object ve; B.vestido = ex.TryGetValue("vestido", out ve) && ve is bool && (bool)ve;
+            B.mao = V(ex["mao"]); object mf; if (ex.TryGetValue("maoFore", out mf) && mf != null) B.maoFore = V(mf); object ve; B.vestido = ex.TryGetValue("vestido", out ve) && ve is bool && (bool)ve;
             for (int pi = 0; pi < partes.Count; pi++)
             {
                 // os vértices de cada peça (só os que os triângulos dela usam), na ordem em que aparecem
