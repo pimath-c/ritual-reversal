@@ -4,6 +4,12 @@ FPS de terror competitivo 2v2 no navegador (Three.js r128 + servidor Node). Dois
 segredo; dois Caçadores investigam e selam. O dono do projeto fala português: responda, comente o código e escreva
 commits em português.
 
+## Foco (pedido do dono, 03/11)
+O foco agora é o **Unity**. Melhorias novas (arte, animação, efeitos, interface) vão direto para `unity/`; a versão HTML
+não precisa acompanhar nem ser republicada a cada versão. O `shared/sim.js` continua sendo a regra do servidor online:
+mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes que comparam o Unity com o navegador
+(unity-ver, unity-fp) servem para o que já existe nos dois; o que for só do Unity não precisa de equivalente no HTML.
+
 ## Links
 - Protótipo publicado (claude.ai, mesmo link a cada versão): https://claude.ai/artifact/8C4MNiGeURccg8E2ZzoNLY
   Publique depois de `node tools/build.js`: a página `dist/web/ritual-reversal.html` com `files` = os outros arquivos de `dist/web/`
