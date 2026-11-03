@@ -6,7 +6,7 @@
 window.RR_ASILO=function(D){
 'use strict';
 const {THREE,world,Sim,MAT,TEX,RT,meshBox,boxGeo,canvasTex,FONTES,flames,CEU,PERF,desgastar,pbr,pbrReal,texFoto,makeNoise,smooth,scene,modelo}=D;
-const FT=n=>texFoto?texFoto(n):null, F_CONC=FT('concreto'), F_FERR=FT('ferrugem'), F_TELH=FT('telhadoAsilo'), F_PORTA=FT('portaAsilo');   // v6.4c: fotos novas do Asilo
+const FT=n=>texFoto?texFoto(n):null, F_CONC=FT('concreto'), F_FERR=FT('ferrugem'), F_TELH=FT('telhadoAsilo'), F_PORTA=FT('portaAsilo'), F_TIJ=FT('tijolo');   // v6.4c: fotos novas do Asilo
 const PI=Math.PI, E=Sim.ESPACOS, W=Sim.WALLS;
 let _s=4711; const R=()=>(_s=(_s*16807)%2147483647)/2147483647;   // sorteio próprio: não mexe no vr() da catedral
 const add=o=>{ world.add(o); return o; };
@@ -49,7 +49,11 @@ const M={
   lampada:new THREE.MeshStandardMaterial({color:0xfff2d0,emissive:0xffd890,emissiveIntensity:2.2,roughness:.3}),
   cupula:new THREE.MeshStandardMaterial({color:0x2e3532,metalness:.6,roughness:.5}),
   visor:new THREE.MeshStandardMaterial({color:0x1a2224,metalness:.4,roughness:.2}),
-  cupulaDentro:new THREE.MeshBasicMaterial({color:0x7a6648,side:THREE.BackSide}),   // o esmalte de dentro, sem luz: a lâmpada colada nele estourava
+  cupulaDentro:new THREE.MeshBasicMaterial({color:0x7a6648,side:THREE.BackSide}),
+  // v6.5f: o prédio por fora (tijolo escuro, Poly Haven CC0), as janelas e a grama além do muro
+  tijolo:desgastar(new THREE.MeshStandardMaterial(F_TIJ?{color:0xa8a49c,map:F_TIJ.map,normalMap:F_TIJ.normalMap,roughness:.95}:{color:0x4a2e26,normalMap:MAT.wall.normalMap,roughness:.95}),{mancha:.5,base:.5,musgo:.4}),
+  pedraFachada:new THREE.MeshStandardMaterial({color:0x6e6a62,map:MAT.wall.map,normalMap:MAT.wall.normalMap,roughness:1}),
+  vidro:new THREE.MeshStandardMaterial({color:0x080a0e,metalness:.7,roughness:.15}),   // o esmalte de dentro, sem luz: a lâmpada colada nele estourava
 };
 for(const k of ['reboco','ladrilho','grama','terra']) M[k].normalScale&&M[k].normalScale.set(.6,.6);
 const ALT=4.4;   // pé-direito: o teto fica a 4,4 m; as paredes da simulação têm 4,5
@@ -70,13 +74,15 @@ for(const e of E){
 const ALT_FOLHA=Math.min(2.7,ALT-.3);
 for(const v of Sim.VAOS){ const dentro=E.some(e=>e.int&&v.x1<e.x2+.7&&v.x2>e.x1-.7&&v.z1<e.z2+.7&&v.z2>e.z1-.7);
   piso({x1:v.x1,x2:v.x2,z1:v.z1,z2:v.z2},dentro?M.ladrilho:M.cascalho,4,.012);
-  if(dentro||v.porta){ const largo=Math.max(v.x2-v.x1,v.z2-v.z1); caixa(v.x1,v.x2,v.porta?ALT_FOLHA:largo>3.5?3.2:2.75,4.5,v.z1,v.z2,M.reboco,2); } }
+  if(dentro||v.porta){ const largo=Math.max(v.x2-v.x1,v.z2-v.z1), fora=E.some(e=>!e.int&&v.x1<e.x2+.7&&v.x2>e.x1-.7&&v.z1<e.z2+.7&&v.z2>e.z1-.7);   // v6.5f: verga de tijolo nas portas para o terreno
+    caixa(v.x1,v.x2,v.porta?ALT_FOLHA:largo>3.5?3.2:2.75,4.5,v.z1,v.z2,fora?M.tijolo:M.reboco,2); } }
 
 // ---------- paredes ----------
 for(const w of W){
   if(w.kind==='parede'){ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.reboco,3);
     caixa(w.x1-.03,w.x2+.03,0,1.25,w.z1-.03,w.z2+.03,M.lambri,1.2,false);          // lambri de azulejo até 1,25 m
-    caixa(w.x1-.05,w.x2+.05,1.25,1.33,w.z1-.05,w.z2+.05,M.ferrugem,2,false); }     // friso
+    caixa(w.x1-.05,w.x2+.05,1.25,1.33,w.z1-.05,w.z2+.05,M.ferrugem,2,false);       // friso
+    caixa(w.x1,w.x2,w.h,w.h+.06,w.z1,w.z2,M.telhado,4,false); }                     // v6.5f: ardósia no topo (de longe, o reboco do topo aparecia entre os telhados)
   else if(w.kind==='muro'){ caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.muro,4); caixa(w.x1-.12,w.x2+.12,w.h,w.h+.25,w.z1-.12,w.z2+.12,MAT.wallDark,4,false); }
   else if(w.kind==='lago'){ /* o lago é desenhado inteiro abaixo */ }
 }
@@ -85,6 +91,46 @@ for(const w of W){
   const b=new THREE.Mesh(new THREE.BoxGeometry(220,.4,.6),MAT.wallDark); b.position.set(0,-.1,-66.2); add(b); }
 // o píer: tábuas sobre estacas
 for(let z=-71.5;z<=-66.5;z+=1){ for(const x of [-2.2,2.2]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.12,.14,1.4,6),M.madeira); p.position.set(x,-.5,z); add(p); } }
+
+// ---------- v6.5f: o prédio por fora ----------
+// Antes, de fora o Asilo era um paredão de reboco de 4,5 m com tampas soltas por cima. Agora as faces das paredes que dão
+// para o terreno (um passo além da face cai num espaço aberto, fora de vão) ganham tijolo, rodapé de pedra, janelas gradeadas
+// acima da cabeça, cornija e um telhado de ardósia subindo para dentro (de baixo, o prédio tem telhado de verdade). Só visual:
+// o tijolo e a cornija ficam a centímetros da parede e as janelas não abrem.
+const FACHADAS=[];
+{ const fora=(x,z)=>E.some(e=>!e.int&&x>e.x1&&x<e.x2&&z>e.z1&&z<e.z2)&&!Sim.VAOS.some(v=>x>v.x1-.4&&x<v.x2+.4&&z>v.z1-.4&&z<v.z2+.4);
+  const TAN=.75, D=5, Y0=4.75, PASSO=3.6;
+  for(const w of W){ if(w.kind!=='parede') continue;
+    for(const [eixo,f,n] of [['x',w.z1,-1],['x',w.z2,1],['z',w.x1,-1],['z',w.x2,1]]){ const a1=eixo==='x'?w.x1:w.z1, a2=eixo==='x'?w.x2:w.z2; let ini=null;
+      const fecha=(u1,u2)=>{ if(u2-u1>=.9) FACHADAS.push({eixo,f,n,u1,u2}); };
+      for(let u=a1+.25;u<a2;u+=.5){ const x=eixo==='x'?u:f+n*.3, z=eixo==='x'?f+n*.3:u, ok=fora(x,z);
+        if(ok&&ini==null) ini=u-.25; if(!ok&&ini!=null){ fecha(ini,u-.25); ini=null; } }
+      if(ini!=null) fecha(ini,a2); } }
+  // caixa no sistema da fachada: u ao longo dela, d para fora (0 = face da parede), y para cima
+  const cx=(F,u1,u2,d1,d2,y1,y2,mat,S,sombra)=>F.eixo==='x'?caixa(u1,u2,y1,y2,Math.min(F.f+F.n*d1,F.f+F.n*d2),Math.max(F.f+F.n*d1,F.f+F.n*d2),mat,S,sombra)
+    :caixa(Math.min(F.f+F.n*d1,F.f+F.n*d2),Math.max(F.f+F.n*d1,F.f+F.n*d2),y1,y2,u1,u2,mat,S,sombra);
+  const S=Math.hypot(D+.4,(D+.4)*TAN), th=Math.atan(TAN);
+  for(const F of FACHADAS){ const L=F.u2-F.u1, uc=(F.u1+F.u2)/2;
+    cx(F,F.u1,F.u2,0,.06,0,Y0,M.tijolo,2.2);                                            // tijolo
+    cx(F,F.u1,F.u2,0,.14,0,.7,M.pedraFachada,2);                                         // rodapé de pedra
+    cx(F,F.u1,F.u2,0,.32,Y0-.3,Y0,M.pedraFachada,2); cx(F,F.u1,F.u2,0,.44,Y0,Y0+.14,M.pedraFachada,2,false);   // cornija
+    // telhado de ardósia: sai 0,4 m para fora e sobe para dentro
+    const g=new THREE.BoxGeometry(F.eixo==='x'?L+.8:S,.14,F.eixo==='x'?S:L+.8), m=new THREE.Mesh(g,M.telhado); const din=(D-.4)/2, yc=Y0+.14+((D+.4)/2)*TAN;
+    if(F.eixo==='x'){ m.position.set(uc,yc,F.f-F.n*din); m.rotation.x=F.n>0?th:-th; } else { m.position.set(F.f-F.n*din,yc,uc); m.rotation.z=F.n>0?-th:th; }
+    m.castShadow=m.receiveShadow=true; add(m);
+    // janelas gradeadas na grade global de 3,6 m (alinhadas de um trecho ao outro), longe das pontas e dos vãos
+    for(let c=Math.ceil((F.u1+1)/PASSO)*PASSO;c<=F.u2-1;c+=PASSO){
+      const px=F.eixo==='x'?c:F.f+F.n*.5, pz=F.eixo==='x'?F.f+F.n*.5:c; if(Sim.VAOS.some(v=>px>v.x1-1.4&&px<v.x2+1.4&&pz>v.z1-1.4&&pz<v.z2+1.4)) continue;
+      cx(F,c-.5,c+.5,.04,.08,1.7,3.4,M.vidro,1,false);                                     // vidro escuro
+      cx(F,c-.62,c-.5,0,.18,1.7,3.4,M.pedraFachada,1); cx(F,c+.5,c+.62,0,.18,1.7,3.4,M.pedraFachada,1);   // ombreiras
+      cx(F,c-.62,c+.62,0,.2,3.4,3.58,M.pedraFachada,1); cx(F,c-.72,c+.72,0,.26,1.56,1.7,M.pedraFachada,1);  // verga e peitoril
+      for(let k=-1.5;k<=1.5;k++) cx(F,c+k*.22-.018,c+k*.22+.018,.1,.14,1.7,3.4,M.ferro,1,false);  // grade
+      cx(F,c-.5,c+.5,.1,.14,2.52,2.56,M.ferro,1,false); }
+    if(L>=12){ const c=uc+(Math.round(F.u1*3)%2?2:-2), d=-(D*.55), yb=Y0+.14+(D*.55+.4)*TAN; cx(F,c-.55,c+.55,d-.55,d+.55,yb-1,yb+2.4,M.tijolo,1); cx(F,c-.7,c+.7,d-.7,d+.7,yb+2.4,yb+2.6,M.pedraFachada,1); }   // chaminé
+  } }
+// a grama além do muro (as árvores de fora ficam nela) e um anel de mato mais escuro
+{ const g=new THREE.PlaneGeometry(560,300); g.rotateX(-PI/2); const uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*560/6,uv.getY(i)*300/6);
+  const mat=M.grama.clone(); mat.color=new THREE.Color(0x6a7a62); const m=new THREE.Mesh(g,mat); m.position.set(0,-.03,-66+150); m.receiveShadow=true; add(m); }
 
 // ---------- portas ----------
 // Portas de correr encostadas na parede: aberta, a folha fica ao lado do vão, na face da parede (visível, sem tapar a

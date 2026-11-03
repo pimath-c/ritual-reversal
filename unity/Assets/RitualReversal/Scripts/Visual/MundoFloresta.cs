@@ -13,6 +13,49 @@ namespace RitualReversal.Visual
     public partial class Mundo
     {
         static float Sm(float a, float b, float x) { float t = Mathf.Clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
+        // v6.5f: a ramagem fotografada das copas e moitas (Resources/Texturas/copa_cor, PNG com alfa); null sem a foto
+        Texture2D copaTex; bool ramagemLida;
+        bool TemRamagem() { CopaRamagemLer(); return copaTex != null; }
+        void CopaRamagemLer() { if (!ramagemLida) { ramagemLida = true; var F = Pbr.Foto("copa"); if (F != null) copaTex = F.mapa; } }
+        Material CopaRamagem(Color cor)
+        {
+            CopaRamagemLer(); if (copaTex == null) return null;
+            return Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(cor), mapa = copaTex, recorte = true, corte = .5f, duplaFace = true, rugosidade = .92f });
+        }
+        // o plantarArvores do index.html: as três formas em cada árvore da lista (a mata da catedral e o terreno do Asilo)
+        void PlantarArvores(List<ArvoreV> lista)
+        {
+            float[] RREF = { 1.2f, .7f, .58f };
+            bool ram = TemRamagem();
+            var modelos = Arvores.Modelos(ram);
+            var folhaV = new Material[3, 6];
+            var cascaM = M("casca");
+            var musgoMat = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(ram ? 0x5e6a52 : 0x9aa888), mapa = Tex.Musgo(), recorte = true, corte = .38f, duplaFace = true }); musgoMat.name = "musgo";   // v6.5f: mais escuro com a ramagem
+            for (int ti = 0; ti < 3; ti++)
+            {
+                var T = modelos[ti]; int i = 0;
+                foreach (var q in lista)
+                {
+                    if (q.tipo != ti) continue;
+                    float k = q.r / RREF[ti]; var MM = M4.T(q.x, 0, q.z) * M4.Euler(q.inc, q.rot, q.inc * .5f) * M4.S(k, k * q.s, k);
+                    Est(T.casca, cascaM, MM); Est(T.musgo, musgoMat, MM, false);
+                    if (T.copa != null)
+                    {
+                        int var_ = i % 6; if (folhaV[ti, var_] == null)
+                        {
+                            float kc = ram ? 5.2f : 1;
+                            var c = new Color(kc * T.cor.x * (.75f + ((i * 13) % 10) / 18f), kc * T.cor.y * (.8f + ((i * 7) % 10) / 20f), kc * T.cor.z * (.8f + ((i * 29) % 10) / 22f));
+                            if (ram) folhaV[ti, var_] = CopaRamagem(c);
+                            else { folhaV[ti, var_] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(c), rugosidade = 1 }); facetados.Add(folhaV[ti, var_]); }
+                            folhaV[ti, var_].name = "copa" + ti + "_" + var_;
+                        }
+                        Est(T.copa, folhaV[ti, var_], MM);
+                    }
+                    i++;
+                }
+            }
+        }
+
         void BuildFloresta()
         {
             var n = new Ruido(9091);
@@ -100,42 +143,21 @@ namespace RitualReversal.Visual
                 float r = RFAIXA[tipo, 0] + R() * (RFAIXA[tipo, 1] - RFAIXA[tipo, 0]), s = .85f + R() * .3f, rot = R() * 6.28f, inc = (R() - .5f) * .08f;
                 lista.Add(new ArvoreV { x = x, z = z, r = r, tipo = tipo, s = s, rot = rot, inc = inc });
             }
-            var modelos = Arvores.Modelos();
-            var folhaV = new Material[3, 6];
-            var cascaM = M("casca");
-            var musgoMat = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x9aa888), mapa = Tex.Musgo(), recorte = true, corte = .38f, duplaFace = true }); musgoMat.name = "musgo";
-            for (int ti = 0; ti < 3; ti++)
-            {
-                var T = modelos[ti]; int i = 0;
-                foreach (var q in lista)
-                {
-                    if (q.tipo != ti) continue;
-                    float k = q.r / RREF[ti]; var MM = M4.T(q.x, 0, q.z) * M4.Euler(q.inc, q.rot, q.inc * .5f) * M4.S(k, k * q.s, k);
-                    Est(T.casca, cascaM, MM); Est(T.musgo, musgoMat, MM, false);
-                    if (T.copa != null)
-                    {
-                        int var_ = i % 6; if (folhaV[ti, var_] == null)
-                        {
-                            var c = new Color(T.cor.x * (.75f + ((i * 13) % 10) / 18f), T.cor.y * (.8f + ((i * 7) % 10) / 20f), T.cor.z * (.8f + ((i * 29) % 10) / 22f));
-                            folhaV[ti, var_] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(c), rugosidade = 1 }); folhaV[ti, var_].name = "copa" + ti + "_" + var_; facetados.Add(folhaV[ti, var_]);
-                        }
-                        Est(T.copa, folhaV[ti, var_], MM);
-                    }
-                    i++;
-                }
-            }
+            PlantarArvores(lista);
             // ---------- samambaias e montes de musgo ----------
             var samMat = Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = Tex.Samambaia(), recorte = true, corte = .4f, duplaFace = true, rugosidade = .9f }); samMat.name = "samambaia";
             // v6.4c: a samambaia escaneada (CC0, folhas recortadas); sem ela, as frondes desenhadas de antes
             var MSAM = ModeloGLB.Carregar("samambaia");
             Geo samGeo; if (MSAM != null) samGeo = MSAM.geo.Copia().Escalar(1.4f, .9f, 1.4f);
             else { samGeo = new Geo(); for (int k = 0; k < 7; k++) samGeo.Juntar(Geo.Plano(.55f, 1.6f).Mover(0, .8f, 0).GirarX(.75f + (k % 3) * .18f).GirarY(k / 7f * PI * 2)); }
-            var moitaGeo = Geo.Unir(new[] { Arvores.Tufo(0, .18f, 0, .75f, .38f), Arvores.Tufo(.55f, .12f, .3f, .5f, .4f), Arvores.Tufo(-.45f, .1f, -.35f, .45f, .4f) });
+            bool ramM = TemRamagem();   // v6.5f: moitas de ramagem
+            var moitaGeo = ramM ? Geo.Unir(Arvores.Ramagem(new Vector3(0, .4f, 0), .8f, .5f, 8, 41)).Juntar(Geo.Unir(Arvores.Ramagem(new Vector3(.55f, .3f, .3f), .55f, .5f, 6, 42))).Juntar(Geo.Unir(Arvores.Ramagem(new Vector3(-.45f, .28f, -.35f), .5f, .5f, 6, 43)))
+                : Geo.Unir(new[] { Arvores.Tufo(0, .18f, 0, .75f, .38f), Arvores.Tufo(.55f, .12f, .3f, .5f, .4f), Arvores.Tufo(-.45f, .1f, -.35f, .45f, .4f) });
             var samV = new Material[6]; var moitaV = new Material[6]; int ia = 0;
             foreach (var q in MapaVisual.ARBUSTOS)
             {
                 int var_ = ia % 6; var MM = M4.T(q.x, 0, q.z) * M4.RY(q.rot) * M4.S(q.s, q.s * (q.tipo == 1 ? 1 : .9f), q.s);
-                if (q.tipo == 1) { if (moitaV[var_] == null) { moitaV[var_] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.11f, .15f * (.85f + ((ia * 11) % 10) / 30f), .08f)) }); moitaV[var_].name = "moita" + var_; facetados.Add(moitaV[var_]); } Est(moitaGeo, moitaV[var_], MM, false); }
+                if (q.tipo == 1) { if (moitaV[var_] == null) { if (ramM) moitaV[var_] = CopaRamagem(new Color(.5f, .66f * (.85f + ((ia * 11) % 10) / 30f), .4f)); else { moitaV[var_] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.11f, .15f * (.85f + ((ia * 11) % 10) / 30f), .08f)) }); facetados.Add(moitaV[var_]); } moitaV[var_].name = "moita" + var_; } Est(moitaGeo, moitaV[var_], MM, false); }
                 else { if (samV[var_] == null) { samV[var_] = MSAM != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.62f + ((ia * 7) % 10) / 40f, .7f + ((ia * 3) % 10) / 40f, .6f)), mapa = MSAM.tex, recorte = true, corte = .45f, duplaFace = true, rugosidade = .92f })
                     : Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.42f + ((ia * 7) % 10) / 60f, .55f + ((ia * 3) % 10) / 50f, .36f)), mapa = Tex.Samambaia(), recorte = true, corte = .4f, duplaFace = true, rugosidade = .9f }); samV[var_].name = "samambaia" + var_; } Est(samGeo, samV[var_], MM, false); }
                 ia++;
@@ -143,13 +165,18 @@ namespace RitualReversal.Visual
             // ---------- espinheiros ----------
             {
                 var espinhos = new List<Geo>(); for (int k = 0; k < 9; k++) espinhos.Add(Geo.Cone(.035f, 1, 3).Mover(0, .5f, 0).GirarZ(-(.7f + (k % 3) * .3f)).GirarY(k / 9f * PI * 2 + .3f).Mover(0, .5f + (k % 4) * .35f, 0));
-                var espGeo = Geo.Unir(new[] { Arvores.Tufo(0, .85f, 0, 1, .8f), Arvores.Tufo(.62f, .55f, .3f, .72f, .85f), Arvores.Tufo(-.5f, .65f, -.3f, .8f, .85f), espinhos[0], espinhos[1], espinhos[2], espinhos[3], espinhos[4] });
-                var espV = new Material[6]; int i = 0;
+                bool ramE = TemRamagem();   // v6.5f: com a ramagem, o miolo escuro fica menor e os cartões de folhas fecham a moita por fora
+                var espGeo = ramE ? Geo.Unir(new[] { Arvores.Tufo(0, .8f, 0, .78f, .8f), Arvores.Tufo(.5f, .5f, .25f, .55f, .85f), Arvores.Tufo(-.4f, .6f, -.25f, .6f, .85f), espinhos[0], espinhos[1], espinhos[2], espinhos[3], espinhos[4] })
+                    : Geo.Unir(new[] { Arvores.Tufo(0, .85f, 0, 1, .8f), Arvores.Tufo(.62f, .55f, .3f, .72f, .85f), Arvores.Tufo(-.5f, .65f, -.3f, .8f, .85f), espinhos[0], espinhos[1], espinhos[2], espinhos[3], espinhos[4] });
+                var espCasca = ramE ? Geo.Unir(Arvores.Ramagem(new Vector3(0, .95f, 0), 1.05f, .8f, 11, 51)).Juntar(Geo.Unir(Arvores.Ramagem(new Vector3(.62f, .6f, .3f), .8f, .85f, 8, 52))).Juntar(Geo.Unir(Arvores.Ramagem(new Vector3(-.5f, .7f, -.3f), .85f, .85f, 8, 53))) : null;
+                var espV = new Material[6]; var espR = new Material[6]; int i = 0;
                 foreach (var w in MapaVisual.WALLS)
                 {
                     if (w.kind != "espinheiro") continue; float x = (w.x1 + w.x2) / 2, z = (w.z1 + w.z2) / 2, r = (w.x2 - w.x1) / 2 / .9f; int var_ = i % 6;
                     if (espV[var_] == null) { espV[var_] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Lin(new Color(.075f + ((i * 3) % 10) / 300f, .09f + ((i * 7) % 10) / 260f, .05f)) }); espV[var_].name = "espinheiro" + var_; facetados.Add(espV[var_]); }
-                    Est(espGeo, espV[var_], M4.T(x, 0, z) * M4.RY(w.rot) * M4.S(r, r * (1 + ((i * 7) % 10) / 25f), r), false); i++;
+                    var ME = M4.T(x, 0, z) * M4.RY(w.rot) * M4.S(r, r * (1 + ((i * 7) % 10) / 25f), r); Est(espGeo, espV[var_], ME, false);
+                    if (espCasca != null) { if (espR[var_] == null) { espR[var_] = CopaRamagem(new Color(.36f + ((i * 3) % 10) / 60f, .44f + ((i * 7) % 10) / 60f, .3f)); espR[var_].name = "espinheiroFolhas" + var_; } Est(espCasca, espR[var_], ME, false); }
+                    i++;
                 }
             }
             // ---------- arcos de pedra sobre as trilhas ----------

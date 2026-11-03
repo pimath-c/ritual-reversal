@@ -22,7 +22,7 @@ namespace RitualReversal.Visual
         void CriarMateriaisV6()
         {
             Func<int, Material> pedra = cor => Mat.Pbr(Tex.wall, cor, 1, null, .55f);
-            mPedra = pedra(0x8a8a90); mPedraEsc = pedra(0x5e5e68); mPedraClara = pedra(0xa8a49a);
+            mPedra = pedra(0x8a8a90); mPedraEsc = pedra(0x5e5e68); mPedraClara = pedra(0x8c887f);
             var fTelha = Pbr.Foto("telha");   // v6.4b: ardósia fotografada (CC0); sem ela, a pedra das paredes
             Func<int, Material> telha = cor => Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(cor), mapa = (fTelha ?? Tex.wall).mapa, relevo = (fTelha ?? Tex.wall).relevo, relevoK = .55f, duplaFace = true });
             mTelha = telha(0x2c2a30); mTeto = telha(0x24242c);

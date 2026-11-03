@@ -118,7 +118,7 @@ namespace RitualReversal.Visual
             // v6: rocha de verdade (Tex.rocha), sem as juntas das lajes do piso que antes apareciam nas pedras
             MAT["rocha"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5c5e56), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["rocha"]);
             // a pedra velha com foto (em cinza, média 200): a cor sobe na mesma conta (255/200) para o brilho não mudar
-            MAT["pedraVelha"] = fPedra != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x878782), mapa = fPedra.mapa, relevo = fPedra.relevo })
+            MAT["pedraVelha"] = fPedra != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6b6b66), mapa = fPedra.mapa, relevo = fPedra.relevo })
                 : Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a6a66), relevo = Tex.rocha.relevo, repetir = new Vector2(1.2f, 1.2f) }); facetados.Add(MAT["pedraVelha"]);
             MAT["lona"] = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x5a4c34), mapa = Tex.cloth.mapa, relevo = Tex.cloth.relevo, duplaFace = true });
             var fTab = Pbr.Foto("tabuas");   // v6.4d: tábuas gastas fotografadas (CC0); sem elas, a madeira de sempre
@@ -214,7 +214,14 @@ namespace RitualReversal.Visual
                             float a = k / 7f * PI * 2 + .3f, len = 5 + vr() * 3, gy = w.h * .75f + vr() * 2, gz = .9f + vr() * .4f;
                             Est(Geo.Cilindro(.25f, .7f, len, 7), M("casca"), TRS(x, gy, z, 0, a, gz) * M4.T(0, len / 2, 0));
                         }
-                        for (int k = 0; k < 9; k++) { float a = vr() * 6.28f, rr = 3 + vr() * 6, raio = 4 + vr() * 2.5f, py = w.h + 2 + vr() * 4; Est(Geo.Icosaedro(raio, 1), M("copaCarvalho"), TRS(x + Mathf.Cos(a) * rr, py, z + Mathf.Sin(a) * rr, 0, 0, 0, 1, .7f, 1)); }
+                        // v6.5f: a copa em maços de ramagem (as bolas facetadas pareciam pedras soltas no céu); os mesmos sorteios de antes
+                        var copaC = TemRamagem() ? CopaRamagem(new Color(.42f, .52f, .36f)) : null;
+                        for (int k = 0; k < 9; k++)
+                        {
+                            float a = vr() * 6.28f, rr = 3 + vr() * 6, raio = 4 + vr() * 2.5f, py = w.h + 2 + vr() * 4;
+                            if (copaC != null) Est(Geo.Unir(Arvores.Ramagem(Vector3.zero, raio, .7f, 16, 60 + k)), copaC, M4.T(x + Mathf.Cos(a) * rr, py, z + Mathf.Sin(a) * rr));
+                            else Est(Geo.Icosaedro(raio, 1), M("copaCarvalho"), TRS(x + Mathf.Cos(a) * rr, py, z + Mathf.Sin(a) * rr, 0, 0, 0, 1, .7f, 1));
+                        }
                         return;
                     }
                 case "madeira": Caixa(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("tabuas"), 2); return;

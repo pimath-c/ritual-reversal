@@ -48,6 +48,8 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `azulejoQuebrado` | Asilo: paredes da Hidroterapia e dos banheiros (azulejo branco rachado e caído) | [soi_broken_tiles_01](https://soi.itch.io/substance-designer-material-pack-1) | SOI |
 | `pisoQuebrado` | Asilo: piso da Hidroterapia (xadrez rachado) | [soi_broken_tiles_04](https://soi.itch.io/substance-designer-material-pack-1) | SOI |
 | `acolchoado` | Asilo: paredes acolchoadas do Isolamento (em cinza; a cor de lona encardida vem do material) | [soi_leather_padded_01](https://soi.itch.io/substance-designer-material-pack-1) | SOI |
+| `copa` | v6.5f: cartão de ramagem (RGBA) das copas das árvores e das moitas, composto de folhas fotografadas presas em galhinhos | [folhagem_copa](https://ambientcg.com/list?q=LeafSet) | ambientCG (LeafSet024, LeafSet005, LeafSet030) |
+| `tijolo` | v6.5f: Asilo por fora, a fachada de tijolo escuro (paredes que dão para o terreno) | [dark_brick_wall](https://polyhaven.com/a/dark_brick_wall) | Rob Tuytel |
 
 ## Modelos
 

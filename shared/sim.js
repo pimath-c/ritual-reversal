@@ -439,6 +439,10 @@ const WALLDEF=WALLS; // compatibilidade com o cliente
   const NPC_DEF=[{id:'ermitao',nome:'o Ermitão',x:CAB[0]-1,z:CAB[1],time:'H',vende:['municao','flare','oleo','pocao','amuleto']},
     {id:'carpideira',nome:'a Carpideira',x:ORA[0]+1,z:ORA[1],time:'C',vende:['reagente','cinza','pocao','amuleto']},
     {id:'mercador',nome:'o Mercador sem Rosto',x:ENCR[0]+6,z:ENCR[1]-4,time:null,vende:['reagente','municao','pocao']}];
+  // v6.5f: nenhuma samambaia ou moita nasce dentro de muro, menir, estátua, rocha ou torre (algumas atravessavam a pedra).
+  // Filtra depois de tudo pronto, sem sortear nada: o resto do mapa fica igual.
+  { const pula=/arvore_f|espinheiro|limite|abismo/; for(let i=ARBUSTOS.length-1;i>=0;i--){ const q=ARBUSTOS[i], r=q.s*.45;
+    if(WALLS.some(w=>!pula.test(w.kind)&&w.h>.3&&q.x+r>w.x1&&q.x-r<w.x2&&q.z+r>w.z1&&q.z-r<w.z2)) ARBUSTOS.splice(i,1); } }
   return {id:'catedral',nome:'Catedral',HALF,PROMONTORIO,DESFILADEIRO,CATEDRAL,CLAUSTRO,ZONAS,ZONES,zonaDe,zoneAt,naCatedral,coberto,foraDaMata,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS,TRAVESSIAS,ABISMO,PILLARS,PEWS,LAPIDES,REAG,TRILHAS,CLAREIRAS,PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA,naTrilha,ARCOS,ARVORES,ARBUSTOS,CANDLES,BOX,TALL,WALLDEF,luarFora,naNevoa:(x,z)=>zoneAt(x,z)==='Floresta',TUMBA_PTS,NPC_DEF};
 }
 // ============ ASILO BLACKWATER ============
@@ -522,20 +526,28 @@ function mapaAsilo(){
         M(-(b-.35),fundo+lado*5,.7,1,2.4,'guarda_roupa',PI/2); }
       else leito(a+2,zc,'z'); }
   }
-  M(-30,20.7,1.1,1.1,.78,'mesa_redonda',0); M(-31.7,20.9,.84,.76,1.05,'poltrona',PI); M(-28.3,20.9,.84,.76,1.05,'poltrona',PI);   // sala de visitas
-  M(-34.6,15.5,.44,.64,2.2,'relogio_alto',PI/2); M(-26,14.4,.8,.8,1,'balanco',-PI/4);
+  M(-30,21.1,1.1,1.1,.78,'mesa_redonda',0); M(-31.2,21.4,.84,.76,1.05,'poltrona',PI); M(-28.8,21.4,.84,.76,1.05,'poltrona',PI);   // sala de visitas
+  M(-34.78,15.5,.44,.64,2.2,'relogio_alto',PI/2); M(-26,14.4,.8,.8,1,'balanco',-PI/4);
   for(const z of [-10.2,-6.5,-2.2]) M(-11.55,z,.9,1.6,1,'gaveteiro',PI/2);                                                            // arquivo
   for(const x of [-9.5,-7.5,-5.5]) M(x,-11.85,1,.3,2.1,'estante',0);
   for(const z of [-11,-9.5,-4,-2.5,-1]) M(11.85,z,.3,1,2.1,'estante',-PI/2);                                                          // farmácia
   M(7,-11.7,1.2,.58,1.2,'comoda',0); M(9,-11.7,1.2,.58,1.2,'comoda',0);
-  for(const z of [-31.2,-29.9,-28.6,-27.3]) M(-54.65,z,.7,1,2.4,'guarda_roupa',PI/2);                                                 // rouparia
-  for(const [z,h] of [[-31.4,1],[-30.3,1.6],[-29.2,1]]) M(54.5,z,1,1,h,'caixote',-PI/2);                                                // depósito
+  for(const z of [-31.5,-30.5,-29.5,-28.5]) M(-54.65,z,.7,1,2.4,'guarda_roupa',PI/2);                                                 // rouparia
+  for(const [z,h] of [[-31.5,1],[-30.5,1.6],[-29.5,1]]) M(54.5,z,1,1,h,'caixote',-PI/2);                                                // depósito
   M(-73,-4.5,1.7,1,2.3,'armario_gotico',PI); M(-60,-4.25,.64,.44,2.2,'relogio_alto',PI);                                            // consultório, sala de estar
   for(let k=0;k<6;k++){ const a=k*Math.PI/3+Math.PI/6, x=r2(Math.cos(a)*5.2), z=r2(46+Math.sin(a)*5.2); W(x-.3,x+.3,z-.3,z+.3,3.4,'coluna_coreto'); }
   for(let x=-96;x<=-68;x+=7) for(const z of [16,24,32]) W(x-2.4,x+2.4,z-.5,z+.5,.55,'canteiro');                                     // horta
   const LAPIDES=[];
   for(let x=67;x<=97;x+=5) for(let z=16;z<=58;z+=6){ if(Math.hypot(x-90,z-50)<9||Math.hypot(x-80,z-56)<5||Math.hypot(x-76,z-24)<4||Math.hypot(x-92,z-34)<4) continue; LAPIDES.push(W(x-.45,x+.45,z-.15,z+.15,1.05,'lapide')); }
   for(const z of [33,58]) for(const x of [-40,-24,24,40]) W(x-1.2,x+1.2,z-.3,z+.3,.9,'banco');                                         // bancos do gramado
+  // v6.5f: árvores no terreno (antes era só grama): carvalhos velhos no gramado, árvores mortas entre as lápides, na horta
+  // e no pátio norte. Posições fixas, longe de portas, bancos, lápides, pontos e nascimentos; colisão como as da mata.
+  const ARVORES=[];
+  for(const [x,z,tipo,r] of [[-52,56,0,1.1],[52,56,0,1.15],[-14,59,1,.7],[14,59,1,.72],[-34,40,2,.55],[34,40,2,.55],[-56,38,1,.66],[56,38,1,.68],
+      [69.5,19,2,.5],[84.5,31,2,.55],[74.5,43,2,.52],[99.5,25,2,.5],[64.5,60,1,.62],
+      [-66,46,1,.65],[-99,40,2,.55],[-70,59,2,.5],[-24,-47,2,.55],[24,-47,2,.55]]){
+    const q={x,z,r,tipo,s:r2(.9+((Math.abs(x*7+z*3))%10)/40),rot:r2(((Math.abs(x*13+z*7))%63)/10),inc:r2((((Math.abs(x*3+z*11))%9)-4)/100)}; ARVORES.push(q);
+    const h=r*.85; W(x-h,x+h,z-h,z+h,12,'arvore_f'); }
   // ---------- altares, nascimentos, pontos ----------
   const ALTARS=[{name:'Enfermaria',x:-92,z:-14},{name:'Capela',x:0,z:-30},{name:'Isolamento',x:92,z:-14},
     {name:'Hidroterapia',x:-62,z:-47},{name:'Coreto',x:0,z:46},{name:'Caldeiras',x:62,z:-47}];
@@ -582,7 +594,7 @@ function mapaAsilo(){
   const TALL=BOX.filter(b=>b.tall);
   return {id:'asilo',nome:'Asilo Blackwater',HALF,PROMONTORIO:nada,DESFILADEIRO:nada,CATEDRAL:nada,CLAUSTRO:nada,ZONAS,ZONES:[],zonaDe,zoneAt,
     naCatedral:()=>false,coberto,foraDaMata:()=>true,ALTARS,SPAWN,LUGARES,WALLS,PORTAS,PORTAIS:[],TRAVESSIAS:[],ABISMO:[],PILLARS:[],PEWS:[],LAPIDES,REAG,
-    TRILHAS:[],CLAREIRAS:[],PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA:[],naTrilha:()=>false,ARCOS:[],ARVORES:[],ARBUSTOS:[],CANDLES,BOX,TALL,WALLDEF:WALLS,
+    TRILHAS:[],CLAREIRAS:[],PISTA_PTS,ERVA_PTS,SENTINELA_PTS,SEG_TRILHA:[],naTrilha:()=>false,ARCOS:[],ARVORES,ARBUSTOS:[],CANDLES,BOX,TALL,WALLDEF:WALLS,
     luarFora:()=>0,naNevoa,TUMBA_PTS,NPC_DEF,TAREFAS,ESPACOS:E,VAOS:V,PORTAS_DIN,QUADROS,AGUA};
 }
 // ============ MAPA ATIVO ============

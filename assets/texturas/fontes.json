@@ -375,5 +375,39 @@
    190,
    190
   ]
+ },
+ "copa": {
+  "id": "folhagem_copa",
+  "pagina": "https://ambientcg.com/list?q=LeafSet",
+  "licenca": "CC0",
+  "autor": "ambientCG (LeafSet024, LeafSet005, LeafSet030)",
+  "uso": "v6.5f: cartão de ramagem (RGBA) das copas das árvores e das moitas, composto de folhas fotografadas presas em galhinhos",
+  "folhagem": {
+   "ambientcg": [
+    "LeafSet024",
+    "LeafSet005",
+    "LeafSet030"
+   ],
+   "pesos": [
+    6,
+    3,
+    1
+   ],
+   "folhas": 170,
+   "semente": 3,
+   "tom": [
+    0.5,
+    0.58,
+    0.44
+   ]
+  },
+  "tam": 512
+ },
+ "tijolo": {
+  "id": "dark_brick_wall",
+  "pagina": "https://polyhaven.com/a/dark_brick_wall",
+  "licenca": "CC0",
+  "autor": "Rob Tuytel",
+  "uso": "v6.5f: Asilo por fora, a fachada de tijolo escuro (paredes que dão para o terreno)"
  }
 }

@@ -57,7 +57,7 @@ namespace RitualReversal.Visual
             var terra = Pbr.Foto("terra") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 8, v * 8, 8, 5), k = .6f + .3f * f; return new Pbr.Saida { h = f * .4f, r = 64 * k, g = 48 * k, b = 34 * k, ro = 1 }; }, 1.6f).Texturas();
             var cascalho = Pbr.Foto("cascalho") ?? Pbr.Criar(Tex.Tam(256), (u, v) => { float f = n.Fbm(u * 20, v * 20, 20, 4), k = .55f + .4f * f; return new Pbr.Saida { h = f * .6f, r = 96 * k, g = 92 * k, b = 86 * k, ro = 1 }; }, 2.2f).Texturas();
             // v6.4c: telhado, ferrugem e concreto fotografados (CC0); sem a foto, os de antes
-            var fTelh = Pbr.Foto("telhadoAsilo"); var fFerr = Pbr.Foto("ferrugem"); var fConc = Pbr.Foto("concreto"); var fPorta = Pbr.Foto("portaAsilo");
+            var fTelh = Pbr.Foto("telhadoAsilo"); var fFerr = Pbr.Foto("ferrugem"); var fConc = Pbr.Foto("concreto"); var fPorta = Pbr.Foto("portaAsilo"); var fTij = Pbr.Foto("tijolo");
             Func<Pbr, float, bool, Material> pbr = (p, relevoK, dupla) => Mat.Padrao(new Mat.Opcoes { cor = Color.white, mapa = p.mapa, relevo = p.relevo, relevoK = relevoK, duplaFace = dupla });
             MA = new Dictionary<string, Material>
             {
@@ -77,9 +77,69 @@ namespace RitualReversal.Visual
                 { "cupulaDentro", Mat.Brilho(Mat.Hex(0x7a6648), null, Mat.Mistura.Alfa, false, true, 0, true, 2450) },   // o esmalte de dentro, sem luz
                 { "visor", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x1a2224), metal = .4f, rugosidade = .2f }) },
                 { "planta", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x2c3a22) }) },
+                // v6.5f: o prédio por fora (tijolo escuro, Poly Haven CC0), as janelas e a grama além do muro
+                { "tijolo", fTij != null ? Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xa8a49c), mapa = fTij.mapa, relevo = fTij.relevo, rugosidade = .95f }) : Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x4a2e26), relevo = Tex.wall.relevo, rugosidade = .95f }) },
+                { "pedraFachada", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6e6a62), mapa = Tex.wall.mapa, relevo = Tex.wall.relevo }) },
+                { "vidro", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x080a0e), metal = .7f, rugosidade = .15f }) },
+                { "gramaFora", Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0x6a7a62), mapa = grama.mapa, relevo = grama.relevo, relevoK = .6f }) },
             };
             facetados.Add(MA["carvao"]); facetados.Add(MA["planta"]);
             foreach (var kv in MA) kv.Value.name = "asilo " + kv.Key;
+        }
+
+        // v6.5f: o prédio por fora (o bloco FACHADAS do asilo.js): as faces das paredes que dão para o terreno ganham tijolo,
+        // rodapé de pedra, janelas gradeadas acima da cabeça, cornija, telhado de ardósia subindo para dentro e chaminés
+        void Fachadas(List<EspacoV> E, List<PecaV> W)
+        {
+            Func<float, float, bool> fora = (x, z) => E.Exists(e => !e.interno && x > e.x1 && x < e.x2 && z > e.z1 && z < e.z2) && !MapaVisual.VAOS.Exists(v => x > v.x1 - .4f && x < v.x2 + .4f && z > v.z1 - .4f && z < v.z2 + .4f);
+            const float TAN = .75f, D = 5, Y0 = 4.75f, PASSO = 3.6f;
+            var FS = new List<float[]>();   // eixo (0 = x, 1 = z), f, n, u1, u2
+            foreach (var w in W)
+            {
+                if (w.kind != "parede") continue;
+                foreach (var lado in new[] { new[] { 0, w.z1, -1 }, new[] { 0, w.z2, 1 }, new[] { 1, w.x1, -1 }, new[] { 1, w.x2, 1 } })
+                {
+                    bool ex = lado[0] == 0; float f = lado[1], n = lado[2], a1 = ex ? w.x1 : w.z1, a2 = ex ? w.x2 : w.z2; float? ini = null;
+                    Action<float, float> fecha = (u1, u2) => { if (u2 - u1 >= .9f) FS.Add(new[] { lado[0], f, n, u1, u2 }); };
+                    for (float u = a1 + .25f; u < a2; u += .5f)
+                    {
+                        float x = ex ? u : f + n * .3f, z = ex ? f + n * .3f : u; bool ok = fora(x, z);
+                        if (ok && ini == null) ini = u - .25f; if (!ok && ini != null) { fecha(ini.Value, u - .25f); ini = null; }
+                    }
+                    if (ini != null) fecha(ini.Value, a2);
+                }
+            }
+            float S = Mathf.Sqrt((D + .4f) * (D + .4f) + (D + .4f) * TAN * (D + .4f) * TAN), th = Mathf.Atan(TAN);
+            foreach (var F in FS)
+            {
+                bool ex = F[0] == 0; float f = F[1], n = F[2], u1 = F[3], u2 = F[4], L = u2 - u1, uc = (u1 + u2) / 2;
+                Action<float, float, float, float, float, float, Material, float, bool> cx = (a, b, d1, d2, y1, y2, m, Sx, sombra) =>
+                {
+                    float p1 = Mathf.Min(f + n * d1, f + n * d2), p2 = Mathf.Max(f + n * d1, f + n * d2);
+                    if (ex) CxA(a, b, y1, y2, p1, p2, m, Sx, sombra); else CxA(p1, p2, y1, y2, a, b, m, Sx, sombra);
+                };
+                cx(u1, u2, 0, .06f, 0, Y0, A("tijolo"), 2.2f, true);
+                cx(u1, u2, 0, .14f, 0, .7f, A("pedraFachada"), 2, true);
+                cx(u1, u2, 0, .32f, Y0 - .3f, Y0, A("pedraFachada"), 2, true); cx(u1, u2, 0, .44f, Y0, Y0 + .14f, A("pedraFachada"), 2, false);
+                float din = (D - .4f) / 2, yc = Y0 + .14f + ((D + .4f) / 2) * TAN;
+                if (ex) Est(Geo.Caixa(L + .8f, .14f, S), A("telhado"), TRS(uc, yc, f - n * din, n > 0 ? th : -th, 0, 0));
+                else Est(Geo.Caixa(S, .14f, L + .8f), A("telhado"), TRS(f - n * din, yc, uc, 0, 0, n > 0 ? -th : th));
+                for (float c = Mathf.Ceil((u1 + 1) / PASSO) * PASSO; c <= u2 - 1; c += PASSO)
+                {
+                    float px = ex ? c : f + n * .5f, pz = ex ? f + n * .5f : c;
+                    if (MapaVisual.VAOS.Exists(v => px > v.x1 - 1.4f && px < v.x2 + 1.4f && pz > v.z1 - 1.4f && pz < v.z2 + 1.4f)) continue;
+                    cx(c - .5f, c + .5f, .04f, .08f, 1.7f, 3.4f, A("vidro"), 1, false);
+                    cx(c - .62f, c - .5f, 0, .18f, 1.7f, 3.4f, A("pedraFachada"), 1, true); cx(c + .5f, c + .62f, 0, .18f, 1.7f, 3.4f, A("pedraFachada"), 1, true);
+                    cx(c - .62f, c + .62f, 0, .2f, 3.4f, 3.58f, A("pedraFachada"), 1, true); cx(c - .72f, c + .72f, 0, .26f, 1.56f, 1.7f, A("pedraFachada"), 1, true);
+                    for (float k = -1.5f; k <= 1.5f; k++) cx(c + k * .22f - .018f, c + k * .22f + .018f, .1f, .14f, 1.7f, 3.4f, A("ferro"), 1, false);
+                    cx(c - .5f, c + .5f, .1f, .14f, 2.52f, 2.56f, A("ferro"), 1, false);
+                }
+                if (L >= 12)
+                {
+                    float c = uc + ((int)Math.Round(u1 * 3, MidpointRounding.AwayFromZero) % 2 != 0 ? 2 : -2), d = -(D * .55f), yb = Y0 + .14f + (D * .55f + .4f) * TAN;
+                    cx(c - .55f, c + .55f, d - .55f, d + .55f, yb - 1, yb + 2.4f, A("tijolo"), 1, true); cx(c - .7f, c + .7f, d - .7f, d + .7f, yb + 2.4f, yb + 2.6f, A("pedraFachada"), 1, true);
+                }
+            }
         }
 
         // piso: plano entre x1..x2, z1..z2 na altura y, textura a cada S metros; teto = o mesmo virado para baixo
@@ -121,7 +181,11 @@ namespace RitualReversal.Visual
             {
                 bool dentro = E.Exists(e => e.interno && v.x1 < e.x2 + .7f && v.x2 > e.x1 - .7f && v.z1 < e.z2 + .7f && v.z2 > e.z1 - .7f);
                 PisoA(v.x1, v.x2, v.z1, v.z2, dentro ? A("ladrilho") : A("cascalho"), 4, .012f);
-                if (dentro || v.porta) { float largo = Mathf.Max(v.x2 - v.x1, v.z2 - v.z1); CxA(v.x1, v.x2, v.porta ? altFolha : largo > 3.5f ? 3.2f : 2.75f, 4.5f, v.z1, v.z2, A("reboco"), 2); }
+                if (dentro || v.porta)
+                {
+                    float largo = Mathf.Max(v.x2 - v.x1, v.z2 - v.z1); bool foraV = E.Exists(e => !e.interno && v.x1 < e.x2 + .7f && v.x2 > e.x1 - .7f && v.z1 < e.z2 + .7f && v.z2 > e.z1 - .7f);   // v6.5f: verga de tijolo nas portas para o terreno
+                    CxA(v.x1, v.x2, v.porta ? altFolha : largo > 3.5f ? 3.2f : 2.75f, 4.5f, v.z1, v.z2, foraV ? A("tijolo") : A("reboco"), 2);
+                }
             }
             // paredes
             foreach (var w in W)
@@ -131,8 +195,26 @@ namespace RitualReversal.Visual
                     CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, A("reboco"), 3);
                     CxA(w.x1 - .03f, w.x2 + .03f, 0, 1.25f, w.z1 - .03f, w.z2 + .03f, A("lambri"), 1.2f, false);          // lambri de azulejo até 1,25 m
                     CxA(w.x1 - .05f, w.x2 + .05f, 1.25f, 1.33f, w.z1 - .05f, w.z2 + .05f, A("ferrugem"), 2, false);     // friso
+                    CxA(w.x1, w.x2, w.h, w.h + .06f, w.z1, w.z2, A("telhado"), 4, false);                                  // v6.5f: ardósia no topo
                 }
                 else if (w.kind == "muro") { CxA(w.x1, w.x2, 0, w.h, w.z1, w.z2, M("wall"), 4); CxA(w.x1 - .12f, w.x2 + .12f, w.h, w.h + .25f, w.z1 - .12f, w.z2 + .12f, M("wallDark"), 4, false); }
+            }
+            Fachadas(E, W);
+            // a grama além do muro (as árvores de fora ficam nela)
+            Est(Geo.Plano(560, 300).EscalarUV(560 / 6f, 300 / 6f).GirarX(-PI / 2), A("gramaFora"), 0, -.03f, -66 + 150, false);
+            // v6.5f: as árvores do Asilo (as da simulação, com colisão) e um anel de mata além do muro, sem nada sobre o lago
+            {
+                double sd = 6151; Func<float> R = () => { sd = (sd * 16807) % 2147483647; return (float)(sd / 2147483647); };
+                float[,] RFAIXA = { { .95f, 1.45f }, { .55f, .85f }, { .45f, .7f } };
+                var lista = new List<ArvoreV>(MapaVisual.ARVORES); int extra = Qualidade.nivel == 0 ? 110 : Qualidade.nivel <= 1 ? 190 : 300;
+                for (int t = 0; t < 9000 && lista.Count < MapaVisual.ARVORES.Count + extra; t++)
+                {
+                    float x = (R() * 2 - 1) * (MapaVisual.HX + 40), z = -58 + R() * (MapaVisual.HZ + 58 + 40);
+                    if (Math.Abs(x) < MapaVisual.HX + 3 && z < MapaVisual.HZ + 3) continue; float u = R(); int tipo = u < .25f ? 0 : u < .65f ? 1 : 2;
+                    float r = RFAIXA[tipo, 0] + R() * (RFAIXA[tipo, 1] - RFAIXA[tipo, 0]), sc = .85f + R() * .3f, rot = R() * 6.28f, inc = (R() - .5f) * .08f;
+                    lista.Add(new ArvoreV { x = x, z = z, r = r, tipo = tipo, s = sc, rot = rot, inc = inc });
+                }
+                PlantarArvores(lista);
             }
             // o lago Blackwater e o píer
             Est(Geo.Plano(600, 260).GirarX(-PI / 2), A("lago"), 0, -.35f, -66 - 130, false);

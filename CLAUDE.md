@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.5e)
+## Estado atual (v6.5f)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -296,6 +296,17 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   perpendicular à frente). Mudou o mapa: reexportar (`simulacao-asilo.json`), comparar-cs `MAPA=asilo` bit a bit. `VERSAO` 6.5.
   Bots, sementes 1000–1199 no asilo: culto 42% → 41%. Avaliados e deixados de fora: Coffin and Flowers e Mine Object Collection
   (loafbrr, saturados/estilizados), lustres do Poly Haven (pequenos para a catedral; os de ferro procedurais ficam).
+- v6.5f (notas em `notas/v6.5f.md`): revisão dos mapas. `tools/revisar-mapa.js [mapa]` (frestas, peça dentro de peça, pontos bloqueados,
+  bolsões sem acesso). Copas de ramagem: textura `copa` (montar-texturas.py `"folhagem"`: folhas dos atlas LeafSet do ambientCG, CC0,
+  recortadas pela opacidade e presas em galhinhos num cartão RGBA de 512; `"tam"`; só cor, PNG) lida por `texAlfa(nome)` no navegador e
+  `Pbr.Foto("copa")` no Unity; `ramagem(c,r,achata,n,sem)` no index.html = `Arvores.Ramagem` no C# (mesmo gerador, base makeBasis) nas
+  copas, moitas, espinheiros (miolo menor + cartões) e no Carvalho Oco (mesmos `vr()`). Árvores em `fabricaArvores()`/`plantarArvores(lista)`
+  (C# `PlantarArvores`, `CopaRamagem(cor)`, `TemRamagem()`). Musgo 0x5e6a52. `__T.VEG` no autoteste. `ARBUSTOS` filtrados no fim do
+  `mapaCatedral()` (nenhum dentro de peça; sem sorteio). `pedraVelha` 0x6b6b66, `pedraClara` 0x8c887f. Asilo: `ARVORES` (18, posições fixas,
+  `arvore_f`) e anel visual além do muro (`plantarArvoresAsilo`, sd 6151; C# no ConstruirAsilo), grama além do muro, `FACHADAS` no
+  asilo.js (C# `Fachadas`): faces de 'parede' que dão para espaço aberto ganham tijolo (textura `tijolo` = dark_brick_wall), rodapé,
+  cornija, janelas gradeadas na grade global de 3,6 m, telhado de ardósia inclinado para dentro e chaminés; ardósia no topo das paredes;
+  verga de tijolo nas portas para fora. Rouparia/Depósito/Sala de Visitas sem frestas. Bots, sementes 1000–1199 no asilo: culto 41% → 47%.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e
