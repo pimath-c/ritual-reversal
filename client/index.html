@@ -757,7 +757,7 @@ function envAgua(qual){ const t=CEU.fotos&&CEU.fotos[qual]; if(!t||!t.image||!t.
   if(!AGUA.env[qual]){ try{ const pm=new THREE.PMREMGenerator(renderer); AGUA.env[qual]=pm.fromEquirectangular(t).texture; pm.dispose(); }catch(e){ return null; } }
   return AGUA.env[qual]; }
 function reflexoAgua(qual){ AGUA.qual=qual; const e=envAgua(qual); if(e===AGUA.envAtual) return; AGUA.envAtual=e; for(const m of AGUA.mats){ m.envMap=e; m.needsUpdate=true; } }
-function atualizarAgua(dt){ AGUA.t+=dt; const ox=AGUA.t*.011, oz=AGUA.t*.007; for(const m of AGUA.mats) m.normalMap.offset.set(ox,oz); if(AGUA.qual&&!AGUA.envAtual) reflexoAgua(AGUA.qual); }
+function atualizarAgua(dt){ AGUA.t+=dt; const ox=AGUA.t*.011, oz=AGUA.t*.007; for(const m of AGUA.mats) if(m.normalMap) m.normalMap.offset.set(ox,oz); if(AGUA.qual&&!AGUA.envAtual) reflexoAgua(AGUA.qual); }
 // v6.5f: imagem com alfa (PNG) de client/texturas.js, só a cor (a ramagem das copas); null sem ela
 function texAlfa(nome){ const R=window.RR_TEXTURAS&&window.RR_TEXTURAS[nome]; if(!R||!R.cor) return null; const t=new THREE.Texture(), img=new Image();
   img.src='data:image/png;base64,'+R.cor; t.image=img; t.encoding=THREE.sRGBEncoding; t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); t.needsUpdate=true; return t; }
