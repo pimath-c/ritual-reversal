@@ -749,5 +749,50 @@
     "triangulos": 4000,
     "textura": 512,
     "bordas": true
+  },
+  "busto": {
+    "polyhaven": "marble_bust_01",
+    "autor": "Rico Cilliers",
+    "licenca": "CC0",
+    "uso": "Asilo: busto de mármore em cima da cômoda da Farmácia",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.42,
+      0
+    ],
+    "triangulos": 3000,
+    "textura": 256,
+    "bordas": false
+  },
+  "cha": {
+    "polyhaven": "tea_set_01",
+    "autor": "James Ray Cock, Rico Cilliers, Jurita Burger",
+    "licenca": "CC0",
+    "uso": "Asilo: aparelho de chá na mesa da Sala de Visitas",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.12,
+      0
+    ],
+    "triangulos": 3000,
+    "textura": 256,
+    "bordas": false
+  },
+  "jarro": {
+    "polyhaven": "ceramic_vase_02",
+    "autor": "James Ray Cock",
+    "licenca": "CC0",
+    "uso": "Asilo: jarro de louça em cima dos criados-mudos",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      0.24,
+      0
+    ],
+    "triangulos": 1500,
+    "textura": 256,
+    "bordas": false
   }
 }

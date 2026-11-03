@@ -325,6 +325,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `passarela`, sem `vr()`; `POCAS_CHARCO`), só visual. Unity: `Mundo.MatAgua`/`AtualizarAgua` (sem envMap), `MundoV6.Charco`, e
   `ReflexoNoturno` (cubo 8×8 com a média da foto do céu × base: reflexo custom do RenderSettings no lugar do céu de dia padrão).
   `__T.pos()` = {composer, BLOOM, GRADE}. Mangas claras na vitrine = luz de estúdio (`LEITURA` 1,3); na partida saem escuras.
+- v6.6a (notas em `notas/v6.6a.md`): enfeites `jarro` (criados-mudos), `cha` (mesa redonda, altura .12: o conjunto é largo) e `busto` (cômoda com x1 < 7) pelo `enfeite` do asilo.js / `Enfeite` do MundoAsilo.cs. Barril do Poly Haven avaliado e deixado de fora (todos são tambores de metal ou plástico).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

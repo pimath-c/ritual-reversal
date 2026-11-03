@@ -419,7 +419,10 @@ namespace RitualReversal.Visual
             {
                 case "criado": case "guarda_roupa": case "mesa_redonda": case "poltrona": case "relogio_alto": case "balanco":
                 case "gaveteiro": case "estante": case "comoda": case "caixote": case "armario_gotico":
-                    MovelEscaneado(w.kind, w); break;
+                    MovelEscaneado(w.kind, w);
+                    // v6.6a: enfeites escaneados (CC0): jarro nos criados-mudos, chá na mesa redonda, busto na primeira cômoda
+                    if (w.kind == "criado") Enfeite("jarro", w, 0, w.h); else if (w.kind == "mesa_redonda") Enfeite("cha", w, 0, w.h); else if (w.kind == "comoda" && w.x1 < 7) Enfeite("busto", w, 0, w.h);
+                    break;
                 case "leito":
                     {
                         bool ax = w.x2 - w.x1 > w.z2 - w.z1; float L = ax ? w.x2 - w.x1 : w.z2 - w.z1, P = ax ? w.z2 - w.z1 : w.x2 - w.x1;

@@ -105,6 +105,9 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `balanco` | Asilo: cadeira de balanço da Sala de Visitas (kind balanco) | [Rockingchair_01](https://polyhaven.com/a/Rockingchair_01), CC0 | Jorge Camacho |
 | `comoda` | Asilo: cômodas da Farmácia (kind comoda) | [GothicCommode_01](https://polyhaven.com/a/GothicCommode_01), CC0 | Kirill Sannikov |
 | `armario_gotico` | Asilo: armário do Consultório (kind armario_gotico) | [GothicCabinet_01](https://polyhaven.com/a/GothicCabinet_01), CC0 | Kirill Sannikov |
+| `busto` | Asilo: busto de mármore em cima da cômoda da Farmácia | [marble_bust_01](https://polyhaven.com/a/marble_bust_01), CC0 | Rico Cilliers |
+| `cha` | Asilo: aparelho de chá na mesa da Sala de Visitas | [tea_set_01](https://polyhaven.com/a/tea_set_01), CC0 | James Ray Cock, Rico Cilliers, Jurita Burger |
+| `jarro` | Asilo: jarro de louça em cima dos criados-mudos | [ceramic_vase_02](https://polyhaven.com/a/ceramic_vase_02), CC0 | James Ray Cock |
 
 ## Bonecos
 
