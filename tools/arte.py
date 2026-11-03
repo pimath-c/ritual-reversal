@@ -21,7 +21,9 @@ def main():
     for n, f in M.items():
         if not isinstance(f, dict):
             continue
-        if f.get('polyhaven'):
+        if f.get('itch'):
+            mod.append(f"| `{n}` | {f['uso']} | [{f['itch']['pagina'].split('/')[2].split('.')[0]} (itch.io)]({f['itch']['pagina']}), {f['licenca']} | {f['autor']} |")
+        elif f.get('polyhaven'):
             mod.append(f"| `{n}` | {f['uso']} | [{f['polyhaven']}](https://polyhaven.com/a/{f['polyhaven']}), CC0 | {f['autor']} |")
         else:
             mod.append(f"| `{n}` | {f.get('uso', gerados.get(n, ''))} | Higgsfield/Tripo (gerado) | — |")

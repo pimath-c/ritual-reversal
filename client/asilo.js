@@ -92,6 +92,28 @@ for(let z=-71.5;z<=-66.5;z+=1){ for(const x of [-2.2,2.2]){ const p=new THREE.Me
 // aberta; sem nenhuma, a folha entra na parede. Todo vão com porta tem batente nas duas faces e o trilho por cima.
 const PORTAS=[];
 const livreA=(x,z)=>Sim.livre({x,z},.1);
+// v6.5d: revestimento por dentro de algumas salas (as paredes são caixas divididas com a sala vizinha): azulejo rachado na
+// Hidroterapia e acolchoado de lona no Isolamento (CC0, SOI, itch.io). Em cada lado da sala, trechos de 0,5 m onde atrás há
+// parede (nem vão de porta); trechos seguidos viram um plano só, a 6 cm da parede (fora do lambri e
+// do friso), com o uv em metros (repete a cada S). REVEST devolve os planos para o teste e o porte.
+const REVEST=[];
+{ const F_AZ=FT('azulejoQuebrado'), F_AC=FT('acolchoado'), F_PQ=FT('pisoQuebrado');
+  const REG={Hidroterapia:F_AZ&&{mat:new THREE.MeshStandardMaterial({...F_AZ,color:0xb8b6ae,roughness:.7}),alt:2.4,S:2.2},
+             Isolamento:F_AC&&{mat:new THREE.MeshStandardMaterial({...F_AC,color:0xd8ccb0,roughness:1}),alt:ALT,S:1.1}};
+  const atras=(x,z)=>!livreA(x,z)&&!Sim.VAOS.some(v=>x>v.x1-.25&&x<v.x2+.25&&z>v.z1-.25&&z<v.z2+.25);
+  for(const e of E){ const R=REG[e.nome]; if(!R) continue;
+    if(e.nome==='Hidroterapia'&&F_PQ) piso(e,new THREE.MeshStandardMaterial({...F_PQ,color:0xa8a49c,roughness:.8}),1.4,.015);   // piso de xadrez rachado por cima do ladrilho
+    for(const [eixoX,fixo,nrm] of [[true,e.z1,1],[true,e.z2,-1],[false,e.x1,1],[false,e.x2,-1]]){
+      const a1=eixoX?e.x1:e.z1, a2=eixoX?e.x2:e.z2; let ini=null;
+      const fecha=fim=>{ if(ini==null) return; const L=fim-ini, g=new THREE.PlaneGeometry(L,R.alt), uv=g.attributes.uv;
+        for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*L/R.S,uv.getY(i)*R.alt/R.S);
+        const m=new THREE.Mesh(g,R.mat), c=(ini+fim)/2, d=fixo+nrm*.06; m.position.set(eixoX?c:d,R.alt/2,eixoX?d:c);
+        m.rotation.y=eixoX?(nrm>0?0:PI):(nrm>0?PI/2:-PI/2); m.receiveShadow=true; add(m);
+        REVEST.push({sala:e.nome,eixo:eixoX?'x':'z',de:ini,ate:fim,fixo:d,alt:R.alt}); ini=null; };
+      for(let t=a1;t<a2-.01;t+=.5){ const meio=Math.min(t+.25,a2), x=eixoX?meio:fixo, z=eixoX?fixo:meio;
+        const ok=atras(x-(eixoX?0:nrm*.3),z-(eixoX?nrm*.3:0));   // camas encostadas não interrompem: a parede atrás delas também é revestida
+        if(ok&&ini==null) ini=t; if(!ok) fecha(t); }
+      fecha(a2); } } }
 for(const P of Sim.PORTAS_DIN){ const ax=P.eixo==='x', larg=ax?P.x2-P.x1:P.z2-P.z1, folhas=larg>3.2?2:1, lf=larg/folhas, esp=.1, alt=ALT_FOLHA;
   const a1=ax?P.x1:P.z1, a2=ax?P.x2:P.z2, f1=ax?P.z1:P.x1, f2=ax?P.z2:P.x2;   // ao longo do vão (a) e através da parede (f)
   const pt=(a,f)=>ax?[a,f]:[f,a];
@@ -192,8 +214,10 @@ const PEC={
   balcao:w=>{ enfeite('relogio',w,-2,w.h); if(M3('armario',w,w.h-.06,GIRO_ARMARIO,1.3)){ caixa(w.x1-.05,w.x2+.05,w.h-.06,w.h,w.z1-.08,w.z2+.08,M.madeira,2); return; } caixa(w.x1,w.x2,0,w.h,w.z1,w.z2,M.madeira,2); caixa(w.x1-.05,w.x2+.05,w.h,w.h+.06,w.z1-.08,w.z2+.08,M.madeira,2); },
   coluna_coreto:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2; const c=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,w.h,8),M.ferro); c.position.set(cx,w.h/2,cz); c.castShadow=true; add(c); },
   canteiro:w=>{ if(M3('canteiro',w,w.h*.6,0,1.4)) caixa(w.x1+.08,w.x2-.08,0,w.h*.52,w.z1+.08,w.z2-.08,M.terra,2); else caixa(w.x1,w.x2,0,w.h*.6,w.z1,w.z2,M.terra,2); for(let x=w.x1+.3;x<w.x2-.2;x+=.55){ const p=new THREE.Mesh(new THREE.ConeGeometry(.16,.4+R()*.3,5),new THREE.MeshStandardMaterial({color:0x2c3a22,roughness:1,flatShading:true})); p.position.set(x,w.h*.6+.2,(w.z1+w.z2)/2+(R()-.5)*.4); add(p); } },
-  lapide:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2; caixa(w.x1,w.x2,0,w.h-.2,w.z1,w.z2,MAT.lapide,1); const t=new THREE.Mesh(new THREE.CylinderGeometry((w.x2-w.x1)/2,(w.x2-w.x1)/2,w.z2-w.z1,10,1,false,0,PI),MAT.lapide); t.rotation.set(PI/2,0,PI/2); t.position.set(cx,w.h-.2,cz); add(t);
-    if(R()<.4){ const cz2=new THREE.Mesh(new THREE.BoxGeometry(.06,.5,.06),M.ferro); cz2.position.set(cx,w.h+.25,cz); add(cz2); } },
+  lapide:w=>{ const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2, ML=modelo&&modelo([null,'cruz_celta','cruz_ornada','lapide_cruz'][Math.abs(Math.round(cx*7+cz*13))%4]);   // v6.5d: como na catedral
+    if(ML){ const m=new THREE.Mesh(ML.geo,ML.mat); m.scale.setScalar(w.h); m.position.set(cx,0,cz); m.castShadow=true; add(m); }
+    else { caixa(w.x1,w.x2,0,w.h-.2,w.z1,w.z2,MAT.lapide,1); const t=new THREE.Mesh(new THREE.CylinderGeometry((w.x2-w.x1)/2,(w.x2-w.x1)/2,w.z2-w.z1,10,1,false,0,PI),MAT.lapide); t.rotation.set(PI/2,0,PI/2); t.position.set(cx,w.h-.2,cz); add(t); }
+    if(R()<.4&&!ML){ const cz2=new THREE.Mesh(new THREE.BoxGeometry(.06,.5,.06),M.ferro); cz2.position.set(cx,w.h+.25,cz); add(cz2); } },   // o mesmo sorteio; a cruz de ferro só na lápide antiga
 };
 for(const w of W) if(PEC[w.kind]) PEC[w.kind](w);
 // o teto do coreto: chapéu de ferro sobre as seis colunas
@@ -229,5 +253,5 @@ function atualizar(dt,V,agora){
       L.lamp.material.emissiveIntensity=2.2*k; L.brilho.material.opacity=.4*k; L.fonte.int=1.3*k; } }
   for(const Q of QUADRO){ const ap=(en[Q.q.setor]||0)>0; Q.alav.rotation.z=ap?.9:0; Q.luz.material.color.set(ap?0xff3020:0x30ff60); Q.luz.material.emissive.set(ap?0xff3020:0x30ff60); }
 }
-return {atualizar,PORTAS,LAMP,NA_PAREDE};
+return {atualizar,PORTAS,LAMP,NA_PAREDE,REVEST};
 };

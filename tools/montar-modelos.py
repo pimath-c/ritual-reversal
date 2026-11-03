@@ -114,6 +114,21 @@ def normais(p, idx):
     return n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
 
 
+def baixar_itch_fbx(it, destino):
+    """v6.5d: modelo de um pacote do itch.io (CC0) em FBX: "itch" = {"pagina", "arquivo" (zip), "fbx" e "textura" (caminhos no
+    zip)}. Extrai os dois para uma pasta própria ao lado e converte em GLB no Chromium (tools/converter-fbx.js, precisa de
+    THREE_DIR e do playwright). O zip fica em assets/modelos/fontes/ (fora do git)."""
+    import importlib.util, subprocess, zipfile
+    pasta = os.path.dirname(destino); z = os.path.join(pasta, it['arquivo'])
+    if not os.path.exists(z):
+        sp = importlib.util.spec_from_file_location('montar_bonecos', os.path.join(RAIZ, 'tools', 'montar-bonecos.py'))
+        mb = importlib.util.module_from_spec(sp); sp.loader.exec_module(mb); mb.baixar_itch(it['pagina'], it['arquivo'], z)
+    tmp = destino[:-4] + '_fbx'; os.makedirs(tmp, exist_ok=True); Z = zipfile.ZipFile(z)
+    f1 = os.path.join(tmp, 'modelo.fbx'); f2 = os.path.join(tmp, 'cor.png')
+    open(f1, 'wb').write(Z.read(it['fbx'])); open(f2, 'wb').write(Z.read(it['textura']))
+    subprocess.run(['node', os.path.join(RAIZ, 'tools', 'converter-fbx.js'), f1, f2, destino], check=True)
+
+
 def baixar_polyhaven(ident, destino):
     """Poly Haven (CC0): baixa o glTF de 1K (json, bin e a textura de cor) e junta num GLB com a textura de cor dentro."""
     with urllib.request.urlopen(pedido(f'https://api.polyhaven.com/files/{ident}'), timeout=60) as r:
@@ -215,7 +230,7 @@ def gravar_glb(p, n, uv, idx, jpeg, mime='image/jpeg'):
 
 
 def main():
-    cfgs = json.load(open(os.path.join(FONTES, 'fontes.json'), encoding='utf-8'))
+    cfgs = json.load(open(os.environ.get('MODELOS_JSON') or os.path.join(FONTES, 'fontes.json'), encoding='utf-8'))   # MODELOS_JSON: outro fontes.json (provar candidatos)
     origens = os.environ.get('FONTES_GLB') or os.path.join(FONTES, 'fontes'); os.makedirs(origens, exist_ok=True)
     alt = os.environ.get('SAIDA_MODELOS')
     unity = alt or os.path.join(RAIZ, 'unity', 'Assets', 'RitualReversal', 'Resources', 'Modelos'); os.makedirs(unity, exist_ok=True)
@@ -227,6 +242,7 @@ def main():
         if not os.path.exists(orig):
             print('baixando', nome)
             if cfg.get('polyhaven'): baixar_polyhaven(cfg['polyhaven'], orig)
+            elif cfg.get('itch'): baixar_itch_fbx(cfg['itch'], orig)
             else: urllib.request.urlretrieve(cfg['url'], orig)
         J, BIN = ler_glb(open(orig, 'rb').read())
         p, n, uv, idx, img = juntar(J, BIN)

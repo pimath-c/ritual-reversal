@@ -12,3 +12,7 @@ __pycache__/
 assets/bonecos/fontes/
 # pacotes e conversões das armas (OpenGameArt, CC0): tools/montar-armas.py baixa e converte de novo
 assets/armas/fontes/
+# v6.5d: pacotes do itch.io e o que se extrai deles (FBX e textura antes de virar GLB)
+assets/modelos/fontes/*.zip
+assets/modelos/fontes/*_fbx/
+assets/texturas/fontes/*.zip

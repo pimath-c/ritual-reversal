@@ -45,6 +45,9 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `tabuas` | tábuas gastas: pilhas de madeira, telhado do ermitão | [weathered_planks](https://polyhaven.com/a/weathered_planks) | Dario Barresi, Dimitrios Savva |
 | `portaAsilo` | Asilo: portas de tábuas pintadas e gastas (com a cor da foto) | [distressed_painted_planks](https://polyhaven.com/a/distressed_painted_planks) | Rob Tuytel |
 | `tapete` | catedral: tapetes nos eixos de passagem (jacquard de quadrifólios, tingido de vinho) | [quatrefoil_jacquard_fabric](https://polyhaven.com/a/quatrefoil_jacquard_fabric) | colormass, Rico Cilliers |
+| `azulejoQuebrado` | Asilo: paredes da Hidroterapia e dos banheiros (azulejo branco rachado e caído) | [soi_broken_tiles_01](https://soi.itch.io/substance-designer-material-pack-1) | SOI |
+| `pisoQuebrado` | Asilo: piso da Hidroterapia (xadrez rachado) | [soi_broken_tiles_04](https://soi.itch.io/substance-designer-material-pack-1) | SOI |
+| `acolchoado` | Asilo: paredes acolchoadas do Isolamento (em cinza; a cor de lona encardida vem do material) | [soi_leather_padded_01](https://soi.itch.io/substance-designer-material-pack-1) | SOI |
 
 ## Modelos
 
@@ -81,6 +84,10 @@ Sem o arquivo de uma textura ou de um modelo, o jogo volta a gerar aquela peça 
 | `relogio` | Asilo: relógio de mesa no balcão da recepção | [mantel_clock_01](https://polyhaven.com/a/mantel_clock_01), CC0 | Yann Kervran, Rico Cilliers |
 | `castical` | castiçais de latão em cima das tumbas da cripta | [brass_candleholders](https://polyhaven.com/a/brass_candleholders), CC0 | Tina |
 | `moldura` | Asilo: moldura oval pendurada nas paredes das salas (vidro escuro) | [hanging_picture_frame_03](https://polyhaven.com/a/hanging_picture_frame_03), CC0 | James Ray Cock |
+| `cruz_celta` | cemitérios: um quarto das lápides vira cruz celta de pedra (kind lapide) | [loafbrr (itch.io)](https://loafbrr.itch.io/graveyard-props), CC0 | loafbrr |
+| `cruz_ornada` | cemitérios: um quarto das lápides vira cruz trevada de pedra (kind lapide) | [loafbrr (itch.io)](https://loafbrr.itch.io/graveyard-props), CC0 | loafbrr |
+| `lapide_cruz` | cemitérios: um quarto das lápides vira lápide com cruz no topo (kind lapide) | [loafbrr (itch.io)](https://loafbrr.itch.io/graveyard-props), CC0 | loafbrr |
+| `sarcofago` | cripta da catedral: as tumbas viram sarcófagos de pedra (kind tumba) | [loafbrr (itch.io)](https://loafbrr.itch.io/graveyard-props), CC0 | loafbrr |
 
 ## Bonecos
 

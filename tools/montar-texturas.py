@@ -27,6 +27,22 @@ RELEVO = 0.5
 MAPAS = {'cor': ['Diffuse', 'diff'], 'nor': ['nor_gl'], 'rug': ['Rough', 'rough']}
 
 
+def baixar_itch(f):
+    """v6.5d: textura de um pacote do itch.io (CC0): "itch" = {"pagina", "arquivo" (trecho do nome do zip), "cor", "nor", "rug"
+    (arquivos dentro do zip)}. O zip fica em fontes/ e os três mapas viram fontes/<id>_<mapa>.jpg, como os do Poly Haven."""
+    import importlib.util, zipfile
+    i, it = f['id'], f['itch']
+    if all(os.path.exists(os.path.join(ORIG, f'{i}_{p}.jpg')) for p in MAPAS): return
+    z = os.path.join(ORIG, it['arquivo'] + '.zip')
+    if not os.path.exists(z):
+        sp = importlib.util.spec_from_file_location('montar_bonecos', os.path.join(RAIZ, 'tools', 'montar-bonecos.py'))
+        mb = importlib.util.module_from_spec(sp); sp.loader.exec_module(mb); mb.baixar_itch(it['pagina'], it['arquivo'], z)
+    Z = zipfile.ZipFile(z)
+    for p in MAPAS:
+        nome = next(n for n in Z.namelist() if n.endswith(it[p]))
+        Image.open(io.BytesIO(Z.read(nome))).convert('RGB').save(os.path.join(ORIG, f'{i}_{p}.jpg'), 'JPEG', quality=95)
+
+
 def baixar(i):
     os.makedirs(ORIG, exist_ok=True)
     falta = [p for p in MAPAS if not os.path.exists(os.path.join(ORIG, f'{i}_{p}.jpg'))]
@@ -68,7 +84,8 @@ def main():
     js, total = {}, 0
     for nome, f in F.items():
         try:
-            baixar(f['id'])
+            if f.get('itch'): os.makedirs(ORIG, exist_ok=True); baixar_itch(f)
+            else: baixar(f['id'])
         except Exception as e:
             print(f'{nome}: não baixou ({e}); fica o que já está gravado', file=sys.stderr)
         js[nome] = {}
@@ -83,7 +100,7 @@ def main():
                 continue
             js[nome][p] = base64.b64encode(dado).decode('ascii'); total += len(dado)
         print(f"{nome:9s} {f['id']:20s} " + ' '.join(f'{p} {len(js[nome].get(p, ""))*3//4//1024} KB' for p in MAPAS))
-    cab = ('/* Texturas fotográficas CC0 (Poly Haven), geradas por tools/montar-texturas.py a partir de assets/texturas/fontes.json.\n'
+    cab = ('/* Texturas fotográficas CC0 (Poly Haven e itch.io), geradas por tools/montar-texturas.py a partir de assets/texturas/fontes.json.\n'
            '   Não edite à mão. Autores: ' + '; '.join(f"{n}: {f['id']} ({f['autor']})" for n, f in F.items()) + '. */\n')
     with open(os.path.join(RAIZ, 'client', 'texturas.js'), 'w', encoding='utf-8') as o:
         o.write(cab + 'window.RR_TEXTURAS=' + json.dumps(js, separators=(',', ':')) + ';\n')

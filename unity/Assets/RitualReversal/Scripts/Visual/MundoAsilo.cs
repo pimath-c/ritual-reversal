@@ -199,6 +199,39 @@ namespace RitualReversal.Visual
                 var fonte = new Fonte { x = x, z = z, y = ALT_ASILO - 1.7f, cor = 0xffdca0, i = 1.3f, alc = 13 }; FONTES.Add(fonte);   // abaixo da cúpula, longe do teto
                 if (c.setor != null && lampAsilo.ContainsKey(c.setor)) lampAsilo[c.setor].Add(new LampAsilo { lamp = ml, brilho = mb, fonte = fonte, fase = RA() * 10 });
             }
+            // v6.5d: revestimento por dentro (o REVEST do asilo.js): azulejo rachado na Hidroterapia (até 2,4 m, piso de xadrez rachado
+            // por cima do ladrilho) e acolchoado de lona no Isolamento (até o teto). Trechos de 0,5 m onde atrás há parede (nem vão);
+            // trechos seguidos viram um plano, a 6 cm da parede, uv em metros.
+            {
+                var fAz = Pbr.Foto("azulejoQuebrado"); var fAc = Pbr.Foto("acolchoado"); var fPq = Pbr.Foto("pisoQuebrado");
+                Func<float, float, bool> livreR = (x, z) => Mapa.Livre(x, z, .1);
+                Func<float, float, bool> atras = (x, z) => !livreR(x, z) && !MapaVisual.VAOS.Exists(v => x > v.x1 - .25f && x < v.x2 + .25f && z > v.z1 - .25f && z < v.z2 + .25f);
+                foreach (var e in MapaVisual.ESPACOS)
+                {
+                    Material mr = null; float alt = 0, S = 1;
+                    if (e.nome == "Hidroterapia" && fAz != null) { mr = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xb8b6ae), mapa = fAz.mapa, relevo = fAz.relevo, rugosidade = .7f }); alt = 2.4f; S = 2.2f; }
+                    else if (e.nome == "Isolamento" && fAc != null) { mr = Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xd8ccb0), mapa = fAc.mapa, relevo = fAc.relevo, rugosidade = 1 }); alt = ALT_ASILO; S = 1.1f; }
+                    if (mr == null) continue;
+                    if (e.nome == "Hidroterapia" && fPq != null) PisoA(e.x1, e.x2, e.z1, e.z2, Mat.Padrao(new Mat.Opcoes { cor = Mat.Hex(0xa8a49c), mapa = fPq.mapa, relevo = fPq.relevo, rugosidade = .8f }), 1.4f, .015f);
+                    foreach (var lado in new[] { new object[] { true, e.z1, 1f }, new object[] { true, e.z2, -1f }, new object[] { false, e.x1, 1f }, new object[] { false, e.x2, -1f } })
+                    {
+                        bool eixoX = (bool)lado[0]; float fixo = (float)lado[1], nrm = (float)lado[2], a1 = eixoX ? e.x1 : e.z1, a2 = eixoX ? e.x2 : e.z2; float? ini = null;
+                        Action<float> fecha = fim =>
+                        {
+                            if (ini == null) return; float L = fim - ini.Value, c = (ini.Value + fim) / 2, d = fixo + nrm * .06f;
+                            var g = Geo.Plano(L, alt).EscalarUV(L / S, alt / S);
+                            Est(g, mr, TRS(eixoX ? c : d, alt / 2, eixoX ? d : c, 0, eixoX ? (nrm > 0 ? 0 : PI) : (nrm > 0 ? PI / 2 : -PI / 2), 0), false); ini = null;
+                        };
+                        for (float t = a1; t < a2 - .01f; t += .5f)
+                        {
+                            float meio = Math.Min(t + .25f, a2), x = eixoX ? meio : fixo, z = eixoX ? fixo : meio;
+                            bool ok = atras(x - (eixoX ? 0 : nrm * .3f), z - (eixoX ? nrm * .3f : 0));
+                            if (ok && ini == null) ini = t; if (!ok) fecha(t);
+                        }
+                        fecha(a2);
+                    }
+                }
+            }
             // v6.4d: quadros e espelhos nas paredes das salas (modelos escaneados, CC0; só enfeite, encostados na parede). Em cada
             // sala interna, no meio da primeira parede (z1, z2, x1, x2) com parede atrás em toda a largura (nem vão de porta), chão
             // livre na frente e nenhum quadro de força perto; pintura, pintura, espelho e moldura oval, um de cada vez (o asilo.js)
@@ -357,9 +390,14 @@ namespace RitualReversal.Visual
                     break;
                 case "lapide":
                     {
-                        CxA(w.x1, w.x2, 0, w.h - .2f, w.z1, w.z2, M("lapide"), 1);
-                        Est(Geo.Cilindro((w.x2 - w.x1) / 2, (w.x2 - w.x1) / 2, w.z2 - w.z1, 10, 1, false, 0, PI), M("lapide"), TRS(cx, w.h - .2f, cz, PI / 2, 0, PI / 2));
-                        if (RA() < .4f) Est(Geo.Caixa(.06f, .5f, .06f), A("ferro"), cx, w.h + .25f, cz);
+                        string nl = Mundo.LAPIDES_3D[(int)Math.Abs(Math.Floor((double)cx * 7 + (double)cz * 13 + .5)) % 4]; var ML = nl != null ? ModeloGLB.Carregar(nl) : null;   // v6.5d
+                        if (ML != null) Est(ML.geo, ML.mat, TRS(cx, 0, cz, 0, 0, 0, w.h, w.h, w.h));
+                        else
+                        {
+                            CxA(w.x1, w.x2, 0, w.h - .2f, w.z1, w.z2, M("lapide"), 1);
+                            Est(Geo.Cilindro((w.x2 - w.x1) / 2, (w.x2 - w.x1) / 2, w.z2 - w.z1, 10, 1, false, 0, PI), M("lapide"), TRS(cx, w.h - .2f, cz, PI / 2, 0, PI / 2));
+                        }
+                        if (RA() < .4f && ML == null) Est(Geo.Caixa(.06f, .5f, .06f), A("ferro"), cx, w.h + .25f, cz);   // o mesmo sorteio
                         break;
                     }
             }

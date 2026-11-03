@@ -460,5 +460,82 @@
     "triangulos": 1500,
     "textura": 512,
     "bordas": true
+  },
+  "cruz_celta": {
+    "autor": "loafbrr",
+    "licenca": "CC0",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1,
+      0
+    ],
+    "triangulos": 0,
+    "textura": 512,
+    "itch": {
+      "pagina": "https://loafbrr.itch.io/graveyard-props",
+      "arquivo": "Graveyard.zip",
+      "fbx": "Graveyard/Models/Cross_3.fbx",
+      "textura": "Graveyard/Textures/Cross/Cross3/Cross3_1/Cross3_1_Albedo.png"
+    },
+    "uso": "cemitérios: um quarto das lápides vira cruz celta de pedra (kind lapide)"
+  },
+  "cruz_ornada": {
+    "autor": "loafbrr",
+    "licenca": "CC0",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1,
+      0
+    ],
+    "triangulos": 0,
+    "textura": 512,
+    "itch": {
+      "pagina": "https://loafbrr.itch.io/graveyard-props",
+      "arquivo": "Graveyard.zip",
+      "fbx": "Graveyard/Models/Cross_2.fbx",
+      "textura": "Graveyard/Textures/Cross/Cross2/Cross2_1/Cross2_1_Albedo.png"
+    },
+    "uso": "cemitérios: um quarto das lápides vira cruz trevada de pedra (kind lapide)"
+  },
+  "lapide_cruz": {
+    "autor": "loafbrr",
+    "licenca": "CC0",
+    "encaixe": "altura",
+    "tamanho": [
+      0,
+      1,
+      0
+    ],
+    "triangulos": 0,
+    "textura": 512,
+    "itch": {
+      "pagina": "https://loafbrr.itch.io/graveyard-props",
+      "arquivo": "Graveyard.zip",
+      "fbx": "Graveyard/Models/GraveStone_5.fbx",
+      "textura": "Graveyard/Textures/Tombstones/TombStone5/TombStone5_1/TombStone5_1_Albedo.png"
+    },
+    "uso": "cemitérios: um quarto das lápides vira lápide com cruz no topo (kind lapide)",
+    "brilho": 1.25
+  },
+  "sarcofago": {
+    "itch": {
+      "pagina": "https://loafbrr.itch.io/graveyard-props",
+      "arquivo": "Graveyard.zip",
+      "fbx": "Graveyard/Models/Sarcophagus.fbx",
+      "textura": "Graveyard/Textures/Sarcophagus/Sarcophagus_Albedo.png"
+    },
+    "autor": "loafbrr",
+    "licenca": "CC0",
+    "uso": "cripta da catedral: as tumbas viram sarcófagos de pedra (kind tumba)",
+    "encaixe": "caixa",
+    "tamanho": [
+      1,
+      1,
+      1
+    ],
+    "triangulos": 0,
+    "textura": 512
   }
 }

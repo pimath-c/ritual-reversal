@@ -327,5 +327,53 @@
   "licenca": "CC0",
   "autor": "colormass, Rico Cilliers",
   "uso": "catedral: tapetes nos eixos de passagem (jacquard de quadrifólios, tingido de vinho)"
+ },
+ "azulejoQuebrado": {
+  "id": "soi_broken_tiles_01",
+  "pagina": "https://soi.itch.io/substance-designer-material-pack-1",
+  "licenca": "CC0",
+  "autor": "SOI",
+  "uso": "Asilo: paredes da Hidroterapia e dos banheiros (azulejo branco rachado e caído)",
+  "itch": {
+   "pagina": "https://soi.itch.io/substance-designer-material-pack-1",
+   "arquivo": "Soi_BrokenTiles_Metallic",
+   "cor": "BrokenTiles_01_BC.tga",
+   "nor": "BrokenTiles_01_NOpenGL.tga",
+   "rug": "BrokenTiles_01_R.tga"
+  }
+ },
+ "pisoQuebrado": {
+  "id": "soi_broken_tiles_04",
+  "pagina": "https://soi.itch.io/substance-designer-material-pack-1",
+  "licenca": "CC0",
+  "autor": "SOI",
+  "uso": "Asilo: piso da Hidroterapia (xadrez rachado)",
+  "itch": {
+   "pagina": "https://soi.itch.io/substance-designer-material-pack-1",
+   "arquivo": "Soi_BrokenTiles_Metallic",
+   "cor": "BrokenTiles_04_BC.tga",
+   "nor": "BrokenTiles_04_NOpenGL.tga",
+   "rug": "BrokenTiles_04_R.tga"
+  }
+ },
+ "acolchoado": {
+  "id": "soi_leather_padded_01",
+  "pagina": "https://soi.itch.io/substance-designer-material-pack-1",
+  "licenca": "CC0",
+  "autor": "SOI",
+  "uso": "Asilo: paredes acolchoadas do Isolamento (em cinza; a cor de lona encardida vem do material)",
+  "cinza": true,
+  "itch": {
+   "pagina": "https://soi.itch.io/substance-designer-material-pack-1",
+   "arquivo": "Soi_LeatherPadded_Metallic",
+   "cor": "LeatherPadded_01_BC.tga",
+   "nor": "LeatherPadded_01_NOpenGL.tga",
+   "rug": "LeatherPadded_01_R.tga"
+  },
+  "media": [
+   190,
+   190,
+   190
+  ]
  }
 }

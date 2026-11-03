@@ -136,6 +136,7 @@ namespace RitualReversal.Visual
         }
 
         // ---------- PECAS: a aparência de cada tipo de peça (a colisão continua a caixa da simulação) ----------
+        public static readonly string[] LAPIDES_3D = { null, "cruz_celta", "cruz_ornada", "lapide_cruz" };   // v6.5d: 0 = a lápide antiga
         void Peca(PecaV w)
         {
             if (PecaV6(w)) return; // as peças da v6 (client/mundo.js) valem antes das antigas
@@ -220,8 +221,14 @@ namespace RitualReversal.Visual
                 case "lapide":
                     {
                         float rx = (vr() - .5f) * .2f, ry = (vr() - .5f) * .25f, rz = (vr() - .5f) * .15f; var G = TRS(x, 0, z, rx, ry, rz);
-                        Est(Geo.Caixa(L * .8f, w.h * .75f, D, 1), M("lapide"), G * M4.T(0, w.h * .375f, 0));
-                        Est(Geo.Cilindro(L * .4f, L * .4f, D, 12, 1, false, 0, PI), M("lapide"), G * TRS(0, w.h * .75f, 0, PI / 2, 0, PI / 2));
+                        // v6.5d: três de cada quatro lápides viram cruz celta, cruz trevada ou lápide com cruz (CC0, loafbrr), pela posição
+                        string nl = LAPIDES_3D[(int)Math.Abs(Math.Floor((double)x * 7 + (double)z * 13 + .5)) % 4]; var ML = nl != null ? ModeloGLB.Carregar(nl) : null;
+                        if (ML != null) Est(ML.geo, ML.mat, G * M4.S(w.h, w.h, w.h));
+                        else
+                        {
+                            Est(Geo.Caixa(L * .8f, w.h * .75f, D, 1), M("lapide"), G * M4.T(0, w.h * .375f, 0));
+                            Est(Geo.Cilindro(L * .4f, L * .4f, D, 12, 1, false, 0, PI), M("lapide"), G * TRS(0, w.h * .75f, 0, PI / 2, 0, PI / 2));
+                        }
                         Est(Geo.Caixa(L * 1.1f, .16f, .9f, 1), M("lapide"), G * M4.T(0, .08f, -.55f)); return;
                     }
                 case "mausoleu":
@@ -289,7 +296,9 @@ namespace RitualReversal.Visual
                 case "ossos": Ossos(w, x, z); return;
             }
             var mat = w.kind == "tumba" ? M("marble") : w.kind == "cripta" ? M("wallDark") : w.kind == "biombo" ? M("wood") : M("wall");
-            Caixa(w.x1, w.x2, 0, w.h, w.z1, w.z2, mat, w.kind == "tumba" ? 2 : 4);
+            var MS = w.kind == "tumba" ? ModeloGLB.Carregar("sarcofago") : null;   // v6.5d: sarcófago de pedra (CC0, loafbrr)
+            if (MS != null) Est(MS.geo, MS.mat, TRS(x, 0, z, 0, L < D ? PI / 2 : 0, 0, Math.Max(L, D), w.h, Math.Min(L, D)));
+            else Caixa(w.x1, w.x2, 0, w.h, w.z1, w.z2, mat, w.kind == "tumba" ? 2 : 4);
             if (w.kind == "tumba") { var MC = ModeloGLB.Carregar("castical"); if (MC != null) Est(MC.geo, MC.mat, TRS(x, w.h, z, 0, L >= D ? 0 : PI / 2, 0)); }   // v6.5a: castiçais de latão (CC0) em cima
             if (w.h > 2.2f && w.kind != "biombo") Caixa(w.x1 - .1f, w.x2 + .1f, w.h, w.h + .35f, w.z1 - .1f, w.z2 + .1f, M("wallDark"), 4, false);
         }

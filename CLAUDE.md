@@ -49,7 +49,7 @@ commits em português.
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.5c)
+## Estado atual (v6.5d)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -278,6 +278,14 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   Redução: `GLTFPACK=<node_modules/gltfpack/cli.js>` no `montar-modelos.py` (`reduzir_gltfpack`: -si -sv -se .03, `-slb` com `bordas`,
   `-sa` com `agressivo`) e no `montar-bonecos.py`; o pyfqmr com o uv do vértice mais perto desmanchava rocha2, luminária, quadro, leito,
   arca, lanterna. `rocha3` = namaqualand_boulder_03; `tronco2` saiu. Galeria de estúdio para revisar: renderizar os GLB de `client/*.js`.
+- v6.5d (notas em `notas/v6.5d.md`): arte CC0 do itch.io. `montar-texturas.py` aceita `"itch": {pagina, arquivo, cor, nor, rug}`
+  (`baixar_itch` do montar-bonecos; zip em `assets/texturas/fontes/`): `azulejoQuebrado`/`pisoQuebrado`/`acolchoado` (SOI). asilo.js
+  `REVEST` (C# no MundoAsilo): planos por dentro da Hidroterapia (azulejo até 2,4 m, piso por cima) e do Isolamento (acolchoado até
+  o teto), em trechos de 0,5 m onde atrás há parede e nenhum vão, a 6 cm. `montar-modelos.py` aceita `"itch": {pagina, arquivo, fbx,
+  textura}` (`baixar_itch_fbx` → `converter-fbx.js`, precisa de THREE_DIR) e `MODELOS_JSON=` (provar candidatos sem refazer tudo):
+  `cruz_celta`/`cruz_ornada`/`lapide_cruz` (`LAPIDES_3D[Math.abs(Math.round(x*7+z*13))%4]`, 0 = lápide antiga; os sorteios vr()/R()
+  continuam; navegador e Unity) e `sarcofago` (kind tumba). Pacotes loafbrr "Graveyard Props" e SOI "Substance Designer Material
+  Pack #1". O resto do itch.io CC0 é estilizado (KayKit, Kenney, PSX) e destoa; os de emaceart são pagos.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e
