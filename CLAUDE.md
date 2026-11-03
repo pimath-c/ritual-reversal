@@ -51,11 +51,12 @@ mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes 
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/exportar-primeira-pessoa.js   # mudou arma.js/skins.js? regrava Resources/primeira-pessoa.*
     THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
     [THREE_DIR=<three@0.128.0>] NODE_PATH=$(npm root -g) node tools/unity-noite.js   # fim da noite do Unity (planta, gráfico, placar) numa noite de bots (Mono)
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-poses.js [pasta] [regex]   # poses dos bonecos do Unity (andar, correr, agachado, recarga...) de lado e de frente (Mono)
     [FOTOS=dist/telas/unity] node tools/unity-telas.js   # telas do Unity (IMGUI) por todo o jogo e online, layout do Unity em miniatura; FOTOS= grava PNG (Mono, Pillow)
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.6)
+## Estado atual (v6.7)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -332,6 +333,14 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `ReflexoNoturno` (cubo 8×8 com a média da foto do céu × base: reflexo custom do RenderSettings no lugar do céu de dia padrão).
   `__T.pos()` = {composer, BLOOM, GRADE}. Mangas claras na vitrine = luz de estúdio (`LEITURA` 1,3); na partida saem escuras.
 - v6.6a (notas em `notas/v6.6a.md`): enfeites `jarro` (criados-mudos), `cha` (mesa redonda, altura .12: o conjunto é largo) e `busto` (cômoda com x1 < 7) pelo `enfeite` do asilo.js / `Enfeite` do MundoAsilo.cs. Barril do Poly Haven avaliado e deixado de fora (todos são tambores de metal ou plástico).
+- v6.7 (só Unity; notas em `notas/v6.7.md`): locomoção da terceira pessoa no `Personagens.cs` (no Unity: coxa positiva = para a frente,
+  joelho negativo = dobra). `corrida` 0–1 por velocidade (3,6 a 5,8 m/s): amplitude até .85 (culto .6 × .82), coxa à frente +.12,
+  quique |cos| andando e |sin| correndo, tronco −.2 e giro `torso.r.y` contra o quadril (`giro` .04 + .16·corrida para quem segura arma,
+  .2 no culto), joelho no `JuntasNovas` com `K` até 1,75 (culto .95) e apoio .08 + .22·corrida. Caçador correndo sem atirar (`semTiro`
+  > .35 s): arma atravessada no peito (`gun.r` (−PI/2 + .35, .25, .9), cotovelos 1,25/1,35). Agachado andando: meio agachado (coxas .75 ± .35,
+  joelhos −1,35, bodyY −.24); parado continua ajoelhado. Recarga da carabina maior (`recCiclo` dobra o cotovelo direito).
+  Ferramenta: `THREE_DIR=... NODE_PATH=$(npm root -g) node tools/unity-poses.js [pasta] [regex]` (tools/cs/PosesBoneco.cs: roteiros com o
+  `Animar` de verdade, fotos de lado e de frente em `dist/unity-poses/<roteiro>.png`).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

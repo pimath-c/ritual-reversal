@@ -167,7 +167,8 @@ namespace RitualReversal.Visual
         public readonly List<Material> todas = new List<Material>(); readonly List<Renderer> rends = new List<Renderer>(); readonly List<Material[]> originais = new List<Material[]>();
         readonly List<GameObject> sprites = new List<GameObject>();
         // estado da animação
-        public float phase = Random.value * 6, spd, kick, cast, flinch, dieT = -1, bodyY; public float? px, pz; public string prevSt = "alive"; public Vector2? golpe;
+        public float phase = Random.value * 6, spd, kick, cast, flinch, dieT = -1, bodyY;
+        float corrida, semTiro = 9, recCiclo; public float? px, pz; public string prevSt = "alive"; public Vector2? golpe;   // v6.7: corrida 0 andando, 1 correndo; semTiro: segundos desde o último tiro (a arma volta ao peito correndo)
         bool deitado; string eixo; float sinal, torcao;
         // v5.8: reação ao golpe (direção, força, tiro na cabeça), pausa de impacto e transições de queda e de levantar
         public class Reacao { public float t, forte; public Vector2? de; public bool cab; }
@@ -420,21 +421,26 @@ namespace RitualReversal.Visual
             {
                 float jL = -.06f, jR = -.06f;
                 if (st == "down") { jL = -.35f; jR = -.15f; }
+                else if (a.ag && moving && a.sealing < 0) { float s2 = Mathf.Sin(phase) * .35f; legL.r.x = .75f + s2; legR.r.x = .75f - s2; jL = -1.35f + s2 * .6f; jR = -1.35f - s2 * .6f; }   // v6.7: meio agachado, passo curto
                 else if (a.sealing >= 0 || hk.StartsWith("col") || hk.StartsWith("burn") || hk.StartsWith("rev") || a.ag)
                 {
-                    float sw2 = a.ag && moving ? Mathf.Sin(phase) * .22f : 0;
-                    legR.r.x = 1.35f - sw2; jR = -1.45f; legL.r.x = -.3f + sw2; jL = -1.3f;
+                    legR.r.x = 1.35f; jR = -1.45f; legL.r.x = -.3f; jL = -1.3f;
                 }
                 else if (hk.StartsWith("exe")) { jL = -.25f; jR = -.45f; }
-                else if (moving) { float amp = Mathf.Min(.75f, spd * .12f), c = Mathf.Cos(phase); jL = -(.08f + amp * 1.25f * Mathf.Max(0, c)); jR = -(.08f + amp * 1.25f * Mathf.Max(0, -c)); }
+                else if (moving)
+                {
+                    // o joelho dobra quando a perna vem para a frente (mais na corrida) e cede um pouco ao receber o peso
+                    float amp = Mathf.Min(.75f, spd * .12f), c = Mathf.Cos(phase), K = Lerp(amp * 1.25f, a.team == "C" ? .95f : 1.75f, corrida), apoio = .08f + .22f * corrida;
+                    jL = -(apoio + K * Mathf.Max(0, c) + .15f * corrida * Mathf.Max(0, -c)); jR = -(apoio + K * Mathf.Max(0, -c) + .15f * corrida * Mathf.Max(0, c));
+                }
                 shinL.r = new Vector3(jL, 0, 0); shinR.r = new Vector3(jR, 0, 0);
             }
             if (foreL != null && foreR != null)
             {
                 float eL = .22f, eR = .22f;
                 if (st == "down") { eL = .35f; eR = .35f; }
-                else if (a.team == "H") { if (!(a.sealing >= 0) && hk == "" && !(a.reloadT > 0)) { eR = .55f; eL = .8f; } else { eL = .4f; eR = .35f; } }
-                else { eR = .3f; eL = .22f + (moving ? Mathf.Max(0, Mathf.Sin(phase)) * .35f : 0); }
+                else if (a.team == "H") { if (!(a.sealing >= 0) && hk == "" && !(a.reloadT > 0)) { float kp = corrida * Mathf.Clamp01((semTiro - .35f) / .35f); eR = Lerp(.55f, 1.25f, kp); eL = Lerp(.8f, 1.35f, kp); } else { eL = .4f; eR = .35f + recCiclo * .9f; } }
+                else { eR = .3f + .5f * corrida; eL = .22f + (moving ? Mathf.Max(0, Mathf.Sin(phase)) * .35f : 0) + 1.0f * corrida; }   // v6.7: correndo, os braços dobram
                 armL.r.x -= eL; armR.r.x -= eR; foreL.r = new Vector3(eL, 0, 0); foreR.r = new Vector3(eR, 0, 0);
             }
         }
@@ -521,11 +527,18 @@ namespace RitualReversal.Visual
             {
                 bool moving = spd > .5f; float pitch = (float)a.pitch;
                 if (moving) phase += dtA * (3.2f + spd * 1.35f);
-                float amp = moving ? Mathf.Min(.75f, spd * .12f) : 0, sw = Mathf.Sin(phase) * amp;
-                legL.r.x = sw; legR.r.x = -sw;
-                gy = moving ? Mathf.Abs(Mathf.Sin(phase)) * .05f : 0;
-                torso.r.x = pitch * .3f + Mathf.Sin(t * 1.7f + a.id) * .015f - (moving ? .08f : 0) - flinch * .25f;
-                torso.r.z = Mathf.Sin(phase) * amp * .08f; head.r.x = pitch * .4f;
+                // v6.7: a caminhada vira corrida com a velocidade (coxa da frente mais alta, tronco à frente, o corpo sobe no voo em vez
+                // de descer no apoio duplo); ombros giram contra o quadril e a cabeça compensa. Coxa positiva = para a frente.
+                corrida = moving ? Mathf.Clamp01((spd - 3.6f) / 2.2f) : 0; float kc = corrida; recCiclo = 0;
+                semTiro = kick > .05f ? 0 : semTiro + dt;
+                float amp = moving ? Lerp(Mathf.Min(.55f, spd * .13f), a.team == "C" ? .6f : .85f, kc) * (a.team == "C" ? .82f : 1) : 0;   // o hábito do culto: passo mais curto (abria entre as pernas)
+                float sF = Mathf.Sin(phase), cF = Mathf.Cos(phase), sw = sF * amp;
+                legL.r.x = sw + .12f * kc; legR.r.x = -sw + .12f * kc;
+                gy = moving ? Lerp(Mathf.Abs(cF) * .035f, Mathf.Abs(sF) * .07f, kc) : 0;
+                torso.r.x = pitch * .3f + Mathf.Sin(t * 1.7f + a.id) * .015f - (moving ? .08f + .2f * kc : 0) - flinch * .25f;
+                float giro = a.team == "H" ? .04f + .16f * kc : .2f;   // com a arma apontada o tronco fica firme (o cano não varre de um lado para o outro)
+                torso.r.y = -sF * amp * giro; torso.r.z = sF * amp * .06f * (1 - kc * .5f);
+                head.r.x = pitch * .4f + .14f * kc; head.r.y = sF * amp * giro * .7f;
                 abaX = -sw * .06f; robeZ = Mathf.Sin(phase) * amp * .05f;
                 string hk = a.hold != null && a.hold.key != null ? a.hold.key : ""; float hkK = a.hold != null && a.hold.max > 0 ? (float)(a.hold.t / a.hold.max) : 0;
                 bool executa = hk.StartsWith("exe"), noChao = hk.StartsWith("col") || hk.StartsWith("burn") || hk.StartsWith("rev");
@@ -550,10 +563,17 @@ namespace RitualReversal.Visual
                         else
                         {
                             float rola = Suave(en(T, 0, .2f)) * (1 - Suave(en(T, 1.05f, 1.25f))), ciclo = T > .15f && T < 1.1f ? Mathf.Max(0, Mathf.Sin((T - .15f) / .29f * PI * 2)) : 0;
-                            armL.r = new Vector3(1.0f + rola * .15f, 0, .4f); armR.r = new Vector3(.85f + ciclo * .45f - rola * .1f, 0, -.35f - ciclo * .25f); gun.r = new Vector3(-PI / 2 + rola * .35f, rola * .5f, rola * 1.0f);
+                            // v6.7: maior para ler de longe: a carabina deita e sobe o cano, a mão direita vai e volta na portinhola (cotovelo no JuntasNovas)
+                            armL.r = new Vector3(1.0f + rola * .3f, 0, .4f); armR.r = new Vector3(.85f + ciclo * .75f - rola * .1f, 0, -.35f - ciclo * .4f); gun.r = new Vector3(-PI / 2 + rola * .6f, rola * .5f, rola * 1.25f); recCiclo = ciclo;
                         }
                     }
-                    else { armR.r = new Vector3(mira - kick * .45f, 0, 0); armL.r = new Vector3(mira - .1f - kick * .3f, 0, .45f); torso.r.x += kick * .08f; } // a arma fica no -90° do começo: o cano segue o braço (com 0 apontava para o céu)
+                    else
+                    {
+                        armR.r = new Vector3(mira - kick * .45f, 0, 0); armL.r = new Vector3(mira - .1f - kick * .3f, 0, .45f); torso.r.x += kick * .08f;
+                        // v6.7: correndo sem atirar, a arma vai atravessada no peito (volta a apontar no tiro)
+                        float kp = kc * Mathf.Clamp01((semTiro - .35f) / .35f);
+                        if (kp > 0) { armR.r = Vector3.Lerp(armR.r, new Vector3(.75f + sF * .12f, 0, -.2f), kp); armL.r = Vector3.Lerp(armL.r, new Vector3(1.05f - sF * .12f, 0, .55f), kp); gun.r = Vector3.Lerp(gun.r, new Vector3(-PI / 2 + .35f, .25f, .9f), kp); }
+                    } // a arma fica no -90° do começo: o cano segue o braço (com 0 apontava para o céu)
                     if (mFlash != null) Mat.Opacidade(mFlash, kick > .7f ? 1 : 0);
                 }
                 else
@@ -571,11 +591,12 @@ namespace RitualReversal.Visual
                     else if (noChao) { bodyY = -.42f; legL.r.x = -1.45f; legR.r.x = .3f; torso.r.x = -.5f; head.r.x = .35f; armR.r = new Vector3(.6f, 0, -.1f); gun.r.x = -.5f; armL.r = new Vector3(1.05f + Mathf.Sin(t * 6) * .06f, 0, .15f); }
                     else if (noCirculo && !moving) { float s2 = Mathf.Sin(t * 2.5f + a.id) * .15f; armL.r = new Vector3(2.7f + s2, 0, .35f); armR.r = new Vector3(2.7f - s2, 0, -.35f); gun.r.x = -2.7f; head.r.x = .35f; }
                     else if (cast > 0) { float ang = PI / 2 + pitch * .7f + cast * .2f; armR.r = new Vector3(ang, 0, 0); gun.r.x = -ang - 1.05f; armL.r = new Vector3(-sw * .8f, 0, .1f); }
-                    else { armL.r = new Vector3(-sw * .9f, 0, .08f); armR.r = new Vector3(.35f + sw * .5f, 0, -.08f); gun.r.x = -.35f; }
+                    else { armL.r = new Vector3(-sw * (.9f + .5f * kc) + .25f * kc, 0, .08f); armR.r = new Vector3(.35f + sw * .5f + .2f * kc, 0, -.08f); gun.r.x = -.35f - .2f * kc; }
                     if (mRune != null) Mat.Cor(mRune, Mat.Hex(a.runeT > 0 ? 0xffd0ff : 0x9a4ad0));
                 }
                 // v6: agachado. Um joelho quase no chão e o tronco à frente; andando, passo curto. Lê-se de longe como "abaixado".
-                if (a.ag && a.sealing < 0) { float sw2 = moving ? Mathf.Sin(phase) * .22f : 0; bodyY = -.5f; legL.r.x = -1.35f + sw2; legR.r.x = .35f - sw2; torso.r.x += -.32f; head.r.x += .25f; gy = moving ? Mathf.Abs(Mathf.Sin(phase)) * .02f : 0; }
+                // v6.7: andando agachado, de cócoras (as duas coxas à frente, passo curto), não mais a pose de ajoelhado deslizando
+                if (a.ag && a.sealing < 0) { bodyY = moving ? -.24f : -.5f; torso.r.x += moving ? -.45f : -.32f; head.r.x += .25f; gy = moving ? Mathf.Abs(Mathf.Sin(phase)) * .015f : 0; }
                 if (a.stunT > 0) { torso.r.z = Mathf.Sin(t * 14) * .12f; head.r.z = Mathf.Sin(t * 11) * .2f; }
                 // reação: o tronco cede na direção do tiro, meio passo para trás, a cabeça estala no tiro na cabeça, os braços
                 // abrem; sobe em 35 ms e assenta em ~0,3 s. Só visual: a colisão é a da simulação.
