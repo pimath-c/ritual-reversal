@@ -57,7 +57,7 @@ mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes 
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.8)
+## Estado atual (v6.9)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -349,6 +349,11 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `pele_uv.bytes` float32 na ordem dos vértices, do `montar-maos.py`: recorte da ilha da mão em middleage_lightskinned_male_diffuse e o
   uv original da malha base), cor (.62, .55, .6). Mangas tiradas do boneco testadas e descartadas (abas, forro, incham). Ferramenta:
   `node tools/unity-fp-fotos.js [pasta] [regex]` (tools/cs/FotoFP.cs; `VISTA=perto|lado`, `LARG=`), pele deformada na CPU como no Unity.
+- v6.9 (notas em `notas/v6.9.md`; no `client/arma.js`, e o Unity recebe pelo `exportar-primeira-pessoa.js`): `geoTubo()` virou manga de
+  pano (tubo unitário com rugas por senos fixos perto das pontas, franzido antes da bainha, bainha dobrada para dentro; faces para fora:
+  `idx (a, a+1, b)`), `geoPunho()` (anel de couro fechado por `LatheGeometry`, cor 0x241710 no lugar do cilindro aberto 0x3a2618),
+  polegar dobrado em `DEDOS.coronha`/`gatilho` (.3, .8, .72) e `revolver` (.22, .85, .7). Cuidado ao editar linhas únicas do arma.js e do
+  index.html: um `//` no meio da linha come o fim (duas vezes nesta sessão); confira com `node --check client/arma.js`.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

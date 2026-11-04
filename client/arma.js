@@ -45,15 +45,15 @@ const DEDOS={
   aberta:   [.10,.12,.16,.2,  .6,.2,.08, .35],
   relaxada: [.32,.38,.44,.5,  .35,.35,.25, .12],
   punho:    [.95,.98,1,1,     .15,.85,.75, 0],
-  coronha:  [.5,.8,.86,.9,    .3,.75,.5, .02],   // pulso da coronha: dedos pela alça da alavanca, polegar por cima
-  gatilho:  [.38,.8,.86,.9,   .3,.75,.5, .02],
+  coronha:  [.5,.8,.86,.9,    .3,.8,.72, .02],   // pulso da coronha: dedos pela alça da alavanca, polegar dobrado por cima (v6.9: antes esticado)
+  gatilho:  [.38,.8,.86,.9,   .3,.8,.72, .02],
   fuste:    [.58,.64,.68,.72, .2,.25,.18, .04],  // fuste no berço da mão, polegar ao longo do lado
   pinca:    [.42,.86,.92,.95, .5,.8,.35, 0],     // cartucho entre polegar e indicador
   empurra:  [.5,.72,.8,.86,   .1,.25,0, 0],      // polegar esticado empurrando
   palma:    [.03,.03,.05,.07, .95,.05,.04, 1],
   garra:    [.56,.62,.68,.74, .42,.55,.55, .75],
   cetro:    [.82,.88,.92,.95, .3,.8,.6, 0],
-  revolver: [.36,.84,.9,.94,  .25,.7,.3, 0],     // indicador no gatilho, polegar perto do cão
+  revolver: [.36,.84,.9,.94,  .22,.85,.7, 0],    // indicador no gatilho, polegar dobrado ao lado da armação (v6.9: antes esticado para a frente)
   cao:      [.36,.84,.9,.94,  .55,.35,.05, 0],   // polegar alto, no cão
   suporte:  [.66,.72,.78,.84, .35,.55,.3, .02],
   berco:    [.42,.48,.54,.6,  .55,.3,.15, .15],  // mão aberta segurando o revólver pelo tambor
@@ -87,7 +87,23 @@ function geoCostura(){ if(GEO.costura) return GEO.costura; const L=[];
   [-.02,0,.02].forEach(x=>{ const b=new THREE.BoxGeometry(.0018,.0012,.05); b.translate(x,.0162,-.058); L.push(b); });
   const tira=new THREE.BoxGeometry(.062,.004,.012); tira.translate(0,.0175,-.006); L.push(tira);
   const g=THREE.BufferGeometryUtils.mergeBufferGeometries(L); COMPARTILHADAS.add(g); return GEO.costura=g; }
-function geoTubo(){ if(GEO.tubo) return GEO.tubo; const g=new THREE.CylinderGeometry(.8,1,1,16,1,true); g.translate(0,.5,0); COMPARTILHADAS.add(g); return GEO.tubo=g; }   // afina para a ponta (punho)
+// v6.9: manga de pano no lugar do cilindro liso. Tubo unitário (raio 1 em y=0, comprimento 1; o IK estica em (r, L, r)) que afina para
+// a ponta, com rugas em diagonal que se juntam perto das pontas (cotovelo e punho), o pano franzido logo antes da bainha e a bainha
+// dobrada para dentro (sem a borda fina de casca à vista). Sem sorteio: as rugas são senos fixos.
+function geoTubo(){ if(GEO.tubo) return GEO.tubo; const NS=20, perfil=[];
+  const NY=30; for(let j=0;j<=NY;j++){ const y=j/NY*.94; perfil.push([y,1-.2*Math.min(1,y/.9),1]); }
+  perfil.push([.97,.83,1.025],[.995,.825,1.02],[1,.8,1],[.99,.74,.95],[.96,.72,.93]);   // bainha: sobe, dobra na ponta e volta para dentro
+  const pos=[], uv=[], idx=[];
+  perfil.forEach(([y,r,k],j)=>{ const borda=j>NY;
+    for(let i=0;i<=NS;i++){ const t=i/NS*Math.PI*2, pe=Math.exp(-Math.pow((y-.04)/.12,2)), pu=Math.exp(-Math.pow((y-.86)/.08,2)), env=.35+.65*Math.max(pe,pu);
+      const ruga=borda?0:.05*Math.sin(3*t+7*y)*env+.03*Math.sin(5*t-11*y+1.3)*env+.05*Math.sin(y*46)*pu*(.6+.4*Math.sin(2*t+.7))+.025*Math.sin(2*t+3)*pe;
+      const R=r*k*(1+ruga); pos.push(Math.cos(t)*R,y,-Math.sin(t)*R); uv.push(i/NS*2,y*3); } });
+  const L=perfil.length; for(let j=0;j<L-1;j++) for(let i=0;i<NS;i++){ const a=j*(NS+1)+i, b=a+NS+1; idx.push(a,a+1,b,b,a+1,b+1); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx); g.computeVertexNormals();
+  COMPARTILHADAS.add(g); return GEO.tubo=g; }
+// v6.9: o punho da luva: um anel grosso e fechado de couro (antes um cilindro aberto de casca fina, com o oco claro à vista)
+function geoPunho(){ if(GEO.punho) return GEO.punho; const p=[[.0195,-.012],[.0245,-.013],[.0272,-.009],[.0278,.004],[.0298,.016],[.0262,.019],[.0205,.017],[.0195,-.012]].map(([r,y])=>new THREE.Vector2(r,y));
+  const g=new THREE.LatheGeometry(p,20); g.computeVertexNormals(); COMPARTILHADAS.add(g); return GEO.punho=g; }
 // comprimentos (indicador → mínimo) das três falanges e o raio
 const FAL=[[.036,.024,.019,.0093],[.04,.027,.02,.0096],[.037,.025,.019,.0091],[.029,.02,.016,.0082]];
 // Mão com esqueleto: 16 ossos (pulso, três falanges por dedo e o polegar) e uma malha só, com cada vértice preso a um osso
@@ -121,7 +137,7 @@ function criarMao(mat,esq,opc){ opc=opc||{};
   mat.skinning=true; const pele=new THREE.SkinnedMesh(GEO.maoPele,mat); pele.add(pulso); geo.add(pele); raiz.updateMatrixWorld(true); const esq_=new THREE.Skeleton(ossos); pele.bind(esq_);
   if(opc.unhas&&GEO.maoUnhas){ opc.unhas.skinning=true; const u=new THREE.SkinnedMesh(GEO.maoUnhas,opc.unhas); geo.add(u); u.bind(esq_,pele.matrixWorld); }
   if(opc.costura&&!MH){ geo.add(new THREE.Mesh(geoCostura(),opc.costura)); const bt=new THREE.Mesh(GEO.botao||(GEO.botao=(()=>{ const c=new THREE.CylinderGeometry(.0045,.0045,.003,10); c.translate(.024,.0205,-.006); COMPARTILHADAS.add(c); return c; })()),opc.botao); geo.add(bt); }
-  if(opc.punho){ const c=new THREE.Mesh(new THREE.CylinderGeometry(.027,.023,.026,16,1,true),opc.punho); c.material.side=THREE.DoubleSide; c.rotation.x=PI/2; c.position.z=.004; geo.add(c); }   // boca do punho da luva (a manga cobre o resto)
+  if(opc.punho){ const c=new THREE.Mesh(geoPunho(),opc.punho); c.rotation.x=PI/2; c.position.z=.004; geo.add(c); }   // o punho da luva (a manga cobre o resto)
   // ponto de pinça (entre polegar e indicador) e de apoio da palma: onde os objetos ficam presos na mão
   const pinca=new THREE.Object3D(); pinca.position.set((esq?1:-1)*.044,-.02,-.098).multiplyScalar(ESC_MAO); raiz.add(pinca);
   const dd=new Float32Array(ND); return {raiz,dedos,pol,pinca,esq,dd}; }
@@ -329,7 +345,7 @@ const S={ok:false,rigs:{},arma:null,R:null,est:{nome:'',C:null,t:0,dur:0,fim:nul
 const _pose=novaPose(), _de=novaPose(), _out=novaPose(), _tmp=novaPose();
 
 function construir(){ if(S.ok) return; matsPeca();
-  const luva=matCouro(0x2a1c14), manga=matPano(0x24252a), mangaSup=matPano(0x1f2024), punho=matCouro(0x3a2618);   // casaco de lã carvão (v6.5b: o oleado pardo de antes saía claro na noite), luva de couro
+  const luva=matCouro(0x2a1c14), manga=matPano(0x24252a), mangaSup=matPano(0x1f2024), punho=matCouro(0x241710);   // casaco de lã carvão (v6.5b: o oleado pardo de antes saía claro na noite), luva de couro
   const peleC=new THREE.MeshStandardMaterial({color:0x5a4650,roughness:.62,metalness:0}), mangaC=matPano(0x581320), unha=new THREE.MeshStandardMaterial({color:0x1a1014,roughness:.3,metalness:.2});
   // ---- caça: corpo (vmH, já na câmera) → raiz da arma → carabina/revólver; mãos e braços no corpo
   vmH=new THREE.Group(); camera.add(vmH); vmH.position.set(.2,-.17,-.42); vmH.scale.setScalar(.72);
