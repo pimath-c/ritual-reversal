@@ -37,7 +37,7 @@ def ler_glb(b):
 def acessor(J, BIN, i):
     a = J['accessors'][i]; v = J['bufferViews'][a['bufferView']]
     tipo = {5126: np.float32, 5125: np.uint32, 5123: np.uint16, 5121: np.uint8, 5122: np.int16, 5120: np.int8}[a['componentType']]
-    k = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4}[a['type']]; it = np.dtype(tipo).itemsize
+    k = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}[a['type']]; it = np.dtype(tipo).itemsize
     passo = v.get('byteStride') or k * it; ini = v.get('byteOffset', 0) + a.get('byteOffset', 0)
     bruto = np.frombuffer(BIN, np.uint8, count=passo * (a['count'] - 1) + k * it, offset=ini)
     linhas = np.lib.stride_tricks.as_strided(bruto, shape=(a['count'], k * it), strides=(passo, 1))

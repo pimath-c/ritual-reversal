@@ -29,7 +29,7 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
     t.wrapS=t.wrapT=T.repete?THREE.RepeatWrapping:THREE.ClampToEdgeWrapping; t.needsUpdate=true; return t; }));
   const mats=J.materiais.map(M=>{ const cor=new THREE.Color(M.cor[0],M.cor[1],M.cor[2]); let map=null; if(M.mapa>=0){ map=tex[M.mapa].clone(); map.needsUpdate=true; map.repeat.set(M.esc[0],M.esc[1]); }
     if(/Brilho/.test(M.shader)) return new THREE.MeshBasicMaterial({color:cor,map,transparent:true,opacity:M.cor[3],depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
-    const tr=M.surface===1; return new THREE.MeshStandardMaterial({color:cor,map,roughness:M.liso==null?1:Math.min(1,1-M.liso/.9),metalness:M.metal||0,side:M.cull===0?THREE.DoubleSide:THREE.FrontSide,transparent:tr,opacity:tr?M.cor[3]:1,alphaTest:M.clip===1?.5:0,
+    const tr=M.surface===1, mr=M.mr>=0?tex[M.mr]:null; return new THREE.MeshStandardMaterial({color:cor,map,roughnessMap:mr,metalnessMap:mr,roughness:mr?1:M.liso==null?1:Math.min(1,1-M.liso/.9),metalness:mr?1:M.metal||0,side:M.cull===0?THREE.DoubleSide:THREE.FrontSide,transparent:tr,opacity:tr?M.cor[3]:1,alphaTest:M.clip===1?.5:0,
       emissive:M.emissao?new THREE.Color(M.emissao[0],M.emissao[1],M.emissao[2]):new THREE.Color(0)}); });
   const porFoto={};
   for(const mm of J.malhas){ let o=mm.ini; const v=mm.v, g=new THREE.BufferGeometry(), f=n=>{ const a=new Float32Array(BIN,o,n); o+=n*4; return a; };

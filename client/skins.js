@@ -144,7 +144,15 @@ void main() {`)
   if(uVarre.z>0.){ vec2 rrP=-vViewPosition.xy; float rrV=exp(-pow((dot(rrP,vec2(.93,.37))-uVarre.x)/uVarre.y,2.))*uVarre.z; totalEmissiveRadiance+=uVarreCor*rrV*(.12+rrS*1.4+rrI*1.8); }`); };
   m.customProgramCacheKey=()=>(antK?antK.call(m):'')+'|skin'; m.extensions=Object.assign({},m.extensions,{derivatives:true}); m.needsUpdate=true; }
 // ajusta um material ao papel da skin (guarda o original na primeira vez, para a de serviço voltar exata)
-function ajustar(m,p,fp){ const b=m.userData.base||(m.userData.base={cor:m.color.getHex(),rug:m.roughness,met:m.metalness});
+function ajustar(m,p,fp){
+  // v6.10: material com as fotos do modelo (a skin de serviço): uma skin que pinta o papel (cor ou detalhe) tira as fotos e volta aos mapas
+  // de antes; sem pintura, as fotos voltam
+  const F=m.userData.foto; if(F){ const pinta=p.cor!=null||!!p.det, S=m.userData.semFoto;
+    if(pinta&&m.map===F.map){ m.map=S.map; m.normalMap=S.normalMap; m.roughnessMap=m.metalnessMap=null; m.needsUpdate=true; }
+    if(!pinta){ if(m.map!==F.map){ Object.assign(m,F); m.needsUpdate=true; } m.color.setHex(0xffffff); m.roughness=1; m.metalness=1;
+      const U=m.userData.skinU; if(U){ U.uDet.value=VAZIA; U.uSulco.value=U.uInc.value=U.uMancha.value=U.uBump.value=0; } return; }
+    if(!m.userData.base) m.userData.base={cor:S.cor,rug:S.rug,met:S.met}; }
+  const b=m.userData.base||(m.userData.base={cor:m.color.getHex(),rug:m.roughness,met:m.metalness});
   const claro=m.userData.claro||1; m.color.setHex(p.cor!=null?p.cor:b.cor); if(claro!==1&&p.cor!=null) m.color.multiplyScalar(claro);
   if(m.roughness!=null) m.roughness=p.rug!=null?p.rug:b.rug; if(m.metalness!=null) m.metalness=p.met!=null?p.met:b.met;
   const U=m.userData.skinU; if(!U) return; const T=fp&&p.det?textura(p.det):null;

@@ -439,9 +439,18 @@ namespace RitualReversal.Visual
             m.SetFloat("_Rug", rug); m.SetFloat("_Metal", met); m.SetColor("_Emissao", emis); m.SetFloat("_EmissaoI", emisI); m.SetFloat("_Cull", dupla ? 0 : 2);
             return m;
         }
-        static Texture2D TexDe(object nome)
+        // v6.10: metal e aspereza por texel (o roughnessMap/metalnessMap do three; glTF: G aspereza, B metal); null tira
+        internal static void Mr(Material m, Texture2D mr)
+        {
+            if (m.HasProperty("_TemMR")) { if (mr != null) m.SetTexture("_MRMap", mr); m.SetFloat("_TemMR", mr != null ? 1 : 0); return; }
+            // sem o shader da primeira pessoa (URP/Lit): o metal e a aspereza médios da textura
+            if (mr == null) { m.SetTexture("_MRMap", null); return; } var md = ArmaGLB.Media(mr); m.SetTexture("_MRMap", mr);   // (o URP/Lit ignora; as ferramentas de foto leem)
+            m.SetFloat("_Metallic", md.b); m.SetFloat("_Smoothness", Mathf.Clamp01(1 - md.g) * .9f);
+        }
+        internal static Texture2D TexDe(object nome)
         {
             var s = nome as string; if (string.IsNullOrEmpty(s)) return null;
+            if (s.StartsWith("arma:")) { var q = s.Substring(5).Split('.'); return q.Length == 2 ? ArmaGLB.Foto(q[0], q[1]) : null; }   // v6.10: fotos das armas
             switch (s)
             {
                 case "RT.glow": return Tex.Brilho(); case "RT.flame": return Tex.Chama(); case "RT.rune": return Tex.Runa();
@@ -463,6 +472,7 @@ namespace RitualReversal.Visual
             float nk = 1; if (m.TryGetValue("nesc", out v) && v != null) nk = (float)Json.D(Json.L(v)[0]);
             var emis = Json.L(m["emis"]); var cor = CorLin(m["cor"]);
             var mat = MaterialFP(cor, TexDe(m["mapa"]), TexDe(m["normal"]), rep, (float)Json.D(m["rug"]), (float)Json.D(m["met"]), CorLin(m["emis"]), (float)Json.D(m["emisI"]), I(m["lado"]) == 2, nk);
+            var mr = m.TryGetValue("mr", out v) ? TexDe(v) : null; if (mr != null) Mr(mat, mr);
             mat.name = "fp " + (m.TryGetValue("papel", out v) && v != null ? (string)v : Json.S(m["nome"]));
             skins.Registrar(mat, m);
             return mat;

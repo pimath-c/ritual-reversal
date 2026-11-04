@@ -15,7 +15,7 @@
 # (peça, papel) e, em extras, as peças, os papéis, os pivôs e a boca do cano. Saída: client/armas.js (RR_ARMAS, embutido por
 # build.js e build-mobile.js e servido pelo servidor) e unity/Assets/RitualReversal/Resources/Armas/<nome>.bytes.
 # Uso: THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) python3 tools/montar-armas.py   (Pillow, numpy; a conversão precisa do Chromium)
-import base64, colorsys, io, json, os, struct, subprocess, sys, urllib.request, zipfile, importlib.util
+import base64, colorsys, io, json, os, re, struct, subprocess, sys, urllib.request, zipfile, importlib.util
 import numpy as np
 from PIL import Image
 
@@ -41,6 +41,65 @@ def fonte_glb(nome, cfg):
     return glb
 
 
+def baixar_sketchfab(uid, destino):
+    """O GLB de um modelo do Sketchfab (CC BY), pela API de download. Precisa do token da conta em SKETCHFAB_TOKEN (variável de
+    ambiente; nunca no repositório). Só baixa se o arquivo ainda não estiver em assets/armas/fontes/."""
+    if os.path.exists(destino): return destino
+    tok = os.environ.get('SKETCHFAB_TOKEN')
+    if not tok: sys.exit(f'falta {os.path.basename(destino)}: ponha o token do Sketchfab em SKETCHFAB_TOKEN para baixar o modelo {uid}')
+    req = urllib.request.Request(f'https://api.sketchfab.com/v3/models/{uid}/download', headers={'Authorization': 'Token ' + tok})
+    d = json.load(urllib.request.urlopen(req, timeout=60)); os.makedirs(os.path.dirname(destino), exist_ok=True)
+    with urllib.request.urlopen(d['glb']['url'], timeout=600) as r, open(destino + '.parcial', 'wb') as f: f.write(r.read())
+    os.replace(destino + '.parcial', destino); return destino
+
+
+def fatores_mr(im, pb):
+    """Os fatores do glTF entram na textura de metal/aspereza (G aspereza × roughnessFactor, B metal × metallicFactor), que o jogo
+    lê com aspereza e metal 1."""
+    r, g, b = im.split(); fr, fm = pb.get('roughnessFactor', 1.0), pb.get('metallicFactor', 1.0)
+    if fr != 1: g = g.point(lambda x: round(x * fr))
+    if fm != 1: b = b.point(lambda x: round(x * fm))
+    return Image.merge('RGB', (r, g, b))
+
+
+def ler_texturado(glb, celula, usar=None):
+    """Todas as primitivas do GLB no espaço do mundo, com o uv original, o nome do nó de cada triângulo e as três texturas de cada
+    material (cor, relevo, metal/aspereza do glTF: G aspereza, B metal) juntas em atlas paralelos (um quadrado de celula px por
+    material, em grade); o uv de cada primitiva vai para o quadrado do seu material."""
+    J, BIN = MM.ler_glb(open(glb, 'rb').read())
+    P, N, U, I, NO, MAT = [], [], [], [], [], []
+    def visitar(i, pai):
+        nd = J['nodes'][i]; M = pai @ MM.matriz_no(nd)
+        if 'mesh' in nd:
+            for pr in J['meshes'][nd['mesh']]['primitives']:
+                if pr.get('mode', 4) != 4: continue
+                at = pr['attributes']; p = MM.acessor(J, BIN, at['POSITION'])
+                idx = MM.acessor(J, BIN, pr['indices']).reshape(-1) if 'indices' in pr else np.arange(len(p))
+                uv = MM.acessor(J, BIN, at['TEXCOORD_0']) if 'TEXCOORD_0' in at else np.zeros((len(p), 2))
+                pw = (np.c_[p, np.ones(len(p))] @ M.T)[:, :3]
+                n = MM.acessor(J, BIN, at['NORMAL']) @ np.linalg.inv(M[:3, :3]); n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+                base = sum(len(q) for q in P); P.append(pw); N.append(n); U.append(uv); I.append(idx + base)
+                nt = len(idx) // 3; NO.extend([nd.get('name', '') + '#' + str(nd['mesh'])] * nt); MAT.append(np.full(len(p), pr.get('material', 0)))
+        for c in nd.get('children', []): visitar(c, M)
+    for r in J['scenes'][J.get('scene', 0)]['nodes']: visitar(r, np.eye(4))
+    def imagem(tex, padrao):
+        if tex is None: return Image.new('RGB', (8, 8), padrao)
+        im = J['images'][J['textures'][tex['index']]['source']]; v = J['bufferViews'][im['bufferView']]; o = v.get('byteOffset', 0)
+        return Image.open(io.BytesIO(BIN[o:o + v['byteLength']])).convert('RGB')
+    usar = list(range(len(J['materials']))) if usar is None else usar
+    mats = [J['materials'][k] for k in usar]; col = int(np.ceil(np.sqrt(len(mats)))); lin = int(np.ceil(len(mats) / col))
+    atlas = {k: Image.new('RGB', (celula * col, celula * lin), c) for k, c in (('cor', (128, 128, 128)), ('nor', (128, 128, 255)), ('mr', (0, 200, 0)))}
+    for k, m in enumerate(mats):
+        pb = m.get('pbrMetallicRoughness', {}); xy = ((k % col) * celula, (k // col) * celula)
+        for nome, tex, pad in (('cor', pb.get('baseColorTexture'), (128, 128, 128)), ('nor', m.get('normalTexture'), (128, 128, 255)), ('mr', pb.get('metallicRoughnessTexture'), (0, 255, 0))):
+            im = imagem(tex, pad).resize((celula, celula), Image.LANCZOS)
+            if nome == 'mr': im = fatores_mr(im, pb)
+            atlas[nome].paste(im, xy)
+    mt = np.array([usar.index(k) if k in usar else 0 for k in np.concatenate(MAT)]); uv = np.concatenate(U)
+    uv = np.c_[((mt % col) + uv[:, 0] % 1) / col, ((mt // col) + uv[:, 1] % 1) / lin]   # os uvs dos modelos ficam entre 0 e 1 (repetição não é usada)
+    return np.concatenate(P), np.concatenate(N), uv, np.concatenate(I).astype(np.int64), NO, atlas
+
+
 def dentro(c, caixa):
     return all(caixa[k][0] <= c[k] <= caixa[k][1] for k in range(3))
 
@@ -49,16 +108,21 @@ def no_cilindro(c, cil):
     return cil['x'][0] <= c[0] <= cil['x'][1] and (c[1] - cil['yz'][0]) ** 2 + (c[2] - cil['yz'][1]) ** 2 <= cil['raio'] ** 2
 
 
-def regra(c, r):
-    return dentro(c, r['caixa']) if 'caixa' in r else no_cilindro(c, r['cilindro'])
+def regra(c, r, no=''):
+    """Uma regra vale se todas as condições dela valem: o nome do nó ("nos", expressão regular), a caixa e o cilindro."""
+    if 'nos' in r and not re.search(r['nos'], no): return False
+    if 'caixa' in r and not dentro(c, r['caixa']): return False
+    if 'cilindro' in r and not no_cilindro(c, r['cilindro']): return False
+    return True
 
 
-def gravar_glb(p, n, uv2, idx, extras):
+def gravar_glb(p, n, uv2, idx, extras, uv0=None):
     pos = p.astype(np.float32).tobytes(); nor = n.astype(np.float32).tobytes(); t2 = uv2.astype(np.float32).tobytes()
     grande = len(p) > 65535; ind = idx.astype(np.uint32 if grande else np.uint16).tobytes()
     def alinhar(b): return b + b'\0' * ((4 - len(b) % 4) % 4)
     partes, vistas, ofs = [], [], 0
-    for b, alvo in ((pos, 34962), (nor, 34962), (t2, 34962), (ind, 34963)):
+    blocos = [(pos, 34962), (nor, 34962), (t2, 34962), (ind, 34963)] + ([(uv0.astype(np.float32).tobytes(), 34962)] if uv0 is not None else [])
+    for b, alvo in blocos:
         vistas.append({'buffer': 0, 'byteOffset': ofs, 'byteLength': len(b), 'target': alvo}); b = alinhar(b); partes.append(b); ofs += len(b)
     BIN = b''.join(partes)
     J = {'asset': {'version': '2.0', 'generator': 'Ritual Reversal montar-armas.py'}, 'scene': 0, 'scenes': [{'nodes': [0]}], 'nodes': [{'mesh': 0}],
@@ -68,31 +132,39 @@ def gravar_glb(p, n, uv2, idx, extras):
                        {'bufferView': 2, 'componentType': 5126, 'count': len(p), 'type': 'VEC2'},
                        {'bufferView': 3, 'componentType': 5125 if grande else 5123, 'count': len(idx), 'type': 'SCALAR'}],
          'bufferViews': vistas, 'buffers': [{'byteLength': len(BIN)}]}
+    if uv0 is not None:   # o uv original do modelo (no atlas das texturas de verdade)
+        J['accessors'].append({'bufferView': 4, 'componentType': 5126, 'count': len(p), 'type': 'VEC2'}); J['meshes'][0]['primitives'][0]['attributes']['TEXCOORD_0'] = 4
     js = json.dumps(J, separators=(',', ':')).encode(); js += b' ' * ((4 - len(js) % 4) % 4)
     return struct.pack('<III', 0x46546C67, 2, 12 + 8 + len(js) + 8 + len(BIN)) + struct.pack('<II', len(js), 0x4E4F534A) + js + struct.pack('<II', len(BIN), 0x004E4942) + BIN
 
 
 def montar(nome, cfg):
-    J, BIN = MM.ler_glb(open(fonte_glb(nome, cfg), 'rb').read()); p, n, uv, idx, img = MM.juntar(J, BIN)
+    atlas = None
+    if 'sketchfab' in cfg:   # modelo do Sketchfab: o uv original e as três texturas (cor, relevo, metal/aspereza) vão junto
+        sf = cfg['sketchfab']; p, n, uv, idx, NO, atlas = ler_texturado(baixar_sketchfab(sf['uid'], os.path.join(ORIG, nome + '_sf.glb')), sf.get('celula', 1024), sf.get('materiais')); img = atlas['cor']
+    else:
+        J, BIN = MM.ler_glb(open(fonte_glb(nome, cfg), 'rb').read()); p, n, uv, idx, img = MM.juntar(J, BIN); NO = [''] * (len(idx) // 3)
     px = img.convert('RGB').load(); iw, ih = img.size
-    tri = idx.reshape(-1, 3); cent = p[tri].mean(1); uvc = uv[tri].mean(1)
-    manter = np.array([not any(regra(c, k) for k in cfg.get('cortar', [])) for c in cent]); tri, cent, uvc = tri[manter], cent[manter], uvc[manter]
+    tri = idx.reshape(-1, 3); cent = p[tri].mean(1); uvc = uv[tri].mean(1); NO = np.array(NO)
+    manter = np.array([not any(regra(c, k, no) for k in cfg.get('cortar', [])) for c, no in zip(cent, NO)]); tri, cent, uvc, NO = tri[manter], cent[manter], uvc[manter], NO[manter]
     PARTES = ['estatico'] + [r['parte'] for r in cfg.get('partes', [])]; PAPEIS = cfg['papeis_lista']
-    def papel(c, u):
+    def papel(c, u, no):
+        for rg in cfg.get('papeis', []):   # as regras por nome de nó valem antes da cor
+            if 'nos' in rg and regra(c, rg, no): return rg['papel']
         r, g, b = (v / 255 for v in px[int(u[0] % 1 * (iw - 1)), int(u[1] % 1 * (ih - 1))]); h, s, v = colorsys.rgb_to_hsv(r, g, b)
         if 'madeira' in PAPEIS and (h < 45 / 360 or h > 340 / 360) and s > .28 and v > .08: return 'madeira'
         if 'escuro' in PAPEIS and cfg.get('escuro_val') and v < cfg['escuro_val']: return 'escuro'
         for rg in cfg.get('papeis', []):
-            if regra(c, rg): return rg['papel']
+            if 'nos' not in rg and regra(c, rg, no): return rg['papel']
         return cfg['papel_padrao']
-    parte = [next((r['parte'] for r in cfg.get('partes', []) if regra(c, r)), 'estatico') for c in cent]
-    pap = [papel(c, u) for c, u in zip(cent, uvc)]
+    parte = [next((r['parte'] for r in cfg.get('partes', []) if regra(c, r, no)), 'estatico') for c, no in zip(cent, NO)]
+    pap = [papel(c, u, no) for c, u, no in zip(cent, uvc, NO)]
     # do modelo para o quadro da arma do jogo: gira em y, escala e leva a âncora ao lugar
     a = np.radians(cfg['giro']); R = np.array([[np.cos(a), 0, np.sin(a)], [0, 1, 0], [-np.sin(a), 0, np.cos(a)]])
     s = cfg['escala']; A0 = np.array(cfg['ancora_modelo'], dtype=np.float64); A1 = np.array(cfg['ancora_jogo'], dtype=np.float64)
     q = (p - A0) @ R.T * s + A1; m = n @ R.T
     pivos = {r['parte']: r['pivo'] for r in cfg.get('partes', [])}
-    ps, ns, u2, ids = [], [], [], []
+    ps, ns, u2, ids, u0 = [], [], [], [], []
     for pi, pt in enumerate(PARTES):
         sel = [k for k in range(len(tri)) if parte[k] == pt]
         if not sel: continue
@@ -109,25 +181,35 @@ def montar(nome, cfg):
                     rx = max(abs(todos[:, 0]).max(), abs(todos[:, 1]).max()); lz = todos[:, 2].max() - todos[:, 2].min(); cz = (todos[:, 2].max() + todos[:, 2].min()) / 2
                     v[:, 0] *= aj['raio'] / rx; v[:, 1] *= aj['raio'] / rx; v[:, 2] = (v[:, 2] - cz) * aj['comprimento'] / lz
             base = sum(len(x) for x in ps)
-            ps.append(v); ns.append(nn); u2.append(np.c_[np.full(len(v), pi, dtype=np.float64), np.full(len(v), PAPEIS.index(pa), dtype=np.float64)]); ids.append(iv + base)
+            u0.append(uv[usados]); ps.append(v); ns.append(nn); u2.append(np.c_[np.full(len(v), pi, dtype=np.float64), np.full(len(v), PAPEIS.index(pa), dtype=np.float64)]); ids.append(iv + base)
     P, N, U2, I = np.concatenate(ps), np.concatenate(ns), np.concatenate(u2), np.concatenate(ids)
     N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
     boca = ((np.array(cfg['boca_modelo']) - A0) @ R.T * s + A1).round(4).tolist()
     extras = {'partes': PARTES, 'papeis': PAPEIS, 'pivos': pivos, 'boca': boca}
+    if atlas: extras['foto'] = True   # tem TEXCOORD_0 e as texturas <nome>_cor/_nor/_mr
     cont = {pa: pap.count(pa) for pa in PAPEIS}; cpt = {pt: parte.count(pt) for pt in PARTES}
-    return gravar_glb(P, N, U2, I, extras), extras, len(I) // 3, cont, cpt, (P.min(0).round(3).tolist(), P.max(0).round(3).tolist())
+    glb = gravar_glb(P, N, U2, I, extras, np.concatenate(u0) if atlas else None)
+    return glb, extras, len(I) // 3, cont, cpt, (P.min(0).round(3).tolist(), P.max(0).round(3).tolist()), atlas
 
 
 def main():
     F = json.load(open(os.path.join(PASTA, 'fontes.json'), encoding='utf-8'))
-    os.makedirs(UNITY, exist_ok=True); saida = {}
+    os.makedirs(UNITY, exist_ok=True); saida = {}; texs = {}
     for nome, cfg in F['armas'].items():
-        glb, ex, nt, cont, cpt, caixa = montar(nome, cfg)
+        glb, ex, nt, cont, cpt, caixa, atlas = montar(nome, cfg)
         open(os.path.join(UNITY, nome + '.bytes'), 'wb').write(glb); saida[nome] = base64.b64encode(glb).decode()
+        for k in ('cor', 'nor', 'mr'):   # JPG: a cor em sRGB; o relevo e o metal/aspereza lineares (o jogo diz qual é qual)
+            arq = os.path.join(UNITY, f'{nome}_{k}.bytes')
+            if atlas:
+                b = io.BytesIO(); atlas[k].save(b, 'JPEG', quality=90 if k == 'cor' else 92, subsampling=0 if k != 'cor' else 2); open(arq, 'wb').write(b.getvalue())
+                texs.setdefault(nome, {})[k] = base64.b64encode(b.getvalue()).decode()
+            elif os.path.exists(arq): os.remove(arq)
         print(f"{nome:9s} {nt:5d} triângulos  {len(glb) // 1024} KB  boca {ex['boca']}  papéis {cont}  peças {cpt}  caixa {caixa}")
-    js = ('// Armas (OpenGameArt, CC0) no quadro das armas do jogo, montadas por tools/montar-armas.py a partir de assets/armas/fontes.json.\n'
-          '// GLB sem textura; TEXCOORD_1 = (peça, papel). O jogo pinta com os materiais por papel (as skins valem). O Unity lê Resources/Armas.\n'
-          'window.RR_ARMAS=' + json.dumps(saida, separators=(',', ':')) + ';\n')
+    js = ('// Armas (Sketchfab, CC BY; créditos em docs/ARTE.md) no quadro das armas do jogo, montadas por tools/montar-armas.py a partir de\n'
+          '// assets/armas/fontes.json. GLB com TEXCOORD_1 = (peça, papel) e o uv do modelo; RR_ARMAS_TEX = as texturas (JPG: cor, relevo,\n'
+          '// metal/aspereza do glTF). A skin de serviço usa as fotos; as outras pintam por papel. O Unity lê Resources/Armas.\n'
+          'window.RR_ARMAS=' + json.dumps(saida, separators=(',', ':')) + ';\n'
+          'window.RR_ARMAS_TEX=' + json.dumps(texs, separators=(',', ':')) + ';\n')
     open(os.path.join(RAIZ, 'client', 'armas.js'), 'w').write(js)
     print('client/armas.js', len(js) // 1024, 'KB')
 

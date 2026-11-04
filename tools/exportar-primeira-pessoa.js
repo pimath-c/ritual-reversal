@@ -21,7 +21,8 @@ function coletar(){
   const nos=[], idx=new Map(), objs=[], mats=[], midx=new Map(), geos=[], gidx=new Map(), blocos=[]; let bytes=0;
   const empilha=a=>{ blocos.push(new Uint8Array(a.buffer,a.byteOffset,a.byteLength)); bytes+=a.byteLength; };
   const arr=v=>v.toArray(), r6=x=>Math.round(x*1e6)/1e6;
-  const nomeTex=t=>{ if(!t) return null; for(const k in T.TEX) for(const s of ['map','normalMap','roughnessMap']) if(T.TEX[k]&&T.TEX[k][s]===t) return k+'.'+s;
+  const nomeTex=t=>{ if(!t) return null; if(t.userData&&t.userData.nomeArma) return 'arma:'+t.userData.nomeArma;   // v6.10: fotos das armas (Resources/Armas)
+    for(const k in T.TEX) for(const s of ['map','normalMap','roughnessMap']) if(T.TEX[k]&&T.TEX[k][s]===t) return k+'.'+s;
     for(const k in T.RT) if(T.RT[k]===t) return 'RT.'+k; return '?'; };
   function salvarGeo(pos,nor,uv,ind){ const i=geos.length; geos.push({v:pos.length/3,t:ind.length,ini:bytes}); empilha(pos); empilha(nor); empilha(uv); empilha(ind); return i; }
   function triangulos(g){ const n=g.attributes.position.count; return g.index?Array.from(g.index.array):Array.from({length:n},(_,i)=>i); }
@@ -46,7 +47,10 @@ function coletar(){
     const M={k:m.isMeshStandardMaterial?'std':m.isMeshBasicMaterial?'basico':m.isSpriteMaterial?'sprite':'?',nome:m.name||'',cor:arr(m.color),opac:m.opacity,transp:!!m.transparent,zwrite:m.depthWrite!==false,
       mistura:m.blending===THREE.AdditiveBlending?'aditiva':'normal',tom:m.toneMapped!==false,lado:m.side,mapa:nomeTex(m.map),rep:m.map?arr(m.map.repeat):null};
     if(M.k==='std') Object.assign(M,{rug:m.roughness,met:m.metalness,emis:arr(m.emissive),emisI:m.emissiveIntensity,normal:nomeTex(m.normalMap),nrep:m.normalMap?arr(m.normalMap.repeat):null,
-      nesc:m.normalMap?arr(m.normalScale):null,papel:m.userData.papel||null,claro:m.userData.claro||1,base:m.userData.base||null,leitura:!!m.userData.leitura,skin:!!m.userData.skinU});
+      nesc:m.normalMap?arr(m.normalScale):null,papel:m.userData.papel||null,claro:m.userData.claro||1,base:m.userData.base||null,leitura:!!m.userData.leitura,skin:!!m.userData.skinU,
+      mr:nomeTex(m.roughnessMap)});
+    const F=m.userData.foto, SF=m.userData.semFoto;   // v6.10: as fotos e os mapas de antes (skins.js, ajustar)
+    if(M.k==='std'&&F){ M.foto={mapa:nomeTex(F.map),normal:nomeTex(F.normalMap),mr:nomeTex(F.roughnessMap)}; M.sem={mapa:nomeTex(SF.map),normal:nomeTex(SF.normalMap)}; if(!M.base) M.base={cor:SF.cor,rug:SF.rug,met:SF.met}; }
     if(M.k==='sprite') M.giro=m.rotation;
     const i=mats.length; mats.push(M); midx.set(m,i); return i; }
   // árvore: os pais vêm antes dos filhos; os pedaços da pele entram no fim (os ossos já têm índice)

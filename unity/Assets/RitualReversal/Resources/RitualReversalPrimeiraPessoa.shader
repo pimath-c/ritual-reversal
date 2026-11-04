@@ -17,6 +17,8 @@ Shader "RitualReversal/PrimeiraPessoa"
         _BumpMap ("Relevo", 2D) = "bump" {}
         _BumpScale ("Força do relevo", Float) = 1
         _TemRelevo ("Tem relevo", Float) = 0
+        _MRMap ("Metal e aspereza (glTF: G aspereza, B metal)", 2D) = "white" {}
+        _TemMR ("Tem metal e aspereza", Float) = 0
         _Rug ("Aspereza", Range(0,1)) = 1
         _Metal ("Metal", Range(0,1)) = 0
         _Emissao ("Emissão", Color) = (0,0,0,1)
@@ -59,10 +61,11 @@ Shader "RitualReversal/PrimeiraPessoa"
 
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
             TEXTURE2D(_BumpMap); SAMPLER(sampler_BumpMap);
+            TEXTURE2D(_MRMap); SAMPLER(sampler_MRMap);
             TEXTURE2D(_Det); SAMPLER(sampler_Det);
 
             CBUFFER_START(UnityPerMaterial)
-                float4 _BaseMap_ST; half4 _BaseColor; float _BumpScale, _TemRelevo, _Rug, _Metal; half4 _Emissao; float _EmissaoI, _Cull;
+                float4 _BaseMap_ST; half4 _BaseColor; float _BumpScale, _TemRelevo, _TemMR, _Rug, _Metal; half4 _Emissao; float _EmissaoI, _Cull;
                 float _DetEsc, _Sulco, _Inc, _Mancha, _Relevo; half4 _ManchaCor, _IncCor; float _IncMet, _IncRug; float4 _Varre; half4 _VarreCor;
             CBUFFER_END
             float _RRLeitura, _RRRim;
@@ -92,6 +95,8 @@ Shader "RitualReversal/PrimeiraPessoa"
                 nWS *= costas;
                 float3 n = normalize(mul((float3x3)UNITY_MATRIX_V, nWS));
                 half3 cor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv).rgb * _BaseColor.rgb; float rug = _Rug, met = _Metal;
+                // v6.10: as armas com as fotos do modelo (Sketchfab): metal e aspereza por texel, como o roughnessMap/metalnessMap do three
+                if (_TemMR > .5) { half4 mr = SAMPLE_TEXTURE2D(_MRMap, sampler_MRMap, i.uv); rug *= mr.g; met *= mr.b; }
                 // detalhe da skin (client/skins.js)
                 float3 bl = pow(abs(normalize(i.norO)), float3(4, 4, 4)); bl /= (bl.x + bl.y + bl.z + 1e-5);
                 half4 d = SAMPLE_TEXTURE2D(_Det, sampler_Det, i.posO.zy * _DetEsc) * bl.x + SAMPLE_TEXTURE2D(_Det, sampler_Det, i.posO.xz * _DetEsc) * bl.y + SAMPLE_TEXTURE2D(_Det, sampler_Det, i.posO.xy * _DetEsc) * bl.z;

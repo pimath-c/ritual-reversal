@@ -819,16 +819,27 @@ function arma3d(nome){ if(nome in ARMAS3D) return ARMAS3D[nome]; const b64=windo
     const vista=i=>{ const v=J.bufferViews[i], o=bo+(v.byteOffset||0); return bin.slice(o,o+v.byteLength); };
     const acc=i=>{ const a=J.accessors[i], b=vista(a.bufferView).buffer; return a.componentType===5126?new Float32Array(b):a.componentType===5125?new Uint32Array(b):new Uint16Array(b); };
     const ms=J.meshes[0], pr=ms.primitives[0], at=pr.attributes, P=acc(at.POSITION), N=acc(at.NORMAL), U2=acc(at.TEXCOORD_1), I=acc(pr.indices), ex=ms.extras;
-    const UV=new Float32Array(P.length/3*2); for(let v=0;v<P.length/3;v++){ UV[v*2]=P[v*3+2]*5; UV[v*2+1]=P[v*3+1]*5; }
+    let UV=at.TEXCOORD_0!=null?acc(at.TEXCOORD_0):null;   // v6.10: o uv do modelo (fotos); sem ele, pela posição (o veio corre ao longo da arma)
+    if(!UV){ UV=new Float32Array(P.length/3*2); for(let v=0;v<P.length/3;v++){ UV[v*2]=P[v*3+2]*5; UV[v*2+1]=P[v*3+1]*5; } }
     const listas={}; for(let t=0;t<I.length;t+=3){ const pt=ex.partes[Math.round(U2[I[t]*2])], pa=ex.papeis[Math.round(U2[I[t]*2+1])]; ((listas[pt]=listas[pt]||{})[pa]=listas[pt][pa]||[]).push(I[t],I[t+1],I[t+2]); }
     const geos={}; for(const pt in listas){ geos[pt]={}; for(const pa in listas[pt]){ const g=new THREE.BufferGeometry();
       g.setAttribute('position',new THREE.BufferAttribute(P,3)); g.setAttribute('normal',new THREE.BufferAttribute(N,3)); g.setAttribute('uv',new THREE.BufferAttribute(UV,2));
       g.setIndex(new THREE.BufferAttribute(P.length/3>65535?new Uint32Array(listas[pt][pa]):new Uint16Array(listas[pt][pa]),1)); limitesPorIndice(g,P,listas[pt][pa]); COMPARTILHADAS.add(g); geos[pt][pa]=g; } }
     const caixa=papel=>{ const b=new THREE.Box3(); for(const pt of ['estatico']) for(const pa in geos[pt]||{}) if(!papel||pa===papel) b.union(geos[pt][pa].boundingBox); return b; };
-    return ARMAS3D[nome]={geos,ex,caixa};
+    // v6.10: as texturas de verdade do modelo (Sketchfab): cor, relevo e metal/aspereza do glTF (G aspereza, B metal)
+    let foto=null; const T=ex.foto&&window.RR_ARMAS_TEX&&RR_ARMAS_TEX[nome];
+    if(T){ foto={}; for(const k of ['cor','nor','mr']){ const im=new Image(); im.src='data:image/jpeg;base64,'+T[k]; const t=new THREE.Texture(im); t.flipY=false; t.anisotropy=4;
+        if(k==='cor') t.encoding=THREE.sRGBEncoding; t.userData=t.userData||{}; t.userData.nomeArma=nome+'.'+k; im.onload=()=>{ t.needsUpdate=true; }; if(im.complete) t.needsUpdate=true; foto[k]=t; } }
+    return ARMAS3D[nome]={geos,ex,caixa,foto};
   }catch(e){ console.warn('arma '+nome,e); return ARMAS3D[nome]=null; } }
 // põe as malhas de uma peça do modelo num grupo, com o material do papel de cada uma
 function malhasArma3d(geos,mats,pai){ for(const pa in geos||{}) if(mats[pa]) pai.add(new THREE.Mesh(geos[pa],mats[pa])); }
+// v6.10: põe as fotos do modelo nos materiais por papel (a skin de serviço); as outras skins tiram (skins.js, ajustar) e voltam
+// aos mapas guardados em semFoto. A cor vira branca e a aspereza e o metal, 1: quem manda são as texturas.
+function fotoArma3d(M,mats){ if(!M||!M.foto) return; for(const pa in mats){ const m=mats[pa]; if(!m||m.userData.foto) continue;
+    m.userData.semFoto={map:m.map,normalMap:m.normalMap,cor:m.color.getHex(),rug:m.roughness,met:m.metalness};
+    m.userData.foto={map:M.foto.cor,normalMap:M.foto.nor,roughnessMap:M.foto.mr,metalnessMap:M.foto.mr};
+    Object.assign(m,m.userData.foto); m.color.setHex(0xffffff); m.roughness=1; m.metalness=1; m.normalScale.set(1,1); m.needsUpdate=true; } }
 function armaCarabina(){ // Soldado: carabina de alavanca, nogueira e aço escurecido
   const g=new THREE.Group(), aco=matMetal(0x34373c,.4), latao=matMetal(0xb58c48,.28,1), mad=new THREE.MeshStandardMaterial({color:0x7a4626,map:TEX.wood.map,normalMap:TEX.wood.normalMap,roughness:.5,emissive:0});
   // papéis dos materiais para as skins (client/skins.js): a caixa, a alavanca e o cão têm acabamento próprio; cano e tubo, outro
@@ -849,7 +860,9 @@ function armaCarabina(){ // Soldado: carabina de alavanca, nogueira e aço escur
   const M=arma3d('carabina');
   if(M){ // v6.5: a carabina de alavanca de verdade (o modelo com os materiais por papel); as peças antigas ficam escondidas
     g.children.forEach(o=>{ if(o!==pivo) o.visible=false; }); alav.visible=false;
-    malhasArma3d(M.geos.estatico,{caixa,aco,madeira:mad},g); malhasArma3d(M.geos.alav,{caixa,aco,madeira:mad},pivo);
+    // a cartucheira de couro na coronha (com os cartuchos) fica com as fotos em todas as skins: nenhuma pinta o papel 'cartucheira'
+    const mats={caixa,aco,madeira:mad,cartucheira:papel(matCouro(0x5a3a22),'cartucheira')};
+    fotoArma3d(M,mats); malhasArma3d(M.geos.estatico,mats,g); malhasArma3d(M.geos.alav,mats,pivo);
     const C=M.caixa('caixa');   // a caixa do modelo: a janela de ejeção no lado direito, perto do topo
     return {g,boca:V3(...M.ex.boca),alav:pivo,cao,janela:V3(C.max.x,C.max.y-.008,.03),caixa3d:C,real:true}; }
   return {g,boca:V3(0,.036,-.755),alav:pivo,cao,janela:V3(.02,.045,.03)};
@@ -872,7 +885,7 @@ function armaRevolver(){ // Exorcista: revólver de prata gravada, cabo escuro c
   const M=arma3d('revolver');
   if(M){ // v6.5: o revólver de verdade; o tambor do modelo gira no lugar do antigo
     g.children.forEach(o=>{ if(o!==tamborG) o.visible=false; }); tamborG.children.forEach(o=>o.visible=false);
-    const mats={prata,escuro,madeira:mad}; malhasArma3d(M.geos.estatico,mats,g); malhasArma3d(M.geos.tambor,mats,tamborG);
+    const mats={prata,escuro,madeira:mad}; fotoArma3d(M,mats); malhasArma3d(M.geos.estatico,mats,g); malhasArma3d(M.geos.tambor,mats,tamborG);
     return {g,boca:V3(...M.ex.boca),tambor:tamborG,cao,real:true}; }
   return {g,boca:V3(0,.03,-.28),tambor:tamborG,cao};
 }
@@ -2083,7 +2096,7 @@ let vmH,vmFlash,vmC,vmOrb,vmMaoH,vmMaoC,vmCarabina,vmRevolver,vmCetro,vmRunas=[]
 let ARMA=null, MUNDO=null, SKINS=null, VIS_ASILO=null; const FX0={x:0,y:0,z:0};
 function buildViewmodels(){
   SKINS=window.RR_SKINS?window.RR_SKINS({THREE,RT,efeito,tocar}):null;
-  ARMA=window.RR_ARMA({nivel:()=>PERF.nivelAtual,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,arma3d,malhasArma3d,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula:()=>ejetarCapsula(),SKINS});
+  ARMA=window.RR_ARMA({nivel:()=>PERF.nivelAtual,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,arma3d,malhasArma3d,fotoArma3d,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula:()=>ejetarCapsula(),SKINS});
   ARMA.construir(); ({vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}=ARMA.vm); }
 
 // ================= AUDIO =================
@@ -3902,7 +3915,7 @@ let novidadesAberto=false;
 // v6.5c: o que pede crédito (CC BY) primeiro; o resto é CC0 (docs/ARTE.md tem peça por peça)
 const CREDITOS_ARTE=['Sobretudo: punkduck · CC BY 3.0 · MakeHuman','Chapéu de aba larga: culturalibre · CC BY · MakeHuman','Trilby e cartola: Elvaerwyn · CC BY · MakeHuman',
   'Corpos, peles, olhos, cabelo, ternos e chapéus: MakeHuman e MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier) · CC0','Hábito e capuz do culto: Donitz · CC0','Botas: Rehman Polanski · CC0',
-  'Texturas e objetos escaneados: Poly Haven · CC0','Folhas das copas e moitas: ambientCG · CC0','Lápides, cruzes, sarcófago, forca e gaiola: loafbrr (itch.io) · CC0','Azulejo rachado e acolchoado: SOI (itch.io) · CC0','Carabina e revólver: Lucian Pavel (OpenGameArt) · CC0','Mãos da primeira pessoa: malha base do MakeHuman · CC0','Céus: Greg Zaal e Jarod Guest (Poly Haven) · CC0','Altar e estátua do monge: gerados no Higgsfield/Tripo'];
+  'Texturas e objetos escaneados: Poly Haven · CC0','Folhas das copas e moitas: ambientCG · CC0','Lápides, cruzes, sarcófago, forca e gaiola: loafbrr (itch.io) · CC0','Azulejo rachado e acolchoado: SOI (itch.io) · CC0','Carabina: "Winchester 1873 Free Model", Danya/dsamuta (Sketchfab) · CC BY 4.0','Revólver: "Colt Peacemaker", wanderer (Sketchfab) · CC BY 4.0','Braços da caça: "Arms6", DJMaesen/bumstrum (Sketchfab) · CC BY 4.0','Mão nua da primeira pessoa: malha base do MakeHuman · CC0','Céus: Greg Zaal e Jarod Guest (Poly Haven) · CC0','Altar e estátua do monge: gerados no Higgsfield/Tripo'];
 const LAPIDES_3D=[null,'cruz_celta','cruz_ornada','lapide_cruz'];   // v6.5d: 0 = a lápide antiga, de pedra com musgo
 const NOVIDADES=[['Mãos, corpos e céu (v6.6)','As mãos da primeira pessoa eram feitas de cilindros; agora são uma mão de verdade, com palma e nós dos dedos (malha do MakeHuman). Os personagens dobram os joelhos ao andar, ajoelhar e agachar, e os cotovelos ao mirar. O céu virou foto: nuvens nas noites de névoa, chuva e tempestade, céu aberto e estrelado na noite limpa. A água ondula e reflete o céu, e o Charco ganhou poças de verdade.'],['Revisão dos mapas (v6.5f)','As copas das árvores, que pareciam pedras flutuando, viraram folhagem de verdade, e as moitas também. Samambaias que nasciam dentro de muros saíram e a pedra clara ficou menos branca. O Asilo ganhou fachada de tijolo com janelas gradeadas, telhado de ardósia e chaminés, e árvores no terreno e em volta do muro.'],['Asilo mobiliado (v6.5e)','As salas vazias do Asilo ganharam móveis de verdade, com colisão: camas e criados-mudos nos quartos, poltronas, mesa, relógio de pêndulo e cadeira de balanço na Sala de Visitas, gaveteiros e estantes no Arquivo, estantes e cômodas na Farmácia, armários na Rouparia e caixotes no Depósito.'],['Cemitérios, cripta e salas do Asilo (v6.5d)','Os cemitérios ganharam cruzes de pedra celtas e trevadas e lápides com cruz, e a cripta, sarcófagos de pedra. No Asilo, o Isolamento virou uma cela acolchoada e a Hidroterapia tem azulejo rachado nas paredes e piso de xadrez quebrado. Na mata, a encruzilhada tem uma forca, o calvário, cruzes de madeira, e o guindaste da pedreira, uma gaiola com um preso.'],['Personagens novos e arte consertada (v6.5c)','Caçadores e Cultistas agora são personagens realistas do MakeHuman: sobretudos, cartola, chapéu de aba larga e trilby para a caça; hábito e capuz para o culto. Vários objetos escaneados que estavam deformados (cama de ferro, luminária, quadro de força, arca, lanterna, livros, rochas) voltaram ao normal. Créditos de arte em Ajustes.'],['Mãos e Caçadores (v6.5b)','As mãos em primeira pessoa não estouram mais com a lanterna: luvas de couro escuro e mangas de lã carvão. O casaco longo dos Caçadores ficou aberto na frente (não parece mais saia) e a estola do Exorcista é roxa, com a cruz dourada.'],['Arma no lugar e mais arte (v6.5a)','A arma dos outros Caçadores não aponta mais para o céu: o cano acompanha o braço e a mira, e as recargas vistas de fora ficaram certas. Na arte: um segundo tronco morto na mata, castiçais de latão nas tumbas, tapetes com trama de jacquard na catedral e, no Asilo, livros nas mesas, vidraria na bancada, um relógio no balcão e molduras ovais nas paredes.'],['Bonecos e armas de verdade (v6.5)','Os Caçadores e os Cultistas agora são personagens modelados (CC0, Quaternius): Ritualista e Guardião de capuz e túnica longa, Soldado e Exorcista de casaco longo e chapéu, a Rastreadora de couro escuro. A carabina de alavanca e o revólver também são modelos de verdade, com as mesmas skins. As animações continuam as mesmas.'],['Cadeira, balcão e portas (v6.4e)','A cadeira do Eletrochoque é uma cadeira gótica de madeira entalhada, o balcão do Saguão é uma fileira de armários brancos descascados e as portas do Asilo são de tábuas pintadas e gastas.'],['Pinturas e espelhos (v6.4d)','O Asilo ganhou pinturas emolduradas e espelhos entalhados nas paredes de 29 salas, e os lampiões das mesas agora têm o vidro pintado e o metal dourado.'],['Mais duas levas de arte (v6.4c)','As samambaias da mata, as raízes do carvalho, os bancos da nave e a arca agora são modelos escaneados, e as rochas têm três formas. O promontório ganhou chão de terra e capim ralo, e as pilhas de madeira, tábuas gastas. No Asilo, luminárias industriais, quadros de força, canteiros de madeira na horta, bancadas e macas de verdade, lampiões nas mesas, e telhados de ardósia, ferro enferrujado e concreto fotografados.'],['Mais arte de verdade (v6.4b)','As árvores da mata ganharam casca fotografada; ruínas, pilares, menires e muretas viraram pedra bruta; os telhados da catedral, ardósia; as lápides, pedra gasta. A fogueira do acampamento tem um anel de pedras escaneado, os postes ganharam lanternas de madeira e os escombros são pilhas de pedras com musgo.'],
   ['Texturas e modelos de verdade (v6.4)','As texturas feitas por código viraram fotos escaneadas (CC0, Poly Haven): pedra, madeira, mármore, folhas da mata e, no Asilo, reboco, azulejo e ladrilho. Rochas, troncos, caixotes, camas de ferro, bancos e mesas agora são modelos 3D escaneados. A colisão não mudou. No laboratório, "Entre rituais" troca a espera pela Hora Morta por uma pausa curta depois de cada ritual.'],

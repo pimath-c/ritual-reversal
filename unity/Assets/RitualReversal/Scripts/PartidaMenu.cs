@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Armas e braços de verdade (v6.10)","A carabina agora é uma Winchester 1873 gasta, com gravação na caixa e cartucheira de couro na coronha; o revólver do Exorcista é um Colt niquelado com cabo de nogueira. As duas trazem as texturas do modelo: aço, madeira e couro com relevo. Os braços da caça ganharam manga de pano gasto e luva de couro com as pontas puídas, e as mangas do culto são do mesmo pano, em vermelho. As outras skins continuam pintando por cima."},
             new[]{"Mãos de verdade (v6.8)","As mãos da primeira pessoa eram pedaços rígidos que se abriam nas juntas. Agora a pele dobra com os dedos, e a mão nua do culto tem pele de verdade, com rugas, nós dos dedos e unhas."},
             new[]{"Andar e correr (v6.7)","Os personagens correm de verdade: o tronco inclina, a coxa sobe e os braços balançam. O Caçador leva a arma atravessada no peito quando corre e aponta de novo ao atirar. Andar agachado ficou meio agachado, sem deslizar ajoelhado, e a recarga da carabina se vê de longe."},
             new[]{"Mãos, corpos e céu (v6.6)","As mãos da primeira pessoa eram feitas de cilindros; agora são uma mão de verdade, com palma e nós dos dedos (malha do MakeHuman). Os personagens dobram os joelhos ao andar, ajoelhar e agachar, e os cotovelos ao mirar. O céu virou foto: nuvens nas noites de névoa, chuva e tempestade, céu aberto e estrelado na noite limpa. A água ondula e reflete o céu, e o Charco ganhou poças de verdade."},
@@ -87,7 +88,8 @@ namespace RitualReversal
             new[]{"O ritual como evento","As runas acendem uma a uma no início, pulsam a cada etapa, tremem e douram quando a caça sela, se fecham no Farol e explodem na Fenda."},
             new[]{"Investigação","EVP, resíduo na Lanterna e Chamariz desmascarado têm som e efeito próprios no altar."},
             new[]{"Ajuste","Impacto na câmera: Normal, Reduzido ou Desligado."},
-            new[]{"Na v5.7","Interrupções, Fenda e Farol com nomes, lances da noite e o registro da disputa no círculo."} };
+            new[]{"Na v5.7","Interrupções, Fenda e Farol com nomes, lances da noite e o registro da disputa no círculo."},
+            new[]{"Créditos de arte","Carabina: \"Winchester 1873 Free Model\", Danya (dsamuta), Sketchfab, CC BY 4.0. Revólver: \"Colt Peacemaker\", wanderer (wanderer2), Sketchfab, CC BY 4.0. Braços da caça: \"Arms6\", DJMaesen (bumstrum), Sketchfab, CC BY 4.0. Sobretudo: punkduck, CC BY 3.0. Chapéu de aba larga: culturalibre, CC BY. Trilby e cartola: Elvaerwyn, CC BY. Corpos, peles, olhos, cabelo, ternos e chapéus: MakeHuman e MPFB (Data Collection AB, Joel Palmius, Jonas Hauquier), CC0. Hábito e capuz do culto: Donitz, CC0. Botas: Rehman Polanski, CC0. Texturas, objetos escaneados e céus: Poly Haven, CC0. Folhas: ambientCG, CC0. Lápides, cruzes, sarcófago, forca e gaiola: loafbrr, CC0. Azulejo e acolchoado: SOI, CC0. Mão nua: malha base do MakeHuman, CC0. Altar e estátua do monge: gerados no Higgsfield/Tripo."} };
         void TelaNovidades() { TelaNovidadesCss(); }
 
 

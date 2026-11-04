@@ -62,7 +62,26 @@ namespace RitualReversal.Visual
         public static Geo CilZ(float r1, float r2, float len, int segs = 20) { return Geo.Cilindro(r1, r2, len, segs).GirarX(PI / 2); }
         static float[] P(params float[] v) { return v; }
 
-        public class Arma { public Transform g, alav, cao, tambor; public Vector3 boca, janela; } // alav/cao/tambor: peças que se mexem no tiro (v5.8)
+        public class Arma { public Transform g, alav, cao, tambor; public Vector3 boca, janela; }
+        // v6.10: com as fotos do modelo (Sketchfab), a terceira pessoa usa a textura de cor e o relevo; o metal e a aspereza ficam num valor
+        // por papel (a madeira e a cartucheira de couro sem metal; o resto, aço). Um material por papel, compartilhado entre os bonecos.
+        static readonly Dictionary<string, Material> matsFoto = new Dictionary<string, Material>();
+        static Dictionary<string, Material> MatsFoto(ArmaGLB M, Dictionary<string, Material> mats)
+        {
+            if (!M.foto) return mats; var r = new Dictionary<string, Material>();
+            foreach (var pt in M.geos.Values) foreach (var pa in pt.Keys)
+                {
+                    if (r.ContainsKey(pa)) continue; string ch = M.cor.name + "|" + pa; Material m;
+                    if (!matsFoto.TryGetValue(ch, out m))
+                    {
+                        bool semMetal = pa == "madeira" || pa == "cartucheira";
+                        matsFoto[ch] = m = Mat.Padrao(new Mat.Opcoes { mapa = M.cor, relevo = M.nor, rugosidade = semMetal ? .62f : .38f, metal = semMetal ? 0 : .75f });
+                    }
+                    r[pa] = m;
+                }
+            return r;
+        }
+        static Material MatDe(Dictionary<string, Material> mats, string papel) { Material m; if (mats.TryGetValue(papel, out m)) return m; foreach (var x in mats.Values) return x; return null; } // alav/cao/tambor: peças que se mexem no tiro (v5.8)
         // Soldado: carabina de alavanca, nogueira e aço escurecido
         public static Arma Carabina(Kit k, Transform pai)
         {
@@ -70,10 +89,10 @@ namespace RitualReversal.Visual
             var M = ArmaGLB.Carregar("carabina");
             if (M != null)
             {   // v6.5: a carabina de alavanca de verdade (o modelo com os materiais por papel; o armaCarabina do index.html)
-                var mats = new Dictionary<string, Material> { { "caixa", aco }, { "aco", aco }, { "madeira", mad } };
-                foreach (var kv in M.geos["estatico"]) k.Por(g, mats[kv.Key], kv.Value, M4.I);
+                var mats = MatsFoto(M, new Dictionary<string, Material> { { "caixa", aco }, { "aco", aco }, { "madeira", mad } });
+                foreach (var kv in M.geos["estatico"]) k.Por(g, MatDe(mats, kv.Key), kv.Value, M4.I);
                 var pivM = Mundo.Grupo(g, "alavanca"); pivM.localPosition = M.pivos["alav"];
-                Dictionary<string, Geo> alavG; if (M.geos.TryGetValue("alav", out alavG)) foreach (var kv in alavG) k.Por(pivM, mats[kv.Key], kv.Value, M4.I);
+                Dictionary<string, Geo> alavG; if (M.geos.TryGetValue("alav", out alavG)) foreach (var kv in alavG) k.Por(pivM, MatDe(mats, kv.Key), kv.Value, M4.I);
                 var caoM = Mundo.Grupo(g, "cão"); caoM.localPosition = new Vector3(0, .07f, .045f);
                 var C = M.Caixa("caixa");
                 return new Arma { g = g, boca = M.boca, alav = pivM, cao = caoM, janela = new Vector3(C.max.x, C.max.y - .008f, .03f) };
@@ -101,10 +120,10 @@ namespace RitualReversal.Visual
             var M = ArmaGLB.Carregar("revolver");
             if (M != null)
             {   // v6.5: o revólver de verdade; o tambor do modelo gira no lugar do antigo (o armaRevolver do index.html)
-                var mats = new Dictionary<string, Material> { { "prata", prata }, { "escuro", escuro }, { "madeira", mad } };
-                foreach (var kv in M.geos["estatico"]) k.Por(g, mats[kv.Key], kv.Value, M4.I);
+                var mats = MatsFoto(M, new Dictionary<string, Material> { { "prata", prata }, { "escuro", escuro }, { "madeira", mad } });
+                foreach (var kv in M.geos["estatico"]) k.Por(g, MatDe(mats, kv.Key), kv.Value, M4.I);
                 var tambM = Mundo.Grupo(g, "tambor"); tambM.localPosition = new Vector3(0, .014f, -.035f);
-                Dictionary<string, Geo> tg; if (M.geos.TryGetValue("tambor", out tg)) foreach (var kv in tg) k.Por(tambM, mats[kv.Key], kv.Value, M4.I);
+                Dictionary<string, Geo> tg; if (M.geos.TryGetValue("tambor", out tg)) foreach (var kv in tg) k.Por(tambM, MatDe(mats, kv.Key), kv.Value, M4.I);
                 var caoM = Mundo.Grupo(g, "cão"); caoM.localPosition = new Vector3(0, .058f, .035f);
                 return new Arma { g = g, boca = M.boca, tambor = tambM, cao = caoM };
             }

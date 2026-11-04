@@ -109,6 +109,7 @@ public static class FotoFP
             var mapa = m.GetTexture("_BaseMap") ?? m.GetTexture("_MainTex"); var esc = m.escalas.ContainsKey("_BaseMap") ? m.escalas["_BaseMap"] : m.GetTextureScale("_MainTex");
             j.Append(i > 0 ? ",\n" : "").Append("{\"nome\":\"" + Esc(m.name) + "\",\"shader\":\"" + Esc(m.shader != null ? m.shader.name : "") + "\",\"cor\":" + Cor(m.cores.ContainsKey("_BaseColor") ? m.cores["_BaseColor"] : m.GetColor("_Color")));
             j.Append(",\"mapa\":" + (mapa != null ? tex(mapa) : -1) + ",\"esc\":[" + F(esc.x) + "," + F(esc.y) + "],\"cull\":" + num("_Cull") + ",\"surface\":" + num("_Surface") + ",\"clip\":" + num("_AlphaClip") + ",\"metal\":" + num("_Metallic") + ",\"liso\":" + num("_Smoothness"));
+            var mrT = m.GetTexture("_MRMap"); j.Append(",\"mr\":" + (mrT != null ? tex(mrT) : -1));   // v6.10: metal e aspereza por texel (armas e braços)
             j.Append(",\"emissao\":" + (m.chaves.Contains("_EMISSION") ? Cor(m.GetColor("_EmissionColor")) : "null") + "}");
         }
         j.Append("\n],\"texturas\":[\n");

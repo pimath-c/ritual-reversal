@@ -129,7 +129,11 @@ def main():
              'si': b64(np.array(si, dtype=np.uint16)), 'sw': b64(np.array(sw, dtype=np.float32)), 'n': len(pos), 't': len(idx) // 3}
     js = ('// Mãos da primeira pessoa (malha base do MakeHuman, CC0), reassentadas no esqueleto de 16 ossos do arma.js por\n'
           '// tools/montar-maos.py. Não edite à mão.\nwindow.RR_MAOS=' + json.dumps(saida, separators=(',', ':')) + ';\n')
-    open(os.path.join(RAIZ, 'client', 'maos.js'), 'w').write(js)
+    arq = os.path.join(RAIZ, 'client', 'maos.js')   # v6.10: os braços do montar-bracos.py ficam no fim do arquivo
+    if os.path.exists(arq):
+        antigo = open(arq, encoding='utf-8').read(); i = antigo.find('\n// v6.10: braços')
+        if i >= 0: js += antigo[i + 1:]
+    open(arq, 'w', encoding='utf-8').write(js)
     mn, mx = pos.min(0), pos.max(0)
     print(f'mão: {len(pos)} vértices, {len(idx) // 3} triângulos, caixa {np.round(mn, 3)} .. {np.round(mx, 3)}, maos.js {len(js) // 1024} KB')
 

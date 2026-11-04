@@ -1,9 +1,7 @@
 # Arte do jogo: de onde vem cada textura e modelo
 
-Decisão do dono (04/11): o jogo é grátis e fica sem uso comercial (sem anúncios, compras, versão paga nem doações ligadas a
-ele). Por isso também valem modelos CC BY-NC, sempre com crédito e nunca ND (sem derivados: o jogo corta, escala e reduz). Cada
-modelo NC fica marcado como NC nas tabelas, para ser trocado se um dia o jogo passar a ter receita. Fora os NC, tudo o que está
-aqui pode ser usado em jogo comercial. As texturas e os modelos escaneados são CC0 (domínio público) do
+Decisão do dono (04/11): o jogo é para uso comercial. Só entra arte CC0 ou CC BY (com crédito); nada NC (não comercial) nem ND.
+Tudo o que está aqui pode ser usado em jogo comercial. As texturas e os modelos escaneados são CC0 (domínio público) do
 [Poly Haven](https://polyhaven.com): não exigem crédito, mas o jogo dá crédito aos autores mesmo assim. O altar e a estátua do
 monge foram gerados no Higgsfield (Tripo, texto para 3D), com uso comercial liberado pelo dono do projeto.
 
@@ -126,18 +124,20 @@ Personagens em peças rígidas por junta (`tools/montar-bonecos.py` e `tools/mak
 
 ## Armas
 
-A forma do modelo no quadro da arma do jogo, pintada com os materiais por papel (`tools/montar-armas.py`, `assets/armas/fontes.json`).
+Modelos do Sketchfab (CC BY 4.0: o crédito vai aqui e nos créditos do jogo), baixados pela API com o token da conta (`SKETCHFAB_TOKEN`, nunca no repositório). A forma do modelo vai para o quadro da arma do jogo com as texturas dele (cor, relevo, metal/aspereza) na skin de serviço; as outras skins pintam por papel (`tools/montar-armas.py`, `assets/armas/fontes.json`). Os braços da caça (luva e mangas) saem do mesmo jeito por `tools/montar-bracos.py`.
 
 | No jogo | Onde aparece | Origem | Autor |
 | --- | --- | --- | --- |
-| `carabina` | a carabina de alavanca do Soldado (primeira e terceira pessoa) | [hunting-rifle](https://opengameart.org/content/hunting-rifle), CC0 | Lucian Pavel |
-| `revolver` | o revólver do Exorcista (primeira e terceira pessoa) | [old-revolver](https://opengameart.org/content/old-revolver), CC0 | Lucian Pavel |
+| `carabina` | a carabina de alavanca do Soldado e do Rastreador (primeira e terceira pessoa) | [Winchester 1873 Free Model](https://sketchfab.com/3d-models/winchester-1873-free-model-c781f7f4ad8042f789b979ebbbe75944), CC BY 4.0 | Danya (dsamuta) |
+| `revolver` | o revólver do Exorcista (primeira e terceira pessoa) | [Colt Peacemaker](https://sketchfab.com/3d-models/colt-peacemaker-287e2a5fcc554420af18460c3e3941ac), CC BY 4.0 | wanderer (wanderer2) |
+| `bracos` | braços da caça na primeira pessoa (luva e mangas; tools/montar-bracos.py) | [Arms6](https://sketchfab.com/3d-models/arms6-bf049910accc4d71838a5a5272aedfef), CC BY 4.0 | DJMaesen (bumstrum) |
 
 ## Mãos da primeira pessoa
 
 A mão direita da malha base do MakeHuman (CC0; Data Collection AB, Joel Palmius, Jonas Hauquier), com os alvos do Soldado,
 reassentada no esqueleto de 16 ossos do `client/arma.js` por `tools/montar-maos.py` (saída `client/maos.js`). A esquerda é
-a mesma espelhada; a luva da caça e a pele do culto são os materiais do jogo.
+a mesma espelhada; é a mão nua do culto. Desde a v6.10 a caça usa a luva e as mangas do "Arms6" (DJMaesen/bumstrum, CC BY 4.0,
+na tabela das armas), reassentadas no mesmo esqueleto; as mangas do culto são as dele, tingidas de vermelho.
 
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em

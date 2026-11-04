@@ -21,7 +21,7 @@ namespace RitualReversal.Visual
             public string id, nome, oficio, texto; public readonly Dictionary<string, Papel> papeis = new Dictionary<string, Papel>(); public readonly List<string> acessorios = new List<string>();
             public int revelaCor = 0xffffff; public float revelaForca = .55f; public string som; public float[] cruz; public bool gotas, temRevela;
         }
-        class Base { public string papel; public Color cor; public float rug, met, claro = 1; }
+        class Base { public string papel; public Color cor; public float rug, met, claro = 1; public bool foto; public Texture2D fMapa, fNormal, fMr, sMapa, sNormal; }
         class Varre { public List<Material> mats; public float t, dur; public Color cor; public float forca; }
         class Pend { public Transform pivo; public float ax, az, vx, vz; }
 
@@ -92,6 +92,12 @@ namespace RitualReversal.Visual
             object bb; if (d.TryGetValue("base", out bb) && bb != null) { var o = Json.O(bb); b.cor = ArmaFP.HexLinear((int)Json.D(o["cor"])); b.rug = (float)Json.D(o["rug"]); b.met = (float)Json.D(o["met"]); }
             else { var l = Json.L(d["cor"]); b.cor = new Color((float)Json.D(l[0]), (float)Json.D(l[1]), (float)Json.D(l[2])); b.rug = (float)Json.D(d["rug"]); b.met = (float)Json.D(d["met"]); }
             b.claro = Num(d, "claro") ?? 1; bases[m] = b;
+            // v6.10: material com as fotos do modelo (a skin de serviço); "sem" guarda os mapas de antes, para as skins que pintam
+            if (d.TryGetValue("foto", out v) && v != null)
+            {
+                var f = Json.O(v); b.foto = true; b.fMapa = ArmaFP.TexDe(f["mapa"]); b.fNormal = ArmaFP.TexDe(f["normal"]); b.fMr = ArmaFP.TexDe(f["mr"]);
+                object sm; if (d.TryGetValue("sem", out sm) && sm != null) { var o = Json.O(sm); b.sMapa = ArmaFP.TexDe(o["mapa"]); b.sNormal = ArmaFP.TexDe(o["normal"]); }
+            }
         }
         public void Preparar(ArmaFP.Arma A)
         {
@@ -121,7 +127,22 @@ namespace RitualReversal.Visual
         // ajusta um material ao papel da skin
         void Ajustar(Material m, Papel p)
         {
-            var b = bases[m]; var cor = p.cor != null ? ArmaFP.HexLinear(p.cor.Value) : b.cor; if (b.claro != 1 && p.cor != null) cor = new Color(cor.r * b.claro, cor.g * b.claro, cor.b * b.claro);
+            var b = bases[m];
+            if (b.foto)
+            {   // v6.10: sem pintura no papel, as fotos; com pintura (cor ou detalhe), os mapas de antes e o acabamento da skin
+                bool pinta = p.cor != null || p.det != null;
+                m.SetTexture("_BaseMap", pinta ? (b.sMapa ?? Texture2D.whiteTexture) : b.fMapa);
+                var nor = pinta ? b.sNormal : b.fNormal; if (nor != null) m.SetTexture("_BumpMap", nor); if (m.HasProperty("_TemRelevo")) m.SetFloat("_TemRelevo", nor != null ? 1 : 0);
+                if (!pinta)
+                {
+                    Mat.Cor(m, Color.white); if (m.HasProperty("_Rug")) { m.SetFloat("_Rug", 1); m.SetFloat("_Metal", 1); }
+                    ArmaFP.Mr(m, b.fMr);
+                    if (m.HasProperty("_Det")) { m.SetTexture("_Det", null); m.SetFloat("_Sulco", 0); m.SetFloat("_Inc", 0); m.SetFloat("_Mancha", 0); m.SetFloat("_Relevo", 0); }
+                    return;
+                }
+                ArmaFP.Mr(m, null);
+            }
+            var cor = p.cor != null ? ArmaFP.HexLinear(p.cor.Value) : b.cor; if (b.claro != 1 && p.cor != null) cor = new Color(cor.r * b.claro, cor.g * b.claro, cor.b * b.claro);
             float rug = p.rug ?? b.rug, met = p.met ?? b.met; Mat.Cor(m, Mat.Lin(cor));
             if (m.HasProperty("_Rug")) { m.SetFloat("_Rug", rug); m.SetFloat("_Metal", met); } else { m.SetFloat("_Smoothness", Mathf.Clamp01(1 - rug) * .9f); m.SetFloat("_Metallic", met); }
             if (!m.HasProperty("_Det")) return;

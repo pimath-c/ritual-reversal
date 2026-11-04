@@ -57,7 +57,7 @@ mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes 
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.9)
+## Estado atual (v6.10)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -354,6 +354,19 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `idx (a, a+1, b)`), `geoPunho()` (anel de couro fechado por `LatheGeometry`, cor 0x241710 no lugar do cilindro aberto 0x3a2618),
   polegar dobrado em `DEDOS.coronha`/`gatilho` (.3, .8, .72) e `revolver` (.22, .85, .7). Cuidado ao editar linhas únicas do arma.js e do
   index.html: um `//` no meio da linha come o fim (duas vezes nesta sessão); confira com `node --check client/arma.js`.
+- v6.10 (notas em `notas/v6.10.md`): armas e braços do Sketchfab (CC BY 4.0, créditos em `docs/ARTE.md`, nas Novidades do Unity e em
+  CREDITOS_ARTE). `montar-armas.py` aceita `"sketchfab": {uid, celula, materiais}` (GLB pela API com `SKETCHFAB_TOKEN`, só no ambiente;
+  `assets/armas/fontes/<nome>_sf.glb`), regras com `"nos"` (regex no "nó#malha"), uv do modelo (TEXCOORD_0) e as texturas em atlas
+  (`<nome>_cor/_nor/_mr`: JPG em `Resources/Armas` e `RR_ARMAS_TEX`; `fatores_mr` põe metallicFactor/roughnessFactor no mr). Carabina =
+  Winchester 1873 (dsamuta; sem a bandoleira, com a cartucheira, papel `cartucheira` que nenhuma skin pinta), revólver = Colt Peacemaker
+  niquelado (wanderer; tambor por nó+cilindro). Navegador: `fotoArma3d(M,mats)` (userData.foto/semFoto; skins.js `ajustar` tira as fotos
+  quando a skin pinta o papel). Unity: `ArmaGLB.Foto(nome,k)` (inverte as linhas: o uv do glTF começa em cima), `Personagens.MatsFoto`
+  (terceira pessoa), shader da primeira pessoa com `_MRMap`/`_TemMR`, `ArmaFP.Mr`, `SkinsFP` com `foto`/`sem` da exportação.
+  Braços: `tools/montar-bracos.py` ("Arms6", DJMaesen/bumstrum): a luva (ilha da malha que pesa na mão) reassentada nos 16 ossos e cortada
+  em z `luva_corte`; as mangas recortadas por plano no cotovelo (faixa de 3 cm) no espaço do geoTubo (`ant` esticada até `manga_ate` .93,
+  `antC` do culto até 1, `sup` até o ombro); `window.RR_BRACOS` no fim de `client/maos.js` (o montar-maos.py preserva). arma.js:
+  `geoBracos`, `fotoBracos`, `criarMao(..., {luva3d})`, `criarBraco(..., real|'culto')`. Texturas do three r128 não têm userData
+  (`t.userData=t.userData||{}`). `unity-fp-fotos.js` lê o `_MRMap`.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e
@@ -505,9 +518,7 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   inteiro mais perto.
 
 ## Pendências
-- Licença (dono, 04/11): jogo grátis, sem uso comercial; modelos CC BY-NC valem (com crédito, marcados NC em `docs/ARTE.md`,
-  nunca ND). Braços da primeira pessoa e armas do Sketchfab: falta o token (`SKETCHFAB_TOKEN` no ambiente, nunca no repositório)
-  ou os arquivos baixados pelo dono.
+- Licença (dono, 04/11): o jogo é para uso comercial; só CC0 ou CC BY (com crédito), nada NC nem ND.
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
   depois disso o workflow posta sozinho as notas novas. Daqui da sessão: `DISCORD_WEBHOOK=... node tools/postar-discord.js`.
 - Sons: ouvir em fones e acertar volumes; trocar o tiro montado por gravação de arma quando Freesound/OpenGameArt/

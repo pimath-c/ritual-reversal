@@ -17,7 +17,7 @@
 // O jogo (index.html) roda dentro de uma função: ele chama RR_ARMA com o que este módulo usa e recebe a API de volta.
 window.RR_ARMA=function(D){
 'use strict';
-const {nivel,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,arma3d,malhasArma3d,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula,SKINS}=D;
+const {nivel,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,arma3d,malhasArma3d,fotoArma3d,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula,SKINS}=D;
 let vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas=[],vmFlash;
 const PI=Math.PI, TAU=PI*2;
 const cl=(v,a,b)=>v<a?a:v>b?b:v, mix=(a,b,t)=>a+(b-a)*t;
@@ -108,6 +108,19 @@ function geoPunho(){ if(GEO.punho) return GEO.punho; const p=[[.0195,-.012],[.02
 const FAL=[[.036,.024,.019,.0093],[.04,.027,.02,.0096],[.037,.025,.019,.0091],[.029,.02,.016,.0082]];
 // Mão com esqueleto: 16 ossos (pulso, três falanges por dedo e o polegar) e uma malha só, com cada vértice preso a um osso
 // (pele rígida por falange). Uma chamada de desenho por mão, em vez de uma por falange.
+// v6.10: braços da caça de um modelo de verdade (client/maos.js, RR_BRACOS, tools/montar-bracos.py: "Arms6" de DJMaesen, CC BY):
+// a luva já no esqueleto de 16 ossos e as mangas no espaço do geoTubo, com as texturas do modelo (cor, relevo, metal/aspereza)
+const RB=window.RR_BRACOS;
+function geoBracos(k){ const ch='bracos_'+k; if(GEO[ch]) return GEO[ch]; const o=RB[k], b=(s,T)=>{ const t=atob(s), u=new Uint8Array(t.length); for(let i=0;i<t.length;i++) u[i]=t.charCodeAt(i); return new T(u.buffer); };
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(b(o.pos,Float32Array),3)); g.setAttribute('normal',new THREE.BufferAttribute(b(o.nor,Float32Array),3));
+  g.setAttribute('uv',new THREE.BufferAttribute(b(o.uv,Float32Array),2)); g.setIndex(new THREE.BufferAttribute(b(o.idx,Uint32Array),1));
+  if(o.si){ g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(b(o.si,Uint16Array),4)); g.setAttribute('skinWeight',new THREE.BufferAttribute(b(o.sw,Float32Array),4)); }
+  COMPARTILHADAS.add(g); return GEO[ch]=g; }
+const TEXB={};
+function fotoBracos(m){ if(!RB||!RB.tex) return m;
+  for(const k of ['cor','nor','mr']) if(!TEXB[k]){ const im=new Image(); im.src='data:image/jpeg;base64,'+RB.tex[k]; const t=new THREE.Texture(im); t.flipY=false; t.anisotropy=4; if(k==='cor') t.encoding=THREE.sRGBEncoding;
+    t.userData=t.userData||{}; t.userData.nomeArma='bracos.'+k; im.onload=()=>{ t.needsUpdate=true; }; if(im.complete) t.needsUpdate=true; TEXB[k]=t; }
+  m.map=TEXB.cor; m.normalMap=TEXB.nor; m.roughnessMap=m.metalnessMap=TEXB.mr; m.color.setHex(0xffffff); m.roughness=1; m.metalness=1; m.needsUpdate=true; return m; }
 function criarMao(mat,esq,opc){ opc=opc||{};
   const raiz=new THREE.Group(), geo=new THREE.Group(); raiz.add(geo); geo.scale.set(esq?-ESC_MAO:ESC_MAO,ESC_MAO,ESC_MAO);
   const pulso=new THREE.Bone(), ossos=[pulso], dedos=[], X=[-.03,-.01,.01,.029], ABRE=[-.07,-.02,.03,.1];
@@ -134,7 +147,8 @@ function criarMao(mat,esq,opc){ opc=opc||{};
     pol.forEach((b,j)=>parte(capsula(.0115*(1-j*.08),PL[j]),b,pele));
     const junta=L=>{ const g=THREE.BufferGeometryUtils.mergeBufferGeometries(L.map(q=>{ for(const a of Object.keys(q.attributes)) if(!['position','normal','uv','skinIndex','skinWeight'].includes(a)) q.deleteAttribute(a); return q; })); COMPARTILHADAS.add(g); return g; };
     GEO.maoPele=junta(pele); GEO.maoUnhas=junta(unhas); }
-  mat.skinning=true; const pele=new THREE.SkinnedMesh(GEO.maoPele,mat); pele.add(pulso); geo.add(pele); raiz.updateMatrixWorld(true); const esq_=new THREE.Skeleton(ossos); pele.bind(esq_);
+  const geoPele=opc.luva3d&&RB?geoBracos('luva'):GEO.maoPele;
+  mat.skinning=true; const pele=new THREE.SkinnedMesh(geoPele,mat); pele.add(pulso); geo.add(pele); raiz.updateMatrixWorld(true); const esq_=new THREE.Skeleton(ossos); pele.bind(esq_);
   if(opc.unhas&&GEO.maoUnhas){ opc.unhas.skinning=true; const u=new THREE.SkinnedMesh(GEO.maoUnhas,opc.unhas); geo.add(u); u.bind(esq_,pele.matrixWorld); }
   if(opc.costura&&!MH){ geo.add(new THREE.Mesh(geoCostura(),opc.costura)); const bt=new THREE.Mesh(GEO.botao||(GEO.botao=(()=>{ const c=new THREE.CylinderGeometry(.0045,.0045,.003,10); c.translate(.024,.0205,-.006); COMPARTILHADAS.add(c); return c; })()),opc.botao); geo.add(bt); }
   if(opc.punho){ const c=new THREE.Mesh(geoPunho(),opc.punho); c.rotation.x=PI/2; c.position.z=.004; geo.add(c); }   // o punho da luva (a manga cobre o resto)
@@ -144,7 +158,8 @@ function criarMao(mat,esq,opc){ opc=opc||{};
 function posarDedos(M,dd,tremor){ for(let k=0;k<4;k++){ const D=M.dedos[k], c=cl(dd[k]+(tremor?tremor[k]:0),-.15,1.1);
     D.segs[0].rotation.set(-c*1.3,D.abre*(.3+dd[7]*1.6),0); D.segs[1].rotation.x=-c*1.55; D.segs[2].rotation.x=-c*1.05; }
   const a=dd[4], o=dd[5], d=dd[6]; const B=M.pol[0]; B.rotation.set(-.2-o*.75,.55+a*.75,-.5-o*.4); M.pol[1].rotation.x=-d*.75; M.pol[2].rotation.x=-d*.95; }
-function criarBraco(matSup,matAnt,r){ const sup=new THREE.Mesh(geoTubo(),matSup), ant=new THREE.Mesh(geoTubo(),matAnt), cot=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),matSup);
+function criarBraco(matSup,matAnt,r,real){ const de=k=>real&&RB?geoBracos(real==='culto'&&k==='ant'?'antC':k):geoTubo();   // real: as mangas do modelo (as duas se cruzam no cotovelo; a esfera some)
+  const sup=new THREE.Mesh(de('sup'),matSup), ant=new THREE.Mesh(de('ant'),matAnt), cot=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),matSup); if(real&&RB) cot.visible=false;
   return {sup,ant,cot,r}; }
 const UP=new THREE.Vector3(0,1,0);
 function tubo(m,P,Q,r1){ _v1.subVectors(Q,P); const L=_v1.length(); m.position.copy(P); m.quaternion.setFromUnitVectors(UP,_v1.divideScalar(L||1)); m.scale.set(r1,L,r1); }
@@ -176,7 +191,8 @@ function criarCartucho(tipo,vazio){ matsPeca(); const g=new THREE.Group(), car=t
 // ---------------------------------------------------------------------------------------------------------------------
 // Armas da primeira pessoa (as do terceiro-pessoa continuam em index.html): mesmas formas, com as peças que se mexem.
 function carabinaFP(){ const A=armaCarabina(), aco=matMetal(0x3a3d43,.36), acoClaro=matMetal(0x6a6e75,.3);
-  aco.userData.papel=acoClaro.userData.papel='caixa'; acoClaro.userData.claro=1.7;   // peças da caixa (portinhola, ferrolho): seguem o acabamento da caixa, mais claras
+  aco.userData.papel=acoClaro.userData.papel='caixa'; acoClaro.userData.claro=1.7;
+  if(A.real){ acoClaro.color.setHex(0x2c2e32); acoClaro.userData.claro=1; }   // v6.10: perto do aço escuro da Winchester do modelo, a peça clara saltava   // peças da caixa (portinhola, ferrolho): seguem o acabamento da caixa, mais claras
   // portinhola de carga no lado direito, presa pela frente: o cartucho a empurra para dentro
   // v6.5: com a carabina de verdade, as peças da caixa vão para a caixa do modelo (mais baixa e mais fina que a antiga)
   const C3=A.real?A.caixa3d:null, xD=C3?C3.max.x+.0004:.0262, yP=C3?C3.min.y+(C3.max.y-C3.min.y)*.3:-.011, yT=C3?C3.max.y:.058;
@@ -236,7 +252,7 @@ function revolverFP(){ matsPeca();
   mun.visible=false;
   if(M3){ // a armação e o tambor do modelo; as peças antigas ficam escondidas (os objetos que a animação usa continuam)
     g.children.forEach(o=>{ if(o!==guin&&!cruz.includes(o)) o.visible=false; }); cil.visible=false; estrias.forEach(o=>o.visible=false); braco.visible=false;
-    const mats={prata,escuro,madeira:mad}; malhasArma3d(M3.geos.estatico,mats,g); malhasArma3d(M3.geos.tambor,mats,tam);
+    const mats={prata,escuro,madeira:mad}; if(fotoArma3d) fotoArma3d(M3,mats); malhasArma3d(M3.geos.estatico,mats,g); malhasArma3d(M3.geos.tambor,mats,tam);
     const CB=M3.caixa('madeira'), cy=(CB.min.y+CB.max.y)/2, cz=(CB.min.z+CB.max.z)/2;   // a cruz nos dois lados do cabo do modelo
     cruz.forEach((o,i)=>{ const sx=i<2?-1:1; o.position.x=sx*(CB.max.x+.0007); o.position.y+=cy-(-.064); o.position.z+=cz-.04; }); }
   return {tipo:'revolver',g,boca:M3?V3(...M3.ex.boca):V3(0,.03,-.28),tambor:tam,guin,PIVO,ext,camaras,cao,cruz,cruzMat,prata,mun,munC,trava}; }
@@ -353,8 +369,9 @@ function construir(){ if(S.ok) return; matsPeca();
   vmCarabina=carabinaFP(); raizH.add(vmCarabina.g); vmCarabina.base=new THREE.Matrix4();
   vmRevolver=revolverFP(); raizH.add(vmRevolver.g); vmRevolver.g.position.set(.025,.045,-.13); vmRevolver.g.updateMatrix(); vmRevolver.base=vmRevolver.g.matrix.clone();
   vmFlash=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.flame,color:0xffd08a,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0})); vmFlash.scale.set(.3,.3,1); raizH.add(vmFlash);
-  const costura=matCouro(0x120a06), botao=matMetal(0xb58c48,.3,1), oh={punho,costura,botao};
-  const maosH={D:criarMao(luva,false,oh),E:criarMao(luva,true,oh)}, bracosH={D:criarBraco(mangaSup,manga,.05),E:criarBraco(mangaSup,manga,.05)};
+  const costura=matCouro(0x120a06), botao=matMetal(0xb58c48,.3,1), oh=RB?{luva3d:true}:{punho,costura,botao};   // v6.10: a luva do modelo já tem o punho
+  if(RB){ fotoBracos(luva); fotoBracos(manga); fotoBracos(mangaSup); }
+  const maosH={D:criarMao(luva,false,oh),E:criarMao(luva,true,oh)}, bracosH={D:criarBraco(mangaSup,manga,.05,true),E:criarBraco(mangaSup,manga,.05,true)};
   for(const k of ['D','E']){ vmH.add(maosH[k].raiz); const B=bracosH[k]; vmH.add(B.sup,B.ant,B.cot); }
   const rigH={corpo:vmH,raiz:raizH,maos:maosH,bracos:bracosH,ombro:{D:V3(.02,-.2,.5),E:V3(-.56,-.2,.5)},polo:{D:V3(.7,-1,.2),E:V3(-.8,-1,.1)},osso:{D:[.44,.42],E:[.5,.49]},
     braco:{D:[.054,.044],E:[.054,.044]}};
@@ -364,7 +381,9 @@ function construir(){ if(S.ok) return; matsPeca();
   vmCetro=cetroFP(0xb050ff); raizC.add(vmCetro.g); vmCetro.g.position.set(0,-.95,0); vmCetro.g.updateMatrix(); vmCetro.base=vmCetro.g.matrix.clone();
   vmOrb=vmCetro.halo; vmRunas=[];
   for(let k=0;k<7;k++){ const r=new THREE.Sprite(new THREE.SpriteMaterial({map:RT.rune,color:0xe0a0ff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.9})); r.scale.set(.035,.035,1); vmCetro.cab.add(r); vmRunas.push(r); }
-  const maosC={D:criarMao(peleC,false,{unhas:unha}),E:criarMao(peleC,true,{unhas:unha})}, bracosC={D:criarBraco(mangaC,mangaC,.07),E:criarBraco(mangaC,mangaC,.07)};
+  // v6.10: as mangas do culto são as do modelo da caça, com o pano tingido de vermelho (o relevo e a aspereza do pano de verdade)
+  if(RB){ fotoBracos(mangaC); mangaC.color.setHex(0xd84a5a); }
+  const maosC={D:criarMao(peleC,false,{unhas:unha}),E:criarMao(peleC,true,{unhas:unha})}, bracosC={D:criarBraco(mangaC,mangaC,.07,'culto'),E:criarBraco(mangaC,mangaC,.07,'culto')};
   for(const k of ['D','E']){ vmC.add(maosC[k].raiz); const B=bracosC[k]; vmC.add(B.sup,B.ant,B.cot); }
   const rigC={corpo:vmC,raiz:raizC,maos:maosC,bracos:bracosC,ombro:{D:V3(.32,-.95,.55),E:V3(-.75,-.9,.45)},polo:{D:V3(1,-.8,.2),E:V3(-1,-.8,.2)},osso:{D:[.62,.58],E:[.62,.58]},
     braco:{D:[.085,.066],E:[.085,.066]}};
