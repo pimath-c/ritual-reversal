@@ -505,6 +505,9 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   inteiro mais perto.
 
 ## Pendências
+- Licença (dono, 04/11): jogo grátis, sem uso comercial; modelos CC BY-NC valem (com crédito, marcados NC em `docs/ARTE.md`,
+  nunca ND). Braços da primeira pessoa e armas do Sketchfab: falta o token (`SKETCHFAB_TOKEN` no ambiente, nunca no repositório)
+  ou os arquivos baixados pelo dono.
 - Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
   depois disso o workflow posta sozinho as notas novas. Daqui da sessão: `DISCORD_WEBHOOK=... node tools/postar-discord.js`.
 - Sons: ouvir em fones e acertar volumes; trocar o tiro montado por gravação de arma quando Freesound/OpenGameArt/

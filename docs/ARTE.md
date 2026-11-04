@@ -1,6 +1,9 @@
 # Arte do jogo: de onde vem cada textura e modelo
 
-Tudo o que está aqui pode ser usado em jogo comercial. As texturas e os modelos escaneados são CC0 (domínio público) do
+Decisão do dono (04/11): o jogo é grátis e fica sem uso comercial (sem anúncios, compras, versão paga nem doações ligadas a
+ele). Por isso também valem modelos CC BY-NC, sempre com crédito e nunca ND (sem derivados: o jogo corta, escala e reduz). Cada
+modelo NC fica marcado como NC nas tabelas, para ser trocado se um dia o jogo passar a ter receita. Fora os NC, tudo o que está
+aqui pode ser usado em jogo comercial. As texturas e os modelos escaneados são CC0 (domínio público) do
 [Poly Haven](https://polyhaven.com): não exigem crédito, mas o jogo dá crédito aos autores mesmo assim. O altar e a estátua do
 monge foram gerados no Higgsfield (Tripo, texto para 3D), com uso comercial liberado pelo dono do projeto.
 
