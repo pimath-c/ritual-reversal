@@ -50,6 +50,13 @@ function coletar(){
     if(M.k==='sprite') M.giro=m.rotation;
     const i=mats.length; mats.push(M); midx.set(m,i); return i; }
   // árvore: os pais vêm antes dos filhos; os pedaços da pele entram no fim (os ossos já têm índice)
+  // v6.8: a pele inteira com os pesos, para o Unity deformar como o three (SkinnedMeshRenderer): os pedaços rígidos de cada osso
+  // continuam na árvore (o unity-fp confere os nós) e o Unity os esconde quando há pele. inv[b] = boneInverse[b]·bindMatrix, a mesma
+  // conta do pecaPele: leva o vértice da malha ao espaço do osso b na pose de repouso (as bindposes do Unity), em colunas como o three
+  const PELES=[];
+  function peleInteira(sm,no,mapa){ const g=sm.geometry, SI=g.attributes.skinIndex, SW=g.attributes.skinWeight, ossos=sm.skeleton.bones;
+    PELES.push({no,geo:geoComum(g),mat:mat(sm.material),ossos:ossos.map(o=>mapa.get(o)),inv:ossos.map((o,b)=>sm.skeleton.boneInverses[b].clone().multiply(sm.bindMatrix).elements.map(r6)),
+      si:Array.from(SI.array),sw:Array.from(SW.array).map(r6)}); }
   function arvore(raiz,paiRaiz,lista,listaObjs,mapa){ const peles=[];
     const no=(o,pai)=>{ const i=lista.length, N={pai,n:o.name||o.type,p:arr(o.position),q:arr(o.quaternion),s:arr(o.scale),vis:o.visible,ordem:o.rotation.order};
       mapa.set(o,i); lista.push(N); listaObjs.push(o);
@@ -59,6 +66,7 @@ function coletar(){
       else N.k=o.isBone?'osso':'g';
       for(const c of o.children) no(c,i); };
     no(raiz,paiRaiz);
+    for(const [sm,no] of peles) peleInteira(sm,no,mapa);
     for(const [sm] of peles){ const ossos=sm.skeleton.bones;
       for(let b=0;b<ossos.length;b++){ const g=pecaPele(sm,b); if(g<0) continue; const pai=mapa.get(ossos[b]);
         lista.push({pai,n:'pele '+b,k:'m',geo:g,mat:mat(sm.material),p:[0,0,0],q:[0,0,0,1],s:[1,1,1],vis:sm.visible,ordem:'XYZ'}); listaObjs.push(null); } }
@@ -98,7 +106,7 @@ function coletar(){
         const pend=SK.PEND.filter(P=>mp.has(P.pivo)).map(P=>({no:mp.get(P.pivo),comp:P.comp}));
         lista.push({pai:I(r.parent),nos:L,pend}); } }
     acess[arma+':'+sk.id]=lista; A.trocarSkin(arma,SK.SKINS[arma][0].id); }
-  const dados={versao:1,nos,materiais:mats,geometrias:geos,papeis,rigs,clipes,dedos:A.DEDOS,perfil:T.PERFIL_ARMA,cte,
+  const dados={versao:1,nos,materiais:mats,geometrias:geos,peles:PELES,papeis,rigs,clipes,dedos:A.DEDOS,perfil:T.PERFIL_ARMA,cte,
     skins:{catalogo:SK.SKINS,colecao:SK.COLECAO,oficios:SK.OFICIOS,acessorios:acess}};
   // binário em base64 (pedaços: o btoa não aguenta uma string enorme de uma vez)
   const tudo=new Uint8Array(bytes); let o=0; for(const b of blocos){ tudo.set(b,o); o+=b.length; }

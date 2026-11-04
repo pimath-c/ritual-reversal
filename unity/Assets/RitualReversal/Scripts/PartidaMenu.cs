@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Mãos de verdade (v6.8)","As mãos da primeira pessoa eram pedaços rígidos que se abriam nas juntas. Agora a pele dobra com os dedos, e a mão nua do culto tem pele de verdade, com rugas, nós dos dedos e unhas."},
             new[]{"Andar e correr (v6.7)","Os personagens correm de verdade: o tronco inclina, a coxa sobe e os braços balançam. O Caçador leva a arma atravessada no peito quando corre e aponta de novo ao atirar. Andar agachado ficou meio agachado, sem deslizar ajoelhado, e a recarga da carabina se vê de longe."},
             new[]{"Mãos, corpos e céu (v6.6)","As mãos da primeira pessoa eram feitas de cilindros; agora são uma mão de verdade, com palma e nós dos dedos (malha do MakeHuman). Os personagens dobram os joelhos ao andar, ajoelhar e agachar, e os cotovelos ao mirar. O céu virou foto: nuvens nas noites de névoa, chuva e tempestade, céu aberto e estrelado na noite limpa. A água ondula e reflete o céu, e o Charco ganhou poças de verdade."},
             new[]{"Revisão dos mapas (v6.5f)","As copas das árvores, que pareciam pedras flutuando, viraram folhagem de verdade, e as moitas também. Samambaias que nasciam dentro de muros saíram e a pedra clara ficou menos branca. O Asilo ganhou fachada de tijolo com janelas gradeadas, telhado de ardósia e chaminés, e árvores no terreno e em volta do muro."},

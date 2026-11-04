@@ -429,6 +429,7 @@ namespace UnityEngine
     public class Mesh : Object
     {
         public Rendering.IndexFormat indexFormat; public Bounds bounds;
+        public BoneWeight[] boneWeights = new BoneWeight[0]; public Matrix4x4[] bindposes = new Matrix4x4[0];
         public Vector3[] vertices = new Vector3[0], normals = new Vector3[0]; public Vector2[] uv = new Vector2[0], uv2 = new Vector2[0]; public Color[] colors = new Color[0]; public int[] triangles = new int[0];
         public void SetVertices(List<Vector3> v) { vertices = v.ToArray(); }
         public void SetNormals(List<Vector3> v) { normals = v.ToArray(); }
@@ -455,6 +456,8 @@ namespace UnityEngine
         public void SetPropertyBlock(MaterialPropertyBlock b) { }
     }
     public class MeshRenderer : Renderer { }
+    public class SkinnedMeshRenderer : Renderer { public Mesh sharedMesh; public Transform[] bones = new Transform[0]; public Transform rootBone; public bool updateWhenOffscreen; public Bounds localBounds; }
+    public struct BoneWeight { public int boneIndex0, boneIndex1, boneIndex2, boneIndex3; public float weight0, weight1, weight2, weight3; }
     public class LineRenderer : Renderer
     {
         public bool useWorldSpace = true; public int positionCount; public float startWidth, endWidth; public Color startColor, endColor; readonly Dictionary<int, Vector3> pts = new Dictionary<int, Vector3>();

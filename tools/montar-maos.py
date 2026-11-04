@@ -109,7 +109,21 @@ def main():
     if nor[dorso, 1].mean() < 0:
         idx = idx.reshape(-1, 3)[:, ::-1].reshape(-1).copy(); nor = -nor
     # o uv do MakeHuman é uma ilha pequena do atlas da pele; a luva usa couro repetido: a ilha vira 0..2,5 (~7 cm por ladrilho)
-    uv = np.array(uv, dtype=np.float64); uv = (uv - uv.min(0)) / max(1e-9, (uv.max(0) - uv.min(0)).max()) * 2.5
+    uv = np.array(uv, dtype=np.float64); uvBruto = uv.copy(); uv = (uv - uv.min(0)) / max(1e-9, (uv.max(0) - uv.min(0)).max()) * 2.5
+    # v6.8: a pele de verdade para a mão nua (o culto, no Unity): o pedaço da mão na textura de pele do MakeHuman (CC0) e o uv original
+    # da malha base levado a esse recorte. Resources/Maos/pele_cor.bytes (JPG) e pele_uv.bytes (float32, na ordem dos vértices)
+    from PIL import Image
+    pele = os.path.join(rec, 'skins', 'middleage_caucasian_male', 'middleage_lightskinned_male_diffuse.png')
+    if os.path.exists(pele):
+        im = Image.open(pele).convert('RGB'); W, H = im.size
+        u0, v0 = uvBruto.min(0) - .004; u1, v1 = uvBruto.max(0) + .004
+        caixa = (int(u0 * W), int((1 - v1) * H), int(np.ceil(u1 * W)), int(np.ceil((1 - v0) * H)))
+        rec_ = im.crop(caixa); esc = 512 / max(rec_.size); rec_ = rec_.resize((max(1, round(rec_.size[0] * esc)), max(1, round(rec_.size[1] * esc))), Image.LANCZOS)
+        uu = (uvBruto[:, 0] * W - caixa[0]) / (caixa[2] - caixa[0]); vv = ((uvBruto[:, 1] - 1) * H + caixa[3]) / (caixa[3] - caixa[1])
+        d = os.path.join(RAIZ, 'unity', 'Assets', 'RitualReversal', 'Resources', 'Maos'); os.makedirs(d, exist_ok=True)
+        import io; b = io.BytesIO(); rec_.save(b, 'JPEG', quality=90); open(os.path.join(d, 'pele_cor.bytes'), 'wb').write(b.getvalue())
+        open(os.path.join(d, 'pele_uv.bytes'), 'wb').write(np.c_[uu, vv].astype('<f4').tobytes())
+        print(f'pele da mão: recorte {caixa} da {os.path.basename(pele)} -> {rec_.size}, uv em Resources/Maos')
     b64 = lambda a: base64.b64encode(np.ascontiguousarray(a).tobytes()).decode()
     saida = {'pos': b64(pos), 'nor': b64(nor), 'uv': b64(uv.astype(np.float32)), 'idx': b64(idx),
              'si': b64(np.array(si, dtype=np.uint16)), 'sw': b64(np.array(sw, dtype=np.float32)), 'n': len(pos), 't': len(idx) // 3}

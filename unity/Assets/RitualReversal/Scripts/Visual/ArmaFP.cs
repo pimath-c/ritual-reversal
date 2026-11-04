@@ -290,6 +290,12 @@ namespace RitualReversal.Visual
             // papéis
             var P = Json.O(D_["papeis"]);
             vmH = T[I(P["vmH"])]; vmC = T[I(P["vmC"])]; flash = T[I(P["flash"])]; mFlash = Rend(flash).sharedMaterial;
+            // v6.8: as mãos com pele de verdade (SkinnedMeshRenderer com os pesos do three); os pedaços rígidos de cada osso ficam escondidos
+            object pls; if (D_.TryGetValue("peles", out pls) && pls != null && Json.L(pls).Count > 0)
+            {
+                foreach (var o in Json.L(pls)) MontarPele(Json.O(o), T, malha, M);
+                foreach (var t in T) if (t != null && t.gameObject.name.StartsWith("pele ")) { var r = t.GetComponent<MeshRenderer>(); if (r != null) r.enabled = false; }
+            }
             var lr = Json.L(P["runas"]); runas = new Transform[lr.Count]; mRunas = new Material[lr.Count]; for (int i = 0; i < lr.Count; i++) { runas[i] = T[I(lr[i])]; mRunas[i] = Rend(runas[i]).sharedMaterial; }
             orb = T[I(P["orb"])]; mOrb = Rend(orb).sharedMaterial;
             var pc = Json.O(P["carabina"]); carabina = new Arma
@@ -381,6 +387,40 @@ namespace RitualReversal.Visual
                 T[i] = go.transform;
             }
             return T;
+        }
+        // a pele inteira de uma mão: a malha da exportação com os pesos (4 por vértice), os ossos da árvore e as bindposes (boneInverse·bindMatrix
+        // do three, em colunas): o Unity deforma como o three, com os nós dos dedos dobrando sem quina
+        void MontarPele(Dictionary<string, object> P, Transform[] T, Func<int, Mesh> malha, Material[] M)
+        {
+            var no = T[I(P["no"])]; var lo = Json.L(P["ossos"]); var ossos = new Transform[lo.Count]; for (int i = 0; i < lo.Count; i++) ossos[i] = T[I(lo[i])];
+            var b0 = malha(I(P["geo"])); var me = new Mesh { name = "pele da mão" };
+            me.vertices = b0.vertices; me.normals = b0.normals; me.uv = b0.uv; me.triangles = b0.triangles;
+            var si = Json.L(P["si"]); var sw = Json.L(P["sw"]); int n = me.vertices.Length; var bw = new BoneWeight[n];
+            for (int i = 0; i < n; i++)
+                bw[i] = new BoneWeight { boneIndex0 = I(si[i * 4]), boneIndex1 = I(si[i * 4 + 1]), boneIndex2 = I(si[i * 4 + 2]), boneIndex3 = I(si[i * 4 + 3]),
+                    weight0 = (float)Json.D(sw[i * 4]), weight1 = (float)Json.D(sw[i * 4 + 1]), weight2 = (float)Json.D(sw[i * 4 + 2]), weight3 = (float)Json.D(sw[i * 4 + 3]) };
+            me.boneWeights = bw;
+            var inv = Json.L(P["inv"]); var bp = new Matrix4x4[inv.Count];
+            for (int b = 0; b < inv.Count; b++) { var e = Json.L(inv[b]); var m = new Matrix4x4(); for (int c = 0; c < 4; c++) for (int r = 0; r < 4; r++) m[r, c] = (float)Json.D(e[c * 4 + r]); bp[b] = m; }
+            me.bindposes = bp; me.RecalculateBounds();
+            var smr = no.gameObject.AddComponent<SkinnedMeshRenderer>(); smr.sharedMesh = me; smr.bones = ossos; smr.rootBone = ossos[0]; smr.updateWhenOffscreen = true;
+            smr.sharedMaterial = M[I(P["mat"])];
+            // a mão nua do culto: a pele de verdade do MakeHuman (Resources/Maos, tools/montar-maos.py) no uv original da malha base, puxada
+            // para o cinza-arroxeado da pele morta; a luva da caça continua no couro
+            if (vmC != null && no.IsChildOf(vmC))
+            {
+                var tc = Resources.Load<TextAsset>("Maos/pele_cor"); var tu = Resources.Load<TextAsset>("Maos/pele_uv");
+                if (tc != null && tu != null && tu.bytes.Length == n * 8)
+                {
+                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true) { name = "pele da mão", wrapMode = TextureWrapMode.Clamp, anisoLevel = 4 };
+                    if (ImageConversion.LoadImage(tex, tc.bytes))
+                    {
+                        var uvp = new Vector2[n]; for (int i = 0; i < n; i++) uvp[i] = new Vector2(BitConverter.ToSingle(tu.bytes, i * 8), BitConverter.ToSingle(tu.bytes, i * 8 + 4));
+                        me.uv = uvp; smr.sharedMaterial = MaterialFP(new Color(.62f, .55f, .6f), tex, null, Vector2.one, .58f, 0, Color.black, 0, false);
+                    }
+                }
+            }
+            smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; smr.receiveShadows = false;
         }
         static Mesh malhaSprite;
         internal Func<int, Mesh> Malhas { get { return malhasF; } }
