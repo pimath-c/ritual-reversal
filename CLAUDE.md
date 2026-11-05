@@ -57,7 +57,7 @@ mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes 
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.10)
+## Estado atual (v6.10a)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -367,6 +367,14 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   `antC` do culto até 1, `sup` até o ombro); `window.RR_BRACOS` no fim de `client/maos.js` (o montar-maos.py preserva). arma.js:
   `geoBracos`, `fotoBracos`, `criarMao(..., {luva3d})`, `criarBraco(..., real|'culto')`. Texturas do three r128 não têm userData
   (`t.userData=t.userData||{}`). `unity-fp-fotos.js` lê o `_MRMap`.
+- v6.10a (notas em `notas/v6.10a.md`): a manga da caça e do culto é uma malha só com pele em dois ossos (`RR_BRACOS.manga`/`mangaC`,
+  si/sw com 0 = braço e 1 = antebraço, `inv.sup/ant` = boneInverse do quadro de cada osso no espaço do modelo); os ossos são os próprios
+  nós `B.sup`/`B.ant` (escondidos), postos pelo IK com `tuboJunta` (y ao longo do osso, z = eixo da dobra `(EL−SH)×(PO−EL)`, sem ela
+  `polo × (PO−SH)`; C# `TuboJunta`, flag `junta` no rig exportado); o esquerdo é o direito com boneInverse × (1, 1, −1) e faces invertidas
+  (`geoMangaEsq`). Com RB: ombros D (.05, −.15, .6) / E (−.7, −.18, .45), polo D (1, −.4, .3) / E (−1, −.8, −.2), braco [.056, .052],
+  mangas 0x6a6a70; `montar-bracos.py` com `luva_corte` .022, `manga_ate` 1, `boca` .92 (aperto no punho). `montar-armas.py`: `cortar_ilhas`
+  (ilhas de um nó com menos de `min` triângulos: restos da bandoleira). Ferramenta de afinar: rodar `unity-fp-fotos.js` depois de mexer
+  no `rigs` do `Resources/primeira-pessoa.json` (sem reexportar).
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

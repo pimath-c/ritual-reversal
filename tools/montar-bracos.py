@@ -8,9 +8,10 @@
 #     modelo para os 16 ossos do arma.js (pulso, três falanges por dedo, polegar), como o tools/montar-maos.py faz com o MakeHuman:
 #     quadro = origem na cabeça do osso, eixo ao longo dele, lado = do indicador para o mínimo; comprimentos esticados para os do
 #     jogo (FAL, PL); a mistura pelos pesos é a da pele do three, então a luva nasce na pose de repouso do jogo, dedos retos em -z.
-#   - as mangas do braço e do antebraço: cada uma vira um tubo no mesmo espaço do geoTubo do arma.js (eixo y de 0 a 1 entre as
-#     duas juntas; raio 1 na junta de cima), que o IK estica em (raio, comprimento, raio) entre o ombro, o cotovelo e o punho.
-# Saída: window.RR_BRACOS no fim de client/maos.js ({luva: {pos, nor, uv, idx, si, sw}, sup/ant: {pos, nor, uv, idx}} em base64)
+#   - a manga (braço e antebraço numa malha só, v6.10a): pele em dois ossos com os pesos do modelo, que no jogo são os nós B.sup e
+#     B.ant do arma.js (o IK põe cada um entre as juntas, com o eixo da dobra do cotovelo em z e escala raio × comprimento × raio).
+# Saída: window.RR_BRACOS no fim de client/maos.js ({luva, manga, mangaC: {pos, nor, uv, idx, si, sw}} em base64; inv: os boneInverse
+# dos ossos da manga)
 # e as texturas (cor, relevo, metal/aspereza do glTF) em JPG em RR_BRACOS.tex e em unity/.../Resources/Armas/bracos_*.bytes.
 # Uso: SKETCHFAB_TOKEN=... python3 tools/montar-bracos.py   (numpy, Pillow)
 import base64, importlib.util, io, json, os, re, sys
@@ -46,9 +47,6 @@ def main():
     JT = MM.acessor(J, B, at['JOINTS_0']).astype(int); WT = MM.acessor(J, B, at['WEIGHTS_0'])
     I = MM.acessor(J, B, pr['indices']).reshape(-1, 3).astype(np.int64)
     nv = len(P)
-    def acrescentar(p, n, uv):   # vértice novo do recorte das mangas (sem pesos: as mangas não usam pele)
-        nonlocal P, N, UV
-        P = np.vstack([P, p]); N = np.vstack([N, n]); UV = np.vstack([UV, uv])
 
     # ossos do modelo -> grupos: mão (pulso e dedos do jogo), antebraço, braço
     DED = [('point', 1), ('middle', 4), ('ring', 7), ('pink', 10)]
@@ -154,44 +152,43 @@ def main():
         return r
     luva = cortar_pele(luva, cfg.get('luva_corte', .025))
 
-    # ---- mangas: tubo unitário entre as duas juntas (y), raio 1 na junta de cima
-    # as mangas são uma malha só: cada tubo é recortado por um plano reto perto do cotovelo (com uma faixa que as duas cobrem),
-    # e os triângulos cortados viram polígonos com vértices novos (posição, normal e uv interpolados)
+    # ---- mangas (v6.10a): a manga inteira (braço e antebraço) é uma malha só, com pele em dois ossos, que dobra no cotovelo como
+    # um braço de verdade (antes, dois tubos rígidos que se cruzavam: "dois pedaços de pau"). Cada osso tem um quadro no espaço do
+    # modelo: origem na junta de cima, y ao longo do osso, z = eixo da dobra do cotovelo (o mesmo nos dois ossos: a dobra é uma
+    # dobradiça), x = y × z, e a escala (r0, L, r0); no jogo os ossos são os nós B.sup e B.ant do arma.js, postos pelo IK com o
+    # mesmo quadro (tuboJunta) e escala (raio, comprimento, raio). O inverso de cada quadro vai em RR_BRACOS.inv (boneInverse).
     mangas = [t for t, gg in tg if gg == 1]
-    def recortar(tris, dist):
-        novos = []
-        for t in tris:
-            ds = [dist(P[v]) for v in t]
-            if min(ds) >= 0: novos.append(tuple(t)); continue
-            if max(ds) < 0: continue
-            poli = []
-            for i in range(3):
-                va, vb, da, db = t[i], t[(i + 1) % 3], ds[i], ds[(i + 1) % 3]
-                if da >= 0: poli.append(va)
-                if (da >= 0) != (db >= 0):
-                    f = da / (da - db); acrescentar(P[va] + (P[vb] - P[va]) * f, N[va] + (N[vb] - N[va]) * f, UV[va] + (UV[vb] - UV[va]) * f); poli.append(len(P) - 1)
-            for i in range(1, len(poli) - 1): novos.append((poli[0], poli[i], poli[i + 1]))
-        return novos
-    def tubo(g, a0, a1, esticar, corte, ate=None):
-        o = cab(a0); d = cab(a1) - o; L = np.linalg.norm(d); d /= L
-        s = lado_mao - d * np.dot(lado_mao, d); s /= np.linalg.norm(s); u = np.cross(s, d)   # (s, d, u) = (x, y, z), mão direita
-        tris = recortar(mangas, corte); vs = np.unique(np.array(tris).reshape(-1))
-        a = (P[vs] - o) @ d / L; rad = np.sqrt(((P[vs] - o) @ s) ** 2 + ((P[vs] - o) @ u) ** 2)
-        a_ini, a_fim = a.min(), a.max(); perto = rad[a < a_ini + .25 * (a.max() - a_ini)]; r0 = np.median(perto)
+    cot = cab('elbow'); dS = cot - cab('arm'); dA = cab('hand') - cot
+    nDobra = np.cross(dS, dA); nDobra /= np.linalg.norm(nDobra)
+    vsM = np.unique(np.array(mangas).reshape(-1))
+    wS = wSup.copy(); wA = wAnt + wMao   # o que a manga pesa na mão vai para o antebraço
+    tot = np.maximum(wS + wA, 1e-9); wS, wA = wS / tot, wA / tot
+    def quadroOsso(o, d, vs):
+        L = np.linalg.norm(d); y = d / L; z = nDobra - y * np.dot(nDobra, y); z /= np.linalg.norm(z); x = np.cross(y, z)
+        a = (P[vs] - o) @ y / L; rad = np.sqrt(((P[vs] - o) @ x) ** 2 + ((P[vs] - o) @ z) ** 2)
+        r0 = float(np.median(rad[(a > a.min()) & (a < a.min() + .25 * (a.max() - a.min()))]))
+        R = np.eye(4); R[:3, 0] = x * r0; R[:3, 1] = y * L; R[:3, 2] = z * r0; R[:3, 3] = o
+        return R, np.linalg.inv(R), r0, L
+    Rs, Is, r0s, Ls = quadroOsso(cab('arm'), dS, vsM[wS[vsM] > .5]); Ra, Ia, r0a, La = quadroOsso(cot, dA, vsM[wA[vsM] > .5])
+    loc = lambda Mi, p: (Mi @ np.append(p, 1))[:3]
+    ysS = np.array([loc(Is, P[v])[1] for v in vsM if wS[v] > .5]); ysA = np.array([loc(Ia, P[v])[1] for v in vsM if wA[v] > .5])
+    s_ini, a_fim = ysS.min(), ysA.max()
+    print(f'manga: braço {Ls:.3f} m (raio {r0s:.3f}, começa em {s_ini:.2f}), antebraço {La:.3f} m (raio {r0a:.3f}, vai até {a_fim:.2f}), dobra {np.round(nDobra, 2)}')
+    def manga(ate):
+        # a manga do braço começa abaixo do ombro do modelo: estica até o ombro; a do antebraço estica até `ate` (o cano da luva cobre
+        # menos no jogo, que tem a mão menor em relação ao antebraço). Perto do cotovelo, onde os pesos se misturam, nada estica.
         def f(v):
-            q = P[v] - o; y = np.dot(q, d) / L
-            if esticar: y = (y - a_ini) / (1 - a_ini)   # a manga do braço começa abaixo do ombro do modelo: estica até o ombro
-            if ate is not None: y = a_ini + (y - a_ini) * (ate - a_ini) / (a_fim - a_ini)   # a do antebraço vai até o cano da luva
-            p = np.array([np.dot(q, s) / r0, y, np.dot(q, u) / r0]); n = np.array([np.dot(N[v], s) * r0, np.dot(N[v], d) * L, np.dot(N[v], u) * r0])
-            return p, n, None, None
-        out = montar(tris, f); print(f'manga {a0}->{a1}: {len(out["idx"]) // 3} triângulos, raio {r0:.3f} m, comprimento {L:.3f} m, começa em {a_ini:.2f}')
-        return out
-    cot = cab('elbow'); dS = cot - cab('arm'); dS /= np.linalg.norm(dS); dA = cab('hand') - cot; dA /= np.linalg.norm(dA); FAIXA = cfg.get('faixa', .03)
-    # a mão do jogo é menor que a do modelo em relação ao antebraço: o cano da luva cobre menos, e a manga estica até perto do punho
-    ant = tubo(1, 'elbow', 'hand', False, lambda p: np.dot(p - cot, dA) + FAIXA, cfg.get('manga_ate', .93))   # do cotovelo (menos a faixa) para o punho
-    sup = tubo(2, 'arm', 'elbow', True, lambda p: FAIXA - np.dot(p - cot, dS))
-    # o culto não tem luva (a mão nua do MakeHuman): a manga do antebraço vai até o punho
-    antC = tubo(1, 'elbow', 'hand', False, lambda p: np.dot(p - cot, dA) + FAIXA, 1.0)   # do ombro até o cotovelo (mais a faixa)
+            uS = loc(Is, P[v]); uA = loc(Ia, P[v])
+            if uS[1] < 1: uS[1] = 1 - (1 - uS[1]) / (1 - s_ini)
+            if uA[1] > 0: uA[1] = uA[1] * ate / a_fim
+            # a boca da manga do modelo é larga e, no punho do jogo, abria como uma aba: aperta até `boca` do raio no punho
+            t = min(1, max(0, (uA[1] - .55) / max(1e-6, ate - .55)))
+            if t > 0: k = 1 - (1 - cfg.get('boca', .72)) * t * t * (3 - 2 * t); uA[0] *= k; uA[2] *= k
+            p = wS[v] * (Rs @ np.append(uS, 1))[:3] + wA[v] * (Ra @ np.append(uA, 1))[:3]
+            return p, N[v].copy(), np.array([0, 1, 0, 0]), np.array([wS[v], wA[v], 0, 0])
+        return montar(mangas, f)
+    mangaH = manga(cfg.get('manga_ate', .93)); mangaC = manga(1.0)   # o culto não tem luva: a manga vai até o punho
+    col = lambda M: [round(float(x), 7) for x in M.T.reshape(-1)]   # coluna por coluna, como o Matrix4.fromArray do three
 
     b64 = lambda a, t: base64.b64encode(np.ascontiguousarray(np.array(a, dtype=t)).tobytes()).decode()
     def pacote(o, pele):
@@ -210,7 +207,7 @@ def main():
         if kk == 'mr': im = MA.fatores_mr(im, pb)
         bb = io.BytesIO(); im.save(bb, 'JPEG', quality=90, subsampling=2 if kk == 'cor' else 0); tex[kk] = base64.b64encode(bb.getvalue()).decode()
         open(os.path.join(UNITY, f'bracos_{kk}.bytes'), 'wb').write(bb.getvalue())
-    saida = {'luva': pacote(luva, True), 'ant': pacote(ant, False), 'antC': pacote(antC, False), 'sup': pacote(sup, False), 'tex': tex}
+    saida = {'luva': pacote(luva, True), 'manga': pacote(mangaH, True), 'mangaC': pacote(mangaC, True), 'inv': {'sup': col(Is), 'ant': col(Ia)}, 'tex': tex}
     arq = os.path.join(RAIZ, 'client', 'maos.js'); js = open(arq, encoding='utf-8').read()
     js = re.sub(r'\n// v6\.10: braços.*\Z', '', js, flags=re.S).rstrip('\n') + '\n'
     js += ('// v6.10: braços da caça (luva e mangas) do "Arms6" de bumstrum (Sketchfab, CC BY 4.0), montados por tools/montar-bracos.py.\n'

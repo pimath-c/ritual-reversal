@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Braços que dobram (v6.10a)","Os braços da primeira pessoa eram dois tubos rígidos; agora a manga é uma peça só que dobra no cotovelo, e os antebraços entram pelos lados, sem atravessar a coronha. As mangas da caça ficaram no tom do sobretudo escuro, e sumiram os restos da bandoleira da carabina."},
             new[]{"Armas e braços de verdade (v6.10)","A carabina agora é uma Winchester 1873 gasta, com gravação na caixa e cartucheira de couro na coronha; o revólver do Exorcista é um Colt niquelado com cabo de nogueira. As duas trazem as texturas do modelo: aço, madeira e couro com relevo. Os braços da caça ganharam manga de pano gasto e luva de couro com as pontas puídas, e as mangas do culto são do mesmo pano, em vermelho. As outras skins continuam pintando por cima."},
             new[]{"Mãos de verdade (v6.8)","As mãos da primeira pessoa eram pedaços rígidos que se abriam nas juntas. Agora a pele dobra com os dedos, e a mão nua do culto tem pele de verdade, com rugas, nós dos dedos e unhas."},
             new[]{"Andar e correr (v6.7)","Os personagens correm de verdade: o tronco inclina, a coxa sobe e os braços balançam. O Caçador leva a arma atravessada no peito quando corre e aponta de novo ao atirar. Andar agachado ficou meio agachado, sem deslizar ajoelhado, e a recarga da carabina se vê de longe."},

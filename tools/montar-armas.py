@@ -147,6 +147,21 @@ def montar(nome, cfg):
     px = img.convert('RGB').load(); iw, ih = img.size
     tri = idx.reshape(-1, 3); cent = p[tri].mean(1); uvc = uv[tri].mean(1); NO = np.array(NO)
     manter = np.array([not any(regra(c, k, no) for k in cfg.get('cortar', [])) for c, no in zip(cent, NO)]); tri, cent, uvc, NO = tri[manter], cent[manter], uvc[manter], NO[manter]
+    # ilhas pequenas (argolas, fivelas e pontas de tira da bandoleira presas à cartucheira): saem as ilhas de um nó com menos de
+    # `min` triângulos (vértices na mesma posição contam como um só)
+    for ci in cfg.get('cortar_ilhas', []):
+        sel = [k for k in range(len(tri)) if re.search(ci['nos'], NO[k])]; pai = {}
+        def raiz(x):
+            while pai.setdefault(x, x) != x: pai[x] = pai[pai[x]]; x = pai[x]
+            return x
+        chave = lambda v: tuple(np.round(p[v], 5))
+        for k in sel:
+            a0 = raiz(chave(tri[k][0]))
+            for v in tri[k][1:]: pai[raiz(chave(v))] = a0
+        grupos = {}
+        for k in sel: grupos.setdefault(raiz(chave(tri[k][0])), []).append(k)
+        fora = {k for g in grupos.values() if len(g) < ci['min'] for k in g}
+        manter = np.array([k not in fora for k in range(len(tri))]); tri, cent, uvc, NO = tri[manter], cent[manter], uvc[manter], NO[manter]
     PARTES = ['estatico'] + [r['parte'] for r in cfg.get('partes', [])]; PAPEIS = cfg['papeis_lista']
     def papel(c, u, no):
         for rg in cfg.get('papeis', []):   # as regras por nome de nó valem antes da cor

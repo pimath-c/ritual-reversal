@@ -87,7 +87,7 @@ function coletar(){
     cetro:{g:I(X.g),cab:I(X.cab),brasa:I(X.brasa),halo:I(X.halo),runa:I(X.runa),vert:IL(X.vert),corOriginal:X.corOriginal,base:X.base.elements.slice()}};
   const mao=M=>({raiz:I(M.raiz),dedos:M.dedos.map(D=>({segs:IL(D.segs),abre:D.abre})),pol:IL(M.pol),pinca:I(M.pinca),esq:M.esq});
   const rigs={}; for(const k of ['carabina','revolver','cetro']){ const G=S.rigs[k];
-    rigs[k]={corpo:I(G.corpo),raiz:I(G.raiz),maos:{D:mao(G.maos.D),E:mao(G.maos.E)},bracos:{D:{sup:I(G.bracos.D.sup),ant:I(G.bracos.D.ant),cot:I(G.bracos.D.cot)},E:{sup:I(G.bracos.E.sup),ant:I(G.bracos.E.ant),cot:I(G.bracos.E.cot)}},
+    rigs[k]={corpo:I(G.corpo),raiz:I(G.raiz),maos:{D:mao(G.maos.D),E:mao(G.maos.E)},bracos:{D:{sup:I(G.bracos.D.sup),ant:I(G.bracos.D.ant),cot:I(G.bracos.D.cot),junta:!!G.bracos.D.manga},E:{sup:I(G.bracos.E.sup),ant:I(G.bracos.E.ant),cot:I(G.bracos.E.cot),junta:!!G.bracos.E.manga}},
       ombro:{D:arr(G.ombro.D),E:arr(G.ombro.E)},polo:{D:arr(G.polo.D),E:arr(G.polo.E)},osso:G.osso,braco:G.braco}; }
   // clipes preparados (as recargas são funções da munição: todas as variantes)
   const chaveMao=k=>({t:k.t,f:k.f,p:arr(k.p),q:arr(k.q),dd:Array.from(k.dd,r6),e:k.e,reta:k.reta});

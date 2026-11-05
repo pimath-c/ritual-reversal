@@ -108,6 +108,12 @@
       ]
      ]
     }
+   ],
+   "cortar_ilhas": [
+    {
+     "nos": "#1$",
+     "min": 400
+    }
    ]
   },
   "revolver": {
@@ -345,6 +351,9 @@
   "licenca": "CC BY 4.0",
   "autor": "DJMaesen (bumstrum)",
   "uso": "braços da caça na primeira pessoa (luva e mangas; tools/montar-bracos.py)",
-  "lado": "R"
+  "lado": "R",
+  "luva_corte": 0.022,
+  "manga_ate": 1.0,
+  "boca": 0.92
  }
 }

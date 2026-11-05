@@ -210,7 +210,7 @@ namespace RitualReversal.Visual
         // ---------------------------------------------------------------------------------------------------------------
         // Rig: a arma e as mãos de um lado (caça ou culto)
         public class Mao { public Transform raiz, pinca; public Transform[][] segs = new Transform[4][]; public double[] abre = new double[4]; public Transform[] pol = new Transform[3]; public bool esq; public Transform luz; public Material mLuz; public float luzOp; }
-        public class Braco { public Transform sup, ant, cot; }
+        public class Braco { public Transform sup, ant, cot; public bool junta; }   // junta: a manga com pele (v6.10a), ossos com o eixo da dobra
         public class Arma
         {
             public string tipo; public Transform g; public Md base_; public V3d boca;
@@ -330,7 +330,7 @@ namespace RitualReversal.Visual
                     for (int k = 0; k < 4; k++) { var dk = Json.O(dd[k]); var sg = Json.L(dk["segs"]); x.segs[k] = new[] { T[I(sg[0])], T[I(sg[1])], T[I(sg[2])] }; x.abre[k] = Json.D(dk["abre"]); }
                     var pl = Json.L(m["pol"]); for (int k = 0; k < 3; k++) x.pol[k] = T[I(pl[k])]; return x;
                 };
-                Func<object, Braco> braco = o => { var b = Json.O(o); return new Braco { sup = T[I(b["sup"])], ant = T[I(b["ant"])], cot = T[I(b["cot"])] }; };
+                Func<object, Braco> braco = o => { var b = Json.O(o); return new Braco { sup = T[I(b["sup"])], ant = T[I(b["ant"])], cot = T[I(b["cot"])], junta = b.ContainsKey("junta") && (bool)b["junta"] }; };
                 Func<object, double[]> dv = o => { var l = Json.L(o); return new[] { Json.D(l[0]), Json.D(l[1]) }; };
                 var rg = new Rig
                 {
@@ -622,7 +622,13 @@ namespace RitualReversal.Visual
                 var B = h == "D" ? R.bD : R.bE; var os = h == "D" ? R.ossoD : R.ossoE; var br = h == "D" ? R.bracoD : R.bracoE; var SH = h == "D" ? R.ombroD : R.ombroE;
                 // o antebraço termina um pouco atrás do punho (a manga cobre a luva)
                 var PO = new V3d(0, 0, .004).Rot(QW) + raizP; var EL = Ik(SH, PO, os[0], os[1], h == "D" ? R.poloD : R.poloE);
-                Tubo(B.sup, SH, EL, br[0]); Tubo(B.ant, EL, PO, br[1]); B.cot.localPosition = EL.F; float s = (float)(br[1] * 1.02); B.cot.localScale = new Vector3(s, s, s);
+                if (B.junta)
+                {   // v6.10a: os dois ossos com o mesmo eixo de dobra (o cotovelo é uma dobradiça); braço reto: o eixo sai do polo
+                    var n = (EL - SH).Cross(PO - EL); if (n.Dot(n) < 1e-12) n = (h == "D" ? R.poloD : R.poloE).Cross(PO - SH); n = n.Norm();
+                    TuboJunta(B.sup, SH, EL, br[0], n); TuboJunta(B.ant, EL, PO, br[1], n);
+                }
+                else { Tubo(B.sup, SH, EL, br[0]); Tubo(B.ant, EL, PO, br[1]); }
+                B.cot.localPosition = EL.F; float s = (float)(br[1] * 1.02); B.cot.localScale = new Vector3(s, s, s);
             }
         }
         static void PosarDedos(Mao M, float[] dd, double[] tremor)
@@ -635,6 +641,13 @@ namespace RitualReversal.Visual
             double a = dd[4], o = dd[5], d = dd[6]; PorE(M.pol[0], -.2 - o * .75, .55 + a * .75, -.5 - o * .4, "YXZ"); PorE(M.pol[1], -d * .75, 0, 0); PorE(M.pol[2], -d * .95, 0, 0);
         }
         static readonly V3d UP = new V3d(0, 1, 0);
+        // quadro de osso do braço (o tuboJunta do arma.js): y de P para Q, z = o eixo da dobra sem a parte em y, x = y × z
+        static void TuboJunta(Transform m, V3d P, V3d Q, double r1, V3d n)
+        {
+            var v = Q - P; double L = v.Len; var y = v * (1 / (L != 0 ? L : 1)); var z = (n - y * n.Dot(y)).Norm(); var x = y.Cross(z);
+            var te = new double[] { x.x, x.y, x.z, 0, y.x, y.y, y.z, 0, z.x, z.y, z.z, 0, 0, 0, 0, 1 };
+            m.localPosition = P.F; m.localRotation = Qd.DeMatriz(te).F; m.localScale = new Vector3((float)r1, (float)L, (float)r1);
+        }
         static void Tubo(Transform m, V3d P, V3d Q, double r1) { var v = Q - P; double L = v.Len; m.localPosition = P.F; m.localRotation = Qd.DeVetores(UP, v * (1 / (L != 0 ? L : 1))).F; m.localScale = new Vector3((float)r1, (float)L, (float)r1); }
         // IK de dois ossos: ombro S, punho W, ossos a e b; o cotovelo fica no plano que contém o polo
         static V3d Ik(V3d S, V3d W, double a, double b, V3d polo)
