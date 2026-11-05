@@ -1,0 +1,333 @@
+<title>Asilo Blackwater</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
+<style>
+/* layout: ficha de arquivo do asilo; planta grande no topo, depois o que cada parte faz e os números, e as perguntas para aprovar */
+:root{
+  --bg:#e4e8e3; --papel:#eff2ee; --tinta:#1c2321; --suave:#4f5b57; --linha:#b9c2bc; --acento:#8b2f24;
+  --parede:#2a302e; --int:#c7cec7; --ext:#a3b09d; --vao:#c7cec7; --porta:#c5641b; --agua:#55656a; --onda:#7d8f93;
+  --altar:#6b3a8a; --altar-t:#ffffff; --caca:#2f5f8f; --culto:#9b2a2a; --quadro:#e0b23a;
+  --display:"IM Fell English", Georgia, "Times New Roman", serif; --corpo:Barlow, "Helvetica Neue", Arial, sans-serif; --dado:"Barlow Condensed", "Arial Narrow", sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#111514; --papel:#181d1c; --tinta:#d9dfd8; --suave:#97a39e; --linha:#2f3836; --acento:#d4715f;
+  --parede:#070909; --int:#48524e; --ext:#2a4630; --vao:#48524e; --porta:#e08033; --agua:#1a2427; --onda:#2d3d42;
+  --altar:#9a63c4; --altar-t:#ffffff; --caca:#6fa3d6; --culto:#d65a5a; --quadro:#e8c255; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#111514; --papel:#181d1c; --tinta:#d9dfd8; --suave:#97a39e; --linha:#2f3836; --acento:#d4715f;
+  --parede:#070909; --int:#48524e; --ext:#2a4630; --vao:#48524e; --porta:#e08033; --agua:#1a2427; --onda:#2d3d42;
+  --altar:#9a63c4; --altar-t:#ffffff; --caca:#6fa3d6; --culto:#d65a5a; --quadro:#e8c255; color-scheme:dark }
+body{ background:var(--bg); color:var(--tinta); font:16px/1.55 var(--corpo); }
+.pag{ max-width:1080px; margin:0 auto; padding-block:28px 64px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:flex; flex-direction:column; gap:40px }
+header{ display:flex; flex-direction:column; gap:10px; border-bottom:1px solid var(--linha); padding-bottom:20px }
+.ficha{ font:600 13px/1 var(--dado); letter-spacing:.12em; text-transform:uppercase; color:var(--acento) }
+h1{ font:400 clamp(40px,7vw,64px)/1 var(--display); margin:0; text-wrap:balance }
+h2{ font:400 30px/1.15 var(--display); margin:0 0 14px; text-wrap:balance }
+h3{ font:600 17px/1.3 var(--corpo); margin:0 0 6px }
+p{ margin:0; max-width:68ch }
+.lead{ font-size:18px; color:var(--suave) }
+section{ display:flex; flex-direction:column; gap:14px }
+.figura{ background:var(--papel); border:1px solid var(--linha); padding:14px; overflow-x:auto }
+.planta{ display:block; width:100%; min-width:720px; height:auto }
+.legenda{ display:flex; flex-wrap:wrap; gap:8px 18px; font:500 14px/1.3 var(--dado); color:var(--suave); padding-top:12px }
+.legenda span{ display:inline-flex; align-items:center; gap:6px }
+.am{ display:inline-block; width:14px; height:14px; border-radius:2px }
+.parede{ fill:var(--parede) } .int{ fill:var(--int) } .ext{ fill:var(--ext) } .vao{ fill:var(--vao) } .porta{ fill:var(--porta) }
+.agua{ fill:var(--agua) } .onda{ fill:none; stroke:var(--onda); stroke-width:1.2 }
+.rot-lago{ font:600 13px var(--dado); letter-spacing:.3em; fill:var(--onda) }
+.sala{ font:500 12px var(--dado); fill:#1e2523; text-anchor:middle; opacity:.85 } .ext-t{ fill:#1d2a1c }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .sala{ fill:#cfd7d1 } }
+:root[data-theme="dark"] .sala{ fill:#cfd7d1 }
+.pt{ font:700 13px var(--corpo); text-anchor:middle }
+.p-erva{ fill:#2f7a43 } .p-tum{ fill:#4b3a2a } .p-pista{ fill:var(--caca) } .p-sent{ fill:var(--caca) } .p-ora{ fill:#b08b2a } .p-reag{ fill:#7a2a6a } .p-loja{ fill:#1b1b1b }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .p-tum{ fill:#c9b9a0 } :root:not([data-theme="light"]) .p-loja{ fill:#f0f0f0 } :root:not([data-theme="light"]) .p-erva{ fill:#6fc489 } :root:not([data-theme="light"]) .p-reag{ fill:#d07bc0 } }
+:root[data-theme="dark"] .p-tum{ fill:#c9b9a0 } :root[data-theme="dark"] .p-loja{ fill:#f0f0f0 } :root[data-theme="dark"] .p-erva{ fill:#6fc489 } :root[data-theme="dark"] .p-reag{ fill:#d07bc0 }
+.quadro rect{ fill:var(--parede); stroke:var(--quadro); stroke-width:1.5 } .quadro text{ fill:var(--quadro); font:12px var(--corpo); text-anchor:middle }
+.altar circle{ fill:var(--altar); stroke:var(--altar-t); stroke-width:2 } .altar .num{ fill:var(--altar-t); font:700 13px var(--corpo); text-anchor:middle }
+.altar .nome-alt{ fill:var(--altar); font:400 16px var(--display); text-anchor:middle; paint-order:stroke; stroke:var(--papel); stroke-width:4px }
+.spawn rect{ stroke:#fff; stroke-width:1.5 } .sp-H rect{ fill:var(--caca) } .sp-C rect{ fill:var(--culto) } .spawn text{ fill:#fff; font:600 13px var(--dado); text-anchor:middle; letter-spacing:.06em }
+.grade{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px }
+.bloco{ background:var(--papel); border:1px solid var(--linha); padding:18px 20px; display:flex; flex-direction:column; gap:8px; min-width:0 }
+.bloco ul{ margin:0; padding-left:18px; display:flex; flex-direction:column; gap:4px }
+.tab{ overflow-x:auto; border:1px solid var(--linha); background:var(--papel) }
+table{ border-collapse:collapse; width:100%; font:15px/1.35 var(--corpo); font-variant-numeric:tabular-nums }
+th,td{ text-align:left; padding:9px 12px; border-bottom:1px solid var(--linha); vertical-align:top }
+th{ font:600 13px var(--dado); letter-spacing:.08em; text-transform:uppercase; color:var(--suave) }
+td.n{ text-align:right; white-space:nowrap }
+tr:last-child td{ border-bottom:0 }
+.alt-n{ display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--altar); color:#fff; font:700 12px var(--corpo); margin-right:6px }
+.perguntas{ counter-reset:q; display:flex; flex-direction:column; gap:12px; margin:0; padding:0; list-style:none }
+.perguntas li{ background:var(--papel); border:1px solid var(--linha); border-left:4px solid var(--acento); padding:14px 16px }
+.perguntas li b{ display:block; margin-bottom:4px }
+.nota{ font-size:14px; color:var(--suave) }
+</style>
+<div class="pag">
+<header>
+  <span class="ficha">Ritual Reversal · segundo mapa · planta para aprovação</span>
+  <h1>Asilo Blackwater</h1>
+  <p class="lead">Um asilo abandonado na beira de um lago escuro. Por dentro, corredores estreitos, alas de quartos e celas, portas
+  que fecham e uma luz elétrica que o culto pode cortar. Por fora, a horta, o gramado com o coreto, o cemitério dos internos e a
+  margem do lago. É o oposto da catedral: menos campo aberto, mais esquina, porta e escuro.</p>
+</header>
+
+<section>
+  <h2>A planta</h2>
+  <div class="figura">
+<svg viewBox="0 0 924 596" class="planta" role="img" aria-label="Planta do Asilo Blackwater">
+<defs><pattern id="agua" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(20)"><rect width="10" height="10" class="agua"/><path d="M0 5 Q2.5 3 5 5 T10 5" class="onda"/></pattern></defs>
+<rect x="0" y="0" width="924" height="596" class="parede"/>
+<rect x="0" y="0" width="924" height="42.0" fill="url(#agua)"/>
+<text x="126" y="27" class="rot-lago">LAGO BLACKWATER</text>
+<rect x="210.0" y="428.4" width="504.0" height="151.2" class="ext"/>
+<rect x="33.6" y="361.2" width="168.0" height="218.4" class="ext"/>
+<rect x="722.4" y="361.2" width="168.0" height="218.4" class="ext"/>
+<rect x="16.8" y="42.0" width="890.4" height="25.2" class="ext"/>
+<rect x="268.8" y="67.2" width="386.4" height="71.4" class="ext"/>
+<rect x="16.8" y="67.2" width="16.8" height="512.4" class="ext"/>
+<rect x="890.4" y="67.2" width="16.8" height="512.4" class="ext"/>
+<rect x="451.5" y="16.8" width="21.0" height="25.2" class="ext"/>
+<rect x="411.6" y="327.6" width="100.8" height="92.4" class="int"/>
+<rect x="449.4" y="268.8" width="25.2" height="58.8" class="int"/>
+<rect x="411.6" y="268.8" width="33.6" height="50.4" class="int"/>
+<rect x="478.8" y="268.8" width="33.6" height="50.4" class="int"/>
+<rect x="411.6" y="151.2" width="100.8" height="117.6" class="int"/>
+<rect x="260.4" y="352.8" width="151.2" height="16.8" class="int"/>
+<rect x="361.2" y="310.8" width="42.0" height="37.8" class="int"/>
+<rect x="361.2" y="373.8" width="42.0" height="37.8" class="int"/>
+<rect x="315.0" y="310.8" width="42.0" height="37.8" class="int"/>
+<rect x="315.0" y="373.8" width="42.0" height="37.8" class="int"/>
+<rect x="268.8" y="310.8" width="42.0" height="37.8" class="int"/>
+<rect x="268.8" y="373.8" width="42.0" height="37.8" class="int"/>
+<rect x="243.6" y="235.2" width="16.8" height="184.8" class="int"/>
+<rect x="109.2" y="235.2" width="134.4" height="16.8" class="int"/>
+<rect x="109.2" y="184.8" width="117.6" height="46.2" class="int"/>
+<rect x="231.0" y="184.8" width="12.6" height="46.2" class="int"/>
+<rect x="172.2" y="256.2" width="54.6" height="46.2" class="int"/>
+<rect x="109.2" y="256.2" width="58.8" height="46.2" class="int"/>
+<rect x="42.0" y="176.4" width="63.0" height="168.0" class="int"/>
+<rect x="142.8" y="84.0" width="117.6" height="75.6" class="int"/>
+<rect x="512.4" y="352.8" width="151.2" height="16.8" class="int"/>
+<rect x="520.8" y="310.8" width="42.0" height="37.8" class="int"/>
+<rect x="520.8" y="373.8" width="42.0" height="37.8" class="int"/>
+<rect x="567.0" y="310.8" width="42.0" height="37.8" class="int"/>
+<rect x="567.0" y="373.8" width="42.0" height="37.8" class="int"/>
+<rect x="613.2" y="310.8" width="42.0" height="37.8" class="int"/>
+<rect x="613.2" y="373.8" width="42.0" height="37.8" class="int"/>
+<rect x="663.6" y="235.2" width="16.8" height="184.8" class="int"/>
+<rect x="680.4" y="235.2" width="134.4" height="16.8" class="int"/>
+<rect x="697.2" y="184.8" width="117.6" height="46.2" class="int"/>
+<rect x="680.4" y="184.8" width="12.6" height="46.2" class="int"/>
+<rect x="697.2" y="256.2" width="54.6" height="46.2" class="int"/>
+<rect x="756.0" y="256.2" width="58.8" height="46.2" class="int"/>
+<rect x="819.0" y="176.4" width="63.0" height="168.0" class="int"/>
+<rect x="663.6" y="84.0" width="117.6" height="75.6" class="int"/>
+<rect x="201.6" y="478.8" width="8.4" height="16.8" class="vao"/>
+<rect x="201.6" y="546.0" width="8.4" height="16.8" class="vao"/>
+<rect x="16.8" y="378.0" width="16.8" height="16.8" class="vao"/>
+<rect x="16.8" y="504.0" width="16.8" height="16.8" class="vao"/>
+<rect x="714.0" y="478.8" width="8.4" height="16.8" class="vao"/>
+<rect x="714.0" y="546.0" width="8.4" height="16.8" class="vao"/>
+<rect x="890.4" y="378.0" width="16.8" height="16.8" class="vao"/>
+<rect x="890.4" y="504.0" width="16.8" height="16.8" class="vao"/>
+<rect x="409.5" y="352.8" width="2.1" height="16.8" class="vao"/>
+<rect x="382.2" y="348.6" width="8.4" height="4.2" class="vao"/>
+<rect x="382.2" y="369.6" width="8.4" height="4.2" class="vao"/>
+<rect x="289.8" y="348.6" width="8.4" height="4.2" class="vao"/>
+<rect x="289.8" y="369.6" width="8.4" height="4.2" class="vao"/>
+<rect x="151.2" y="231.0" width="16.8" height="4.2" class="vao"/>
+<rect x="197.4" y="252.0" width="12.6" height="4.2" class="vao"/>
+<rect x="67.2" y="344.4" width="16.8" height="16.8" class="vao"/>
+<rect x="193.2" y="159.6" width="16.8" height="25.2" class="vao"/>
+<rect x="184.8" y="67.2" width="16.8" height="16.8" class="vao"/>
+<rect x="512.4" y="352.8" width="2.1" height="16.8" class="vao"/>
+<rect x="533.4" y="348.6" width="8.4" height="4.2" class="vao"/>
+<rect x="533.4" y="369.6" width="8.4" height="4.2" class="vao"/>
+<rect x="625.8" y="348.6" width="8.4" height="4.2" class="vao"/>
+<rect x="625.8" y="369.6" width="8.4" height="4.2" class="vao"/>
+<rect x="756.0" y="231.0" width="16.8" height="4.2" class="vao"/>
+<rect x="714.0" y="252.0" width="12.6" height="4.2" class="vao"/>
+<rect x="840.0" y="344.4" width="16.8" height="16.8" class="vao"/>
+<rect x="714.0" y="159.6" width="16.8" height="25.2" class="vao"/>
+<rect x="722.4" y="67.2" width="16.8" height="16.8" class="vao"/>
+<rect x="449.4" y="421.7" width="25.2" height="5" class="porta"/>
+<rect x="444.8" y="285.6" width="5" height="12.6" class="porta"/>
+<rect x="474.2" y="285.6" width="5" height="12.6" class="porta"/>
+<rect x="453.6" y="142.4" width="16.8" height="5" class="porta"/>
+<rect x="336.0" y="348.2" width="8.4" height="5" class="porta"/>
+<rect x="336.0" y="369.2" width="8.4" height="5" class="porta"/>
+<rect x="243.6" y="421.7" width="16.8" height="5" class="porta"/>
+<rect x="231.0" y="230.6" width="12.6" height="5" class="porta"/>
+<rect x="138.6" y="251.6" width="12.6" height="5" class="porta"/>
+<rect x="104.6" y="235.2" width="5" height="16.8" class="porta"/>
+<rect x="262.1" y="105.0" width="5" height="16.8" class="porta"/>
+<rect x="579.6" y="348.2" width="8.4" height="5" class="porta"/>
+<rect x="579.6" y="369.2" width="8.4" height="5" class="porta"/>
+<rect x="663.6" y="421.7" width="16.8" height="5" class="porta"/>
+<rect x="680.4" y="230.6" width="12.6" height="5" class="porta"/>
+<rect x="772.8" y="251.6" width="12.6" height="5" class="porta"/>
+<rect x="814.4" y="235.2" width="5" height="16.8" class="porta"/>
+<rect x="656.9" y="105.0" width="5" height="16.8" class="porta"/>
+<text x="462.0" y="453.6" class="sala ext-t">Gramado</text>
+<text x="117.6" y="436.8" class="sala ext-t">Horta</text>
+<text x="806.4" y="436.8" class="sala ext-t">Cemitério</text>
+<text x="462.0" y="88.2" class="sala ext-t">Pátio Norte</text>
+<text x="462.0" y="399.0" class="sala">Saguão</text>
+<text x="168.0" y="207.9" class="sala">Refeitório</text>
+<text x="756.0" y="207.9" class="sala">Lavanderia</text>
+<text x="724.5" y="279.3" class="sala">Oficina</text>
+<text x="168.0" y="214.0" class="pt p-erva">◆</text>
+<text x="756.0" y="214.0" class="pt p-erva">◆</text>
+<text x="201.6" y="281.2" class="pt p-erva">◆</text>
+<text x="722.4" y="281.2" class="pt p-erva">◆</text>
+<text x="495.6" y="298.0" class="pt p-erva">◆</text>
+<text x="428.4" y="298.0" class="pt p-erva">◆</text>
+<text x="336.0" y="398.8" class="pt p-erva">◆</text>
+<text x="588.0" y="398.8" class="pt p-erva">◆</text>
+<text x="781.2" y="424.0" class="pt p-tum">✝</text>
+<text x="848.4" y="466.0" class="pt p-tum">✝</text>
+<text x="210.0" y="58.6" class="pt p-tum">✝</text>
+<text x="714.0" y="58.6" class="pt p-tum">✝</text>
+<text x="428.4" y="167.8" class="pt p-tum">✝</text>
+<text x="495.6" y="167.8" class="pt p-tum">✝</text>
+<text x="25.2" y="197.2" class="pt p-pista">?</text>
+<text x="898.8" y="197.2" class="pt p-pista">?</text>
+<text x="302.4" y="104.8" class="pt p-pista">?</text>
+<text x="621.6" y="104.8" class="pt p-pista">?</text>
+<text x="336.0" y="365.2" class="pt p-pista">?</text>
+<text x="588.0" y="365.2" class="pt p-pista">?</text>
+<text x="294.0" y="533.2" class="pt p-pista">?</text>
+<text x="630.0" y="533.2" class="pt p-pista">?</text>
+<text x="126.0" y="247.6" class="pt p-sent">▲</text>
+<text x="462.0" y="289.6" class="pt p-sent">▲</text>
+<text x="798.0" y="247.6" class="pt p-sent">▲</text>
+<text x="252.0" y="117.4" class="pt p-sent">▲</text>
+<text x="462.0" y="449.2" class="pt p-sent">▲</text>
+<text x="672.0" y="117.4" class="pt p-sent">▲</text>
+<text x="25.2" y="323.2" class="pt p-ora">✚</text>
+<text x="898.8" y="323.2" class="pt p-ora">✚</text>
+<text x="378.0" y="88.0" class="pt p-ora">✚</text>
+<text x="546.0" y="88.0" class="pt p-ora">✚</text>
+<text x="226.8" y="491.2" class="pt p-ora">✚</text>
+<text x="697.2" y="491.2" class="pt p-ora">✚</text>
+<text x="252.0" y="323.2" class="pt p-ora">✚</text>
+<text x="672.0" y="323.2" class="pt p-ora">✚</text>
+<text x="58.8" y="432.4" class="pt p-reag">●</text>
+<text x="865.2" y="432.4" class="pt p-reag">●</text>
+<text x="336.0" y="58.6" class="pt p-reag">●</text>
+<text x="588.0" y="58.6" class="pt p-reag">●</text>
+<text x="168.0" y="104.8" class="pt p-reag">●</text>
+<text x="756.0" y="104.8" class="pt p-reag">●</text>
+<text x="58.8" y="197.2" class="pt p-reag">●</text>
+<text x="865.2" y="197.2" class="pt p-reag">●</text>
+<text x="134.4" y="222.4" class="pt p-reag">●</text>
+<text x="789.6" y="222.4" class="pt p-reag">●</text>
+<text x="126.0" y="558.4" class="pt p-loja">$</text>
+<text x="798.0" y="558.4" class="pt p-loja">$</text>
+<text x="462.0" y="373.6" class="pt p-loja">$</text>
+<g class="quadro"><rect x="374.2" y="321.7" width="16" height="16" rx="2"/><text x="382.2" y="334.7">⚡</text></g>
+<g class="quadro"><rect x="420.4" y="286.0" width="16" height="16" rx="2"/><text x="428.4" y="299.0">⚡</text></g>
+<g class="quadro"><rect x="533.8" y="321.7" width="16" height="16" rx="2"/><text x="541.8" y="334.7">⚡</text></g>
+<g class="altar s-oeste"><circle cx="75.6" cy="260.4" r="12.6"/><text x="75.6" y="264.9" class="num">1</text><text x="75.6" y="242.8" class="nome-alt">Enfermaria</text></g>
+<g class="altar s-centro"><circle cx="462.0" cy="193.2" r="12.6"/><text x="462.0" y="197.7" class="num">2</text><text x="462.0" y="175.6" class="nome-alt">Capela</text></g>
+<g class="altar s-leste"><circle cx="848.4" cy="260.4" r="12.6"/><text x="848.4" y="264.9" class="num">3</text><text x="848.4" y="242.8" class="nome-alt">Isolamento</text></g>
+<g class="altar s-oeste"><circle cx="201.6" cy="121.8" r="12.6"/><text x="201.6" y="126.3" class="num">4</text><text x="201.6" y="104.2" class="nome-alt">Hidroterapia</text></g>
+<g class="altar s-centro"><circle cx="462.0" cy="512.4" r="12.6"/><text x="462.0" y="516.9" class="num">5</text><text x="462.0" y="494.8" class="nome-alt">Coreto</text></g>
+<g class="altar s-leste"><circle cx="722.4" cy="121.8" r="12.6"/><text x="722.4" y="126.3" class="num">6</text><text x="722.4" y="104.2" class="nome-alt">Caldeiras</text></g>
+<g class="spawn sp-H"><rect x="55.0" y="518.2" width="58" height="22" rx="11"/><text x="84.0" y="534.2">caça</text></g>
+<g class="spawn sp-C"><rect x="811.0" y="518.2" width="58" height="22" rx="11"/><text x="840.0" y="534.2">culto</text></g>
+</svg>
+    <div class="legenda">
+      <span><i class="am" style="background:var(--int)"></i>interior (coberto)</span>
+      <span><i class="am" style="background:var(--ext)"></i>exterior (luar, névoa do lago)</span>
+      <span><i class="am" style="background:var(--parede)"></i>parede</span>
+      <span><i class="am" style="background:var(--porta)"></i>porta (abre e fecha)</span>
+      <span><i class="am" style="background:var(--altar);border-radius:50%"></i>altar</span>
+      <span><i class="am" style="background:var(--parede);outline:1.5px solid var(--quadro)"></i>quadro de força</span>
+      <span>◆ ervas e láudano (culto)</span><span>✝ túmulos (culto)</span><span>? pistas (caça)</span><span>▲ sentinelas (caça)</span>
+      <span>✚ oratórios (sinais)</span><span>● reagentes</span><span>$ mercadores</span>
+    </div>
+  </div>
+  <p class="nota">Escala: 1 quadradinho de grade da simulação = 2 m; o asilo inteiro tem 212 × 132 m, contra 290 × 200 m da catedral.
+  Corredores de 4 m, portas de 2 a 4 m. Norte para cima (o lago).</p>
+</section>
+
+<section>
+  <h2>Como se joga aqui</h2>
+  <div class="grade">
+    <div class="bloco"><h3>Três alas, seis altares</h3>
+      <p>O eco do coro continua dizendo o setor. Em cada setor há um altar dentro do prédio e um fora dele ou num anexo:
+      a caça ouve “a oeste” e precisa escolher entre a Enfermaria e a Hidroterapia.</p></div>
+    <div class="bloco"><h3>Portas</h3>
+      <p>18 portas em pontos-chave: entrada principal, saídas laterais, alas, anexos. Qualquer um abre ou fecha com E.
+      Fechada, a porta bloqueia passagem, visão e tiros, e abafa os sons do outro lado. O culto fecha a ala do ritual; a caça
+      precisa abrir e entrar sem saber o que há atrás.</p></div>
+    <div class="bloco"><h3>Quadros de força</h3>
+      <p>Cada setor tem um quadro (⚡). O culto segura E por 4 s e apaga as luzes da ala inteira por 90 s; a caça religa antes,
+      segurando E por 6 s, com um estalo que se ouve longe. Com a luz cortada, só a lanterna mostra o corredor, e quem atira
+      no escuro erra mais.</p></div>
+    <div class="bloco"><h3>Dentro e fora</h3>
+      <p>Dentro, combate curto e emboscada em esquina: favorece o cetro do culto. Fora, a névoa do lago limita a visão, mas
+      as trilhas e a margem dão a volta no prédio inteiro, o caminho para flanquear ou fugir.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Os seis altares</h2>
+  <div class="tab"><table>
+    <thead><tr><th>Altar</th><th>Setor</th><th>Onde e como é</th><th class="n">Da base da caça</th><th class="n">Da base do culto</th></tr></thead>
+    <tbody>
+      <tr><td><span class="alt-n">1</span>Enfermaria</td><td>oeste</td><td>Ala feminina: longo salão de leitos de ferro, uma porta para a ala e outra para o pátio de sol.</td><td class="n">65 m · 14 s</td><td class="n">222 m · 48 s</td></tr>
+      <tr><td><span class="alt-n">2</span>Capela</td><td>centro</td><td>Atrás do saguão, a capela do asilo com bancos e vitral; porta norte para o pátio do lago.</td><td class="n">149 m · 32 s</td><td class="n">149 m · 32 s</td></tr>
+      <tr><td><span class="alt-n">3</span>Isolamento</td><td>leste</td><td>Ala masculina: celas acolchoadas em volta de um corredor, iluminação fraca.</td><td class="n">221 m · 48 s</td><td class="n">65 m · 14 s</td></tr>
+      <tr><td><span class="alt-n">4</span>Hidroterapia</td><td>oeste</td><td>Anexo na beira do lago: banheiras e tanques (água rasa que deixa lento), três entradas.</td><td class="n">113 m · 25 s</td><td class="n">225 m · 49 s</td></tr>
+      <tr><td><span class="alt-n">5</span>Coreto</td><td>centro</td><td>No gramado em frente à entrada, ao ar livre e sob o luar: o único altar à vista do prédio.</td><td class="n">95 m · 21 s</td><td class="n">95 m · 21 s</td></tr>
+      <tr><td><span class="alt-n">6</span>Caldeiras</td><td>leste</td><td>Anexo das caldeiras: vapor, carvão, canos e barulho de máquina que encobre passos.</td><td class="n">225 m · 49 s</td><td class="n">113 m · 25 s</td></tr>
+    </tbody>
+  </table></div>
+  <p class="nota">Distâncias pelo caminho andável (grade de 0,5 m), andando a 4,6 m/s. A média das bases até os altares é 145 m para os
+  dois lados (catedral: 157 e 164 m). O altar mais próximo de cada um fica a 52–76 m (catedral: 37–118 m). A planta é simétrica:
+  a caça nasce no portão da horta, a oeste; o culto na capela mortuária do cemitério, a leste.</p>
+</section>
+
+<section>
+  <h2>O resto do mapa</h2>
+  <div class="grade">
+    <div class="bloco"><h3>Tarefas</h3><ul>
+      <li>Ervas do culto viram láudano e ervas da farmácia, do refeitório, das salas de estar e de visitas.</li>
+      <li>Túmulos: dois no cemitério, dois na margem (covas sem nome dos internos), dois na cripta da capela.</li>
+      <li>Pistas, sentinelas e oratórios (os santuários) espalhados igual para os dois lados.</li></ul></div>
+    <div class="bloco"><h3>Mercadores</h3><ul>
+      <li>O Zelador, junto da caça, na horta (o Ermitão da catedral).</li>
+      <li>A Enfermeira-chefe, junto do culto, no cemitério (a Carpideira).</li>
+      <li>O Paciente 13, de todos, no saguão (o Mercador sem Rosto).</li></ul></div>
+    <div class="bloco"><h3>Reagentes</h3><ul>
+      <li>Dez pontos, com tipos do lugar: lodo da margem, sal da hidroterapia, carvão das caldeiras, éter da enfermaria,
+      cal do isolamento, terra do cemitério e da horta, sabão da lavanderia.</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>O que muda no jogo para isso existir</h2>
+  <div class="grade">
+    <div class="bloco"><h3>1. Vários mapas</h3><p>O mapa vira dado: o anfitrião escolhe Catedral ou Asilo na sala (e no jogo solo).
+    O servidor manda o mapa para todos. Navegador e Unity montam o mundo certo. A catedral continua igual.</p></div>
+    <div class="bloco"><h3>2. Regras novas</h3><p>Portas e quadros de força entram na simulação compartilhada e no C# do Unity,
+    com os bots sabendo abrir portas, cortar e religar a luz, conferidos bit a bit como sempre.</p></div>
+    <div class="bloco"><h3>3. O visual</h3><p>Paredes descascadas, azulejo, leitos de ferro, grades, lâmpadas penduradas que piscam,
+    o lago com névoa. No estilo ilustrado do jogo, nos dois clientes.</p></div>
+    <div class="bloco"><h3>4. Teste e equilíbrio</h3><p>Caminhos dos bots até todos os pontos, noites de bots para o equilíbrio,
+    fotos de cada canto e o relatório do playtest separado por mapa.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Para aprovar</h2>
+  <ol class="perguntas">
+    <li><b>A planta, como está?</b>Três alas em volta do saguão, anexos no lago, exterior em volta. Se quiser mudar alguma sala de lugar, diga qual.</li>
+    <li><b>Portas e quadros de força entram já na primeira versão?</b>Sem elas, o asilo fica pronto antes, mas joga quase como a catedral num espaço menor.</li>
+    <li><b>Um andar só, com os anexos mais baixos que o prédio</b>, descendo por escadas. A simulação não tem andares empilhados.</li>
+    <li><b>Os nomes</b>: Enfermaria, Capela, Isolamento, Hidroterapia, Coreto, Caldeiras; Zelador, Enfermeira-chefe, Paciente 13.</li>
+  </ol>
+</section>
+</div>

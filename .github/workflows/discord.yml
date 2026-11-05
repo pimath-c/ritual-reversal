@@ -1,0 +1,66 @@
+# Posta patch notes no Discord.
+# - Sozinho: a cada envio que acrescenta um arquivo em notas/ (notas/v5.9.md, por exemplo), posta esse arquivo.
+#   Para postar notas que já existiam, ponha "[discord: notas/v5.md]" na mensagem do commit.
+# - À mão: Actions → "Patch notes no Discord" → Run workflow (depois que o workflow estiver na main).
+# Precisa do segredo DISCORD_WEBHOOK (ou DISCORD_WEBHOOK_URL) em Settings → Secrets and variables → Actions.
+# Sem o segredo, o envio passa sem postar nada (o aviso fica no log).
+name: Patch notes no Discord
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['notas/*.md']
+  workflow_dispatch:
+    inputs:
+      notas:
+        description: Arquivo de notas
+        default: notas/v5.md
+
+permissions:
+  contents: read
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Escolhe as notas
+        id: notas
+        env:
+          ANTES: ${{ github.event.before }}
+          MENSAGEM: ${{ github.event.head_commit.message }}
+          MANUAL: ${{ inputs.notas }}
+        run: |
+          set -eu
+          if [ -n "${MANUAL:-}" ]; then lista="$MANUAL"
+          else
+            lista=""
+            if [ -n "${ANTES:-}" ] && git cat-file -e "$ANTES^{commit}" 2>/dev/null; then
+              lista=$(git diff --name-only --diff-filter=A "$ANTES" HEAD -- 'notas/*.md')
+            fi
+            pedidas=$(printf '%s' "${MENSAGEM:-}" | grep -oE '\[discord: *notas/[A-Za-z0-9._-]+\.md\]' | sed -E 's/\[discord: *//; s/\]$//' || true)
+            lista=$(printf '%s\n%s\n' "$lista" "$pedidas" | sed '/^$/d' | sort -uV)
+          fi
+          ok=""
+          for f in $lista; do
+            if printf '%s' "$f" | grep -qE '^notas/[A-Za-z0-9._-]+\.md$' && [ -f "$f" ]; then ok="$ok $f"; else echo "ignorado: $f"; fi
+          done
+          echo "arquivos=$ok" >> "$GITHUB_OUTPUT"
+          echo "notas para postar:${ok:- nenhuma}"
+      - name: Posta
+        if: steps.notas.outputs.arquivos != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK || secrets.DISCORD_WEBHOOK_URL }}
+          ARQUIVOS: ${{ steps.notas.outputs.arquivos }}
+        run: |
+          set -eu
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::warning::Falta o segredo DISCORD_WEBHOOK; nada foi postado ($ARQUIVOS)"
+            exit 0
+          fi
+          for f in $ARQUIVOS; do node tools/postar-discord.js "$f"; done

@@ -1,0 +1,556 @@
+# Ritual Reversal — contexto para novas sessões
+
+FPS de terror competitivo 2v2 no navegador (Three.js r128 + servidor Node). Dois Cultistas celebram rituais em
+segredo; dois Caçadores investigam e selam. O dono do projeto fala português: responda, comente o código e escreva
+commits em português.
+
+## Foco (pedido do dono, 03/11)
+O foco agora é o **Unity**. Melhorias novas (arte, animação, efeitos, interface) vão direto para `unity/`; a versão HTML
+não precisa acompanhar nem ser republicada a cada versão. O `shared/sim.js` continua sendo a regra do servidor online:
+mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes que comparam o Unity com o navegador
+(unity-ver, unity-fp) servem para o que já existe nos dois; o que for só do Unity não precisa de equivalente no HTML.
+
+## Links
+- Protótipo publicado (claude.ai, mesmo link a cada versão): https://claude.ai/artifact/8C4MNiGeURccg8E2ZzoNLY
+  Publique depois de `node tools/build.js`: a página `dist/web/ritual-reversal.html` com `files` = os outros arquivos de `dist/web/`
+  (`sons.js`, `texturas-N.js`, `modelos-N.js`, até 12 MB cada) e `url` desse link. Passou dos 16 MB de uma página só; o
+  `dist/ritual-reversal.html` de um arquivo continua sendo gerado (testes, uso local).
+- Documento de design: https://claude.ai/artifact/9tDbnxCM1xtjJZToVaQYXB
+- Branch de trabalho: `claude/youthful-feynman-tott4g` (PR aberto para `main`).
+
+## Onde fica cada coisa
+- `shared/sim.js` — simulação compartilhada (navegador e servidor): regras, mapa, navegação A* em grade, bots,
+  snapshot. Mapa compacto: coordenadas da floresta escritas na planta original (`HALF0`) e mapeadas por `mataXZ`.
+- `client/index.html` — cliente inteiro (render, HUD, áudio, rede, controles de toque, níveis de qualidade).
+- `client/asilo.js` — o Asilo Blackwater (`RR_ASILO`): salas, portas, lâmpadas e quadros de força.
+- `client/mundo.js` — a catedral, as pontes, o desfiladeiro e as peças do mapa da v6 (`RR_MUNDO`); `client/arma.js` — primeira
+  pessoa (mãos, clipes, inspeções); `client/skins.js` — skins das armas (`RR_SKINS`, ver `docs/SKINS.md`). Os três são
+  embutidos por build.js/build-mobile.js e servidos pelo servidor.
+- `docs/DIRECAO.md` — avaliação de direção da v6 (problemas por impacto, decisões, medições).
+- `server/server.js` — servidor autoritativo (30 Hz, snapshots a 20 Hz), salas de 4 letras.
+- `mobile/` — app Android (Capacitor 8). `.github/workflows/android.yml` compila o APK a cada envio
+  (Actions → "APK Android" → Artifacts).
+- `notas/` — patch notes. `tools/postar-discord.js` posta no Discord pelo webhook em `DISCORD_WEBHOOK`
+  (credencial do ambiente ou segredo do GitHub; nunca no repositório).
+
+## Testes (rode antes de cada commit que mexe no jogo)
+    node tools/testar.js 6          # grafo, caminhadas até todos os alvos, partidas de bots com invariantes
+    node tools/protocolo.js         # servidor + clientes falsos
+    python3 tools/montar-sons.py    # só se mudar uma gravação ou receita (precisa de ffmpeg ou pip install imageio-ffmpeg numpy)
+    node tools/build.js             # gera dist/ritual-reversal.html
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador-asilo.js   # Asilo Blackwater: portas, quadros, planta, fotos
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/navegador.js   # Chromium, 17 vistas, Arsenal, velas, reagente, execução
+    node tools/fluxo.js                     # mapa: distâncias pelo A*, exposição, invariantes do design (grava dist/fluxo)
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/alturas.js     # nenhuma peça alta parece mais baixa do que bloqueia
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/celular.js     # celular emulado com toque
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/vitrine.js [pasta] [regex]   # folhas de quadros das animações
+    node tools/build-mobile.js && NODE_PATH=$(npm root -g) node tools/app.js     # app sem internet + servidor
+    node tools/comparar-cs.js 2 1 40000 H   # porte C# (Unity) igual ao sim.js, bit a bit (precisa do Mono)
+    node tools/rede-cs.js                   # cliente online do Unity (Rede.cs) contra o servidor Node
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-ver.js [pasta] [regex]   # mundo do Unity ao lado do oficial, sem o Unity (Mono)
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/exportar-primeira-pessoa.js   # mudou arma.js/skins.js? regrava Resources/primeira-pessoa.*
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp.js   # primeira pessoa do Unity igual à do navegador, nó a nó (Mono)
+    [THREE_DIR=<three@0.128.0>] NODE_PATH=$(npm root -g) node tools/unity-noite.js   # fim da noite do Unity (planta, gráfico, placar) numa noite de bots (Mono)
+    THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-poses.js [pasta] [regex]   # poses dos bonecos do Unity (andar, correr, agachado, recarga...) de lado e de frente (Mono)
+    [VISTA=perto|lado] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/unity-fp-fotos.js [pasta] [regex]   # primeira pessoa do Unity em fotos (armas, clipes, mãos com pele) (Mono)
+    [FOTOS=dist/telas/unity] node tools/unity-telas.js   # telas do Unity (IMGUI) por todo o jogo e online, layout do Unity em miniatura; FOTOS= grava PNG (Mono, Pillow)
+    [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
+O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
+
+## Estado atual (v6.12)
+- Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
+- Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
+- Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
+- Qualidade Alto/Médio/Baixo/Mínimo, resolução adaptativa, controles de toque, app Android.
+- Rituais (v5.1): no máximo 3 por noite, um de cada vez, sem altar substituto; Cultistas vencem com 2 Fendas. `CFG.formatoNoite`: 'melhorDeTres' (padrão desde a v5.4: 2 rituais de um lado encerram) ou 'placar' (a noite vai até o amanhecer). A regra de início fica em `bloqueioRitual(g)`, usada pelo jogador e pelos bots.
+- v5.1a: localização mais tardia (0,55/0,5), dano base menor, bots usam Transferência; snapshots escondem inimigos
+  sem linha de visão (`CFG.visaoRede` 75 m, 0,6 s de tolerância; o cliente guarda o boneco invisível e não interpola
+  desde a origem). O teste 3 de `tools/testar.js` confere isso.
+- Equilíbrio entre bots (v5.1a, 30 partidas): Cultistas vencem 77%; Chamariz quase nunca é usado pelos bots.
+  Falta playtest com pessoas.
+
+- v5.2: Grande Ritual cinematográfico (céu e vitrais de sangue, sino, coro e tambor, corvos, névoa carmim;
+  `atualizarGrande` no cliente, `grande` no snapshot do altar); um bot Cultista planta até dois Chamarizes.
+- v5.3 (notas em `notas/v5.3.md`): jogo solo com escolha de papel e dificuldade (`opts.dificuldade` treino/facil/
+  normal/dificil, `difDe(g,b)` só vale para os bots do lado contrário ao dos humanos; normal = comportamento antigo bit a
+  bit), ping (`act` 'ping', evento com `team`, só a equipe recebe; servidor filtra) e frases rápidas (`act` 'fala'),
+  bot aliado atende ping/ajuda (`ai.pedido`, `botAtendePing`), tutorial guiado e desafio da noite (no cliente),
+  legendas dos sons, bússola, espectador, clima por partida (`climaDe` do matchId, cliente), linha do tempo e
+  destaques, perfil/conquistas (localStorage), dicas, controle (gamepad), salas públicas (`/api/salas`) e chat do
+  lobby e na partida (`t:'chat'`, Enter), dificuldade dos bots online (`t:'opcoes'`, só o anfitrião), caderno dos
+  altares (J), Rever a noite (`REP`, posições a cada 2 s em `LT.rod[r].pos`), placar por jogador (do registro), falas
+  automáticas do bot aliado (`atualizarFalasBots`, só cliente), música do menu (`MUS`), acessibilidade (`SET.suave`,
+  `SET.dalt`) e Novidades. Tudo de regra portado para o C# (comparar-cs com o roteiro usando ping e frases; `DIF=`
+  testa a dificuldade). `__T.perfil` é o desempenho; o perfil do jogador é `__T.perfilJogador`.
+- v5.4 (notas em `notas/v5.4.md`, resposta a uma análise de especialista; preparação para o playtest com pessoas):
+  a noite acaba quando um lado leva 2 rituais (`CFG.formatoNoite` 'melhorDeTres'); laboratório de playtest
+  (`opts.lab` → `g.lab` via `labDe`: crepusculo, fogo, execucao, economia, formato; menu solo `SET.lab`, lobby
+  `t:'opcoes'` com `lab`, vai no snapshot); relatório do playtest (`Sim.relatorio(log,r)`, tela no fim da noite,
+  JSON com respostas; `tools/analisar.js` usa o mesmo); chat de equipe na partida (`para:'equipe'|'todos'`, o
+  servidor filtra por papel; `SET.mudoAdv`); bots Caçadores conferem altar desperto com a Lanterna (sem sorteio).
+  `tools/simular.js` e `tools/comparar-cs.js` aceitam `LAB=fogo=a,execucao=6,...`. Bots, 210 noites: culto 78% no
+  normal, 67% com selo sob fogo 80%/60%; sem economia, 75%.
+- v5.5 (notas em `notas/v5.5.md`): disputa no círculo. Eco do coro (`CFG.ecoProg` .25, `SETORES` oeste/centro/leste
+  com dois altares cada, `g.eco`, evento 'eco' só para a caça); quem lançou sigilo há menos de `CFG.ataqueCanal` (.6 s)
+  não canaliza; dano reinicia execução (`CFG.danoInterrompeExecucao`); o culto é avisado do selo (evento 'selando',
+  só para o culto, `A.avisoSeloT`); Brecha Norte (PORTAIS, trilha e LUGARES; reexportar o mapa). Bots: `CORRIDA_BOT`
+  1.3 com ritual em andamento, seguem o eco, `g.suspeitaC` (o culto só sabe o que viu ou o aviso de purga), não
+  compram com ritual em andamento, histerese no mercador, `_segurou/_semSegurar` (0,5 s sem segurar zera o E),
+  `botRasteja`. `tools/simular.js` aceita `CFG=`. Bots, 200 noites: culto 42–46% (v5.4: 78%).
+- v5.6 (notas em `notas/v5.6.md`): auditoria e integridade. `Sim.eventoPara(g,e,me,role)` decide quem recebe cada
+  evento (servidor e jogo local): sons/efeitos por `ALCANCE_SOM` ou emissor à vista (`_visto`), 'hit' só a quem atirou,
+  'hurt' sem posição do atacante para os outros, eco/presságio só caça, 'selando' só culto. O snapshot da caça mascara o
+  ritual não localizado; inimigo escondido vai sem hold/sealing/reag; tarefas, Chamarizes e Transferência só para a
+  própria equipe; 'restart' só do anfitrião. Regras: Empurrão pausa a canalização (`ataqueT`, não `lastShotT`), Caçador
+  no círculo localiza ('circulo'), `acaoNegada` confere a ação na hora (bots). Registro 2 (`VERSAO`, `REGISTRO`):
+  `caca_perto`, `altar_errado`, `canal_saiu`, `acao_negada`; `relatorio` classifica a caça por ritual (`caca`,
+  `conversao`). `tools/simular.js` com `SEMENTE=` é reproduzível byte a byte. Mostrador do círculo no chão (shader em
+  `buildAltars`). Bots, sementes 1000–1199: culto 50%. v5.6a: `g.know` sem 'limpo': 'visto' (passou perto, nada desperto;
+  não descarta), 'descartado' (sinal do santuário ou Chamariz queimado), 'purgado' (era do culto); `semAura(k)`.
+- v5.7 (notas em `notas/v5.7.md`): recompensa e reconhecimento, nenhuma regra muda (partidas iguais à v5.6a passo a
+  passo). Eventos novos: 'interrupcao' (`interrupcao(g,tipo,causa,src,t,A)` em `goDown` e no Empurrão; canalização de
+  ritual não localizado só para o culto) e 'lance' (`lance(g,tipo,quem,A,team,v)`: selo_limite, achou_cedo, defesa,
+  resgate, transferencia, chamariz; limiares `CFG.iscaLance/defesaLance/limiteLance`); 'doom'/'sealed' levam `altar` e
+  `por`. Registro 3: `interrupcao`, `lance`, `disputa` (por ator no fim do ritual, `medirDisputa`/`disputaDano`, em
+  `A.obs.d`), `purge.isca` (`A.iscaT`, segundos de Caçador a 12 m do Chamariz). `relatorio` traz `rituais[].disputa`,
+  `interrupcoes`, `lances` e `engano.segundosPresosEmChamariz`; `analisar.js` compara a disputa dos rituais selados
+  com os perdidos. Cliente: faixa `#lance`, `piscarMostrador` (uniform `fl`), `progressoInvestigacao`, dedução no eco,
+  "Lances da noite" no resultado. Bots, sementes 1000–1199: culto 42% (a queda de 50% veio da v5.6a).
+- v5.8 (notas em `notas/v5.8.md`): sensação de jogo, sem regra nova. Cliente prevê o tiro com `Sim.CADENCIA_HUMANA`
+  (antes 0,3 s contra 0,42 s do servidor); evento 'hit' leva `escudo` (porte no C#). Viewmodel por `PERFIL_ARMA`
+  (coice/mola/ciclo: alavanca `vmCarabina.alav`, tambor `vmRevolver.tambor`, runas do cetro), `VM.pausa` (pausa de
+  impacto), `camFx()`/`SET.camFx`; impacto por superfície (`impactoMundo`, `impactoCorpo`, `jato`); reação do alvo
+  (`A.reac`, `A.pausa`, `A.quedaT`, `A.levantaT` em `animateActor`); ritual como evento (`animarRitual`,
+  `ritualIniciado/Marco/Selado/Fenda/Interrompido`, `O.runas`, `O.rv`). Sons gravados: `assets/sons/fontes` (CC0 e
+  CC BY 3.0, origem em `fontes.json`), `python3 tools/montar-sons.py` gera `assets/sons/jogo/*.mp3`, `client/sons.js`
+  (embutido por build.js e build-mobile.js, servido pelo servidor) e `docs/AUDIO.md`; no cliente `tocar(nome,opções)`
+  com variação e limite de vozes (a reserva sintetizada saiu na v6.2b). Ninguém ouviu os sons ainda (ambiente sem áudio).
+- v5.8a (notas em `notas/v5.8a.md`): a v5.8 no Unity. `montar-sons.py` copia os MP3 para `Resources/Sons`; `Som.cs`
+  (`Amostra`, `Tiro`, `Passo`, laços gravados do ritual), `PrimeiraPessoa.cs` (perfis de arma, `Acerto`, `Golpe`,
+  `Tranco`, `AoPasso`, `camFx` em PlayerPrefs "rr-camfx"), `Personagens.cs` (`Arma.alav/cao/tambor`, `Boneco.reac`),
+  `MundoAtores.cs` (`ImpactoMundo/Corpo`, `AoSom`), `MundoAltares.cs` (runas do ritual, `RitualSelado/Fenda/
+  Interrompido`, `MarcaInvestigacao`, `AoTremor`). Discord: `postar-discord.js` divide em vários cartões; o workflow
+  posta cada `notas/*.md` novo ou `[discord: notas/x.md]` da mensagem do commit (segredo DISCORD_WEBHOOK ou _URL).
+- v5.8b (notas em `notas/v5.8b.md`, do primeiro registro de playtest humano): lance 'selo_limite' usa `A.maxProg`
+  (o progresso recua até a etapa enquanto se sela sem canalização); `comprar` nega munição cheia (80) e 4 sinalizadores;
+  registro baixado/servidor levam `dificuldade` (e `lab`, `papel` no cliente); `analisar.js` aceita um arquivo só.
+- v5.9 (notas em `notas/v5.9.md`, sistema em `docs/ANIMACAO.md`): primeira pessoa em `client/arma.js` (fábrica
+  `RR_ARMA(dependências)`, chamada em `buildViewmodels`; embutido por build.js/build-mobile.js e servido pelo servidor).
+  Mãos com esqueleto (16 ossos, 1 malha), braços por IK de dois ossos, clipes com chaves em quadros (corpo, arma,
+  alavanca, guindaste, tambor), mistura entre estados, camadas (PERFIL_ARMA, respiração, passo, tranco), luz de leitura
+  no shader dos materiais da primeira pessoa. Recargas: carabina pela portinhola (vazia com alavanca, tática sem),
+  revólver de 8 câmaras com guindaste, extrator e municiador; sacar, inspeção (tecla I), ajuste, gesto de habilidade,
+  corrida, selar, canalizar. Vitrine: F9 numa partida local ou `#vitrine`; `tools/vitrine.js` faz folhas de quadros
+  (`ESTUDIO=1`, `QUADROS=`, `VISTAS=jogador,lado,peca`). 12 sons novos em `montar-sons.py`. Terceira pessoa: recarga com a
+  mesma coreografia. Sem regra nova.
+- v6 (notas em `notas/v6.md`, avaliação em `docs/DIRECAO.md`): mapa novo em duas regiões (catedral em cruz no promontório,
+  `PROMONTORIO`/`CATEDRAL`; desfiladeiro `ABISMO` com três `TRAVESSIAS`: Ponte Grande, Ponte Caída, Aqueduto; mata com subáreas
+  e os reagentes nela), `ZONAS` com `luar`/`coberto` (`zonaDe`, `coberto`). Cobertura baixa bloqueia tiros e sigilos abaixo da
+  altura da peça (`raioParede` com BOX, `alturaAlvo`: 1,95/1,15/0,6; cabeça nos últimos 45 cm). Agachar (`inp.ag`, C/botão B,
+  ×0,5, `passoLeve` a 5 m; bots não agacham). Tudo portado ao C# e bit a bit no comparar-cs. Cliente: `client/mundo.js`
+  (catedral, pontes, paredões), muros arruinados nunca mais baixos que a colisão (`node tools/alturas.js` confere), execução
+  com pose/tremor/fecho por lado (`EXE`, `fxExecucao`, `#exeVeu`), reagentes por subárea (`REAG_TIPOS`, `modeloReagente`,
+  `atualizarReagentes`), velas-relógio no altar (`animarVelas`: vermelho-escuro = etapa garantida), ajoelhar em coleta/queima/
+  reanimar, Arsenal no menu (`ARS`, `startArsenal`), skins (`client/skins.js`, 9, três por arma; `vis` no hello e no lobby),
+  três inspeções novas (mecânica, exibição, inquietante), 12 sons novos CC0 via conquest e ambiente por lugar (`ambientePorLugar`).
+  `VERSAO` 6.0. Bots, 400 noites: culto 38–40% (alvo do design 45–55%).
+- v6.1 (notas em `notas/v6.1.md`, do primeiro playtest com duas pessoas contra os bots do culto no difícil, 2 a 0 para a caça
+  sem nenhuma queda de Caçador): o bot do culto canalizando revida quem o acertou há menos de `CFG.botRevida` (2,5 s) ou quem
+  está a menos de `CFG.botRevidaPerto` (20 m; antes 8). Só bots, nenhuma regra; portado ao C# (bit a bit). `VERSAO` 6.1.
+  Bots, sementes 1000–1199: culto 30% → 37%. Descartado: o Guardião vigiar fora do círculo depois do eco (26%).
+- v6.2 (notas em `notas/v6.2.md`): segundo mapa, **Asilo Blackwater** (`mapaAsilo()` no sim.js; a catedral é `mapaCatedral()`, igual
+  byte a byte). Vários mapas: `FABRICAS`, `mapa(id)`, `prepararMapa`, `usarMapa(M)` troca os nomes do módulo e `ativar(g)` no começo
+  de cada entrada (createGame, act, step, snapshot...) põe o mapa do jogo e as portas fechadas (`PORTAS_FECHADAS`); `opts.mapa` e
+  `g.mapa`, `Sim.usarMapa(id)`, `Sim.IDS_MAPAS`. Asilo: espaços e vãos (`ESPACOS`, `VAOS`) viram paredes, 18 portas (`PORTAS_DIN`,
+  `g.portas`, `CFG.porta` .35 s, fechada é parede e abafa o som, bots abrem no caminho), quadros de força por ala (`QUADROS`,
+  `g.energia` com o fim do apagão, `CFG.cortarLuz` 4/`religarLuz` 6/`apagao` 90; `lightAt` ignora as lâmpadas da ala sem luz),
+  água (`AGUA`, `CFG.aguaVel` .7), eventos 'porta'/'energia', sons porta_abre/porta_fecha/estalo; snapshot com `mapa`, `portas` (1/0)
+  e `energia` (segundos que faltam). Planta e distâncias em `docs/asilo/`. `MAPA=asilo` em `tools/simular.js` e `tools/testar.js`.
+  Cliente: um mapa por página (`MAPA_BOOT` de sessionStorage 'rr-mapa-boot' ou `SET.mapa`; trocar recarrega, `recarregarNoMapa`),
+  escolha no título e mapa da sala no lobby/salas; `client/asilo.js` (`RR_ASILO`, embutido pelos builds e servido pelo servidor:
+  salas, portas de correr, lâmpadas por ala, quadros, móveis, lago) com `atualizar(dt, estadoMapa(V), agora)`; planta do Tab
+  `plantaAsilo`/`plantaAsiloDin`. Servidor: o mapa é escolhido ao criar a sala (`r.mapa`), vai no welcome/lobby/salas/registro.
+  Teste: `node tools/navegador-asilo.js` (porta, folha, luz, planta, fotos em dist/asilo). Bots, 200 noites: culto 45% no asilo.
+  Segurar E mexe na porta uma vez (`a.portaPresa` até soltar). Portas abertas ficam visíveis, encostadas na face livre da parede
+  (batente e trilho; `asilo.js` e `MundoAsilo.cs` escolhem a face com `Sim.livre`/`Mapa.Livre`). Bot do culto fecha as portas a até
+  `CFG.botPortaRitual` (10 m) do altar antes do ritual. Dicas `porta`, `c_quadro`, `h_apagao` e aviso "A luz caiu" (evento 'energia'). Unity: `Mapa.cs` guarda os campos de cada mapa (`DadosMapa`,
+  `Usar(id)`, `Ativar(jogo)` como o ativar(g)); `exportar-mapa.js` grava `simulacao-asilo.json`/`mapa-asilo.json`; `comparar-cs.js`
+  e `unity-ver.js` aceitam `MAPA=asilo`. `Visual/MundoAsilo.cs` é o `client/asilo.js` (`ConstruirAsilo`, `AtualizarAsilo`); o
+  `Mundo.Construir(mapa)` pula mata e catedral viva no asilo; `PartidaVisual.TrocarMundo(id)` desmonta e monta (título: linha
+  "Mapa", PlayerPrefs "rr-mapa"; online: welcome/lobby com o mapa da sala; `Rede.Ler` lê mapa, portas e energia). Planta:
+  `PlantaFixa.TexturaAsilo` e `PlantaAsiloBase`. O `TesteTelas` joga uma noite no asilo (porta, apagão, planta).
+- v6.2b (notas em `notas/v6.2b.md`): nenhum som é sintetizado nem feito por IA. Bipes, vento de ruído, música do menu, tensão,
+  pulsação dos rituais e as reservas viraram receitas em `montar-sons.py` (`clique`, `aviso`, `ping`, `vazio`, `coracao`, `tambor`,
+  `presagio`, `eco_coro`, `runa`, `clarao`, `purificacao`, `sal`, `trovao`, `alucinacao`, `musica_laco`, `pulso_laco`, `bordao_laco`,
+  `tensao_laco`); no cliente `lacoGravado`, sem `sfxTone`/`sfxNoise`/`AU.noise`; no Unity `Som.Aviso`, `PassoLaco`, `Hab(cls,x,z,f)`.
+  Só sobra um oscilador de 7 Hz que mexe no volume do coro (tremor do selo), sem soar. Sem gravação, o som não toca.
+- v6.3 (notas em `notas/v6.3.md`): interface na direção Nanquim (escolhida pelo dono num quadro de três direções:
+  https://claude.ai/artifact/RwkfQ2mJufeD1EvQJFZfPF). Navegador: camada de tema no fim do <style> (tokens --sangue, --mono;
+  Big Shoulders Display, IBM Plex Sans Condensed e Mono do Google Fonts), título `.tituloJogo` com `.contorno` e `.pincel`
+  (PINCEL), resultado com `.fimCab`, movimento por `marcar(el,cls,ms)` e `UIM` (tranco da munição, `ferido`, feed `.novo`,
+  pips riscados por CSS, `#scr.entrada`, `#scr.fim`), `:root.suave` desliga. Unity: fontes novas em `Resources/Fontes` (OFL),
+  `Css("serif"|"display"|"display400"|"mono"|"mono500")`, métricas IBM Plex 1,025/,275 e Big Shoulders ,984/,213 (`LN`, `LNs`),
+  `EstiloBotao` em texto com `TextoBotao`/`Traco`, `PartidaNanquim.cs` (`Marcar`/`Anim`, `Recorte`, `Pincel`, `TextoContorno`,
+  `ComCarimbo`, `ComEntrada`; `animacaoNaFoto` faz o TesteTelas fotografar o fim das animações), HUD e fim da noite portados.
+  O layout do Unity não está mais pixel a pixel com o navegador (as medidas mudaram com as fontes); o mapa (planta) e o Arsenal
+  continuam no estilo antigo.
+- v6.3a (notas em `notas/v6.3a.md`, do playtest online de 25/10 em servidor ainda v6.0): avisos dos feitiços do culto
+  (`prontidaoHab` no kit: Runa "fora do ritual", Empurrão "ninguém à frente"; `HAB_TXT(n,canal)`; Unity `ProntidaoHab`,
+  `TextoHab(f,n,canal)`) e o laboratório `dupla` ('atual' 34 s/50%, 'longo' 42 s, 'cedo' localiza aos 40%; `ritDur`/`ritLoc`
+  com `g.lab.dupDur/dupLoc`; C# `RitDur`/`RitLoc`, `Lab.dupla`; comparar-cs bit a bit com `LAB=dupla=...`). Bots, sementes
+  1000–1199: culto 37% (atual), 33% (cedo), 23% (longo).
+- v6.3b (notas em `notas/v6.3b.md`): portas do Asilo com a verga até o topo da folha (`ALT_FOLHA`; antes 3,2 m nas largas, fresta
+  para o céu), no `asilo.js` e no `MundoAsilo.cs`. Online: welcome sem `mapa` = catedral (servidor anterior à v6.2), hello e welcome
+  levam `versao` (aviso no chat da sala se diferir), servidor recusa hello sem `mapa` numa sala que não é catedral (teste em
+  protocolo.js). `VERSAO` 6.3. Faixa dos altares com `width:min-content; min-width:62px` (Unity: largura pela palavra mais longa).
+  Rituais em altar não escolhido = Transferência (dos bots), não defeito.
+  Unity: `Mundo.Montar` faz `Mapa.Usar(MapaVisual.ID)` antes de montar (altares/reagentes/NPCs saem do `Mapa` da simulação; trocar
+  de mapa no título montava a catedral com os pontos do Asilo).
+- v6.4 (notas em `notas/v6.4.md`, da análise de design de 28/10; créditos em `docs/ARTE.md`): texturas fotográficas CC0 do Poly Haven
+  (`assets/texturas/fontes.json` com `media` = cor média da textura gerada antiga; `python3 tools/montar-texturas.py` grava
+  `client/texturas.js` (`RR_TEXTURAS`, embutido pelos builds e servido) e `Resources/Texturas/<nome>_cor/_nor/_rug.bytes`; originais
+  em `assets/texturas/fontes/`, fora do git). Navegador: `pbrReal(nome,...)` no lugar de `pbr` (a Image entra já em `t.image`, o three
+  sobe quando decodifica; cópias com outra repetição dividem a mesma Image). Unity: `Pbr.Foto(nome) ?? Pbr.Criar(...)`. Modelos CC0
+  do Poly Haven no `montar-modelos.py` (`"polyhaven": id`, glTF 1K juntado em GLB, `reduzir` com pyfqmr e uv do vértice mais perto,
+  `"bordas": false` na cama): `rocha`/`pedra` (kind rocha), `tronco` (tronco/raiz, consome os 12 `vr()` dos galhos), `caixote`,
+  Asilo `leito`/`banco_asilo`/`mesa_asilo` (`M3` no asilo.js e no MundoAsilo.cs; eixo comprido em x). Laboratório `pausa`
+  ([0,45,25]: 0 = horários; senão `bloqueioRitual` deixa o próximo ritual passados `pausa` s de `lastResolveT`; C# `Lab.pausa`).
+  'localized' leva `restante` e `distCaca` (portado; comparar-cs bit a bit). `analisar.js`: "O que decide a noite" (primeira queda,
+  resgates, entre rituais, chance de selar por restante/distância, classe, altar). Bots 200 noites: pausa 45 → culto 37% → 28%.
+- v6.4b (notas em `notas/v6.4b.md`): texturas `casca` (MAT.casca, repeat 1×3), `pedraVelha` (cinza, média 200; cor 0x878782 = 0x6a6a66×255/200),
+  `telha` (M.telha do mundo.js) e `lapide`; `texFoto(nome)` no navegador (foto sem reserva gerada; null sem ela), `Pbr.Foto` com cache no
+  Unity. Modelos `fogueira` (anel de pedras), `lanterna` (nos postes, chama dentro; `"bordas": false`) e `escombro` (consome os 9 `vr()`
+  de cada pedra antiga). `unity-ver.js` serve a página e a exportação por um servidor local (o `mundo.bin` passou de 70 MB e o
+  `route.fulfill` derrubava a página) e reduz as texturas a 512 px só na comparação, com cópias compartilhadas.
+- v6.4c (notas em `notas/v6.4c.md`): terceira leva. Texturas `concreto`, `ferrugem`, `telhadoAsilo` (asilo.js `F_CONC/F_FERR/F_TELH`
+  com `texFoto` nas dependências do `RR_ASILO`; Unity `Pbr.Foto` no MundoAsilo). Modelos `samambaia` (PNG com alfa: `"alfa": true`
+  junta o mapa Alpha do Poly Haven; `modelo()` faz alphaTest .45 e DoubleSide, `ModeloGLB.alfa`/`tex` com recorte e duas faces),
+  `raiz` (kind raiz separado do tronco, consome os mesmos 12 `vr()`; `"brilho"` .5), bancos da nave com `banco_asilo` tingido,
+  `luminaria`, `quadro`, `canteiro` (M3 com pedaço 1,4), bancada = `mesa_asilo`, maca = `leito`. Quarta leva na mesma versão: `planalto`
+  (o promontório vira malha própria com a foto; Unity: `Chão do promontório` com o detalhe trocado), `tabuas` (MAT.tabuas), `arca`
+  (mundo.js recebe `modelo` nas dependências), `rocha2`/`rocha3` (forma por `Math.abs(Math.round(x*7+z*13))%3`, sem sorteio; C# com
+  Floor(v+.5)), `lampiao` (encaixe altura, 0,42 m, em cima das mesas e da bancada, giro `(x1+z1)%PI`). Modelos novos sem
+  `"bordas": false` não reduzem (rocha2 ficou com 65 mil triângulos). `alturas.js` ignora `__T.NOITE` (npcs, pontos, sal). `tools/arte.py` refaz as tabelas
+  de `docs/ARTE.md` dos dois fontes.json. `build.js` também grava `dist/web/` (página + pedaços `Object.assign(window.X||{},...)`).
+- v6.4d (notas em `notas/v6.4d.md`): `pintura1`/`pintura2`/`espelho` (encaixe altura, frente em +z, `"bordas": true`: sem
+  bordas a redução desmancha as superfícies planas) nas paredes das salas internas do Asilo: no meio da primeira parede (z1, z2,
+  x1, x2) com parede atrás em toda a largura (`livreA` e nenhum `VAOS` a 0,3 m), chão livre a 0,6 m e nenhum quadro de força a
+  2,5 m; a 10 cm da parede (com 4 cm o reboco do lado z2 cobria), y 1,2. 29 peças; `RR_ASILO` devolve `NA_PAREDE`. No Unity,
+  o mesmo bloco antes dos quadros de força. `montar-modelos.py` junta várias texturas de cor num atlas em grade (uv de cada
+  primitiva no seu quadrado): mudou `lampiao` (era preto) e `lanterna`.
+- v6.4e (notas em `notas/v6.4e.md`): `cadeira` (WoodenChair_01, encaixe altura 1,7 m, escala 1,5 em x/z, `GIRO_CADEIRA` = PI: o
+  encosto do modelo fica em −z) com o capacete de ferro; `armario` no balcão (M3 com pedaço 1,3, frente em +z, para a entrada) e
+  o tampo; textura `portaAsilo` sem `media` (fica com a cor da foto; material 0xb0b0a8) nas portas.
+- v6.5 (notas em `notas/v6.5.md`): bonecos de verdade, CC0 da Quaternius (Modular Character Outfits - Fantasy e Universal Base
+  Characters, Standard grátis do itch.io; `tools/montar-bonecos.py` baixa pelo fluxo do itch: csrf → /download_url → /file/<upload>).
+  `assets/bonecos/fontes.json` (pacotes em `assets/bonecos/fontes/`, fora do git) monta 5 bonecos (ritualista, guardiao, soldado,
+  exorcista, rastreador): o glTF com esqueleto vai para a pose de repouso, gira 180° (olham para −z), cada triângulo vai para a junta
+  do osso de maior peso (body, torso, head, legL/R, armL/R), os braços descem da pose em T (giro no ombro), a cabeça de um corpo inteiro
+  entra com o filtro "cabeca" e as texturas viram atlas recolorido (`cores`: "verde" troca a matiz, "mult"). Sem redução (o uv do
+  vértice mais perto manchava a roupa): 27–33 mil triângulos, ~1,3 MB por boneco. GLB enxuto com TEXCOORD_1.x = peça e `extras`
+  (pivôs relativos ao pai da junta, `mao` = ponta do braço direito). Saída `client/bonecos.js` (`RR_BONECOS`; build.js grava
+  `dist/web/bonecos-N.js`, build-mobile embute, o servidor serve) e `Resources/Bonecos/<nome>.bytes`. Navegador: `boneco(nome)` e
+  `bonecoReal(...)` no `makeCharacter` (as juntas nos pivôs; rosto escuro e olhos no capuz, runa, ossos do Guardião, chapéu ×0,66, lanterna
+  e estola pela caixa do torso; sem o arquivo, os bonecos antigos). Unity: `Visual/BonecoGLB.cs` e `Boneco.BonecoReal` no `Personagens.cs`;
+  `unity-ver.js`/`unity-fp.js` compilam o `BonecoGLB.cs`. `tools/arte.py` também faz a tabela dos bonecos.
+  Armas na mesma versão: carabina de alavanca e revólver CC0 do OpenGameArt (Lucian Pavel, só FBX: `tools/converter-fbx.js` converte
+  no Chromium com o FBXLoader/GLTFExporter do three). `tools/montar-armas.py` (`assets/armas/fontes.json`, pacotes em `assets/armas/fontes/`
+  fora do git): corta o municiador solto, separa as peças móveis (alav por caixa, tambor por cilindro) e os papéis (madeira/escuro pela
+  cor da textura, caixa/aco/prata pela região), gira (−90/+90 em y), escala (0,00709/0,00085) e leva `ancora_modelo` a `ancora_jogo`
+  (pivô da alavanca; centro do tambor). GLB sem textura, TEXCOORD_1 = (peça, papel), uv pela posição; `client/armas.js` (`RR_ARMAS`) e
+  `Resources/Armas`. Navegador: `arma3d(nome)` (geos[peça][papel], `caixa(papel)`) e `malhasArma3d`; `armaCarabina`/`armaRevolver`
+  escondem as peças antigas (os objetos que a animação usa ficam) e pintam o modelo com os materiais por papel (as skins valem);
+  `carabinaFP` põe portinhola, ferrolho, câmara e entrada pela caixa do modelo; `revolverFP` usa o tambor do modelo e põe câmaras,
+  cartuchos, extrator e municiador no raio (0,61 do tambor) e na face dele (`S.zcRev`, `zMun`). `RR_ARMA` recebe `arma3d`/`malhasArma3d`.
+  Unity: `Visual/ArmaGLB.cs` e `Pecas.Carabina/Revolver` (terceira pessoa); a primeira pessoa vem do `exportar-primeira-pessoa.js`.
+- v6.5a (notas em `notas/v6.5a.md`): a arma da terceira pessoa apontava para o céu desde a v5.9 (a mira fazia `U.gun.rotation.set(0,0,0)`;
+  o quadro da arma precisa de −PI/2 em x para o cano seguir o braço). Mira fica no −PI/2 do começo do animateActor; recargas somam ao
+  −PI/2 (revólver `-PI/2+cima*1.4-baixo*.7`, carabina `-PI/2+rola*.35`); mesmo no `Personagens.cs`. `pbrReal` não devolve mais `foto`
+  (ia para o MeshStandardMaterial). Sétima leva: `tronco2` (dead_tree_trunk_02; kind tronco com `Math.abs(Math.round(x*7+z*13))%2`),
+  `castical` em cima das tumbas, `livros`/`quimica`/`relogio` pelo `enfeite(nome,w,d,y)` do asilo.js (C# `Enfeite`), `moldura` (oval)
+  como quarta peça do NA_PAREDE; textura `tapete` (jacquard) ladrilhada a cada 56 cm por baixo do desenho do `texTapete` (agora
+  `{map,normalMap}`; C# `Tex.Tapete`/`TapeteRelevo`). As molduras retangulares do Poly Haven vêm sem pintura (miolo preto): fora.
+- v6.5b (notas em `notas/v6.5b.md`): lanterna da primeira pessoa em (.25, −.2, −.7) da câmera (Unity (.25, −.2, .7)): rente à câmera
+  ela estourava as mãos (luva 0x2a1c14 saía bege). Contorno frio da luz de leitura × `max(0, 1.15 − rug·1.1)` (arma.js e
+  `RitualReversalPrimeiraPessoa.shader`; metal igual, pano quase zero). Mangas da caça 0x24252a/0x1f2024 (reexportar a primeira pessoa).
+  Caçadores: `U.aba` é um torno aberto na frente (`torno(pts,mat,segs,ini,arco)`, vão de 1,4 rad em −z, sem tampa, scale.z .8; C#
+  `Geo.Torno(..., 28, PI + .7f, PI * 2 - 1.4f)` e `aba.localScale`), estola do Exorcista roxa 0x4a1838.
+- v6.5c (notas em `notas/v6.5c.md`): revisão crítica da arte. Bonecos do **MakeHuman** no lugar da Quaternius: `tools/makehuman.py` lê os
+  formatos (base.obj em decímetros, `.target.gz`, `rig/weights.game_engine.json` com nomes Unreal, `.mhclo` = três vértices da base +
+  deslocamento × escala por eixo, `.mhmat`) e entrega ao `montar-bonecos.py` as mesmas primitivas de um glTF; nada do MPFB é executado
+  (o clone em `assets/bonecos/fontes/mpfb2`, fixo no commit de `fontes.json`, só é lido). Pacotes de files.makehumancommunity.org (o
+  espelho files2 é lento) em `assets/bonecos/fontes/makehuman`. `fontes.json`: `makehuman` (alvos, pele, roupas; `[roupa, material]` para
+  os olhos), `cores` com `tingir`/`contraste`/`mult`, `creditos`, `triangulos` 30000; Quaternius guardada em `_quaternius`. Atlas sem alfa:
+  `opaca()` preenche o transparente por dilatação (bolsos do sobretudo, cabelo). GLB com `extras.vestido`: navegador e Unity (`BonecoGLB.vestido`)
+  não põem aba, chapéu nem túnica; rosto escuro e olhos do culto 4 cm à frente. Créditos CC BY em Ajustes (`CREDITOS_ARTE`, só navegador).
+  Redução: `GLTFPACK=<node_modules/gltfpack/cli.js>` no `montar-modelos.py` (`reduzir_gltfpack`: -si -sv -se .03, `-slb` com `bordas`,
+  `-sa` com `agressivo`) e no `montar-bonecos.py`; o pyfqmr com o uv do vértice mais perto desmanchava rocha2, luminária, quadro, leito,
+  arca, lanterna. `rocha3` = namaqualand_boulder_03; `tronco2` saiu. Galeria de estúdio para revisar: renderizar os GLB de `client/*.js`.
+- v6.5d (notas em `notas/v6.5d.md`): arte CC0 do itch.io. `montar-texturas.py` aceita `"itch": {pagina, arquivo, cor, nor, rug}`
+  (`baixar_itch` do montar-bonecos; zip em `assets/texturas/fontes/`): `azulejoQuebrado`/`pisoQuebrado`/`acolchoado` (SOI). asilo.js
+  `REVEST` (C# no MundoAsilo): planos por dentro da Hidroterapia (azulejo até 2,4 m, piso por cima) e do Isolamento (acolchoado até
+  o teto), em trechos de 0,5 m onde atrás há parede e nenhum vão, a 6 cm. `montar-modelos.py` aceita `"itch": {pagina, arquivo, fbx,
+  textura}` (`baixar_itch_fbx` → `converter-fbx.js`, precisa de THREE_DIR) e `MODELOS_JSON=` (provar candidatos sem refazer tudo):
+  `cruz_celta`/`cruz_ornada`/`lapide_cruz` (`LAPIDES_3D[Math.abs(Math.round(x*7+z*13))%4]`, 0 = lápide antiga; os sorteios vr()/R()
+  continuam; navegador e Unity) e `sarcofago` (kind tumba). Pacotes loafbrr "Graveyard Props" e SOI "Substance Designer Material
+  Pack #1". O resto do itch.io CC0 é estilizado (KayKit, Kenney, PSX) e destoa; os de emaceart são pagos.
+  Spooky Prop Set (loafbrr, FBX com z para cima: `"z_para_cima": true` no fontes.json): `forca` no `marco` da encruzilhada (escala 3,8),
+  `cruz_madeira` nas cruzes de madeira do calvário (`cruz`, escala h×1,05) e `gaiola_presa` na corda do `guindaste` (2,4 a 4 m).
+- v6.5e (notas em `notas/v6.5e.md`): Asilo mobiliado. `mapaAsilo()` ganha móveis com colisão nas salas vazias (helper `M(x,z,w,d,h,kind,rot)`;
+  `rot` = para onde a frente do modelo olha, 0 = +z, só visual; o exportar-mapa leva o `rot`): leitos e `criado` nos Quartos, um leito
+  por Cela, `guarda_roupa` (Quartos, Rouparia), `mesa_redonda`/`poltrona`/`relogio_alto`/`balanco` (Sala de Visitas; relógio também na
+  Sala de Estar), `gaveteiro` e `estante` (Arquivo), `estante` e `comoda` (Farmácia), `caixote` (Depósito), `armario_gotico` (Consultório).
+  Modelos Poly Haven em caixa 1×1×1; desenho por `movel(nome,w)` no asilo.js e `MovelEscaneado` no MundoAsilo.cs (largura = lado da caixa
+  perpendicular à frente). Mudou o mapa: reexportar (`simulacao-asilo.json`), comparar-cs `MAPA=asilo` bit a bit. `VERSAO` 6.5.
+  Bots, sementes 1000–1199 no asilo: culto 42% → 41%. Avaliados e deixados de fora: Coffin and Flowers e Mine Object Collection
+  (loafbrr, saturados/estilizados), lustres do Poly Haven (pequenos para a catedral; os de ferro procedurais ficam).
+- v6.5f (notas em `notas/v6.5f.md`): revisão dos mapas. `tools/revisar-mapa.js [mapa]` (frestas, peça dentro de peça, pontos bloqueados,
+  bolsões sem acesso). Copas de ramagem: textura `copa` (montar-texturas.py `"folhagem"`: folhas dos atlas LeafSet do ambientCG, CC0,
+  recortadas pela opacidade e presas em galhinhos num cartão RGBA de 512; `"tam"`; só cor, PNG) lida por `texAlfa(nome)` no navegador e
+  `Pbr.Foto("copa")` no Unity; `ramagem(c,r,achata,n,sem)` no index.html = `Arvores.Ramagem` no C# (mesmo gerador, base makeBasis) nas
+  copas, moitas, espinheiros (miolo menor + cartões) e no Carvalho Oco (mesmos `vr()`). Árvores em `fabricaArvores()`/`plantarArvores(lista)`
+  (C# `PlantarArvores`, `CopaRamagem(cor)`, `TemRamagem()`). Musgo 0x5e6a52. `__T.VEG` no autoteste. `ARBUSTOS` filtrados no fim do
+  `mapaCatedral()` (nenhum dentro de peça; sem sorteio). `pedraVelha` 0x6b6b66, `pedraClara` 0x8c887f. Asilo: `ARVORES` (18, posições fixas,
+  `arvore_f`) e anel visual além do muro (`plantarArvoresAsilo`, sd 6151; C# no ConstruirAsilo), grama além do muro, `FACHADAS` no
+  asilo.js (C# `Fachadas`): faces de 'parede' que dão para espaço aberto ganham tijolo (textura `tijolo` = dark_brick_wall), rodapé,
+  cornija, janelas gradeadas na grade global de 3,6 m, telhado de ardósia inclinado para dentro e chaminés; ardósia no topo das paredes;
+  verga de tijolo nas portas para fora. Rouparia/Depósito/Sala de Visitas sem frestas. Bots, sementes 1000–1199 no asilo: culto 41% → 47%.
+- v6.6 (notas em `notas/v6.6.md`): mãos da primeira pessoa da malha base do MakeHuman (`python3 tools/montar-maos.py` → `client/maos.js`,
+  `RR_MAOS` base64 com pos/nor/uv/idx/si/sw; triângulos da mão direita com mais de metade do peso nos ossos da mão, cada vértice levado
+  dos quadros dos ossos do MakeHuman para os 16 ossos do arma.js por mistura linear, falanges esticadas para FAL/PL; `ROLO_POLEGAR` .9).
+  `criarMao` usa `GEO.maoPele` dela (sem unhas nem costura); build.js embute nas duas saídas (tag `maos.js`), build-mobile
+  embute, o servidor serve. Unity: `exportar-primeira-pessoa.js` leva a pele em pedaços que se sobrepõem (triângulo com peso ≥ .3 no osso
+  entra também no pedaço dele); unity-fp bit a bit. Bonecos com joelho e cotovelo: `montar-bonecos.py` com `shinL/R` (calf/foot) e
+  `foreL/R` (antebraço e mão), filhas de legX/armX, faixa de 5 cm sobreposta; `extras.maoFore`. Navegador: `bonecoReal` cria as juntas,
+  arma no antebraço (`maoJ`/`maoP`), `juntasNovas(U,a,A,st)` antes da suavização (joelho no passo, ajoelhar, agachar, execução, caído;
+  cotovelo por mira e classe). Unity: `Boneco.JuntasNovas`, `BonecoGLB.maoFore`. Céu fotográfico: `montar-texturas.py` com `"hdri"`
+  (JPG tonemapeado do Poly Haven, `tam` 2048×1024, `sem_lua` apaga a lua), texturas `ceuLimpo`/`ceuNublado`; `prepararCeuFoto()`/
+  `trocarCeu(tipo)` (limpa → ceuLimpo, o resto → ceuNublado; cor do material `CEU.base` escura, giro −1,59/−1,75) nos dois mapas;
+  `atualizarGrande` tinge a base. Unity: `Mundo.TrocarCeu` no `AtualizarClima`. `__T.trocarCeu`, `__T.CEU` no autoteste.
+  Água: `relevoAgua()` (ondas somadas que fecham no ladrilho, gerador fixo; C# `Tex.RelevoAgua`, linhas pelo `Tela.Tex2D`), `matAgua(cor,lx,lz,o)`
+  (relevo a cada ~4 m, rola em `atualizarAgua`; envMap = foto do céu do clima pelo PMREM, `reflexoAgua(qual)` no `trocarCeu`; nas caixas do
+  meshBox passe S,S), lago/tanques/banheiras/AGUA do Asilo, tanques do adro e poço. Charco: `charco(cx,cz)` no mundo.js (chamado pela
+  `passarela`, sem `vr()`; `POCAS_CHARCO`), só visual. Unity: `Mundo.MatAgua`/`AtualizarAgua` (sem envMap), `MundoV6.Charco`, e
+  `ReflexoNoturno` (cubo 8×8 com a média da foto do céu × base: reflexo custom do RenderSettings no lugar do céu de dia padrão).
+  `__T.pos()` = {composer, BLOOM, GRADE}. Mangas claras na vitrine = luz de estúdio (`LEITURA` 1,3); na partida saem escuras.
+- v6.6a (notas em `notas/v6.6a.md`): enfeites `jarro` (criados-mudos), `cha` (mesa redonda, altura .12: o conjunto é largo) e `busto` (cômoda com x1 < 7) pelo `enfeite` do asilo.js / `Enfeite` do MundoAsilo.cs. Barril do Poly Haven avaliado e deixado de fora (todos são tambores de metal ou plástico).
+- v6.7 (só Unity; notas em `notas/v6.7.md`): locomoção da terceira pessoa no `Personagens.cs` (no Unity: coxa positiva = para a frente,
+  joelho negativo = dobra). `corrida` 0–1 por velocidade (3,6 a 5,8 m/s): amplitude até .85 (culto .6 × .82), coxa à frente +.12,
+  quique |cos| andando e |sin| correndo, tronco −.2 e giro `torso.r.y` contra o quadril (`giro` .04 + .16·corrida para quem segura arma,
+  .2 no culto), joelho no `JuntasNovas` com `K` até 1,75 (culto .95) e apoio .08 + .22·corrida. Caçador correndo sem atirar (`semTiro`
+  > .35 s): arma atravessada no peito (`gun.r` (−PI/2 + .35, .25, .9), cotovelos 1,25/1,35). Agachado andando: meio agachado (coxas .75 ± .35,
+  joelhos −1,35, bodyY −.24); parado continua ajoelhado. Recarga da carabina maior (`recCiclo` dobra o cotovelo direito).
+  Ferramenta: `THREE_DIR=... NODE_PATH=$(npm root -g) node tools/unity-poses.js [pasta] [regex]` (tools/cs/PosesBoneco.cs: roteiros com o
+  `Animar` de verdade, fotos de lado e de frente em `dist/unity-poses/<roteiro>.png`).
+- v6.8 (só Unity; notas em `notas/v6.8.md`): mãos da primeira pessoa com pele de verdade. `exportar-primeira-pessoa.js` grava `peles`
+  (por SkinnedMesh: nó, geo, mat, 16 ossos, `inv` = boneInverse·bindMatrix em colunas, `si`/`sw` 4 por vértice); os pedaços rígidos
+  "pele b" continuam na árvore (o unity-fp confere os nós) e o `ArmaFP.MontarPele` os esconde e põe um `SkinnedMeshRenderer` no nó
+  (bindposes = `inv`, updateWhenOffscreen). Mão do culto (sob `vmC`): pele do MakeHuman (`Resources/Maos/pele_cor.bytes` JPG e
+  `pele_uv.bytes` float32 na ordem dos vértices, do `montar-maos.py`: recorte da ilha da mão em middleage_lightskinned_male_diffuse e o
+  uv original da malha base), cor (.62, .55, .6). Mangas tiradas do boneco testadas e descartadas (abas, forro, incham). Ferramenta:
+  `node tools/unity-fp-fotos.js [pasta] [regex]` (tools/cs/FotoFP.cs; `VISTA=perto|lado`, `LARG=`), pele deformada na CPU como no Unity.
+- v6.9 (notas em `notas/v6.9.md`; no `client/arma.js`, e o Unity recebe pelo `exportar-primeira-pessoa.js`): `geoTubo()` virou manga de
+  pano (tubo unitário com rugas por senos fixos perto das pontas, franzido antes da bainha, bainha dobrada para dentro; faces para fora:
+  `idx (a, a+1, b)`), `geoPunho()` (anel de couro fechado por `LatheGeometry`, cor 0x241710 no lugar do cilindro aberto 0x3a2618),
+  polegar dobrado em `DEDOS.coronha`/`gatilho` (.3, .8, .72) e `revolver` (.22, .85, .7). Cuidado ao editar linhas únicas do arma.js e do
+  index.html: um `//` no meio da linha come o fim (duas vezes nesta sessão); confira com `node --check client/arma.js`.
+- v6.10 (notas em `notas/v6.10.md`): armas e braços do Sketchfab (CC BY 4.0, créditos em `docs/ARTE.md`, nas Novidades do Unity e em
+  CREDITOS_ARTE). `montar-armas.py` aceita `"sketchfab": {uid, celula, materiais}` (GLB pela API com `SKETCHFAB_TOKEN`, só no ambiente;
+  `assets/armas/fontes/<nome>_sf.glb`), regras com `"nos"` (regex no "nó#malha"), uv do modelo (TEXCOORD_0) e as texturas em atlas
+  (`<nome>_cor/_nor/_mr`: JPG em `Resources/Armas` e `RR_ARMAS_TEX`; `fatores_mr` põe metallicFactor/roughnessFactor no mr). Carabina =
+  Winchester 1873 (dsamuta; sem a bandoleira, com a cartucheira, papel `cartucheira` que nenhuma skin pinta), revólver = Colt Peacemaker
+  niquelado (wanderer; tambor por nó+cilindro). Navegador: `fotoArma3d(M,mats)` (userData.foto/semFoto; skins.js `ajustar` tira as fotos
+  quando a skin pinta o papel). Unity: `ArmaGLB.Foto(nome,k)` (inverte as linhas: o uv do glTF começa em cima), `Personagens.MatsFoto`
+  (terceira pessoa), shader da primeira pessoa com `_MRMap`/`_TemMR`, `ArmaFP.Mr`, `SkinsFP` com `foto`/`sem` da exportação.
+  Braços: `tools/montar-bracos.py` ("Arms6", DJMaesen/bumstrum): a luva (ilha da malha que pesa na mão) reassentada nos 16 ossos e cortada
+  em z `luva_corte`; as mangas recortadas por plano no cotovelo (faixa de 3 cm) no espaço do geoTubo (`ant` esticada até `manga_ate` .93,
+  `antC` do culto até 1, `sup` até o ombro); `window.RR_BRACOS` no fim de `client/maos.js` (o montar-maos.py preserva). arma.js:
+  `geoBracos`, `fotoBracos`, `criarMao(..., {luva3d})`, `criarBraco(..., real|'culto')`. Texturas do three r128 não têm userData
+  (`t.userData=t.userData||{}`). `unity-fp-fotos.js` lê o `_MRMap`.
+- v6.10a (notas em `notas/v6.10a.md`): a manga da caça e do culto é uma malha só com pele em dois ossos (`RR_BRACOS.manga`/`mangaC`,
+  si/sw com 0 = braço e 1 = antebraço, `inv.sup/ant` = boneInverse do quadro de cada osso no espaço do modelo); os ossos são os próprios
+  nós `B.sup`/`B.ant` (escondidos), postos pelo IK com `tuboJunta` (y ao longo do osso, z = eixo da dobra `(EL−SH)×(PO−EL)`, sem ela
+  `polo × (PO−SH)`; C# `TuboJunta`, flag `junta` no rig exportado); o esquerdo é o direito com boneInverse × (1, 1, −1) e faces invertidas
+  (`geoMangaEsq`). Com RB: ombros D (.05, −.15, .6) / E (−.7, −.18, .45), polo D (1, −.4, .3) / E (−1, −.8, −.2), braco [.056, .052],
+  mangas 0x6a6a70; `montar-bracos.py` com `luva_corte` .022, `manga_ate` 1, `boca` .92 (aperto no punho). `montar-armas.py`: `cortar_ilhas`
+  (ilhas de um nó com menos de `min` triângulos: restos da bandoleira). Ferramenta de afinar: rodar `unity-fp-fotos.js` depois de mexer
+  no `rigs` do `Resources/primeira-pessoa.json` (sem reexportar).
+- v6.11 (notas em `notas/v6.11.md`): braços da primeira pessoa trocados (o dono achou o Arms6 "dois tubos"): `tools/montar-bracos.py`
+  reescrito para os braços de DJMaesen/bumstrum (Sketchfab, CC BY): caça = "revolver animated" (luva tingida de couro por máscara do
+  uv da mão: `tingir_mao`/`contraste_mao`), culto = "heavy pistol animated" (mão nua); só a malha do braço direito (`lado` R), sem a
+  arma. Cada braço é UMA malha com pele em 18 ossos (0–15 = ossos da mão do criarMao, 16/17 = nós B.sup/B.ant com tuboJunta); vértices
+  no espaço do modelo, `RR_BRACOS[k].inv` = boneInverse (mão: M·(v−o) do quadro do osso do modelo para o do jogo; braço: inverso do
+  quadro com a dobra em z), `raio` = raio da manga na escala da mão (vai para `braco` do rig), juntas de ponta presas à última
+  falange. arma.js: `bracoReal(k,B,M,mat,esq)` (esquerdo: boneInverse dos ossos 16/17 × (1, 1, −1), `geoBracosEsq` com as faces
+  invertidas), `criarMao(...,{semPele})` põe os ossos no grupo e esconde a mão antiga (no Unity nó escondido é desligado),
+  `fotoBracos(m,k)` com as texturas `bracos_<k>_{cor,nor,mr}` (Resources/Armas). Os ombros/polos da v6.10a ficam.
+- v6.12 (notas em `notas/v6.12.md`; o dono achou os braços "palitos"): campo de visão próprio da primeira pessoa, como o viewmodel FOV dos
+  FPS. arma.js: `FOV_VM` 54, grupo `vmFov` entre a câmera e vmH/vmC com escala (k, k, 1), k = tan(fov da câmera/2)/tan(FOV_VM/2), posto no
+  `camVista` (1 nas vistas de fora); `BASE_VM` H (.107, −.091, −.32) / C (.17, .03, −.42) no lugar de (.2, −.17, −.42)/(.26, −.12, −.5);
+  `GROSSO` H 1,35 / C 1,6 × o raio do modelo. FOV_VM e BASE_VM vão no `cte` da exportação; C# `ArmaFP.EscalaFov`/`AplicarFov` (no
+  `PrimeiraPessoa.Atualizar` depois do FOV; `Vista` põe 1 nas vistas de fora). O unity-fp mede até o `vmFov`; o FotoFP grava `k`, que o
+  unity-fp-fotos aplica na vista do jogador. Afinar sem reexportar: mudar `cte.BASE_VM`/`rigs.*.braco` no primeira-pessoa.json e rodar o unity-fp-fotos.
+- Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
+  (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
+  põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e
+  servido pelo servidor) e em `Resources/Modelos/<nome>.bytes`. Leitor mínimo igual nos dois: `modelo(nome)` no index.html
+  (material com `desgastar`, `MODELO_DESGASTE`) e `Visual/ModeloGLB.cs`. Sem o modelo, voltam as peças antigas. A estátua gerada
+  é em pé para todas as poses (o sorteio `vr()` das pedrinhas continua igual). `unity-ver.js` tem as vistas `altar-encapuzados`
+  e `estatua`; o `UnityFalso` decodifica imagens com o Pillow. Uso comercial liberado pelo dono.
+- Outra engine: `docs/PORTE.md` (regras, números, equivalências Unity/Unreal/Godot, ordem do porte) e
+  `docs/mapa.json` (`node tools/exportar-mapa.js`, que também grava `unity/Assets/RitualReversal/Resources/mapa.json` e `simulacao.json`).
+- Porte para o Unity (escolhido pelo dono; ele já importou o blockout no Unity 6.6 e andou pelo mapa):
+  `unity/Assets/RitualReversal`. `Scripts/Simulacao/` é o `sim.js` inteiro em C# puro (regras, bots, navegação),
+  conferido bit a bit contra o JS por `node tools/comparar-cs.js` (precisa de `apt-get install mono-mcs`).
+  `PartidaLocal/Visual/Hud.cs` jogam contra bots no Unity (IMGUI); o importador cria o objeto "Partida".
+  `Resources/simulacao.json` sai de `node tools/exportar-mapa.js`. Eixos: Unity (x, y, −z), giro −yaw.
+  Mudou regra no `sim.js`? Porte para o C# e rode o comparar-cs. Os scripts do Unity compilam aqui contra os
+  assemblies do NuGet `UnityEngine.Modules` 2021.3 (mcs com -r:), mas só o dono roda o Unity de verdade.
+- Visual do protótipo no Unity (`Scripts/Visual/`): o cliente three.js portado para URP, montado por código no Play.
+  Tudo nas coordenadas do protótipo sob uma raiz espelhada (1, 1, −1); `Mundo.Q` = Euler XYZ do three.
+  `Geo.cs` (primitivas iguais às do three), `Texturas.cs` (makeNoise/pbr/canvas), `Materiais.cs` (URP Lit e o
+  shader `Resources/RitualReversalBrilho.shader` para brilhos e sprites), `Mundo*.cs` (buildWorld, floresta,
+  catedral viva, altares, céu/luzes/névoa/Grande Ritual, atores/efeitos/partículas), `Personagens.cs`
+  (makeCharacter/animateActor, armas, cetro), `PrimeiraPessoa.cs` (viewmodels, lanterna, câmera), `Pos.cs`
+  (Volume do URP), `Som.cs` (todos os SFX e laços gravados, misturados em OnAudioFilterRead). Menu "Criar cena do jogo".
+  Online: `Rede.cs` (WebSocket, snapshot -> Jogo) e `PartidaOnline.cs` (lobby, previsão, interpolação, reconexão),
+  mesmo protocolo do navegador; `Ator.hidden` só existe no cliente. Ajustes na pausa e no título (PlayerPrefs).
+  v6 no Unity: `MundoV6.cs` é o `client/mundo.js` (catedral, interior, pontes, desfiladeiro, pisos, peças novas, mesma
+  ordem de `vr()`), `MundoReagentes.cs` (reagentes por tipo, relógio de velas, fecho da execução), poses de ajoelhar/
+  executar/agachar e a recarga em terceira pessoa no `Boneco`, véu da vítima no HUD, ambiente por lugar no `Som.cs`,
+  shader `Resources/RitualReversalMarco.shader` (torres e telhados com 0,07 da névoa; sem ele, URP/Lit).
+  Sem abrir o Unity: `tools/unity-ver.js` compila o visual contra `tools/cs/UnityFalso.cs` (UnityEngine de mentira),
+  roda `Mundo.Construir()` (`tools/cs/ExportarMundo.cs`), desenha a exportação no three com a câmera, névoa e luzes de
+  cada vista do oficial e grava oficial | Unity lado a lado em `dist/unity-ver/`. Também pega exceções na montagem.
+  Primeira pessoa da v5.9/v6 no Unity: `ArmaFP.cs` é o motor do `client/arma.js` (amostrar, misturar, quadros de
+  referência, IK, dedos, camadas, peças, cartuchos, municiador, cetro) com as contas do three em double (`V3d`, `Qd`, `Md`);
+  `SkinsFP.cs` é o `client/skins.js` (papéis, detalhe em três planos, acessórios, pendentes, ganchos). A árvore, as malhas,
+  os materiais e os clipes já preparados vêm do jogo oficial: `tools/exportar-primeira-pessoa.js` grava
+  `Resources/primeira-pessoa.json`, `primeira-pessoa-geo.bytes` (pele das mãos em pedaços rígidos, um por osso) e
+  `Resources/Detalhes/*.bytes` (PNG das texturas de detalhe). Shader `Resources/RitualReversalPrimeiraPessoa.shader`
+  (UniversalFragmentPBR + luz de leitura + detalhe da skin + varredura; relevo por derivadas de tela; sem ele, URP/Lit).
+  `PrimeiraPessoa.cs` ficou com a câmera (altura 1,67), a lanterna, o clarão e as cápsulas, e monta o corpo e o contexto
+  que o `ArmaFP.Quadro` recebe. Tecla I inspeciona; `ArmaFP.Forcar`/`LuzEstudio`/`TrocarSkin` são a vitrine e o Arsenal.
+  Vitrine (F9 numa partida local): `PartidaVitrine.cs` é o painel() do arma.js nas medidas do #vitrineArma (arma, clipe,
+  velocidade, vista, luz, linha do tempo com o range dourado, tocar, repetir); abrir solta o cursor e esconde a pausa;
+  `ArmaFP.Vista(cam, "peca")` mede a portinhola ou o tambor no espaço da câmera (o camVista do navegador).
+  `tools/unity-fp.js` roda os mesmos casos no navegador e no `ArmaFP` (Mono, `tools/cs/TesteFP.cs`) e compara cada nó:
+  656 poses, diferença máxima 2e-7 m, e uma passada de fumaça por todas as skins e entradas.
+  Estilo do navegador no Unity: `Resources/RitualReversalIlustrado.shader` substitui o URP/Lit no `Mat.Lit` (mesmas
+  propriedades; a luz do three em faixas, especular recortado, `_Rim` = RIMLUZ nos personagens e mercadores, `_NevoaK` nos
+  marcos; luz comum em `Resources/RitualReversalLuz.hlsl`, também usada pela primeira pessoa; PlayerPrefs "rr-ilustrado" = 0
+  volta ao URP/Lit). Etapa GRADE: `Resources/RitualReversalGrade.shader` (contorno a nanquim e névoa rasteira, em sRGB depois
+  do ACES), posta por `Pos.cs` no renderizador do URP como FullScreenPassRendererFeature, por reflexão, e tirada no fim.
+  Interface do navegador no Unity (IMGUI, `partial class PartidaLocal`): `PartidaInterface.cs` tem legendas dos sons,
+  bússola, faixa dos lances, tela de queda e espectador, caderno dos altares (J); `MundoAltares.cs` tem o mostrador do
+  círculo (`Resources/RitualReversalMostrador.shader`, `PiscarMostrador`). `PartidaArsenal.cs` é o Arsenal do menu
+  (partida local parada, `ArmaFP.Forcar`/`Vista`/`LuzEstudio`, enquadramento deslocado como o setViewOffset do three).
+  Fim da noite: `Noite.cs` (sem IMGUI) anota a linha do tempo (`LinhaDoTempo`, a cada quadro em `PassoNoite`) e tira do
+  registro os marcos, lances, destaques e o placar; `PartidaNoite.cs` são o resumo, o resultado e o Rever a noite; online,
+  o registro vem do caminho `log` do snapshot final (UnityWebRequest). `Desenho.cs` rasteriza a planta fixa do navegador
+  (`PlantaFixa`) e o gráfico da noite em textura; `Tracos.cs` desenha no IMGUI o que muda a cada quadro; `PartidaPlanta.cs`
+  é a planta do Tab e a escolha dos altares. `tools/unity-noite.js` confere tudo no Mono (e fotografa a planta do navegador).
+  Clima: `Visual/MundoClima.cs` (`CLIMAS`, `ClimaDe` com o mesmo hash do navegador, `ChaveClima` sem o que vem depois de #,
+  riscos de chuva que não caem sob o telhado, dois clarões e o trovão via `AoTrovao`, névoa e estrelas por clima); o laço da
+  chuva gravada fica no `Som.cs` (`Chuva`). `PartidaLab.cs` é o laboratório (`LAB_UI`, `LabMudancas`; o painel é o `PainelLabCss` do título e da sala).
+  Menu: `PartidaMenu.cs` (título com o sigilo, papel solo, dificuldade, laboratório, desafio, Aprender a jogar, Como jogar,
+  Novidades, Ajustes; `IniciarSolo` = startLocal; tutorial `PassosTut` com alvo na tela e na bússola, N pula; dicas `DICAS`,
+  PlayerPrefs "rr-dicas"), `PartidaPerfil.cs` (perfil e conquistas em PlayerPrefs "rr-perfil", o mesmo JSON do navegador;
+  desafio da noite com pontos e recorde do dia), `PartidaSala.cs` (sala pública, salas abertas por /api/salas, dificuldade,
+  laboratório e chat no lobby, chat da partida com Enter/Tab/Esc, silenciar adversários).
+  Relatório do playtest: `Noite.Relatorio` é o `Sim.relatorio` (o `unity-noite.js` compara os dois sobre o mesmo registro,
+  campo a campo); `PartidaRelatorio.cs` tem os dados (perguntas em PlayerPrefs "rr-resp-<partida>", copiar, baixar) e a tela é o `TelaRelatorioCss`.
+  Frases rápidas e falas do bot aliado: `PartidaFalas.cs` (V abre, 1 a 6). Música do menu e trilha de tensão: `Visual/SomMusica.cs`
+  (laços gravados `musica_laco`/`tensao_laco`; a partida passa o nível em `som.Tensao`, `AtualizarTensao` no PartidaVisual).
+  Kit e mira: `PartidaKit.cs` (fileira de ferramentas com recarga, mira cruz/ponto/círculo com cor e tamanho que abre com o
+  tiro, linha de quadros/ping); brilho em `Pos.brilho`; pausa com a cola das teclas.
+  Sem abrir o Unity, `tools/unity-telas.js` roda o `PartidaLocal` inteiro (Update e as duas passadas do OnGUI) contra
+  `tools/cs/UnityFalso.cs` + `IMGUIFalso.cs` pelo roteiro de `tools/cs/TesteTelas.cs` (título, menus, noite de cada lado,
+  resumo, resultado, relatório, replay, perfil, tutorial, desafio, Arsenal); botões "apertados" pelo texto, no MouseUp.
+  O `IMGUIFalso.cs` tem o GUILayout do Unity em miniatura (o algoritmo do GUILayoutGroup: margens que se fundem, FlexibleSpace
+  com peso 10000, rolagem, áreas) e mede o texto com os TTF de verdade (cmap/hmtx); acusa o "Getting control N's position..."
+  quando o Repaint pede controles que o Layout não teve. Um clique que muda a tela no meio da passada é encerrado com
+  `GUIUtility.ExitGUI()` (`cliqueNaPassada` no `BotaoCss`, try/catch em `OnGUI`). Com `FOTOS=` o Repaint grava o que desenhou e
+  `tools/foto-imgui.py` faz o PNG (texto rico sem `<u>`, que o Unity não tem; negrito e itálico sintéticos). Giros no IMGUI:
+  `Tracos.Girar` (o `RotateAroundPivot` erra o pivô com o GUI.matrix escalado, fora de 1080p); só fora de áreas.
+  HUD com as medidas do CSS "interface mais quieta" (`PartidaHudPecas.cs`: faixas escuras, `Topo`, `Faixa` de losangos,
+  `Tarefas`, `FeedHud`, `Vitais`, `KitHud` com o sensor, `Disputa` na `Placa`, `Marcador` por classe .mk, `MarcaAcerto`,
+  `DirecaoDano`, `AnuncioHud`, `NotaHabilidade`); `PartidaCss.cs` põe o texto como o navegador (`Css(peso, tamanho, cor)`
+  com a Barlow em 400/500/600/700, `Linha` pela altura de linha do CSS, `Paragrafo` com quebra própria, `NaBase`, sombra,
+  `Moldura`, `Degrade`); caderno, frases, tutorial, dica, bússola, faixa do lance, queda e rótulos de interação também.
+  Telas com o CSS do navegador, sem GUILayout (posições calculadas, `medindo` mede antes de desenhar): `PartidaCssTelas.cs`
+  (button.go/gold/ghost com as pontas chanfradas em textura nove-partes, opções .dif/.set/.labRow/.repCtl, link .lk, campo
+  input.txt, caixinha, fundo .screen e do título, `BotaoCss` com o foco do controle, `P`/`H2`/`H3` com o max-width 64ch e as
+  margens que se fundem), `PartidaTitulo.cs` (coluna de 470 px, laboratório como details, online), `PartidaTelasCss.cs`
+  (`PainelTela` centra e rola a placa de 800 px; `Cartoes` (.choice), `FileiraBotoes` (.btnrow), entrada da noite, Ajustes
+  com a grade .set e as teclas em .binds, pausa com a .cola). Ajustes sem as linhas que o Unity não tem (toque, resolução
+  adaptativa, mouse bruto). `PartidaMenusCss.cs`: Aprender a jogar, Como jogar (.passo), Novidades, Perfil (`Tabela` =
+  table.res, .conqs); `PartidaNoiteCss.cs`: resumo e resultado (.lances, .premios, table.placar, .ltBox, statsTable,
+  .desafio; a .btnrow quebra linha). `PartidaFimCss.cs`: escolha dos altares, Rever a noite e relatório (`TabelaCols` é o
+  table-layout automático do CSS: mínima e máxima de cada coluna, colspan, células no meio da linha); `ListaMarcos` é a
+  ul.ltEv (colunas equilibradas pela altura). `PartidaLobbyCss.cs`: sala (vagas, .difOnline, chat `ChatLista` com `Fluxo`,
+  texto em linha com estilos diferentes) e reconexão; a loja é o `TelaLoja` (PartidaHud); o Arsenal (`PainelArsenal`) usa a
+  fonte da interface do sistema (`fonteSistema`, o system-ui do navegador; `fonteSans` é o sans-serif do chat da partida),
+  com cantos redondos (`TexArredondada`). Alturas de linha como o Chromium: line-height normal = subida e descida
+  arredondadas (`AlturaNormal`, `LN` Barlow, `LNs` IM Fell, `LNsis`, `LNsans`); `MeioX` é o vertical-align: middle;
+  `PainelTela` rola até o primeiro botão da tela nova, como o focus() do setScreen. No `Linha` a meia entrelinha entra com
+  floor (o AddLeading do Chromium) e a linha de base cai no pixel da tela (`PixelY`: 1/64 e meio pixel para cima, pela
+  matriz); glifo que falta na fonte aumenta a linha como a reserva DejaVu (`AlturaNormalCom`, o ☉ do kit do culto);
+  `LargEspaco` (o CalcSize ignora espaço no fim). Texto nítido com a interface escalada (1440p, 4K, celular): `TextoNitido`/
+  `BotaoNitido`/`CampoNitido` (fundo à parte, campo sob a matriz) rasterizam a fonte no tamanho dos pixels e põem uma matriz 1/s em volta; para isso toda rolagem e grupo
+  passa por `Rolagem`/`FimRolagem`/`Grupo`/`FimGrupo` (pilha `recortes`, a origem que o IMGUI soma antes do GUI.matrix;
+  o `ComTransformacao` usa a mesma origem). Nada de `GUI.BeginScrollView`/`BeginGroup`/`GUI.Label` direto nas telas.
+  Símbolos que a Barlow/IM Fell não têm (◆ ✓ ✕ ✚ ✶ ☉ ◎ ☠...): no navegador vêm da reserva do sistema (DejaVu Sans no
+  Linux); o Unity leva a DejaVu Sans e a Bold em `Resources/Fontes` (`fonteSimbolo`/`fonteSimboloN`, licença em
+  LICENCA-DejaVu.txt) e o `Linha`/`Larg` partem o texto em `Trechos` (fora das etiquetas), com negrito para 600/700 e o
+  itálico do estilo; `SoSimbolos` faz o mesmo no TextoBase/TextoSvg. `Css(..., FontStyle)`: a bússola é <i> (itálico).
+  O marcador do <summary> é o caminho do Chromium (`Tracos.Disclosure`, caixa de 2/3 da subida com o pé na linha de base).
+  O "○" das tarefas é desenhado (anel com as medidas do glifo da DejaVu); as legendas dos sons são a fileira flex do .lg
+  (seta `Tracos.SetaSom`, ponto/anel de 8 px, small à parte; no toque à direita com scale .8). Fotos: `foto-imgui.py`
+  superamostra o que gira; `MANTER=1` deixa o JSON; a foto "legendas" põe os mesmos sons nos dois roteiros.
+  Controle na partida (Input System): `EntradaUnity` soma os botões às teclas (o PAD_BOTAO do navegador) e dá os analógicos.
+  Teclas configuráveis: `EntradaUnity.ACOES`/`Binds` (PlayerPrefs "rr-binds", os códigos do navegador), `Capturar` e `Definir`
+  (troca quando a tecla já está em uso); o HUD e a pausa mostram a tecla escolhida (`EntradaUnity.Nome`).
+  Menus pelo controle (`PartidaNavPad.cs`): todo botão das telas passa por `BotaoCss`, que conta a ordem; cima/baixo move o foco, A aperta, B volta. Nenhuma tela usa mais GUILayout.
+  Fontes do navegador em `Resources/Fontes` (OFL, `LEIA.txt`): Barlow Condensed no corpo e nos botões, IM Fell English nos
+  títulos, seções, anúncio, lances e nomes da planta (`Estilos`, `TextoSvg`).
+  Toque (como o TQ do navegador): `PartidaToque.cs` (direcional na faixa esquerda, olhar à direita, botões redondos nas medidas
+  do CSS, correr/agachar/mapa que alternam, Pausa); os dedos entram por `EntradaUnity.Toques()` (Input System ou o antigo) e os
+  botões seguram ações (`EntradaUnity.ToqueSegurar`), somadas a Segurando/Apertou/Atirando. Ajustes "Controles de toque"
+  (PlayerPrefs "rr-toque", ligado de saída no celular); com toque, `Travado()` é o `travadoToque` (não há cursor). No celular a
+  interface usa o pixel de CSS (`EscalaUI`: a densidade da tela, 160 ppp no Android) em vez da tela virtual de 1080; o HUD fica
+  compacto como o `body.toque` (`hudToque`, `ComTransformacao` = transform: scale com transform-origin) e, com a tela até 430 de
+  altura, painéis e título encolhem para 0,86. Resolução adaptativa: `Visual/Resolucao.cs` (o medirRes do navegador na escala de
+  renderização do URP; PlayerPrefs "rr-autores"). `tools/telas-navegador.js` com `CELULAR=1` fotografa o navegador como celular
+  (914 × 411 a 2,625×, toque ligado) e mede o HUD; o `RoteiroCelular` do `TesteTelas.cs` faz o mesmo no Unity falso com dedos.
+  Build (jogo compilado): os materiais são criados no Play, então o build jogava fora as variantes de shader_feature
+  (_NORMALMAP, _EMISSION, _ALPHATEST_ON, _SURFACE_TYPE_TRANSPARENT, _DETAIL_MULX2; o chão da mata usa o detalhe). O
+  `Editor/VariantesShaders.cs` (IPreprocessBuildWithReport e menu "Gerar variantes dos shaders") grava 32 materiais por shader
+  (Ilustrado e URP/Lit) em `Resources/Variantes`, que vão no build e seguram as variantes (o dono confirmou no build de 24/10: chão e texturas certos). Palavra-chave nova num shader? Ponha em `CHAVES`.
+  Fotos de referência: F10 numa partida local (`PartidaReferencia.cs`, `VISTAS_REF` = as VISTAS do navegador.js) leva o
+  jogador pelas 17 vistas na noite limpa ("foto<i>"), sem HUD, e grava PNG em `<persistentDataPath>/referencia-<data>`;
+  `tools/referencia-navegador.js` tira as mesmas no navegador e `python3 -I tools/comparar-referencia.py <pasta do Unity>`
+  junta lado a lado (dist/referencia/lado-a-lado, com `folha.jpg`). O `TesteTelas` passa pelo F10 inteiro.
+  Prévia no editor: menu "Montar o visual na cena" (`Editor/PreviaVisual.cs`) roda o `Mundo.Construir(mapa)` fora do Play, tira os
+  scripts, grava cópias das malhas/materiais/texturas em `Assets/RitualReversal/Previa/<mapa>.asset` (um arquivo, subassets) e põe
+  `PreviaNoEditor` (some no Awake do Play, etiqueta EditorOnly, guarda luzes/névoa de antes para "Tirar o visual da cena").
+  Compilar os scripts aqui com Editor: NuGet `unityengine.modules` 2021.3.33 + `unity3d.sdk` 2021.1.14.1 (UnityEditor.dll) e uma
+  imitação mínima do URP (Volume e os efeitos do `Pos.cs`).
+  Faltam (Unity): ver tudo num Unity de verdade (o desenho do IMGUI e os shaders nunca apareceram numa tela); a linha "Movimento
+  bruto do mouse" (o Input System já lê o mouse sem aceleração); letras de tamanho fracionário do CSS (14,5, 11,5) saem no
+  inteiro mais perto.
+
+## Pendências
+- Licença (dono, 04/11): o jogo é para uso comercial; só CC0 ou CC BY (com crédito), nada NC nem ND.
+- Discord: falta o dono criar o segredo `DISCORD_WEBHOOK` no GitHub (Settings → Secrets and variables → Actions);
+  depois disso o workflow posta sozinho as notas novas. Daqui da sessão: `DISCORD_WEBHOOK=... node tools/postar-discord.js`.
+- Sons: ouvir em fones e acertar volumes; trocar o tiro montado por gravação de arma quando Freesound/OpenGameArt/
+  Kenney/Sonniss estiverem liberados na rede do ambiente.
+- Playtests com 4 pessoas antes de mais conteúdo.
+- Unity igual ao oficial (pedido do dono): feitos o mundo da v6, reagentes, velas, execução, ambiente, a primeira pessoa
+  da v5.9, as skins, o Arsenal, GRADE/RIMLUZ e parte da interface; falta a lista em "Visual do protótipo no Unity".
+- v6 sem gente: equilíbrio entre bots ficou em 37% para o culto (v6.1, sementes 1000–1199); os sons novos não foram ouvidos (ambiente sem áudio).
+- Unity: o dono testar o visual portado e o online (personagens, efeitos e rede nunca rodaram num Unity de verdade).
+  Os shaders Ilustrado, PrimeiraPessoa, Grade e Mostrador nunca compilaram num Unity de verdade (só o C# é conferido aqui); se o
+  mundo ficar rosa, PlayerPrefs "rr-ilustrado" = 0 volta ao URP/Lit.
+- Play Store: falta APK/AAB assinado e conta de desenvolvedor.
