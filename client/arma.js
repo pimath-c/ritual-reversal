@@ -18,7 +18,10 @@
 window.RR_ARMA=function(D){
 'use strict';
 const {nivel,camera,world,matMetal,matCouro,matPano,TEX,RT,lateral,cilZ,V3,armaCarabina,cetroOsso,COMPARTILHADAS,arma3d,malhasArma3d,fotoArma3d,efeito,tocar,camFx,VM,PERFIL_ARMA,coice,cicloDe,suave,CFG,ejetarCapsula,SKINS}=D;
-let vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas=[],vmFlash;
+let vmFov,vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas=[],vmFlash;
+// v6.12: campo de visão vertical da primeira pessoa (graus), o lugar de cada corpo na câmera e a espessura das mangas
+// (× o raio do modelo): a 72° do jogo a arma ocupava um quinto da tela e os antebraços saíam finos como palitos
+const FOV_VM=54, BASE_VM={H:[.107,-.091,-.32],C:[.17,.03,-.42]}, GROSSO={H:1.35,C:1.6};
 const PI=Math.PI, TAU=PI*2;
 const cl=(v,a,b)=>v<a?a:v>b?b:v, mix=(a,b,t)=>a+(b-a)*t;
 // curvas de tempo de cada trecho (a chave diz como se chega nela)
@@ -377,7 +380,10 @@ function construir(){ if(S.ok) return; matsPeca();
   const luva=matCouro(0x2a1c14), manga=matPano(0x24252a), mangaSup=matPano(0x1f2024), punho=matCouro(0x241710);   // casaco de lã carvão (v6.5b: o oleado pardo de antes saía claro na noite), luva de couro
   const peleC=new THREE.MeshStandardMaterial({color:0x5a4650,roughness:.62,metalness:0}), mangaC=matPano(0x581320), unha=new THREE.MeshStandardMaterial({color:0x1a1014,roughness:.3,metalness:.2});
   // ---- caça: corpo (vmH, já na câmera) → raiz da arma → carabina/revólver; mãos e braços no corpo
-  vmH=new THREE.Group(); camera.add(vmH); vmH.position.set(.2,-.17,-.42); vmH.scale.setScalar(.72);
+  // v6.12: campo de visão próprio da primeira pessoa (FOV_VM), como os FPS fazem: o grupo vmFov escala x e y pela razão das tangentes
+  // (a profundidade fica), então a arma e os braços aparecem do tamanho de um FPS sem chegar mais perto da câmera nem mudar com o FOV
+  vmFov=new THREE.Group(); camera.add(vmFov);
+  vmH=new THREE.Group(); vmFov.add(vmH); vmH.position.set(...BASE_VM.H); vmH.scale.setScalar(.72);
   const raizH=new THREE.Group(); vmH.add(raizH);
   vmCarabina=carabinaFP(); raizH.add(vmCarabina.g); vmCarabina.base=new THREE.Matrix4();
   vmRevolver=revolverFP(); raizH.add(vmRevolver.g); vmRevolver.g.position.set(.025,.045,-.13); vmRevolver.g.updateMatrix(); vmRevolver.base=vmRevolver.g.matrix.clone();
@@ -389,9 +395,9 @@ function construir(){ if(S.ok) return; matsPeca();
   if(RB){ const mb=fotoBracos(new THREE.MeshStandardMaterial(),'caca'); for(const k of ['D','E']) bracoReal('caca',bracosH[k],maosH[k],mb,k==='E'); }
   for(const k of ['D','E']){ vmH.add(maosH[k].raiz); const B=bracosH[k]; vmH.add(B.sup,B.ant,B.cot); if(B.manga) vmH.add(B.manga); }
   const rigH={corpo:vmH,raiz:raizH,maos:maosH,bracos:bracosH,ombro:RB?{D:V3(.05,-.15,.6),E:V3(-.7,-.18,.45)}:{D:V3(.02,-.2,.5),E:V3(-.56,-.2,.5)},polo:RB?{D:V3(1,-.4,.3),E:V3(-1,-.8,-.2)}:{D:V3(.7,-1,.2),E:V3(-.8,-1,.1)},osso:{D:[.44,.42],E:[.5,.49]},
-    braco:RB?{D:RB.caca.raio.slice(),E:RB.caca.raio.slice()}:{D:[.054,.044],E:[.054,.044]}};
+    braco:RB?{D:RB.caca.raio.map(r=>r*GROSSO.H),E:RB.caca.raio.map(r=>r*GROSSO.H)}:{D:[.054,.044],E:[.054,.044]}};
   // ---- culto: corpo (vmC) → raiz → cetro; mão direita no cetro, esquerda livre
-  vmC=new THREE.Group(); camera.add(vmC); vmC.position.set(.26,-.12,-.5); vmC.scale.setScalar(.6);
+  vmC=new THREE.Group(); vmFov.add(vmC); vmC.position.set(...BASE_VM.C); vmC.scale.setScalar(.6);
   const raizC=new THREE.Group(); vmC.add(raizC);
   vmCetro=cetroFP(0xb050ff); raizC.add(vmCetro.g); vmCetro.g.position.set(0,-.95,0); vmCetro.g.updateMatrix(); vmCetro.base=vmCetro.g.matrix.clone();
   vmOrb=vmCetro.halo; vmRunas=[];
@@ -402,7 +408,7 @@ function construir(){ if(S.ok) return; matsPeca();
   if(RB){ const mc=fotoBracos(new THREE.MeshStandardMaterial(),'culto'); for(const k of ['D','E']) bracoReal('culto',bracosC[k],maosC[k],mc,k==='E'); }
   for(const k of ['D','E']){ vmC.add(maosC[k].raiz); const B=bracosC[k]; vmC.add(B.sup,B.ant,B.cot); if(B.manga) vmC.add(B.manga); }
   const rigC={corpo:vmC,raiz:raizC,maos:maosC,bracos:bracosC,ombro:{D:V3(.32,-.95,.55),E:V3(-.75,-.9,.45)},polo:{D:V3(1,-.8,.2),E:V3(-1,-.8,.2)},osso:{D:[.62,.58],E:[.62,.58]},
-    braco:RB?{D:RB.culto.raio.slice(),E:RB.culto.raio.slice()}:{D:[.085,.066],E:[.085,.066]}};
+    braco:RB?{D:RB.culto.raio.map(r=>r*GROSSO.C),E:RB.culto.raio.map(r=>r*GROSSO.C)}:{D:[.085,.066],E:[.085,.066]}};
   S.rigs={carabina:Object.assign({arma:vmCarabina},rigH),revolver:Object.assign({arma:vmRevolver},rigH),cetro:Object.assign({arma:vmCetro},rigC)};
   for(const k in S.rigs) S.rigs[k].nome=k;
   for(const o of [vmH,vmC]) o.traverse(x=>{ if(x.isMesh){ x.castShadow=false; x.receiveShadow=false; x.frustumCulled=false; luzDeLeitura(x.material); } });
@@ -852,7 +858,7 @@ function quadroAnim(dt,m,ctx){ if(!S.ok) return;
   S.joltV.addScaledVector(S.jolt,-dt*160).multiplyScalar(Math.exp(-dt*16)); S.jolt.addScaledVector(S.joltV,dt);
   const b=ctx.corpo; const cor=R.corpo, h=cor===vmH, ag=ctx.agK||0;
   // agachado: a arma desce um pouco, chega para o centro e inclina (pronta baixa), sem cobrir a mira
-  cor.position.set((h?.2:.26)+b.x-ag*.012,(h?-.17:-.12)+b.y-ag*.022,(h?-.42:-.5)+b.z+ag*.018);
+  const B0=h?BASE_VM.H:BASE_VM.C; cor.position.set(B0[0]+b.x-ag*.012,B0[1]+b.y-ag*.022,B0[2]+b.z+ag*.018);
   cor.rotation.set(b.rx+S.jolt.x*1.5+ag*.04,b.ry,b.rz+S.jolt.z*1.5+ag*.07);
   S.cam.set(S.jolt.x*.5,S.jolt.y*.5,S.jolt.z*.5);
   if(arma==='cetro'){ cetroVida(P2,m,dt,agora,ctx); rastroBrasa(); }
@@ -924,7 +930,11 @@ let estudio=false;
 // v6: a luz de estúdio é a própria luz de leitura, mais forte (luzes de verdade na cena obrigariam todos os materiais do
 // mapa a recompilar ao ligar e desligar; a de leitura só existe nos materiais da arma). Mesma luz no Arsenal e na vitrine.
 function luzEstudio(on){ if(on===estudio) return; estudio=on; LEITURA.uL.value=on?1.3:.2; LEITURA.uRim.value=on?.4:.16; }
-function camVista(cam){ luzEstudio(!!(S.forca&&S.forca.estudio));
+function escalaFov(fovCam){ return Math.tan(fovCam*Math.PI/360)/Math.tan(FOV_VM*Math.PI/360); }
+function camVista(cam){ luzEstudio(!!(S.forca&&S.forca.estudio)); const cv=camVistaOutra(cam);
+  // nas vistas de fora (vitrine, Arsenal) a arma fica no tamanho real; na do jogador, no campo de visão da primeira pessoa
+  if(vmFov){ const k=cv?1:escalaFov(cam.fov); vmFov.scale.set(k,k,1); } return cv; }
+function camVistaOutra(cam){
   if(S.vista==='peca'){ if(!camV){ camV=new THREE.PerspectiveCamera(50,1,.01,60); cam.add(camV); }
     // perto da peça que trabalha: a portinhola da carabina ou o tambor do revólver (no espaço da arma)
     const W=S.arma==='revolver'?vmRevolver:vmCarabina; W.g.updateMatrixWorld(true);
@@ -977,9 +987,9 @@ function executou(){ const f=camFx(); S.joltV.z-=.5*f; S.joltV.y-=.3*f; VM.pausa
 function tiroVitrine(){ disparoForcado(S.forca&&S.forca.arma); }
 function trocarSkin(arma,id){ if(!SKINS||!SKINS.escolher(arma,id)) return false; vestir(arma,id); return true; }
 // para tools/exportar-primeira-pessoa.js (o Unity carrega as mesmas mãos, armas e clipes): constantes calculadas na montagem
-function exportar(){ return {PALMA_CENTRO:PALMA_CENTRO.toArray(),qPinca:qPinca.toArray(),qMunMao:qMunMao.toArray(),MUN_NA_MAO:MUN_NA_MAO.toArray(),ESC_MAO,ND,P,PADRAO_C,ZC_REV:S.zcRev!=null?S.zcRev:.0335}; }
+function exportar(){ return {PALMA_CENTRO:PALMA_CENTRO.toArray(),qPinca:qPinca.toArray(),qMunMao:qMunMao.toArray(),MUN_NA_MAO:MUN_NA_MAO.toArray(),ESC_MAO,ND,P,PADRAO_C,ZC_REV:S.zcRev!=null?S.zcRev:.0335,FOV_VM,BASE_VM}; }
 return {construir,quadro:quadroAnim,camVista,hab,tiro,sigilo,acerto,golpe,pedirInspecao,trocarSkin,tiroVitrine,executou,S,DEDOS,exportar,
   // vitrine: força uma arma e um clipe; t (0 a 1) fixa o instante, vel muda a velocidade
   forcar:forcarAPI,painel,
-  get cam(){ return S.cam; },get vm(){ return {vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}; }};
+  get cam(){ return S.cam; },get vm(){ return {vmFov,vmH,vmC,vmCarabina,vmRevolver,vmCetro,vmOrb,vmRunas,vmFlash}; }};
 };

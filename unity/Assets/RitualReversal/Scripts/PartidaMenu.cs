@@ -55,6 +55,7 @@ namespace RitualReversal
 
 
         static readonly string[][] NOVIDADES = {
+            new[]{"Braços do tamanho de um FPS (v6.12)","A arma e os braços da primeira pessoa têm agora um campo de visão próprio, de 54°, como nos FPS: aparecem maiores, nos cantos de baixo da tela, sem chegar mais perto da câmera nem mudar com o ajuste de campo de visão. As mangas ficaram mais grossas (caça 35%, culto 60%)."},
             new[]{"Braços novos (v6.11)","Os braços da primeira pessoa foram trocados por modelos de verdade, inteiros, da ponta dos dedos ao ombro: manga de casaco com costura e dobras, que dobra no cotovelo e no punho como um braço. A caça usa luvas de couro; o culto, a mão nua."},
             new[]{"Braços que dobram (v6.10a)","Os braços da primeira pessoa eram dois tubos rígidos; agora a manga é uma peça só que dobra no cotovelo, e os antebraços entram pelos lados, sem atravessar a coronha. As mangas da caça ficaram no tom do sobretudo escuro, e sumiram os restos da bandoleira da carabina."},
             new[]{"Armas e braços de verdade (v6.10)","A carabina agora é uma Winchester 1873 gasta, com gravação na caixa e cartucheira de couro na coronha; o revólver do Exorcista é um Colt niquelado com cabo de nogueira. As duas trazem as texturas do modelo: aço, madeira e couro com relevo. Os braços da caça ganharam manga de pano gasto e luva de couro com as pontas puídas, e as mangas do culto são do mesmo pano, em vermelho. As outras skins continuam pintando por cima."},

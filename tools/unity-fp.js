@@ -60,7 +60,7 @@ recarga('carabina',0); recarga('carabina',6); recarga('revolver',0); recarga('re
         execK:X.execK||0,colK:X.colK||0,queimando:!!X.queimando,corpo:{x:X.corpo[0],y:X.corpo[1],z:X.corpo[2],rx:X.corpo[3],ry:X.corpo[4],rz:X.corpo[5]}};
       A.quadro(c.dt,c.m,ctx);
       if(!c.medir) continue;
-      const nos=objs.map(o=>{ if(!o) return null; let vis=true; m4.identity(); for(let q=o;q&&!q.isCamera;q=q.parent){ q.updateMatrix(); m4.premultiply(q.matrix); if(!q.visible) vis=false; }
+      const nos=objs.map(o=>{ if(!o) return null; let vis=true; m4.identity(); for(let q=o;q&&!q.isCamera&&q!==A.vm.vmFov;q=q.parent){ q.updateMatrix(); m4.premultiply(q.matrix); if(!q.visible) vis=false; }
         const e=m4.elements; return [vis?1:0,e[0],e[1],e[2],e[4],e[5],e[6],e[8],e[9],e[10],e[12],e[13],e[14]]; });
       out.push({est:A.S.est.nome,t:A.S.est.t,nos}); }
     return out; },casos);

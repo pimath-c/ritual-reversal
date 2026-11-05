@@ -70,7 +70,7 @@ namespace RitualReversal.Visual
             float bob = -Mathf.Abs(Mathf.Sin(fase)) * (correndo ? .05f : .034f) * bobK * Mathf.Max(.5f, camFx) * (1 - agK * .55f);
             cam.transform.position = new Vector3(x, down ? .45f : Mathf.Lerp(1.67f, 1.0f, agK) + bob, -z);
             fovPunch = Mathf.Lerp(fovPunch, 0, Mathf.Min(1, dt * 10)); rollImp = Mathf.Lerp(rollImp, 0, Mathf.Min(1, dt * 7));
-            fov = Mathf.Lerp(fov, fovBase + (correndo ? 7 : 0), .1f); float fovAlvo = fov + fovPunch; if (Mathf.Abs(cam.fieldOfView - fovAlvo) > .05f) cam.fieldOfView = fovAlvo;
+            fov = Mathf.Lerp(fov, fovBase + (correndo ? 7 : 0), .1f); float fovAlvo = fov + fovPunch; if (Mathf.Abs(cam.fieldOfView - fovAlvo) > .05f) cam.fieldOfView = fovAlvo; arma.AplicarFov(cam.fieldOfView);   // v6.12: a primeira pessoa no campo de visão dela
             roll = Mathf.Lerp(roll, moving && !down ? -mx * .022f : 0, .1f); kickP = Mathf.Lerp(kickP, 0, .14f);
             var ac = arma.ok ? arma.camJolt : new V3d();
             float p = pitch + kickP + (float)ac.x + Random.Range(-shake, shake), y = yaw + (float)ac.y + Random.Range(-shake, shake);

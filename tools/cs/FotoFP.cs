@@ -102,7 +102,7 @@ public static class FotoFP
             }
         }
         bin.Close();
-        var j = new StringBuilder(); j.Append("{\"malhas\":[\n").Append(malhas).Append("\n],\"fotos\":[").Append(fotos).Append("],\"materiais\":[\n");
+        var j = new StringBuilder(); j.Append("{\"k\":" + ArmaFP.EscalaFov(72).ToString(C) + ",\"malhas\":[\n").Append(malhas).Append("\n],\"fotos\":[").Append(fotos).Append("],\"materiais\":[\n");
         for (int i = 0; i < mats.Count; i++)
         {
             var m = mats[i]; Func<string, string> num = k => m.numeros.ContainsKey(k) ? F(m.numeros[k]) : "null";

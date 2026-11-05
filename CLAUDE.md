@@ -57,7 +57,7 @@ mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes 
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.11)
+## Estado atual (v6.12)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -384,6 +384,12 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   falange. arma.js: `bracoReal(k,B,M,mat,esq)` (esquerdo: boneInverse dos ossos 16/17 × (1, 1, −1), `geoBracosEsq` com as faces
   invertidas), `criarMao(...,{semPele})` põe os ossos no grupo e esconde a mão antiga (no Unity nó escondido é desligado),
   `fotoBracos(m,k)` com as texturas `bracos_<k>_{cor,nor,mr}` (Resources/Armas). Os ombros/polos da v6.10a ficam.
+- v6.12 (notas em `notas/v6.12.md`; o dono achou os braços "palitos"): campo de visão próprio da primeira pessoa, como o viewmodel FOV dos
+  FPS. arma.js: `FOV_VM` 54, grupo `vmFov` entre a câmera e vmH/vmC com escala (k, k, 1), k = tan(fov da câmera/2)/tan(FOV_VM/2), posto no
+  `camVista` (1 nas vistas de fora); `BASE_VM` H (.107, −.091, −.32) / C (.17, .03, −.42) no lugar de (.2, −.17, −.42)/(.26, −.12, −.5);
+  `GROSSO` H 1,35 / C 1,6 × o raio do modelo. FOV_VM e BASE_VM vão no `cte` da exportação; C# `ArmaFP.EscalaFov`/`AplicarFov` (no
+  `PrimeiraPessoa.Atualizar` depois do FOV; `Vista` põe 1 nas vistas de fora). O unity-fp mede até o `vmFov`; o FotoFP grava `k`, que o
+  unity-fp-fotos aplica na vista do jogador. Afinar sem reexportar: mudar `cte.BASE_VM`/`rigs.*.braco` no primeira-pessoa.json e rodar o unity-fp-fotos.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

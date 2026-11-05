@@ -31,11 +31,13 @@ const PAGINA=`<!doctype html><html><head><meta charset="utf-8"><style>html,body{
     if(/Brilho/.test(M.shader)) return new THREE.MeshBasicMaterial({color:cor,map,transparent:true,opacity:M.cor[3],depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
     const tr=M.surface===1, mr=M.mr>=0?tex[M.mr]:null; return new THREE.MeshStandardMaterial({color:cor,map,roughnessMap:mr,metalnessMap:mr,roughness:mr?1:M.liso==null?1:Math.min(1,1-M.liso/.9),metalness:mr?1:M.metal||0,side:M.cull===0?THREE.DoubleSide:THREE.FrontSide,transparent:tr,opacity:tr?M.cor[3]:1,alphaTest:M.clip===1?.5:0,
       emissive:M.emissao?new THREE.Color(M.emissao[0],M.emissao[1],M.emissao[2]):new THREE.Color(0)}); });
-  const porFoto={};
+  const porFoto={}, GV=new THREE.Group(); scene.add(GV);
+  // v6.12: na vista do jogador, o campo de visão da primeira pessoa (o vm do Unity com escala k em x e y); de perto e de lado, o tamanho real
+  if(!${JSON.stringify(process.env.VISTA||'')}&&J.k) GV.scale.set(J.k,J.k,1);
   for(const mm of J.malhas){ let o=mm.ini; const v=mm.v, g=new THREE.BufferGeometry(), f=n=>{ const a=new Float32Array(BIN,o,n); o+=n*4; return a; };
     g.setAttribute('position',new THREE.BufferAttribute(f(v*3),3)); g.setAttribute('normal',new THREE.BufferAttribute(f(v*3),3)); g.setAttribute('uv',new THREE.BufferAttribute(f(v*2),2));
     g.setIndex(new THREE.BufferAttribute(new Uint32Array(BIN,o,mm.t),1));
-    const me=new THREE.Mesh(g,mats[mm.mat]); me.frustumCulled=false; scene.add(me); (porFoto[mm.f]=porFoto[mm.f]||[]).push(me); }
+    const me=new THREE.Mesh(g,mats[mm.mat]); me.frustumCulled=false; GV.add(me); (porFoto[mm.f]=porFoto[mm.f]||[]).push(me); }
   scene.background=new THREE.Color(0x1a1c22); scene.add(new THREE.HemisphereLight(0x8a96b8,0x2a2018,.8)); const sol=new THREE.DirectionalLight(0xffe2c0,1.4); sol.position.set(-1,2,1); scene.add(sol);
   camera.fov=72; camera.near=.02; camera.updateProjectionMatrix();
   const VISTA=${JSON.stringify(process.env.VISTA||'')};

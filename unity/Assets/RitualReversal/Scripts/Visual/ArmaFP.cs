@@ -346,6 +346,7 @@ namespace RitualReversal.Visual
             PALMA_CENTRO = V3d.De(cte["PALMA_CENTRO"]); MUN_NA_MAO = V3d.De(cte["MUN_NA_MAO"]); qPinca = Qd.De(cte["qPinca"]); qMunMao = Qd.De(cte["qMunMao"]);
             foreach (var kv in Json.O(cte["PADRAO_C"])) PADRAO_C[kv.Key] = Json.D(kv.Value);
             if (cte.ContainsKey("ZC_REV")) ZC_REV = Json.D(cte["ZC_REV"]);
+            if (cte.ContainsKey("FOV_VM")) { FOV_VM = Json.D(cte["FOV_VM"]); var B = Json.O(cte["BASE_VM"]); BASE_H = V3d.De(B["H"]); BASE_C = V3d.De(B["C"]); }
             foreach (var kv in Json.O(D_["perfil"]))
             {
                 var p = Json.O(kv.Value); var ci = Json.L(p["ciclo"]); object v;
@@ -692,6 +693,13 @@ namespace RitualReversal.Visual
             }
         }
         // municiador no eixo do tambor: s=0 com as pontas encostando atrás das câmaras, s=1 com os aros rentes à face traseira
+        // v6.12: campo de visão vertical da primeira pessoa e o lugar de cada corpo na câmera (o FOV_VM/BASE_VM do arma.js, em cte);
+        // sem eles no JSON, o lugar de antes da v6.12 e o FOV do jogo
+        public static double FOV_VM = 0; static V3d BASE_H = new V3d(.2, -.17, -.42), BASE_C = new V3d(.26, -.12, -.5);
+        // a escala do grupo espelhado (vm) para o campo de visão próprio: x e y pela razão das tangentes, a profundidade fica (o vmFov do arma.js)
+        public static float EscalaFov(float fovCam) { return FOV_VM <= 0 || fovCam <= 0 ? 1 : (float)(Math.Tan(fovCam * Math.PI / 360) / Math.Tan(FOV_VM * Math.PI / 360)); }
+        public void AplicarFov(float fovCam) {   // fovCam 0: tamanho real (vistas de fora)
+            float k = EscalaFov(fovCam); vm.localScale = new Vector3(k, k, -1); }
         static double ZC_REV = .0335;   // a face de trás do tambor (v6.5: a do revólver de verdade, exportada em cte.ZC_REV)
         static double ZMun(double s) { return ZC_REV + .004 + (1 - s) * .0365; }
         // cópia de uma peça (mesmas malhas e materiais)
@@ -806,7 +814,7 @@ namespace RitualReversal.Visual
             // corpo: balanço do passo, atraso do mouse, atraso ao começar a andar, tranco de golpe (mola)
             joltV = (joltV + jolt * (-dt * 160)) * Math.Exp(-dt * 16); jolt = jolt + joltV * dt;
             var cor = R.corpo; bool h = cor == vmH; double ag = ctx.agK;
-            cor.localPosition = new V3d((h ? .2 : .26) + ctx.bx - ag * .012, (h ? -.17 : -.12) + ctx.by - ag * .022, (h ? -.42 : -.5) + ctx.bz + ag * .018).F;
+            var B0 = h ? BASE_H : BASE_C; cor.localPosition = new V3d(B0.x + ctx.bx - ag * .012, B0.y + ctx.by - ag * .022, B0.z + ctx.bz + ag * .018).F;
             cor.localRotation = Qd.Euler(ctx.brx + jolt.x * 1.5 + ag * .04, ctx.bry, ctx.brz + jolt.z * 1.5 + ag * .07).F;
             camJolt = jolt * .5;
             if (a == "cetro") { CetroVida(P2, m, dt, agora, ctx); RastroBrasa(); }
@@ -1023,13 +1031,13 @@ namespace RitualReversal.Visual
             {
                 // perto da peça que trabalha (a vitrine): a portinhola da carabina ou o tambor do revólver, medidos no espaço da
                 // câmera com a primeira pessoa no lugar de sempre
-                vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity;
+                vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity; AplicarFov(0);
                 bool rev = arma == "revolver"; var g = rev ? revolver.g : carabina.g; var ct0 = cam.transform;
                 Vector3 alvo = ct0.InverseTransformPoint(rev ? revolver.tambor.position : g.TransformPoint(carabina.entrada.F)), de = ct0.InverseTransformPoint(g.TransformPoint(rev ? new Vector3(-.16f, .07f, .12f) : new Vector3(.17f, .09f, .06f)));
                 p = new V3d(de.x, de.y, -de.z); t = new V3d(alvo.x, alvo.y, -alvo.z); fov = 38;
             }
-            else if (nome == null || !VISTAS.TryGetValue(nome, out v)) { vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity; return fovJogo; }
-            else { p = new V3d(v[0], v[1], v[2]); t = new V3d(v[3], v[4], v[5]); fov = v[6]; }
+            else if (nome == null || !VISTAS.TryGetValue(nome, out v)) { vm.localPosition = Vector3.zero; vm.localRotation = Quaternion.identity; AplicarFov(fovJogo); return fovJogo; }
+            else { p = new V3d(v[0], v[1], v[2]); t = new V3d(v[3], v[4], v[5]); fov = v[6]; AplicarFov(0); }
             var up = nome.StartsWith("cima") ? new V3d(0, 0, -1) : new V3d(0, 1, 0);
             // Matrix4.lookAt do three para câmera: z aponta do alvo para o olho
             var z = (p - t).Norm(); var x = up.Cross(z).Norm(); var y = z.Cross(x); var m = new double[16]; m[0] = x.x; m[1] = x.y; m[2] = x.z; m[4] = y.x; m[5] = y.y; m[6] = y.z; m[8] = z.x; m[9] = z.y; m[10] = z.z; m[15] = 1;
