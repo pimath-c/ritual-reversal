@@ -9,7 +9,7 @@
 # Saída: client/maos.js (window.RR_MAOS = {pos, nor, uv, idx, si, sw} em base64, Float32/Uint16/Uint32), lido pelo
 # criarMao do arma.js; sem o arquivo, as cápsulas de antes.
 # Uso: python3 -I tools/montar-maos.py   (precisa de numpy; os dados do MakeHuman vêm do montar-bonecos.py)
-import base64, importlib.util, json, os, sys
+import base64, importlib.util, json, os, re, sys
 import numpy as np
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -131,7 +131,7 @@ def main():
           '// tools/montar-maos.py. Não edite à mão.\nwindow.RR_MAOS=' + json.dumps(saida, separators=(',', ':')) + ';\n')
     arq = os.path.join(RAIZ, 'client', 'maos.js')   # v6.10: os braços do montar-bracos.py ficam no fim do arquivo
     if os.path.exists(arq):
-        antigo = open(arq, encoding='utf-8').read(); i = antigo.find('\n// v6.10: braços')
+        antigo = open(arq, encoding='utf-8').read(); m_ = re.search(r'\n// v6\.1\d?: braços', antigo); i = m_.start() if m_ else -1
         if i >= 0: js += antigo[i + 1:]
     open(arq, 'w', encoding='utf-8').write(js)
     mn, mx = pos.min(0), pos.max(0)

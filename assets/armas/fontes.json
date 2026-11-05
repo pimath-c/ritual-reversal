@@ -341,7 +341,7 @@
    "escuro_val": 0.16
   }
  },
- "bracos": {
+ "_bracos_arms6": {
   "sketchfab": {
    "uid": "bf049910accc4d71838a5a5272aedfef",
    "celula": 2048
@@ -355,5 +355,37 @@
   "luva_corte": 0.022,
   "manga_ate": 1.0,
   "boca": 0.92
+ },
+ "bracos": {
+  "caca": {
+   "sketchfab": {
+    "uid": "a34b6d0ddc774744bc3567d6afc0878f",
+    "celula": 2048
+   },
+   "pagina": "https://sketchfab.com/3d-models/revolver-animated-a34b6d0ddc774744bc3567d6afc0878f",
+   "titulo": "revolver animated",
+   "licenca": "CC BY 4.0",
+   "autor": "DJMaesen (bumstrum)",
+   "uso": "braços da caça na primeira pessoa (manga de casaco e luva de couro; só os braços)",
+   "lado": "R",
+   "tingir_mao": [
+    1.25,
+    0.86,
+    0.6
+   ],
+   "contraste_mao": 1.15
+  },
+  "culto": {
+   "sketchfab": {
+    "uid": "b7c78c533ced40cd986c44594b778ed6",
+    "celula": 2048
+   },
+   "pagina": "https://sketchfab.com/3d-models/heavy-pistol-animated-b7c78c533ced40cd986c44594b778ed6",
+   "titulo": "heavy pistol animated",
+   "licenca": "CC BY 4.0",
+   "autor": "DJMaesen (bumstrum)",
+   "uso": "braços do culto na primeira pessoa (manga e mão nua; só os braços)",
+   "lado": "R"
+  }
  }
 }

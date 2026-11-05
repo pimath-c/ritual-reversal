@@ -124,20 +124,21 @@ Personagens em peças rígidas por junta (`tools/montar-bonecos.py` e `tools/mak
 
 ## Armas
 
-Modelos do Sketchfab (CC BY 4.0: o crédito vai aqui e nos créditos do jogo), baixados pela API com o token da conta (`SKETCHFAB_TOKEN`, nunca no repositório). A forma do modelo vai para o quadro da arma do jogo com as texturas dele (cor, relevo, metal/aspereza) na skin de serviço; as outras skins pintam por papel (`tools/montar-armas.py`, `assets/armas/fontes.json`). Os braços da caça (luva e mangas) saem do mesmo jeito por `tools/montar-bracos.py`.
+Modelos do Sketchfab (CC BY 4.0: o crédito vai aqui e nos créditos do jogo), baixados pela API com o token da conta (`SKETCHFAB_TOKEN`, nunca no repositório). A forma do modelo vai para o quadro da arma do jogo com as texturas dele (cor, relevo, metal/aspereza) na skin de serviço; as outras skins pintam por papel (`tools/montar-armas.py`, `assets/armas/fontes.json`). Os braços da primeira pessoa (manga, luva e mão, da ponta dos dedos ao ombro) saem do mesmo jeito por `tools/montar-bracos.py`.
 
 | No jogo | Onde aparece | Origem | Autor |
 | --- | --- | --- | --- |
 | `carabina` | a carabina de alavanca do Soldado e do Rastreador (primeira e terceira pessoa) | [Winchester 1873 Free Model](https://sketchfab.com/3d-models/winchester-1873-free-model-c781f7f4ad8042f789b979ebbbe75944), CC BY 4.0 | Danya (dsamuta) |
 | `revolver` | o revólver do Exorcista (primeira e terceira pessoa) | [Colt Peacemaker](https://sketchfab.com/3d-models/colt-peacemaker-287e2a5fcc554420af18460c3e3941ac), CC BY 4.0 | wanderer (wanderer2) |
-| `bracos` | braços da caça na primeira pessoa (luva e mangas; tools/montar-bracos.py) | [Arms6](https://sketchfab.com/3d-models/arms6-bf049910accc4d71838a5a5272aedfef), CC BY 4.0 | DJMaesen (bumstrum) |
+| `bracos_caca` | braços da caça na primeira pessoa (manga de casaco e luva de couro; só os braços) | [revolver animated](https://sketchfab.com/3d-models/revolver-animated-a34b6d0ddc774744bc3567d6afc0878f), CC BY 4.0 | DJMaesen (bumstrum) |
+| `bracos_culto` | braços do culto na primeira pessoa (manga e mão nua; só os braços) | [heavy pistol animated](https://sketchfab.com/3d-models/heavy-pistol-animated-b7c78c533ced40cd986c44594b778ed6), CC BY 4.0 | DJMaesen (bumstrum) |
 
 ## Mãos da primeira pessoa
 
 A mão direita da malha base do MakeHuman (CC0; Data Collection AB, Joel Palmius, Jonas Hauquier), com os alvos do Soldado,
 reassentada no esqueleto de 16 ossos do `client/arma.js` por `tools/montar-maos.py` (saída `client/maos.js`). A esquerda é
-a mesma espelhada; é a mão nua do culto. Desde a v6.10 a caça usa a luva e as mangas do "Arms6" (DJMaesen/bumstrum, CC BY 4.0,
-na tabela das armas), reassentadas no mesmo esqueleto; as mangas do culto são as dele, tingidas de vermelho.
+a mesma espelhada. Desde a v6.11 ela fica escondida: os braços inteiros (manga de casaco, luva de couro na caça e mão nua no
+culto) vêm dos modelos de DJMaesen/bumstrum (CC BY 4.0, na tabela das armas), reassentados no mesmo esqueleto.
 
 Nos dois clientes, a foto entra no lugar da textura gerada com a mesma cor média da antiga (o campo `media` do
 `fontes.json`), porque os materiais foram calibrados para esse brilho. O relevo das fotos vai pela metade, para a luz em

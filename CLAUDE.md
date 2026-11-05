@@ -57,7 +57,7 @@ mudança de regra ainda vai nos dois (sim.js e C#) com o comparar-cs. Os testes 
     [MEDIR=1] [CELULAR=1] THREE_DIR=<three@0.128.0> NODE_PATH=$(npm root -g) node tools/telas-navegador.js [pasta] [regex]   # as mesmas telas no navegador, 1920×1080, com as fontes; MEDIR imprime as caixas das peças; CELULAR, o celular com toque
 O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta temporária e passe em `THREE_DIR`.
 
-## Estado atual (v6.10a)
+## Estado atual (v6.11)
 - Números: selar sob fogo 70%/45%, executar 4,5 s (dano recomeça), reanimar 5 s, momentos 3:00 / 10:00 / 18:00, eco aos 25%, ataque pausa a canalização por 0,6 s.
 - Classes: Caçadores Soldado, Exorcista e Rastreador (pegadas e marcas de arrasto); Cultistas Ritualista e Guardião.
 - Véu é silhueta (some a mais de 8 m), Transferência deixa rastro, sinais dos santuários descartam altares.
@@ -375,6 +375,15 @@ O CDN do three.js pode estar bloqueado: instale `three@0.128.0` numa pasta tempo
   mangas 0x6a6a70; `montar-bracos.py` com `luva_corte` .022, `manga_ate` 1, `boca` .92 (aperto no punho). `montar-armas.py`: `cortar_ilhas`
   (ilhas de um nó com menos de `min` triângulos: restos da bandoleira). Ferramenta de afinar: rodar `unity-fp-fotos.js` depois de mexer
   no `rigs` do `Resources/primeira-pessoa.json` (sem reexportar).
+- v6.11 (notas em `notas/v6.11.md`): braços da primeira pessoa trocados (o dono achou o Arms6 "dois tubos"): `tools/montar-bracos.py`
+  reescrito para os braços de DJMaesen/bumstrum (Sketchfab, CC BY): caça = "revolver animated" (luva tingida de couro por máscara do
+  uv da mão: `tingir_mao`/`contraste_mao`), culto = "heavy pistol animated" (mão nua); só a malha do braço direito (`lado` R), sem a
+  arma. Cada braço é UMA malha com pele em 18 ossos (0–15 = ossos da mão do criarMao, 16/17 = nós B.sup/B.ant com tuboJunta); vértices
+  no espaço do modelo, `RR_BRACOS[k].inv` = boneInverse (mão: M·(v−o) do quadro do osso do modelo para o do jogo; braço: inverso do
+  quadro com a dobra em z), `raio` = raio da manga na escala da mão (vai para `braco` do rig), juntas de ponta presas à última
+  falange. arma.js: `bracoReal(k,B,M,mat,esq)` (esquerdo: boneInverse dos ossos 16/17 × (1, 1, −1), `geoBracosEsq` com as faces
+  invertidas), `criarMao(...,{semPele})` põe os ossos no grupo e esconde a mão antiga (no Unity nó escondido é desligado),
+  `fotoBracos(m,k)` com as texturas `bracos_<k>_{cor,nor,mr}` (Resources/Armas). Os ombros/polos da v6.10a ficam.
 - Modelos 3D gerados (teste de 23/10, Higgsfield/Tripo, texto para 3D): altar e estátua do monge. `assets/modelos/fontes.json`
   (job, prompt, encaixe, tamanho, textura, brilho) e os originais em `assets/modelos/fontes/`; `python3 tools/montar-modelos.py`
   põe no tamanho do jogo e grava o mesmo GLB enxuto em `client/modelos.js` (`RR_MODELOS`, embutido por build.js/build-mobile.js e

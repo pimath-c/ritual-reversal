@@ -40,7 +40,7 @@ def main():
     arm = ['| No jogo | Onde aparece | Origem | Autor |', '| --- | --- | --- | --- |']
     try:
         A = ler('assets', 'armas', 'fontes.json')
-        itens = list(A['armas'].items()) + ([('bracos', A['bracos'])] if 'bracos' in A else [])
+        itens = list(A['armas'].items()) + [(f'bracos_{k}', v) for k, v in A.get('bracos', {}).items()]
         for n, f in itens: arm.append(f"| `{n}` | {f['uso']} | [{f.get('titulo') or f['pagina'].rsplit('/', 1)[1]}]({f['pagina']}), {f['licenca']} | {f['autor']} |")
     except FileNotFoundError:
         arm = []
